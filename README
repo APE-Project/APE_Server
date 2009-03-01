@@ -1,0 +1,10 @@
+To compile APE you need : 
+- GCC
+- libc6-dev
+- 5 second'
+
+# make
+# cd modules/
+# make
+# cd ../bin/
+# ./aced
