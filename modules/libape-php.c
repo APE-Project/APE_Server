@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <glob.h>
+#include <pthread.h>
 
 #include "plugins.h"
 #include "global_plugins.h"
@@ -10,17 +11,24 @@
 #include "php_variables.h"
 #include "zend_modules.h"
 
+
 #include "SAPI.h"
 
 #include "php.h"
-//#include "build-defs.h"
+
 #include "zend.h"
 #include "zend_extensions.h"
+
 #include "php_ini.h"
 #include "php_globals.h"
 #include "php_main.h"
 #include "fopen_wrappers.h"
 #include "ext/standard/php_standard.h"
+#include "ext/standard/info.h"
+
+#include "zend_API.h"
+
+
 
 #define MODULE_NAME "PHP" // Unique identifier
 
@@ -98,6 +106,7 @@ static ace_plugin_infos infos_module = {
 };
 
 /* From facebook library */
+#if 0
 static int eval_string(const char *fmt, ...)
 {
 	char *data = NULL;
@@ -121,10 +130,9 @@ static int eval_string(const char *fmt, ...)
 	va_end(ap);
 	return status;
 }
+#endif
 static void ape_exec_script(char *file)
-{
-	zval *function_name, *rv;
-	char *fn = "init_module";
+{	
 	zend_file_handle file_handle;
 	
 	SG(request_info).request_method = NULL;
@@ -142,89 +150,111 @@ static void ape_exec_script(char *file)
 		return;
 	}
 	//CG(interactive) = 1;
-	file_handle.handle.fp=VCWD_FOPEN(file,"rb");
-	file_handle.filename=file;
+	file_handle.handle.fp = VCWD_FOPEN(file,"rb");
+	file_handle.filename = file;
 	file_handle.type = ZEND_HANDLE_FP;
 	file_handle.free_filename = 0;
 	file_handle.opened_path = NULL;
 	php_execute_script(&file_handle);
-	/* Tricks from facebook php embed library and Sara Golmon book */
-	//eval_string("include_once('%s');", file);
-	
-	MAKE_STD_ZVAL(function_name);
-	MAKE_STD_ZVAL(rv);
-	
-	ZVAL_STRING(function_name, fn, 0);
-	
-	call_user_function(EG(function_table), NULL, function_name, rv, 0, NULL TSRMLS_CC);
 	
 	
-	//php_request_shutdown(NULL);	
 }
 
-static void ape_init_class(char *classname)
+static void ape_call_method(zend_class_entry *ce, char *method_name TSRMLS_DC)
 {
-	zval *function_name, *rv;
+	zval *method, *dummy = NULL;
+	MAKE_STD_ZVAL(method);
+	ZVAL_STRING(method, method_name, 0);
 	
+	call_user_function_ex(&ce->function_table, NULL, method, &dummy, 0, NULL, 0, NULL TSRMLS_CC);
+}
+
+static void ape_init_class(char *classname TSRMLS_DC)
+{
+	zval *rv;
 	zend_class_entry **ce;
-	zval *dummy = NULL;
-	
-	MAKE_STD_ZVAL(function_name);
+
 	ALLOC_ZVAL(rv);
 	Z_TYPE_P(rv) = IS_OBJECT;
-	
-	ZVAL_STRING(function_name, "__construct", 0);
-	
-	//if (zend_hash_find(EG(function_table), classname, strlen(classname)+1, (void**)&ce) == SUCCESS) {
+
 	if (zend_lookup_class(classname, strlen(classname), &ce TSRMLS_CC) == SUCCESS) {
-		object_init_ex(rv, *ce);
-		if (call_user_function_ex(&(*ce)->function_table, NULL, function_name, &dummy, 0, NULL, 0, NULL TSRMLS_CC) == SUCCESS) {
-			
-		}		
+		if ((*ce)->constructor) {
+
+			zend_fcall_info fci;
+			zend_fcall_info_cache fcc;
+
+			zval *retval_ptr = NULL;
+
+			object_init_ex(rv, *ce);
+		
+			fci.size = sizeof(fci);
+			fci.function_table = EG(function_table);
+			fci.function_name = NULL;
+			fci.symbol_table = NULL;
+			fci.object_ptr = rv;
+			fci.retval_ptr_ptr = &retval_ptr;
+			fci.param_count = 0;
+			fci.params = NULL;
+			fci.no_separation = 1;
+		
+			fcc.initialized = 1;
+			fcc.function_handler = (*ce)->constructor;
+			fcc.calling_scope = EG(scope);
+			fcc.called_scope = Z_OBJCE_P(rv);
+			fcc.object_ptr = rv;
+		
+			zend_call_function(&fci, &fcc TSRMLS_CC);
+			if (retval_ptr) {
+				zval_ptr_dtor(&retval_ptr);
+			}
+		} else {
+			object_init_ex(rv, *ce);
+		}
+
+		//ape_call_method(*ce, "__construct" TSRMLS_CC);
 	}
+}
+static void *launch_php_script(void *params)
+{
+	char *input = (char *)params;
+	char classname[33];
+	if (strlen(input) <= 32) {
+		ape_exec_script(input);
+		input = strrchr(input, '/');
+		*strchr(input, '.') = '\0';
+		sprintf(classname, "ape_%s", &input[1]);
+
+		ape_init_class(classname TSRMLS_CC);
+	}
+	
+	free(params);
+	return NULL;
 }
 
 static void init_module(acetables *g_ape) // Called when module is loaded (passed to APE_INIT_PLUGIN)
 {
 	int i;
 	glob_t globbuf;
+	pthread_t threads[32];
 	
 	sapi_startup(&ape_sapi_module);
 	ape_sapi_module.startup(&ape_sapi_module);	
 	
 	glob("./scripts/*.php", 0, NULL, &globbuf);
 	for (i = 0; i < globbuf.gl_pathc; i++) {
-		ape_exec_script(globbuf.gl_pathv[i]);
-		ape_init_class("ape_helloworld");
+		
+		pthread_create(&threads[i], NULL, launch_php_script, (void *)xstrdup(globbuf.gl_pathv[i]));
 	}
 	globfree(&globbuf);
 }
 static USERS *ape_adduser(unsigned int fdclient, char *host, acetables *ace_tables)
 {
 	USERS *n;
-	zval *function_name, *rv, *method;
-	
-	zend_class_entry *ce = ZEND_STANDARD_CLASS_DEF_PTR;
-	
-	char *fn = "ape_helloworlds";
-	char *construct = "__construct";
-	
-	MAKE_STD_ZVAL(function_name);
-	MAKE_STD_ZVAL(method);
-	ALLOC_INIT_ZVAL(rv);
-	
-	ZVAL_STRING(function_name, fn, 0);
-	ZVAL_STRING(method, construct, 0);
-	
-	object_init_ex(rv, ce);
-	if (zend_hash_find(EG(class_table), fn, strlen(fn)+1, (void**)&ce) == SUCCESS) {
-		
-		object_init_ex(rv, ce);
-	}
 	
 	//call_user_function_ex(CG(function_table), &function_name, NULL, &rv, 0, NULL, 0, NULL TSRMLS_CC);	
-
 	n = adduser(fdclient, host, ace_tables);
+
+	
 
 	return n;	
 }
