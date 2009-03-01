@@ -226,7 +226,6 @@ void grant_aceop(USERS *user);
 void send_error(USERS *user, char *msg);
 void send_msg(USERS *user, char *msg, char *type);
 
-unsigned int isvalidnick(char *name);
 unsigned int isonchannel(USERS *user, CHANNEL *chan);
 
 struct json *get_json_object_user(USERS *user);

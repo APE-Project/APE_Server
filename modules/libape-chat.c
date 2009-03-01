@@ -24,13 +24,36 @@ static ace_plugin_infos infos_module = {
 	NULL // config file (bin/)
 };
 
+
+static unsigned int isvalidnick(char *name) 
+{
+	char *pName;
+	if (strlen(name) > MAX_NICK_LEN) {
+		return 0;
+	}
+	for (pName = name; *pName != '\0'; pName++) {
+		*pName = tolower(*pName);
+		if (!isalnum(*pName) || ispunct(*pName)) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
 static unsigned int chat_connect(callbackp *callbacki)
 {
 	USERS *nuser;
 	RAW *newraw;
 	
 	struct json *jstr = NULL;
+	
+	
+	if (!isvalidnick(callbacki->param[1])) {
+		ENVOI(callbacki->fdclient, "BAD_NICKNAME");
 		
+		return (FOR_NOTHING);		
+	}
 	if (get_user_by_nickname(callbacki->param[1], callbacki->g_ape)) {
 		ENVOI(callbacki->fdclient, "NICK_USED");
 		

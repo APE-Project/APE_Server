@@ -428,20 +428,7 @@ void do_died(subuser *user)
 
 	}
 }
-unsigned int isvalidnick(char *name) 
-{
-	char *pName;
-	if (strlen(name) > MAX_NICK_LEN) {
-		return 0;
-	}
-	for (pName = name; *pName != '\0'; pName++) {
-		*pName = tolower(*pName);
-		if (!isalnum(*pName) || ispunct(*pName)) {
-			return 0;
-		}
-	}
-	return 1;
-}
+
 
 struct json *get_json_object_user(USERS *user)
 {
