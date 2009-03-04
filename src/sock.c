@@ -42,7 +42,7 @@ static int newSockListen(unsigned int port) // BIND
 {
 	int sock;
 	struct sockaddr_in addr;
-	
+	int reuse_addr = 1;
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
@@ -54,6 +54,8 @@ static int newSockListen(unsigned int port) // BIND
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = INADDR_ANY;
 	memset(&(addr.sin_zero), '\0', 8);
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr,
+		sizeof(reuse_addr));
 
 	if (bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == -1)
 	{

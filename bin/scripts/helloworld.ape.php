@@ -2,19 +2,17 @@
 	
 	class ape_helloworld
 	{
-		private $socket;
+		public $socket = 11;
 
 		public function __construct()
 		{
-			$this->socket = 'done';
-			// Called at startup
-			echo 'aaa' . "\n";
-			
+			while(1);
 		}
 
 		public function adduser()
 		{
-			echo 'Sock : ' . $this->socket . "\n"; 
+			$this->socket++;
+			echo 'Calling adduser...' . $this->socket . "\n";
 		}		
 	}
 ?>

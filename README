@@ -8,3 +8,5 @@ To compile APE you need :
 # make
 # cd ../bin/
 # ./aced
+
+For more details : http://www.ape-project.org/
