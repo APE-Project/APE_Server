@@ -105,6 +105,8 @@ void *get_pipe(char *pubid, acetables *g_ape)
 	return hashtbl_seek(g_ape->hPubid, pubid);
 }
 
+
+/* pubid : recver; user = sender */
 void *get_pipe_strict(char *pubid, USERS *user, acetables *g_ape)
 {
 	transpipe *pipe = get_pipe(pubid, g_ape);
@@ -365,6 +367,20 @@ void post_raw_channel(RAW *raw, struct CHANNEL *chan)
 	}
 	free(raw->data);
 	free(raw);
+}
+
+/* to manage subuser use post_to_pipe() instead */
+void post_raw_pipe(RAW *raw, char *pipe)
+{
+	transpipe *pipe;
+	
+	if ((pipe = get_pipe(pipe)) != NULL) {
+		if (pipe->type = CHANNEL_PIPE) {
+			post_raw_channel(raw, pipe->pipe);
+		} else {
+			post_raw(raw, pipe->pipe);
+		}
+	}
 }
 
 void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser)
@@ -782,6 +798,7 @@ void destroy_link(USERS *a, USERS *b)
 }
 
 
+
 int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *restrict, acetables *g_ape)
 {
 	
@@ -790,14 +807,16 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 	json *jextra = NULL, *jlist_copy = NULL, *jextra_copy = NULL;
 	RAW *newraw;
 	
-	if (recver == NULL) {
-		send_error(sender, "UNKNOWN_PIPE");
-		return 0;
+	
+	if (sender != NULL)
+		if (recver == NULL) {
+			send_error(sender, "UNKNOWN_PIPE");
+			return 0;
+		}
+	
+		set_json("sender", NULL, &jlist);
+		json_attach(jlist, get_json_object_user(sender), JSON_OBJECT);
 	}
-	
-	set_json("sender", NULL, &jlist);
-	json_attach(jlist, get_json_object_user(sender), JSON_OBJECT);
-	
 
 	set_json("pipe", NULL, &jlist);
 	
