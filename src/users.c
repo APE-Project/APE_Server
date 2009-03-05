@@ -370,15 +370,15 @@ void post_raw_channel(RAW *raw, struct CHANNEL *chan)
 }
 
 /* to manage subuser use post_to_pipe() instead */
-void post_raw_pipe(RAW *raw, char *pipe)
+void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape)
 {
-	transpipe *pipe;
+	transpipe *spipe;
 	
-	if ((pipe = get_pipe(pipe)) != NULL) {
-		if (pipe->type = CHANNEL_PIPE) {
-			post_raw_channel(raw, pipe->pipe);
+	if ((spipe = get_pipe(pipe, g_ape)) != NULL) {
+		if (spipe->type == CHANNEL_PIPE) {
+			post_raw_channel(raw, spipe->pipe);
 		} else {
-			post_raw(raw, pipe->pipe);
+			post_raw(raw, spipe->pipe);
 		}
 	}
 }
@@ -808,7 +808,7 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 	RAW *newraw;
 	
 	
-	if (sender != NULL)
+	if (sender != NULL) {
 		if (recver == NULL) {
 			send_error(sender, "UNKNOWN_PIPE");
 			return 0;

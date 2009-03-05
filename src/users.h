@@ -213,7 +213,7 @@ void post_raw_sub(RAW *raw, subuser *sub);
 void post_raw_channel(RAW *raw, struct CHANNEL *chan);
 void post_raw_restricted(RAW *raw, USERS *user, subuser *sub);
 void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser);
-void post_raw_pipe(RAW *raw, char *pipe);
+void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape);
 
 void send_raws(subuser *user);
 
