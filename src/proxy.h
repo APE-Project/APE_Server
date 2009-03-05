@@ -38,6 +38,8 @@ struct _ape_proxy
 {
 	char identifier[33];
 	
+	transpipe *pipe;
+	
 	struct {
 		char *host;
 		int port;

@@ -228,6 +228,7 @@ void grant_aceop(USERS *user);
 
 void send_error(USERS *user, char *msg);
 void send_msg(USERS *user, char *msg, char *type);
+void send_msg_sub(subuser *sub, char *msg, char *type);
 
 unsigned int isonchannel(USERS *user, CHANNEL *chan);
 

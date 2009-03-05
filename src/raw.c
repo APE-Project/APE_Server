@@ -481,7 +481,7 @@ unsigned int raw_session(callbackp *callbacki)
 			send_error(callbacki->call_user, "SESSION_ERROR");
 		} else if (shutdown) {
 			/* little hack to closing the connection (webkit bug) */
-			send_msg(callbacki->call_user, "close", "close");
+			send_msg_sub(getsubuser(callbacki->call_user, callbacki->host), "close", "close");
 		}
 	} else if (strcmp(callbacki->param[2], "get") == 0 && callbacki->nParam >= 3) {
 		int i;

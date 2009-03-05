@@ -523,6 +523,17 @@ void send_msg(USERS *user, char *msg, char *type)
 	post_raw(newraw, user);	
 }
 
+void send_msg_sub(subuser *sub, char *msg, char *type)
+{
+	RAW *newraw;
+	json *jlist = NULL;
+	
+	set_json("value", msg, &jlist);
+	
+	newraw = forge_raw(type, jlist);
+	
+	post_raw_sub(newraw, sub);		
+}
 
 session *get_session(USERS *user, char *key)
 {

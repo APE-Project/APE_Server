@@ -22,10 +22,12 @@
 #include "main.h"
 #include "utils.h"
 #include "proxy.h"
+#include "handle_http.h"
 
-ape_proxy *proxy_init(char *ident, char *host, int port)
+ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 {
 	ape_proxy *proxy;
+	transpipe *tpipe;
 	
 	if (strlen(ident) > 32) {
 		return NULL;
@@ -44,10 +46,12 @@ ape_proxy *proxy_init(char *ident, char *host, int port)
 	proxy->to = NULL;
 	proxy->next = NULL;
 	
+	tpipe = init_pipe(proxy, PROXY_PIPE, g_ape);
+	
 	return proxy;
 }
 
-void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write)
+void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ape)
 {
 //	transpipe *tpite;
 	if (proxy == NULL) {
