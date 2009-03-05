@@ -64,7 +64,7 @@ CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
 	new_chan->head = NULL;
 	new_chan->banned = NULL;
 	new_chan->properties = NULL;
-	gen_sessid_new(new_chan->pubid, g_ape);
+	
 
 	new_chan->interactive = (*new_chan->name == '*' ? 0 : 1);
 	
@@ -72,9 +72,9 @@ CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
 	
 	memcpy(new_chan->topic, topic, strlen(topic)+1);
 
-	tpipe = init_pipe(new_chan, CHANNEL_PIPE);
+	tpipe = init_pipe(new_chan, CHANNEL_PIPE, g_ape);
 	
-	hashtbl_append(g_ape->hPubid, new_chan->pubid, (void *)tpipe);	
+	hashtbl_append(g_ape->hPubid, tpipe->pubid, (void *)tpipe);	
 
 	return new_chan;
 	
@@ -89,16 +89,15 @@ CHANNEL *getchan(char *chan, acetables *g_ape)
 }
 void rmchan(CHANNEL *chan, acetables *g_ape)
 {
-	transpipe *fpipe;
-	
+
 	if (chan->head != NULL) {
 		return;
 	}
 	rmallban(chan);
 	
-	fpipe = get_pipe(chan->pubid, g_ape);
-	hashtbl_erase(g_ape->hPubid, chan->pubid);
-	free(fpipe);
+	
+	hashtbl_erase(g_ape->hPubid, chan->pipe->pubid);
+	free(chan->pipe);
 		
 	hashtbl_erase(g_ape->hLusers, chan->name);
 	
@@ -531,7 +530,7 @@ struct json *get_json_object_channel(CHANNEL *chan)
 	
 	//set_json("topic", chan->topic, &jstr);
 	//set_json("name", chan->name, &jstr); // See below
-	set_json("pubid", chan->pubid, &jstr);
+	set_json("pubid", chan->pipe->pubid, &jstr);
 	
 	
 	//if (chan->properties != NULL) {

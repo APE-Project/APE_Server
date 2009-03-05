@@ -47,7 +47,7 @@ typedef struct USERS
 	unsigned int type;
 
 	char sessid[33];
-	char pubid[33];
+	
 
 	char ip[16]; // ipv4
 	
@@ -65,6 +65,8 @@ typedef struct USERS
 		int length;
 		struct _session *data;
 	} sessions;
+	
+	transpipe *pipe;
 	
 	struct {
 		int nlink;

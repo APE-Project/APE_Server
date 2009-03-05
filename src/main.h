@@ -37,6 +37,7 @@
 
 #include "hash.h"
 
+
 #define MAX_IO 4096
 #define DEFAULT_BUFFER_SIZE 8096
 
@@ -67,6 +68,7 @@ typedef struct _acetables
 	unsigned int nConnected;
 
 	struct _ace_plugins *plugins;
+	struct _ape_proxy *proxy;
 	
 	struct _extend *properties;
 } acetables;
@@ -75,7 +77,8 @@ typedef struct _acetables
 
 enum {
 	CHANNEL_PIPE = 0,
-	USER_PIPE
+	USER_PIPE,
+	PROXY_PIPE
 };
 
 
@@ -84,6 +87,8 @@ struct _transpipe
 {
 	void *pipe;
 	int type;
+	
+	char pubid[33];
 };
 
 

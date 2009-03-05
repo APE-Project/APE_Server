@@ -22,19 +22,28 @@
 #ifndef _PROXY
 #define _PROXY
 
+
 typedef struct _ape_proxy_pipe ape_proxy_pipe;
 
 struct _ape_proxy_pipe
 {
 	int allow_write;
-	char *pipe;	
+	char *pipe;
+	
+	struct _ape_proxy_pipe *next;
 };
 
-typedef struct _ape_proxy ape_proxy
+typedef struct _ape_proxy ape_proxy;
 struct _ape_proxy
 {
+	char identifier[33];
 	
-	char identifier[32];
+	struct {
+		char *host;
+		int port;
+		int fd;
+	} sock;
+	int state;
 	
 	ape_proxy_pipe *to;
 	struct _ape_proxy *next;

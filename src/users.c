@@ -66,7 +66,6 @@ USERS *seek_user(char *pubid, char *linkid, acetables *g_ape)
 {
 	USERS *suser;
 	CHANLIST *clist;
-	
 
 	if ((suser = seek_user_simple(pubid, g_ape)) == NULL) {
 		return NULL;
@@ -75,7 +74,7 @@ USERS *seek_user(char *pubid, char *linkid, acetables *g_ape)
 	clist = suser->chan_foot;
 	
 	while (clist != NULL) {
-		if (strcasecmp(clist->chaninfo->pubid, linkid) == 0) {
+		if (strcasecmp(clist->chaninfo->pipe->pubid, linkid) == 0) {
 			return suser;
 		}
 		clist = clist->next;
@@ -163,7 +162,6 @@ USERS *init_user(acetables *g_ape)
 	}
 
 	gen_sessid_new(nuser->sessid, g_ape);
-	gen_sessid_new(nuser->pubid, g_ape);
 	
 	return nuser;
 }
@@ -182,9 +180,11 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 	nuser->type = (fdclient ? HUMAN : BOT);
 		
 	g_ape->uHead = nuser;
-	tpipe = init_pipe(nuser, USER_PIPE);
+	tpipe = init_pipe(nuser, USER_PIPE, g_ape);
 	
-	hashtbl_append(g_ape->hPubid, nuser->pubid, (void *)tpipe);
+	nuser->pipe = tpipe;
+	
+	hashtbl_append(g_ape->hPubid, tpipe->pubid, (void *)tpipe);
 	hashtbl_append(g_ape->hSessid, nuser->sessid, (void *)nuser);
 
 	
@@ -199,7 +199,7 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 
 void deluser(USERS *user, acetables *g_ape)
 {
-	transpipe *fpipe;
+
 	if (user == NULL) {
 		return;
 	}
@@ -212,11 +212,10 @@ void deluser(USERS *user, acetables *g_ape)
 	/* kill all users connections */
 	
 	clear_subusers(user);
-	
-	fpipe = get_pipe(user->pubid, g_ape);
+
 	hashtbl_erase(g_ape->hSessid, user->sessid);
-	hashtbl_erase(g_ape->hPubid, user->pubid);
-	free(fpipe);
+	hashtbl_erase(g_ape->hPubid, user->pipe->pubid);
+	free(user->pipe);
 	
 	g_ape->nConnected--;
 
@@ -452,7 +451,7 @@ struct json *get_json_object_user(USERS *user)
 	
 	if (user != NULL) {
 	
-		set_json("pubid", user->pubid, &jstr);
+		set_json("pubid", user->pipe->pubid, &jstr);
 		//set_json("casttype", "uni", &jstr);
 		if (user->properties != NULL) {
 			json *jprop = NULL;
@@ -782,9 +781,9 @@ void make_link(USERS *a, USERS *b)
 		(b->links.nlink)++;
 	
 		link->link_type = 0;
-		printf("Link etablished between %s and %s\n", a->pubid, b->pubid);
+		printf("Link etablished between %s and %s\n", a->pipe->pubid, b->pipe->pubid);
 	} else {
-		printf("%s and %s are already linked\n", a->pubid, b->pubid);
+		printf("%s and %s are already linked\n", a->pipe->pubid, b->pipe->pubid);
 	}
 }
 

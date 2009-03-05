@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 	
 
 	g_ape->srv = srv;
-
+	g_ape->proxy = NULL;
 	
 	g_ape->hCallback = hashtbl_init();
 	

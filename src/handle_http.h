@@ -35,7 +35,7 @@ int getqueryip(char *base, char *output);
 char *getfirstparam(char *input);
 
 
-transpipe *init_pipe(void *pipe, int type);
+transpipe *init_pipe(void *pipe, int type, acetables *g_ape);
 
 void gen_sessid_new(char *input, acetables *g_ape);
 

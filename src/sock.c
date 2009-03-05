@@ -54,8 +54,9 @@ static int newSockListen(unsigned int port) // BIND
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = INADDR_ANY;
 	memset(&(addr.sin_zero), '\0', 8);
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr,
-		sizeof(reuse_addr));
+	
+	
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
 
 	if (bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == -1)
 	{

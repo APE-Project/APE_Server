@@ -32,7 +32,8 @@ typedef struct CHANNEL
 {
 	char name[MAX_CHAN_LEN+1];
 	char topic[MAX_TOPIC_LEN+1];
-	char pubid[33];
+
+	transpipe *pipe;
 	
 	struct userslist *head;
 	

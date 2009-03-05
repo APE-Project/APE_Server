@@ -18,3 +18,41 @@
 */
 
 /* proxy.c */
+
+#include "main.h"
+#include "utils.h"
+#include "proxy.h"
+
+ape_proxy *proxy_init(char *ident, char *host, int port)
+{
+	ape_proxy *proxy;
+	
+	if (strlen(ident) > 32) {
+		return NULL;
+	}
+	
+	proxy = xmalloc(sizeof(*proxy));
+	
+	memcpy(proxy->identifier, ident, strlen(ident)+1);
+	
+	proxy->sock.host = xstrdup(host);
+	proxy->sock.port = port;
+	proxy->sock.fd = -1;
+	
+	proxy->state = 0;
+	
+	proxy->to = NULL;
+	proxy->next = NULL;
+	
+	return proxy;
+}
+
+void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write)
+{
+//	transpipe *tpite;
+	if (proxy == NULL) {
+		return;
+	}
+
+}
+
