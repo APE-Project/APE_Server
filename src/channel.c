@@ -74,6 +74,9 @@ CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
 
 	tpipe = init_pipe(new_chan, CHANNEL_PIPE, g_ape);
 	
+	new_chan->pipe = tpipe;
+
+	
 	hashtbl_append(g_ape->hPubid, tpipe->pubid, (void *)tpipe);	
 
 	return new_chan;

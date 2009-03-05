@@ -35,7 +35,17 @@
 
 #define MODULE_NAME "PHP" // Unique identifier
 
+<<<<<<< .mine
+struct _ape_php_class
+{
+	zval *object_ptr;
+	zend_class_entry *ce;
+	
+	struct _ape_php_class *next;
+};
+=======
 static pthread_mutex_t ape_php_mutex = PTHREAD_MUTEX_INITIALIZER;
+>>>>>>> .r26
 
 struct _ape_php_objects
 {
@@ -122,15 +132,24 @@ static ace_plugin_infos infos_module = {
 	NULL	// Config file (from ./bin/) (can be NULL)
 };
 
+<<<<<<< .mine
+
+=======
+>>>>>>> .r26
 static void ape_exec_script(char *file)
 {	
 	zend_file_handle file_handle;
 
+<<<<<<< .mine
+	file_handle.handle.fp = VCWD_FOPEN(file, "rb");
+=======
 	file_handle.handle.fp = VCWD_FOPEN(file,"rb");
+>>>>>>> .r26
 	file_handle.filename = file;
 	file_handle.type = ZEND_HANDLE_FP;
 	file_handle.free_filename = 0;
 	file_handle.opened_path = NULL;
+	
 	php_execute_script(&file_handle);
 
 }
@@ -277,8 +296,13 @@ static void init_module(acetables *g_ape) // Called when module is loaded (passe
 	glob_t globbuf;
 	pthread_t threads[32];
 	
+<<<<<<< .mine
+//	add_property(&g_ape->properties, "mysql", mysql);
+	
+=======
 	add_property(&g_ape->properties, "php_objects", (void *)NULL);
 	
+>>>>>>> .r26
 	sapi_startup(&ape_sapi_module);
 	ape_sapi_module.startup(&ape_sapi_module);	
 
@@ -290,6 +314,24 @@ static void init_module(acetables *g_ape) // Called when module is loaded (passe
 	SG(request_info).content_length = 0;
 	SG(sapi_headers).http_response_code = 200;
 	
+<<<<<<< .mine
+	SG(request_info).request_method = NULL;
+	SG(request_info).query_string = NULL;
+	SG(request_info).content_type = NULL;
+	SG(request_info).request_uri = NULL;
+	SG(request_info).path_translated = NULL;
+	SG(request_info).content_length = 0;
+	SG(sapi_headers).http_response_code = 200;
+	
+	SG(server_context) = NULL;	
+	
+	if (php_request_startup(TSRMLS_C) == FAILURE) {
+		printf("Cannot execute PHP...\n");
+		return;
+	}
+		
+	glob("./scripts/*.php", 0, NULL, &globbuf);
+=======
 	SG(server_context) = NULL;
 
 	if (php_request_startup(TSRMLS_C) == FAILURE) {
@@ -297,6 +339,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded (passe
 		return;
 	}	
 	glob("./scripts/*.ape.php", 0, NULL, &globbuf);
+>>>>>>> .r26
 	for (i = 0; i < globbuf.gl_pathc; i++) {
 		struct _ape_thread *at = malloc(sizeof(*at));
 		at->params = (void *)xstrdup(globbuf.gl_pathv[i]);
