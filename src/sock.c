@@ -109,7 +109,7 @@ static void clear_buffer(connection *co)
 	co->http.error = 0;
 	co->http.ready = 0;
 	co->http.read = 0;
-	co->user = NULL;
+	co->attach = NULL;
 }
 
 unsigned int sockroutine(size_t port, acetables *g_ape)
@@ -163,7 +163,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 				
 					while (1) {
 						struct epoll_event cev;
-						http_state http;
+						http_state http = {0, HTTP_NULL, 0, -1, 0, 0, 0};
 					
 						new_fd = accept(s_listen, 
 							(struct sockaddr *)&their_addr, 
@@ -179,16 +179,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 							*/
 							growup(&basemem, &co, &events);
 						}
-					
-					
-						http.step = 0;
-						http.type = HTTP_NULL;
-						http.contentlength = -1;
-						http.pos = 0;
-						http.error = 0;
-						http.ready = 0;
-						http.read = 0;
-					
+
 						strncpy(co[new_fd].ip_client, inet_ntoa(their_addr.sin_addr), 16);
 					
 						co[new_fd].buffer.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
@@ -196,7 +187,9 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						co[new_fd].buffer.length = 0;
 					
 						co[new_fd].http = http;
-						co[new_fd].user = NULL;
+						co[new_fd].attach = NULL;
+						
+						co[new_fd].stream_type = STREAM_IN;
 					
 						setnonblocking(new_fd);
 
@@ -248,14 +241,14 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									*/
 								}
 								#endif
-								if (co[events[i].data.fd].user != NULL) {
+								if (co[events[i].data.fd].stream_type == STREAM_IN && co[events[i].data.fd].attach != NULL) {
 									
-									if (events[i].data.fd == co[events[i].data.fd].user->fd) {
-										co[events[i].data.fd].user->state = ADIED;
+									if (events[i].data.fd == ((subuser *)(co[events[i].data.fd].attach))->fd) {
+										((subuser *)(co[events[i].data.fd].attach))->state = ADIED;
 									}
-									if (co[events[i].data.fd].user->wait_for_free == 1) {
-										free(co[events[i].data.fd].user);
-										co[events[i].data.fd].user = NULL;						
+									if (((subuser *)(co[events[i].data.fd].attach))->wait_for_free == 1) {
+										free(co[events[i].data.fd].attach);
+										co[events[i].data.fd].attach = NULL;						
 									}
 								}
 								
@@ -274,9 +267,10 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								}
 														
 								process_http(&co[events[i].data.fd]);
-							
+								
 								if (co[events[i].data.fd].http.ready == 1) {
-									co[events[i].data.fd].user = checkrecv(co[events[i].data.fd].buffer.data, events[i].data.fd, g_ape, co[events[i].data.fd].ip_client);
+									co[events[i].data.fd].attach = checkrecv(co[events[i].data.fd].buffer.data, 
+														events[i].data.fd, g_ape, co[events[i].data.fd].ip_client);
 									
 									co[events[i].data.fd].buffer.length = 0;
 									co[events[i].data.fd].http.ready = -1;
@@ -306,24 +300,22 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 			ticks = 0;
 			
 			while (proxy != NULL) {
-				if (proxy->state == PROXY_NOT_CONNECTED) {
-					if ((psock = proxy_connect(proxy, g_ape)) != 0) {
-						http_state http_s = {0, 0, 0, 0, 0, 0, 0};
-						if (psock + 4 == basemem) {
 
-							growup(&basemem, &co, &events);
-						}
-						co[psock].ip_client[0] = '\0';
-						co[psock].buffer.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
-						co[psock].buffer.size = DEFAULT_BUFFER_SIZE;
-						co[psock].buffer.length = 0;
-					
-						co[psock].http = http_s;
-						co[psock].user = NULL;
-
+				if (proxy->state == PROXY_NOT_CONNECTED && ((psock = proxy_connect(proxy, g_ape)) != 0)) {
+					http_state http_s = {0, HTTP_NULL, 0, -1, 0, 0, 0};
+					if (psock + 4 == basemem) {
+						growup(&basemem, &co, &events);
 					}
-					
+					co[psock].ip_client[0] = '\0';
+					co[psock].buffer.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
+					co[psock].buffer.size = DEFAULT_BUFFER_SIZE;
+					co[psock].buffer.length = 0;
+				
+					co[psock].http = http_s;
+					co[psock].attach = NULL;
+					co[psock].stream_type = STREAM_OUT;
 				}
+
 
 				proxy = proxy->next;
 			}

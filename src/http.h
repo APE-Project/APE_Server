@@ -42,9 +42,16 @@ struct _http_state
 
 typedef struct _connection connection;
 
+enum {
+	STREAM_IN,
+	STREAM_OUT	
+};
+
 struct _connection {
 	char ip_client[16];
 	http_state http;
+	
+	int stream_type;
 	
 	struct {
 		char *data;	
@@ -53,7 +60,7 @@ struct _connection {
 		
 	} buffer;
 	
-	subuser *user;
+	void *attach;
 };
 
 enum {
