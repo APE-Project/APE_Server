@@ -171,9 +171,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						if (new_fd == -1) {
 							break;
 						}
-						/*
-							New connection
-						*/
+
 						if (new_fd + 4 == basemem) {
 							/*
 								Increase connection & events size
@@ -201,7 +199,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 					
 						setnonblocking(new_fd);
 
-						cev.events = EPOLLIN | EPOLLET | EPOLLOUT | EPOLLRDHUP | EPOLLPRI;
+						cev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI;
 						cev.data.fd = new_fd;
 					
 						epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_fd, &cev);
@@ -231,6 +229,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						} else {
 							if (readb < 1) {
 								#if 0
+								TODO :
 								if (events[i].events & EPOLLRDHUP) {
 									/* 
 									   Client half closed the connection
@@ -285,14 +284,20 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 		}
 		
 		gettimeofday(&t_end, NULL);
-		
-		// How many "ms" since last loop ?
+
 		ticks += (1000*(t_end.tv_sec - t_start.tv_sec))+((t_end.tv_usec - t_start.tv_usec)/1000);
 		
-		// Tic tac, tic tac :-)
+		/* Tic tac, tic tac :-) */
 		if (ticks >= 1000/TICKS_RATE) {
+			ape_proxy *proxy = g_ape->proxy.list;
 			ticks = 0;
-			proxy_connect_all(g_ape);
+			
+			while (proxy != NULL) {
+				if (proxy->state == PROXY_NOT_CONNECTED) {
+					proxy_connect(proxy, g_ape);
+				}
+				proxy = proxy->next;
+			}
 			
 			process_tick(g_ape);
 		}                
@@ -323,15 +328,16 @@ int sendf(int sock, char *buf, ...)
 		while(t_bytes < len) {
 			n = write(sock, buff + t_bytes, r_bytes);
 			if (n == -1) {
+				/* Not implemented yet :/ */
 				if (errno == EAGAIN) {
-					//printf("AGAIN\n");
+					/* TODO: Data must be buffered and sent via epoll out */
 				}
 				break; 
 			}
 			t_bytes += n;
 			r_bytes -= n;
 		}
-	} else { // It's a Bot !
+	} else {
 		printf("Bot: %s\n", buff);
 	}
 	len = t_bytes;

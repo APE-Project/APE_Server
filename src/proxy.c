@@ -26,6 +26,8 @@
 #include "sock.h"
 #include "errno.h"
 
+#include <sys/epoll.h>
+
 ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 {
 	ape_proxy *proxy;
@@ -92,6 +94,7 @@ void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ap
 
 }
 
+/* Not used for now */
 void proxy_connect_all(acetables *g_ape)
 {
 	ape_proxy *proxy = g_ape->proxy.list;
@@ -108,7 +111,7 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 {
 	int sock;
 	struct sockaddr_in addr;
-	
+	struct epoll_event cev;
 	
 	if (proxy == NULL || proxy->state != PROXY_NOT_CONNECTED || !strlen(proxy->sock.host->ip)) {
 		return 0;
@@ -133,7 +136,12 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
         
 	proxy->state = PROXY_IN_PROGRESS;
 	
-	return 1;
+	cev.events = EPOLLIN | EPOLLET | EPOLLOUT | EPOLLRDHUP | EPOLLPRI;
+	cev.data.fd = sock;
+
+	epoll_ctl(*(g_ape->epoll_fd), EPOLL_CTL_ADD, sock, &cev);
+	
+	return sock;
 
 }
 
