@@ -67,7 +67,8 @@ struct _ape_proxy_cache
 enum {
 	PROXY_NOT_CONNECTED = 0,
 	PROXY_IN_PROGRESS,
-	PROXY_CONNECTED
+	PROXY_CONNECTED,
+	PROXY_THROTTLED
 };
 
 ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape);

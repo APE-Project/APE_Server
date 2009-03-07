@@ -156,6 +156,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 			continue;
 		}
 		if (nfds > 0) {
+			
 			for (i = 0; i < nfds; i++) {
 
 				if (events[i].data.fd == s_listen) {
@@ -209,7 +210,17 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 					continue;
 				} else {
 					int readb = 0;
-
+					
+					if (events[i].events & EPOLLOUT) {
+						int serror = 0, ret;
+						socklen_t serror_len = sizeof(serror);
+						
+						ret = getsockopt(events[i].data.fd, SOL_SOCKET, SO_ERROR, &serror, &serror_len);
+						printf("Ret : %i %s\n", ret, strerror(errno));
+						
+						break;
+					}
+					
 					do {
 						/*
 							TODO : Check if maximum data read can improve perf
@@ -290,12 +301,30 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 		/* Tic tac, tic tac :-) */
 		if (ticks >= 1000/TICKS_RATE) {
 			ape_proxy *proxy = g_ape->proxy.list;
+			int psock;
+			
 			ticks = 0;
 			
 			while (proxy != NULL) {
 				if (proxy->state == PROXY_NOT_CONNECTED) {
-					proxy_connect(proxy, g_ape);
+					if ((psock = proxy_connect(proxy, g_ape)) != 0) {
+						http_state http_s = {0, 0, 0, 0, 0, 0, 0};
+						if (psock + 4 == basemem) {
+
+							growup(&basemem, &co, &events);
+						}
+						co[psock].ip_client[0] = '\0';
+						co[psock].buffer.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
+						co[psock].buffer.size = DEFAULT_BUFFER_SIZE;
+						co[psock].buffer.length = 0;
+					
+						co[psock].http = http_s;
+						co[psock].user = NULL;
+
+					}
+					
 				}
+
 				proxy = proxy->next;
 			}
 			
