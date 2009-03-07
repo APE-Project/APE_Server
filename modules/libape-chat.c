@@ -47,7 +47,7 @@ static unsigned int chat_connect(callbackp *callbacki)
 	RAW *newraw;
 	
 	struct json *jstr = NULL;
-	
+
 	
 	if (!isvalidnick(callbacki->param[1])) {
 		ENVOI(callbacki->fdclient, "BAD_NICKNAME");

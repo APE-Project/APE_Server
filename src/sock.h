@@ -34,6 +34,8 @@
 #define CLOSE(x) sendf(x, "%sCLOSE\n", HEADER)
 #define QUIT(x) sendf(x, "%sQUIT\n", HEADER)
 
+
+void setnonblocking(int fd);
 int sendf(int sock, char *buf, ...);
 unsigned int sockroutine(size_t port, acetables *g_ape);
 

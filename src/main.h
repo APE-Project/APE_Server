@@ -68,8 +68,13 @@ typedef struct _acetables
 	unsigned int nConnected;
 
 	struct _ace_plugins *plugins;
-	struct _ape_proxy *proxy;
 	
+	int *epoll_fd;
+	
+	struct {
+		struct _ape_proxy *list;
+		struct _ape_proxy_cache *hosts;
+	} proxy;
 	struct _extend *properties;
 } acetables;
 

@@ -38,18 +38,44 @@ struct _ape_proxy
 {
 	char identifier[33];
 	
+	/* proxy pipe */
 	transpipe *pipe;
 	
 	struct {
-		char *host;
+		struct _ape_proxy_cache *host;
 		int port;
 		int fd;
 	} sock;
+	
 	int state;
 	
+	/* List of allowed user/pipe */
 	ape_proxy_pipe *to;
-	struct _ape_proxy *next;
 	
+	struct _ape_proxy *next;
 };
 
+typedef struct _ape_proxy_cache ape_proxy_cache;
+struct _ape_proxy_cache
+{
+	char *host;
+	char ip[16];
+	
+	struct _ape_proxy_cache *next;
+};
+
+enum {
+	PROXY_NOT_CONNECTED = 0,
+	PROXY_IN_PROGRESS,
+	PROXY_CONNECTED
+};
+
+ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape);
+ape_proxy_cache *proxy_cache_gethostbyname(char *name, acetables *g_ape);
+void proxy_cache_addip(char *name, char *ip, acetables *g_ape);
+void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ape);
+int proxy_connect(ape_proxy *proxy, acetables *g_ape);
+void proxy_connect_all(acetables *g_ape);
+
 #endif
+

@@ -141,9 +141,7 @@ USERS *init_user(acetables *g_ape)
 
 	nuser->flags = FLG_NOFLAG;
 	nuser->chan_foot = NULL;
-	
-	nuser->rawhead = NULL;
-	nuser->rawfoot = NULL;
+
 	nuser->sessions.data = NULL;
 	nuser->sessions.length = 0;
 	
@@ -170,8 +168,6 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 {
 	USERS *nuser = NULL;
 
-	transpipe *tpipe;
-	
 	/* Calling module */
 	FIRE_EVENT(adduser, nuser, fdclient, host, g_ape);
 
@@ -180,13 +176,10 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 	nuser->type = (fdclient ? HUMAN : BOT);
 		
 	g_ape->uHead = nuser;
-	tpipe = init_pipe(nuser, USER_PIPE, g_ape);
 	
-	nuser->pipe = tpipe;
-	
-	hashtbl_append(g_ape->hPubid, tpipe->pubid, (void *)tpipe);
-	hashtbl_append(g_ape->hSessid, nuser->sessid, (void *)nuser);
+	nuser->pipe = init_pipe(nuser, USER_PIPE, g_ape);
 
+	hashtbl_append(g_ape->hSessid, nuser->sessid, (void *)nuser);
 	
 	g_ape->nConnected++;
 	
@@ -275,10 +268,10 @@ RAW *copy_raw(RAW *input)
 {
 	RAW *new_raw;
 
-	new_raw = (RAW *) xmalloc(sizeof(*new_raw));
+	new_raw = xmalloc(sizeof(*new_raw));
 	new_raw->data = xstrdup(input->data);
 	
-	new_raw->next = NULL;
+	new_raw->next = input->next;
 	new_raw->priority = input->priority;
 	
 	//memcpy(new_raw->data, input->data, strlen(input->data)+1);
@@ -320,7 +313,6 @@ void post_raw_sub(RAW *raw, subuser *sub)
 		
 		do_died(sub);
 	}
-
 	
 }
 void post_raw(RAW *raw, USERS *user)
@@ -406,6 +398,7 @@ void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser)
 void send_raws(subuser *user)
 {
 	RAW *raw, *older;
+
 	if (user->nraw == 0 || user->rawhead == NULL) {
 		return;
 	}
@@ -418,7 +411,7 @@ void send_raws(subuser *user)
 		sendf(user->fd, "[\n");
 	}
 	while(raw != NULL) {
-		
+
 		if (raw->next != NULL) {
 			sendf(user->fd, "%s,\n", raw->data);
 		} else {
@@ -427,9 +420,11 @@ void send_raws(subuser *user)
 		}
 		older = raw;
 		raw = raw->next;
+		
 		free(older->data);
 		free(older);
 	}
+	
 	user->rawhead = NULL;
 	user->rawfoot = NULL;
 	user->nraw = 0;

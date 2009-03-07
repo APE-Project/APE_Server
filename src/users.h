@@ -57,10 +57,7 @@ typedef struct USERS
 	struct USERS *prev;
 	
 	struct CHANLIST *chan_foot;
-	
-	struct RAW *rawhead;
-	struct RAW *rawfoot;
-	
+
 	struct {
 		int length;
 		struct _session *data;

@@ -152,7 +152,7 @@ transpipe *init_pipe(void *pipe, int type, acetables *g_ape)
 	npipe->type = type;
 	
 	gen_sessid_new(npipe->pubid, g_ape);
-	
+	hashtbl_append(g_ape->hPubid, npipe->pubid, (void *)npipe);
 	return npipe;
 }
 
@@ -175,9 +175,7 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 	cget->fdclient = fdclient;
 	
 	gethost(pSock, cget->host);
-	
-	
-	
+
 	if (strncasecmp(pSock, "GET", 3) == 0) {
 		if (fixpacket(pSock, 0) == 0 || (cget->get = getfirstparam(pSock)) == NULL) {
 			free(cget);

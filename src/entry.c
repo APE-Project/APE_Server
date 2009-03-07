@@ -34,6 +34,7 @@
 #include <sys/resource.h>
 #include "utils.h"
 #include "ticks.h"
+#include "proxy.h"
 
 #define _VERSION "0.8.0"
 
@@ -150,9 +151,14 @@ int main(int argc, char **argv)
 	
 
 	g_ape->srv = srv;
-	g_ape->proxy = NULL;
+	g_ape->proxy.list = NULL;
+	g_ape->proxy.hosts = NULL;
+	g_ape->epoll_fd = NULL;
 	
 	g_ape->hCallback = hashtbl_init();
+	
+
+
 	
 	g_ape->uHead = NULL;
 	
@@ -162,15 +168,23 @@ int main(int argc, char **argv)
 	g_ape->properties = NULL;
 	
 	g_ape->timers = NULL;
-	
-	add_periodical(0, 0, check_timeout, g_ape, g_ape);
 
+	add_ticked(check_timeout, g_ape);
+	
 	
 	do_register(g_ape);
 	
+	
 	findandloadplugin(g_ape);
-
-
+	
+	proxy_cache_addip("localhost", "127.0.0.1", g_ape);
+	
+	/*if (proxy_init("olol", "localhost", 80, g_ape) == NULL) {
+		printf("Failed to connect to data stream\n");
+	}*/
+	
+	proxy_connect(proxy_init("olol", "localhost", 80, g_ape), g_ape);
+	
 	sockroutine(g_ape->srv->port, g_ape);
 	
 	hashtbl_free(g_ape->hLogin);

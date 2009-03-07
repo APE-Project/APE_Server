@@ -34,8 +34,7 @@
 
 #include "utils.h"
 #include "ticks.h"
-
-static void setnonblocking(int fd);
+#include "proxy.h"
 
 
 static int newSockListen(unsigned int port) // BIND
@@ -76,7 +75,7 @@ static int newSockListen(unsigned int port) // BIND
 static void growup(int *basemem, connection **conn_list, struct epoll_event **epoll)
 {
 	*basemem *= 2;
-	
+
 	*epoll = xrealloc(*epoll, 
 			sizeof(struct epoll_event) * (*basemem));
 	
@@ -84,7 +83,7 @@ static void growup(int *basemem, connection **conn_list, struct epoll_event **ep
 			sizeof(connection) * (*basemem));
 }
 
-static void setnonblocking(int fd)
+void setnonblocking(int fd)
 {
 	int old_flags;
 	
@@ -131,6 +130,8 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 
 	epoll_fd = epoll_create(40000);
 	
+	g_ape->epoll_fd = &epoll_fd;
+	
 	events = xmalloc(sizeof(*events) * basemem);
 
 
@@ -144,7 +145,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 	ev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI;
 	ev.data.fd = s_listen;
 	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, s_listen, &ev);
-
+	
 	while (1) {
 		
 		gettimeofday(&t_start, NULL);
@@ -198,13 +199,13 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						co[new_fd].http = http;
 						co[new_fd].user = NULL;
 					
-						setnonblocking(new_fd);	
+						setnonblocking(new_fd);
 
-						cev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI;
+						cev.events = EPOLLIN | EPOLLET | EPOLLOUT | EPOLLRDHUP | EPOLLPRI;
 						cev.data.fd = new_fd;
 					
 						epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_fd, &cev);
-
+						
 					
 					}
 					continue;
@@ -229,11 +230,14 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 							break;
 						} else {
 							if (readb < 1) {
+								#if 0
 								if (events[i].events & EPOLLRDHUP) {
-									// Client half closed the connection
-									// this can be useful to avoid "wait for free"
+									/* 
+									   Client half closed the connection
+									   this can be useful to avoid "wait for free" 
+									*/
 								}
-
+								#endif
 								if (co[events[i].data.fd].user != NULL) {
 									
 									if (events[i].data.fd == co[events[i].data.fd].user->fd) {
@@ -288,6 +292,8 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 		// Tic tac, tic tac :-)
 		if (ticks >= 1000/TICKS_RATE) {
 			ticks = 0;
+			proxy_connect_all(g_ape);
+			
 			process_tick(g_ape);
 		}                
 
@@ -315,8 +321,11 @@ int sendf(int sock, char *buf, ...)
 	
 	if (sock != 0) {
 		while(t_bytes < len) {
-			n = send(sock, buff + t_bytes, r_bytes, 0);
+			n = write(sock, buff + t_bytes, r_bytes);
 			if (n == -1) {
+				if (errno == EAGAIN) {
+					//printf("AGAIN\n");
+				}
 				break; 
 			}
 			t_bytes += n;

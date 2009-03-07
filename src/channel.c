@@ -47,7 +47,7 @@ unsigned int isvalidchan(char *name)
 CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
 {
 	CHANNEL *new_chan = NULL;
-	transpipe *tpipe;
+
 
 	FIRE_EVENT(mkchan, new_chan, chan, topic, g_ape);
 
@@ -59,26 +59,19 @@ CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
 	new_chan = (CHANNEL *) xmalloc(sizeof(*new_chan));
 		
 	memcpy(new_chan->name, chan, strlen(chan)+1);
-	//memcpy(new_chan->topic, DEFAULT_TOPIC, strlen(DEFAULT_TOPIC)+1);
 	
 	new_chan->head = NULL;
 	new_chan->banned = NULL;
 	new_chan->properties = NULL;
 	
-
 	new_chan->interactive = (*new_chan->name == '*' ? 0 : 1);
+
+	memcpy(new_chan->topic, topic, strlen(topic)+1);
+
+	new_chan->pipe = init_pipe(new_chan, CHANNEL_PIPE, g_ape);
 	
 	hashtbl_append(g_ape->hLusers, chan, (void *)new_chan);
 	
-	memcpy(new_chan->topic, topic, strlen(topic)+1);
-
-	tpipe = init_pipe(new_chan, CHANNEL_PIPE, g_ape);
-	
-	new_chan->pipe = tpipe;
-
-	
-	hashtbl_append(g_ape->hPubid, tpipe->pubid, (void *)tpipe);	
-
 	return new_chan;
 	
 }
