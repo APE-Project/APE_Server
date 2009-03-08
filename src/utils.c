@@ -90,7 +90,21 @@ char *removelast(char *input, unsigned int n)
 	return input;
 }
 
-
+int seof(char *buf)
+{
+	char *pBuf;
+	int pos = 0;
+	
+	for (pBuf = buf; pBuf[pos] != '\0'; pos++) {
+		if (pos == 4096) {
+			return -1;
+		}
+		if (pBuf[pos] == '\n') {
+			return pos+1;
+		}
+	}
+	return -1;
+}
 
 size_t explode(const char split, char *input, char **tP, unsigned int limit) // Explode a string in an array.
 {

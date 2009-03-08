@@ -29,6 +29,7 @@ void *xmalloc(size_t size);
 void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *s);
 
+int seof(char *buf);
 char *itos(int input, char *output);
 char *trim(char *s);
 char *removelast(char *input, unsigned int n);

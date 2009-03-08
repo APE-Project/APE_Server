@@ -22,8 +22,7 @@
 #include "http.h"
 #include "sock.h"
 #include "main.h"
-
-static int seof(char *buf);
+#include "utils.h"
 
 /* Just a lightweight http request processor */
 
@@ -125,21 +124,5 @@ void process_http(connection *co)
 		default:
 			break;
 	}
-}
-
-static int seof(char *buf)
-{
-	char *pBuf;
-	int pos = 0;
-	
-	for (pBuf = buf; pBuf[pos] != '\0'; pos++) {
-		if (pos == 4096) {
-			return -1;
-		}
-		if (pBuf[pos] == '\n') {
-			return pos+1;
-		}
-	}
-	return -1;
 }
 

@@ -74,6 +74,12 @@ ape_proxy_cache *proxy_cache_gethostbyname(char *name, acetables *g_ape)
 	return NULL;
 }
 
+
+void proxy_onconnect(ape_proxy *proxy)
+{
+	printf("Proxy connected\n");
+}
+
 void proxy_cache_addip(char *name, char *ip, acetables *g_ape)
 {
 	ape_proxy_cache *cache;

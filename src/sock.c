@@ -212,6 +212,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 							if (ret == 0 && serror == 0) {
 								((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_CONNECTED;
 								((ape_proxy *)(co[events[i].data.fd].attach))->sock.fd = events[i].data.fd;
+								proxy_onconnect((ape_proxy *)(co[events[i].data.fd].attach));
 							} else { /* This can be happen ? epoll seems set EPOLLIN as if the host is disconnecting */
 								((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
 								//epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
@@ -242,7 +243,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								Nothing to read again
 							*/
 							co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
-	
+
 							break;
 						} else {
 							if (readb < 1) {
@@ -250,8 +251,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								TODO :
 								if (events[i].events & EPOLLRDHUP) {
 									/* 
-									   Client half closed the connection
-									   this can be useful to avoid "wait for free" 
+									   Client hangup the connection (half-closed)
 									*/
 								}
 								#endif
@@ -282,20 +282,23 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									co[events[i].data.fd].buffer.data = xrealloc(co[events[i].data.fd].buffer.data, 
 															sizeof(char) * (co[events[i].data.fd].buffer.size + 1));
 								}
-														
-								process_http(&co[events[i].data.fd]);
+								if (co[events[i].data.fd].stream_type == STREAM_IN) {
+									process_http(&co[events[i].data.fd]);
 								
-								if (co[events[i].data.fd].http.ready == 1) {
-									co[events[i].data.fd].attach = checkrecv(co[events[i].data.fd].buffer.data, 
-														events[i].data.fd, g_ape, co[events[i].data.fd].ip_client);
+									if (co[events[i].data.fd].http.ready == 1) {
+										co[events[i].data.fd].attach = checkrecv(co[events[i].data.fd].buffer.data, 
+															events[i].data.fd, g_ape, co[events[i].data.fd].ip_client);
 									
-									co[events[i].data.fd].buffer.length = 0;
-									co[events[i].data.fd].http.ready = -1;
+										co[events[i].data.fd].buffer.length = 0;
+										co[events[i].data.fd].http.ready = -1;
 			
-								} else if (co[events[i].data.fd].http.error == 1) {
-									shutdown(events[i].data.fd, 2);
+									} else if (co[events[i].data.fd].http.error == 1) {
+										shutdown(events[i].data.fd, 2);
+									}
+								} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
+									co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
+									printf("Getting data from stream %s\n", co[events[i].data.fd].buffer.data);
 								}
-
 							}
 						
 						}
@@ -356,7 +359,7 @@ int sendf(int sock, char *buf, ...)
 	
 	va_start(val, buf);
 	vasprintf(&buff, buf, val);
-	va_end(val);	
+	va_end(val);
 
 
 	len = strlen(buff);
@@ -368,6 +371,7 @@ int sendf(int sock, char *buf, ...)
 			if (n == -1) {
 				/* Not implemented yet :/ */
 				if (errno == EAGAIN) {
+					printf("Allo Allo, y'a dla merde dans le tuyau ?!!\n");
 					/* TODO: Data must be buffered and sent via epoll out */
 				}
 				break; 

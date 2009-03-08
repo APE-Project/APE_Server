@@ -77,6 +77,7 @@ void proxy_cache_addip(char *name, char *ip, acetables *g_ape);
 void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ape);
 int proxy_connect(ape_proxy *proxy, acetables *g_ape);
 void proxy_connect_all(acetables *g_ape);
+void proxy_onconnect(ape_proxy *proxy);
 
 #endif
 

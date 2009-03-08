@@ -177,13 +177,13 @@ int main(int argc, char **argv)
 	
 	findandloadplugin(g_ape);
 	
-	proxy_cache_addip("localhost", "127.0.0.1", g_ape);
+	proxy_cache_addip("localhost", "91.121.79.141", g_ape);
 	
 	/*if (proxy_init("olol", "localhost", 80, g_ape) == NULL) {
 		printf("Failed to connect to data stream\n");
 	}*/
 	
-	proxy_init("olol", "localhost", 81, g_ape);
+	proxy_init("olol", "localhost", 1337, g_ape);
 	
 	sockroutine(g_ape->srv->port, g_ape);
 	
