@@ -518,6 +518,18 @@ void send_msg(USERS *user, char *msg, char *type)
 	post_raw(newraw, user);	
 }
 
+void send_msg_channel(CHANNEL *chan, char *msg, char *type)
+{
+	RAW *newraw;
+	json *jlist = NULL;
+	
+	set_json("value", msg, &jlist);
+	
+	newraw = forge_raw(type, jlist);
+	
+	post_raw_channel(newraw, chan);
+}
+
 void send_msg_sub(subuser *sub, char *msg, char *type)
 {
 	RAW *newraw;

@@ -240,8 +240,14 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 							/*
 								Nothing to read again
 							*/
-							co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
 							
+							if (co[events[i].data.fd].stream_type == STREAM_OUT) {
+									
+									proxy_process_eol(&co[events[i].data.fd]);
+									
+							}
+							printf("Finished\n");
+							co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
 							break;
 						} else {
 							if (readb < 1) {
@@ -294,10 +300,6 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									} else if (co[events[i].data.fd].http.error == 1) {
 										shutdown(events[i].data.fd, 2);
 									}
-								} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
-									
-									proxy_process_eol(&co[events[i].data.fd]);
-									
 								}
 							}
 						
