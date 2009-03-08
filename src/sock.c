@@ -115,16 +115,14 @@ static void clear_buffer(connection *co)
 unsigned int sockroutine(size_t port, acetables *g_ape)
 {
 	int basemem = 16, epoll_fd;
-	
 	struct epoll_event ev, *events;
 
 	int s_listen, new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i;
 	
-	struct timeval t_start, t_end;
-	
+	struct timeval t_start, t_end;	
 	unsigned int ticks = 0;
-
 	struct sockaddr_in their_addr;
+	
 	
 	connection *co = xmalloc(sizeof(*co) * basemem);
 
@@ -134,13 +132,11 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 	
 	events = xmalloc(sizeof(*events) * basemem);
 
-
 	if ((s_listen = newSockListen(port)) < 0) {
 		return 0;
 	}
 
 	setnonblocking(s_listen);
-	
 	
 	ev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI;
 	ev.data.fd = s_listen;
@@ -148,6 +144,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 	
 	while (1) {
 		
+		/* Linux 2.6.25 provide a fd-driven timer system. It could be usefull to implement */
 		gettimeofday(&t_start, NULL);
 		
 		nfds = epoll_wait(epoll_fd, events, basemem, (1000/TICKS_RATE)-ticks);
@@ -205,13 +202,26 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 					int readb = 0;
 					
 					if (events[i].events & EPOLLOUT) {
-						int serror = 0, ret;
-						socklen_t serror_len = sizeof(serror);
+						if (co[events[i].data.fd].stream_type == STREAM_OUT && 
+						((ape_proxy *)(co[events[i].data.fd].attach))->state == PROXY_IN_PROGRESS) {
+							int serror = 0, ret;
+							socklen_t serror_len = sizeof(serror);
 						
-						ret = getsockopt(events[i].data.fd, SOL_SOCKET, SO_ERROR, &serror, &serror_len);
-						printf("Ret : %i %s\n", ret, strerror(errno));
-						
-						break;
+							ret = getsockopt(events[i].data.fd, SOL_SOCKET, SO_ERROR, &serror, &serror_len);
+							
+							if (ret == 0 && serror == 0) {
+								((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_CONNECTED;
+								((ape_proxy *)(co[events[i].data.fd].attach))->sock.fd = events[i].data.fd;
+							} else { /* This can be happen ? epoll seems set EPOLLIN as if the host is disconnecting */
+								((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
+								//epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
+								clear_buffer(&co[events[i].data.fd]);
+								close(events[i].data.fd);
+							}
+
+							
+							break;
+						}
 					}
 					
 					do {
@@ -222,8 +232,12 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						readb = read(events[i].data.fd, 
 									co[events[i].data.fd].buffer.data + co[events[i].data.fd].buffer.length, 
 									co[events[i].data.fd].buffer.size - co[events[i].data.fd].buffer.length);
-					
+						
+						
+						//printf("Read %i %s\n", readb, strerror(errno));
+						
 						if (readb == -1 && errno == EAGAIN) {
+							
 							/*
 								Nothing to read again
 							*/
@@ -250,6 +264,9 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 										free(co[events[i].data.fd].attach);
 										co[events[i].data.fd].attach = NULL;						
 									}
+								} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
+									
+									((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
 								}
 								
 								clear_buffer(&co[events[i].data.fd]);
@@ -312,7 +329,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 					co[psock].buffer.length = 0;
 				
 					co[psock].http = http_s;
-					co[psock].attach = NULL;
+					co[psock].attach = proxy;
 					co[psock].stream_type = STREAM_OUT;
 				}
 

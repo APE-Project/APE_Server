@@ -116,7 +116,7 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 	if (proxy == NULL || proxy->state != PROXY_NOT_CONNECTED || !strlen(proxy->sock.host->ip)) {
 		return 0;
 	}
-	printf("WTF\n");
+
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
 		printf("ERREUR: socket().. (%s line: %i)\n",__FILE__, __LINE__);
