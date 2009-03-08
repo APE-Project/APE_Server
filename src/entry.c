@@ -140,6 +140,7 @@ int main(int argc, char **argv)
 	}
 	read(random, &getrandom, 3);
 	srand(getrandom);
+	close(random);
 	
 	g_ape = xmalloc(sizeof(*g_ape));
 	
