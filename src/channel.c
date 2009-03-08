@@ -26,7 +26,7 @@
 #include "plugins.h"
 #include "handle_http.h"
 #include "utils.h"
-
+#include "proxy.h"
 
 unsigned int isvalidchan(char *name) 
 {
@@ -71,6 +71,9 @@ CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
 	new_chan->pipe = init_pipe(new_chan, CHANNEL_PIPE, g_ape);
 	
 	hashtbl_append(g_ape->hLusers, chan, (void *)new_chan);
+	
+	/* just to test */
+	proxy_attach(proxy_init("olol", "localhost", 1337, g_ape), new_chan->pipe->pubid, 0, g_ape);
 	
 	return new_chan;
 	

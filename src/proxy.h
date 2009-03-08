@@ -22,13 +22,14 @@
 #ifndef _PROXY
 #define _PROXY
 
+#include "http.h"
 
 typedef struct _ape_proxy_pipe ape_proxy_pipe;
 
 struct _ape_proxy_pipe
 {
 	int allow_write;
-	char *pipe;
+	char pipe[33];
 	
 	struct _ape_proxy_pipe *next;
 };
@@ -37,6 +38,8 @@ typedef struct _ape_proxy ape_proxy;
 struct _ape_proxy
 {
 	char identifier[33];
+	
+	int eol; // FLushing at CRLF
 	
 	/* proxy pipe */
 	transpipe *pipe;
@@ -78,6 +81,6 @@ void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ap
 int proxy_connect(ape_proxy *proxy, acetables *g_ape);
 void proxy_connect_all(acetables *g_ape);
 void proxy_onconnect(ape_proxy *proxy);
-
+void proxy_process_eol(connection *co);
 #endif
 

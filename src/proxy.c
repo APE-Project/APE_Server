@@ -25,6 +25,7 @@
 #include "handle_http.h"
 #include "sock.h"
 #include "errno.h"
+#include "http.h"
 
 #include <sys/epoll.h>
 
@@ -45,6 +46,7 @@ ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 	proxy->sock.host = host_cache;
 	proxy->sock.port = port;
 	proxy->sock.fd = -1;
+	proxy->eol = 0;
 	
 	proxy->state = PROXY_NOT_CONNECTED;
 	
@@ -74,12 +76,6 @@ ape_proxy_cache *proxy_cache_gethostbyname(char *name, acetables *g_ape)
 	return NULL;
 }
 
-
-void proxy_onconnect(ape_proxy *proxy)
-{
-	printf("Proxy connected\n");
-}
-
 void proxy_cache_addip(char *name, char *ip, acetables *g_ape)
 {
 	ape_proxy_cache *cache;
@@ -97,7 +93,31 @@ void proxy_cache_addip(char *name, char *ip, acetables *g_ape)
 
 void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ape)
 {
+	ape_proxy_pipe *to;
+	transpipe *gpipe;
+	
+	if (proxy == NULL || ((gpipe = get_pipe(pipe, g_ape)) == NULL)) {
+		return;
+	}
+	to = xmalloc(sizeof(*to));
+	strncpy(to->pipe, gpipe->pubid, 32);
+	to->allow_write = allow_write;
+	to->next = proxy->to;
+	proxy->to = to;
+	
+	printf("Proxy attached to %s\n", gpipe->pubid);
+}
 
+void proxy_flush(ape_proxy *proxy)
+{
+	
+}
+
+
+void proxy_process_eol(connection *co)
+{
+	char *data = data = co->buffer.data;
+	
 }
 
 /* Not used for now */
@@ -150,4 +170,12 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 	return sock;
 
 }
+
+
+
+void proxy_onconnect(ape_proxy *proxy)
+{
+	printf("Proxy connected\n");
+}
+
 

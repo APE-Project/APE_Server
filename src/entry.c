@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 		printf("Failed to connect to data stream\n");
 	}*/
 	
-	proxy_init("olol", "localhost", 1337, g_ape);
+	//proxy_init("olol", "localhost", 1337, g_ape);
 	
 	sockroutine(g_ape->srv->port, g_ape);
 	

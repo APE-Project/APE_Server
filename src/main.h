@@ -39,14 +39,14 @@
 
 
 #define MAX_IO 4096
-#define DEFAULT_BUFFER_SIZE 8096
+#define DEFAULT_BUFFER_SIZE 4
 
 #define MAX_NICK_LEN 	16 // move to module
 #define MAX_CHAN_LEN 	16
 #define MAX_MSG_LEN 	1024
 #define MAX_RAW_LEN 	1024
 
-#define TIMEOUT_SEC 30
+#define TIMEOUT_SEC 3000
 
 #define SERVER_NAME "APE.Server"
 

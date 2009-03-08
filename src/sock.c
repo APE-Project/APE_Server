@@ -234,16 +234,14 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									co[events[i].data.fd].buffer.data + co[events[i].data.fd].buffer.length, 
 									co[events[i].data.fd].buffer.size - co[events[i].data.fd].buffer.length);
 						
-						
-						//printf("Read %i %s\n", readb, strerror(errno));
-						
+
 						if (readb == -1 && errno == EAGAIN) {
 							
 							/*
 								Nothing to read again
 							*/
 							co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
-
+							
 							break;
 						} else {
 							if (readb < 1) {
@@ -281,6 +279,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									co[events[i].data.fd].buffer.size *= 2;
 									co[events[i].data.fd].buffer.data = xrealloc(co[events[i].data.fd].buffer.data, 
 															sizeof(char) * (co[events[i].data.fd].buffer.size + 1));
+									
 								}
 								if (co[events[i].data.fd].stream_type == STREAM_IN) {
 									process_http(&co[events[i].data.fd]);
@@ -296,8 +295,9 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 										shutdown(events[i].data.fd, 2);
 									}
 								} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
-									co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
-									printf("Getting data from stream %s\n", co[events[i].data.fd].buffer.data);
+									
+									proxy_process_eol(&co[events[i].data.fd]);
+									
 								}
 							}
 						
