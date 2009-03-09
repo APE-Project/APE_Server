@@ -818,7 +818,6 @@ void destroy_link(USERS *a, USERS *b)
 
 int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *restrict, acetables *g_ape)
 {
-	
 	USERS *sender = from->user;
 	transpipe *recver = get_pipe_strict(pipe, sender, g_ape);
 	json *jextra = NULL, *jlist_copy = NULL, *jextra_copy = NULL;

@@ -123,53 +123,6 @@ void json_concat(struct json *json_father, struct json *json_child)
 
 }
 
-/* Deprecated */
-void json_aff(struct json *jlist)
-{
-	struct json_childs *pchild;
-	struct json *pjson;
-	
-	pchild = jlist->jchilds;
-	pjson = jlist->next;
-	
-	if (jlist->prev == NULL) {
-		printf("{");
-	}
-	printf("\"%s\":", jlist->name);
-	
-	if (pchild == NULL) {
-		if (jlist->value != NULL) {
-			printf("\"%s\"", jlist->value);
-		} else {
-			printf("null");
-		}
-	} else if (pchild->type == JSON_ARRAY) {
-		printf("[");
-	}
-	while (pchild != NULL) {
-		struct json_childs *pPchild = pchild;
-		json_aff(pchild->child);
-		pchild = pchild->next;
-		
-		if (pchild == NULL && pPchild->type == JSON_ARRAY) {
-			printf("]");
-		} else if (pchild != NULL) {
-			printf(",");
-		}
-	}
-	if (jlist->next == NULL) {
-		printf("}");
-	} else {
-		printf(",");
-	}
-	if (pjson != NULL) {
-		json_aff(pjson);
-	}
-
-	if (jlist->jchilds == NULL) {
-		return;
-	}
-}
 
 struct jsontring *jsontr(struct json *jlist, struct jsontring *string) // And free memory tree
 {

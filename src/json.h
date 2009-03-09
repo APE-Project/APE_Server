@@ -54,7 +54,6 @@ void set_json(char *name, char *value, struct json **jprev);
 struct json *json_copy(struct json *jbase);
 void json_attach(struct json *json_father, struct json *json_child, unsigned int type);
 void json_concat(struct json *json_father, struct json *json_child);
-void json_aff(struct json *jlist);
 struct jsontring *jsontr(struct json *jlist, struct jsontring *string);
 
 #endif
