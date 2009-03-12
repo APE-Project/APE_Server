@@ -374,7 +374,7 @@ int sendf(int sock, char *buf, ...)
 				/* Not implemented yet :/ */
 				if (errno == EAGAIN) {
 					printf("Allo Allo, y'a dla merde dans le tuyau ?!!\n");
-					/* TODO: Data must be buffered and sent via epoll out */
+					/* TODO: Data must be buffered and sent via epoll EPOLLOUT */
 				}
 				break; 
 			}

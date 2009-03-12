@@ -23,74 +23,129 @@
 #include "config.h"
 #include "utils.h"
 
-srvconfig *load_ace_config(const char *path_config) 
-{
-	FILE *cfile;
-	
-	char lines[MAX_IO+1], *tkn[32+1];
-	
-	srvconfig *srv;
-	size_t nTok;
 
-	srv = (srvconfig *) xmalloc(sizeof(*srv));
-	printf("\nReading Config...");
-	if (NULL == (cfile = fopen(path_config, "r"))) {
-		printf("NO (unable to open %s)\n", path_config);
+
+apeconfig *ape_config_get_section(apeconfig *conf, const char *section)
+{
+	apeconfig *pConf = conf;
+
+	while (pConf != NULL) {
+		
+		if (strcasecmp(pConf->section, section) == 0) {
+			
+			return pConf;
+		}
+		pConf = pConf->next;
+	}
+	
+	return NULL;
+}
+
+char *ape_config_get_key(apeconfig *conf, const char *key)
+{
+	struct _apeconfig_def *def;
+	
+	if (conf == NULL) {
 		return NULL;
 	}
-	printf("YES\n");
-	srv->port = 0;
-	srv->max_connected = 0;
 
-	memset(srv->fConnected, '\0', sizeof(srv->fConnected));
-	memset(srv->daemon, '\0', sizeof(char));
-	memset(srv->domain, '\0', sizeof(char));
+	def = conf->def;
 	
+	while (def != NULL) {
+		if (strcasecmp(def->key, key) == 0) {
+			return def->val;
+		}
+		def = def->next;
+	}
 	
-	while(fgets(lines, MAX_IO, cfile)) {
-		if (*lines == '#' || *lines == '\n' || *lines == '\0') {
+	return NULL;
+	
+}
+
+apeconfig *ape_config_load(const char *filename)
+{
+	FILE *fp = fopen(filename, "r");
+	apeconfig *conf = NULL;
+	char lines[2048], *tkn[3];
+	
+	int open_brace = 0, curline = 0;
+	
+	printf("\nReading Config...\n");
+	
+	if (fp == NULL) {
+		printf("NO (unable to open %s)\n", filename);
+		return NULL;
+	}
+
+	
+	while(fgets(lines, 2048, fp)) {
+		int len;
+		int i;
+		curline++;
+		
+		if (*lines == '#' || *lines == '\r' || *lines == '\n' || *lines == '\0') {
 			continue;
 		}
-		if (lines[strlen(lines)-1]=='\n' && removelast(lines, 1) == NULL) {
-			continue;
-		}
-		nTok = explode('=', lines, tkn, 16);
-		if (nTok == 1) {
-			if (strcmp(tkn[0], "port")==0) {
-				if (atoi(tkn[1]) < 1 || atoi(tkn[1]) > 65535) {
-					printf("Erreur: Port range <1-65535>\n");
+		len = strlen(lines);
+		
+		switch(open_brace) {
+			case 0:
+				for (i = 0; i < len; i++) {
+					if (lines[i] == '{') {
+						apeconfig *config;
+						 
+						open_brace = 1;
+						lines[i] = '\0';
+						
+						config = xmalloc(sizeof(*conf));
+						
+						strncpy(config->section, trim(lines), 32);
+						config->def = NULL;
+						config->next = conf;
+						conf = config;
+						
+						break;
+					}
+				}
+				if (!open_brace) {
+					printf("[Error] Parse error in configuration file (out of brace) at line %i\n", curline);
 					return NULL;
 				}
-				srv->port = atoi(tkn[1]);
-				continue;
-			} else if (strcmp(tkn[0], "max_connected")==0) {
-				if (atoi(tkn[1]) < 0) {
-					srv->max_connected = 0;
-					continue;
+				break;
+			case 1:
+				for (i = 0; i < len; i++) {
+					if (lines[i] == '}') {
+						open_brace = 0;
+						break;
+					}
 				}
-				srv->max_connected = atoi(tkn[1]);
-				continue;
-			} else if (strcmp(tkn[0], "connectedfile")==0) {
-				memcpy(srv->fConnected, tkn[1], strlen(tkn[1])+1);
-				continue;
-			} else if (strcmp(tkn[0], "daemon")==0) {
-				memcpy(srv->daemon, tkn[1], strlen(tkn[1])+1);
-				continue;
-			} else if (strcmp(tkn[0], "domain")==0) {
-				if (strlen(tkn[1])+1 < 512) {
-					memcpy(srv->domain, tkn[1], strlen(tkn[1])+1);
+				if (open_brace) {
+					int nTok = 0;
+					struct _apeconfig_def *def;
+					
+					nTok = explode('=', lines, tkn, 3);
+					
+					if (nTok > 1) {
+						printf("[Error] Parse error in configuration file (illegal equality \"=\") at line %i\n", curline);
+						return NULL;						
+					}
+					def = xmalloc(sizeof(*def));
+					if (nTok == 1) {
+						strncpy(def->key, trim(tkn[0]), 32);
+						def->val = xstrdup(trim(tkn[1]));
+					} else {
+						def->key[0] = '\0';
+						def->val = trim(lines);
+					}
+					
+					def->next = conf->def;
+					conf->def = def;					
+					
 				}
-			}
-		} else {
-			printf("Erreur: fichier de configuration non conforme\n");
-			return NULL;
+				break;
 		}
 	}
-	if (	
-		strlen(srv->daemon)==0 ||
-		srv->port==0) {
-			printf("Erreur: Fichier de configuration incomplet.\n");
-			return NULL;
-		}
-	return srv;
+	
+	return conf;
 }
+

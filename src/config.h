@@ -22,19 +22,31 @@
 #ifndef _CONFIG
 #define _CONFIG
 
-#define ACE_CONFIG_FILE "ace.conf"
+#define ACE_CONFIG_FILE "ape.conf"
 
-typedef struct srvconfig {
-	unsigned int port;
-	
-	unsigned int max_connected;
-	
 
-	char daemon[32];
+struct _apeconfig_def {
+	char key[33];
+	char *val;
 	
-	char fConnected[256];
-	char domain[512];
+	struct _apeconfig_def *next;
+};
+
+typedef struct apeconfig {
+	char section[33];
+	struct _apeconfig_def *def;
 	
-} srvconfig;
-srvconfig *load_ace_config(const char *path_config);
+	struct apeconfig *next;
+	
+} apeconfig;
+
+
+apeconfig *ape_config_load(const char *filename);
+char *ape_config_get_key(apeconfig *conf, const char *key);
+apeconfig *ape_config_get_section(apeconfig *conf, const char *section);
+
+#define CONFIG_VAL(section, key, srv) \
+	(ape_config_get_key(ape_config_get_section(srv, #section), #key) == NULL ? "" : ape_config_get_key(ape_config_get_section(srv, #section), #key))
+
+
 #endif

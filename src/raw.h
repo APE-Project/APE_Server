@@ -30,7 +30,7 @@
 /*
 	Non identifiable user's error.
 	E.g. Bad sessid, bad param
-	Note : time is not defined in that case
+	Note : time is not defined in this case
 */
 #define ERR_BAD_PARAM 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"value\":\"001\"}}\n]\n"
 #define ERR_BAD_RAW 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"value\":\"002\"}}\n]\n"
@@ -51,7 +51,7 @@ unsigned int checkraw(clientget *cget, subuser **iuser, acetables *g_ape);
 
 void do_register(acetables *g_ape);
 
-
+/* Flag returned by raw callback */
 
 #define FOR_NOTHING 	0x00
 #define FOR_LOGIN 	0x01

@@ -60,7 +60,7 @@ typedef struct _acetables
 
 	HTBL **hPubid;
 
-	struct srvconfig *srv;
+	struct apeconfig *srv;
 	struct USERS *uHead;
 	
 	struct _ticks_callback *timers;
@@ -119,6 +119,7 @@ struct _transpipe
 		} \
 	} \
 	if (ret != NULL) { \
+		printf("NULLED\n"); \
 		return ret; \
 	}
  

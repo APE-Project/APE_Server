@@ -38,25 +38,27 @@ static void init_module(acetables *g_ape) // Called when module is loaded (passe
 static USERS *helloworld_adduser(unsigned int fdclient, char *host, acetables *ace_tables)
 {
 	/*								*/
-	/* Everything put here will be executed BEFORE user is added 	*/
+	/* Everything put here will be executed BEFORE the user has bee added 	*/
 	/*								*/
 						
 								
 	/* Call parent function (can be another plugin callback) */
 	USERS *n = adduser(fdclient, host, ace_tables);
 	
-	
-	/*								*/
-	/* Everything put here will be executed AFTER user is added 	*/
-	/*								*/
-	
 	if (n == NULL) {
-		return NULL;
+		printf("NULL1\n");
 	}
-	printf("[Helloworld !] => %s user added\n", n->pubid);
+	/*								*/
+	/* Everything put here will be executed AFTER the user has been added 	*/
+	/*								*/
+	
+	/*if (n == NULL) {
+		return NULL;
+	}*/
+	printf("[Helloworld !] => user added\n");
 	
 	/* Parent result must be returned (or NULL) */
-	return n;	
+	return NULL;	
 }
 
 

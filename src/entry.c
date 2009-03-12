@@ -62,7 +62,7 @@ static void inc_rlimit()
 
 int main(int argc, char **argv) 
 {
-	srvconfig *srv;
+	apeconfig *srv;
 	
 	int random;
 	unsigned int getrandom;
@@ -90,11 +90,13 @@ int main(int argc, char **argv)
 		printf("   Unknown parameters - check \"aced --help\"\n\n");
 		return 0;		
 	}
-	if (NULL == (srv = load_ace_config(cfgfile))) {
+	if (NULL == (srv = ape_config_load(cfgfile))) {
 		printf("\nExited...\n\n");
 		exit(1);
 	}
-	if (strcmp(srv->daemon, "yes") == 0) {
+	
+	
+	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0) {
 		if (0 != fork()) { 
 			exit(0);
 		}
@@ -111,11 +113,11 @@ int main(int argc, char **argv)
 	printf(" / _ \\|  _/ _| \n");
 	printf("/_/ \\_\\_| |___|\nAJAX Push Engine\n\n");
 
-	printf("Bind on port %i\n\n", srv->port);
+	printf("Bind on port %i\n\n", atoi(CONFIG_VAL(Server, port, srv)));
 	printf("Version : %s\n", _VERSION);
 	printf("Build   : %s %s\n", __DATE__, __TIME__);
 	printf("Author  : Weelya (contact@weelya.com)\n\n");
-	if (strcmp(srv->daemon, "yes")==0) {
+	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes")==0) {
 		printf("Starting daemon.... pid : %i\n\n", getpid());
 	}
 	signal(SIGINT, &signal_handler);
@@ -178,7 +180,7 @@ int main(int argc, char **argv)
 	
 	findandloadplugin(g_ape);
 	
-	proxy_cache_addip("localhost", "91.121.79.141", g_ape);
+	//proxy_cache_addip("localhost", "91.121.79.141", g_ape);
 	
 	/*if (proxy_init("olol", "localhost", 80, g_ape) == NULL) {
 		printf("Failed to connect to data stream\n");
@@ -186,7 +188,7 @@ int main(int argc, char **argv)
 	
 	//proxy_init("olol", "localhost", 1337, g_ape);
 	
-	sockroutine(g_ape->srv->port, g_ape);
+	sockroutine(atoi(CONFIG_VAL(Server, port, g_ape->srv)), g_ape);
 	
 	hashtbl_free(g_ape->hLogin);
 	hashtbl_free(g_ape->hSessid);
@@ -195,7 +197,7 @@ int main(int argc, char **argv)
 	hashtbl_free(g_ape->hCallback);
 	
 	free(g_ape->plugins);
-	free(srv);
+	//free(srv);
 	free(g_ape);
 	
 	return 0;

@@ -229,12 +229,12 @@ unsigned int raw_pconnect(callbackp *callbacki)
 
 unsigned int raw_script(callbackp *callbacki)
 {
-
-	if (strlen(callbacki->g_ape->srv->domain) == 0) {
+	char *domain = CONFIG_VAL(Server, domain, callbacki->g_ape->srv);
+	if (domain == NULL) {
 		send_error(callbacki->call_user, "NO_DOMAIN");
 	} else {
 		int i;
-		sendf(callbacki->fdclient, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, callbacki->g_ape->srv->domain);
+		sendf(callbacki->fdclient, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, domain);
 		for (i = 1; i <= callbacki->nParam; i++) {
 			sendf(callbacki->fdclient, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", callbacki->param[i]);
 		}

@@ -170,7 +170,9 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 
 	/* Calling module */
 	FIRE_EVENT(adduser, nuser, fdclient, host, g_ape);
-
+	
+	
+	printf("Original called\n");
 	nuser = init_user(g_ape);
 	
 	nuser->type = (fdclient ? HUMAN : BOT);
