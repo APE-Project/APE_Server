@@ -78,8 +78,8 @@ int main(int argc, char **argv)
 	}
 	if (argc > 1 && strcmp(argv[1], "--help") == 0) {
 		printf("\n   AJAX Push Engine Serveur %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n", _VERSION);
-		printf("\n   usage: aced [options]\n\n");
-		printf("   Options:\n     --help             : Display this help\n     --version          : Show version number\n     --cfg <config path>: Load a specific config file (default is ace.conf)\n\n");
+		printf("\n   usage: aped [options]\n\n");
+		printf("   Options:\n     --help             : Display this help\n     --version          : Show version number\n     --cfg <config path>: Load a specific config file (default is %s)\n\n", cfgfile);
 		return 0;
 	} else if (argc > 2 && strcmp(argv[1], "--cfg") == 0) {
 		strncpy(cfgfile, argv[2], 512);
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 		
 	} else if (argc > 1) {
 		printf("\n   AJAX Push Engine Serveur %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
-		printf("   Unknown parameters - check \"aced --help\"\n\n");
+		printf("   Unknown parameters - check \"aped --help\"\n\n");
 		return 0;		
 	}
 	if (NULL == (srv = ape_config_load(cfgfile))) {

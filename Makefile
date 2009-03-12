@@ -1,4 +1,4 @@
-EXEC=bin/aced
+EXEC=bin/aped
 
 prefix		= /usr/local
 bindir		= $(prefix)/bin
@@ -11,9 +11,9 @@ LFLAGS=-ldl
 CC=gcc
 RM=rm -f
 
-all: aced
+all: aped
 
-aced: $(SRC)
+aped: $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o $(EXEC) $(LFLAGS)
 install: 
 	install -d $(bindir)
