@@ -135,7 +135,7 @@ apeconfig *ape_config_load(const char *filename)
 						def->val = xstrdup(trim(tkn[1]));
 					} else {
 						def->key[0] = '\0';
-						def->val = trim(lines);
+						def->val = xstrdup(trim(lines));
 					}
 					
 					def->next = conf->def;
