@@ -246,7 +246,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									proxy_process_eol(&co[events[i].data.fd]);
 									
 							}
-							printf("Finished\n");
+							
 							co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
 							break;
 						} else {
