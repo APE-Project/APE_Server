@@ -26,8 +26,43 @@
 #include "sock.h"
 #include "errno.h"
 #include "http.h"
+#include "config.h"
 
 #include <sys/epoll.h>
+#include <netdb.h> 
+#include <sys/types.h>
+#include <netinet/in.h> 
+
+
+
+void proxy_init_from_conf(acetables *g_ape)
+{
+	apeconfig *conf = g_ape->srv;
+	
+	while (conf != NULL) {
+		if (strcasecmp(conf->section, "Proxy") == 0) {
+			char *host, *port;
+			int iPort;
+
+			
+			host = ape_config_get_key(conf, "host");
+			port = ape_config_get_key(conf, "port");
+			
+			if (host != NULL && port != NULL) {
+				struct hostent *h;
+				iPort = atoi(port);
+				if ((h = gethostbyname(host)) != NULL) {
+					printf("Cache : (%s) : %s\n", host, inet_ntoa(*((struct in_addr *)h->h_addr)));
+					proxy_cache_addip(host, inet_ntoa(*((struct in_addr *)h->h_addr)), g_ape);
+				} else {
+					printf("[Warn] Unable to resolve : %s\n", host);
+				}
+			}
+			
+		}
+		conf = conf->next;
+	}
+}
 
 ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 {
@@ -116,8 +151,13 @@ void proxy_flush(ape_proxy *proxy)
 
 void proxy_process_eol(connection *co)
 {
-	char *data = data = co->buffer.data;
+	ape_proxy *proxy = co->attach;
+	char *data = co->buffer.data;
 	
+	if (proxy->to == NULL) {
+		printf("data : %s\n", data);
+		printf("Proxy is not attached\n");
+	}
 }
 
 /* Not used for now */

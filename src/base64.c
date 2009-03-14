@@ -18,7 +18,7 @@
 */
 
 /* base64.c */
-/* from ffmpeg */
+/* taken from ffmpeg */
 
 #include <stdint.h>
 #include "utils.h"

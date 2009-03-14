@@ -39,7 +39,7 @@
 
 
 #define MAX_IO 4096
-#define DEFAULT_BUFFER_SIZE 4
+#define DEFAULT_BUFFER_SIZE 2048
 
 #define MAX_NICK_LEN 	16 // move to module
 #define MAX_CHAN_LEN 	16

@@ -58,7 +58,7 @@ static USERS *helloworld_adduser(unsigned int fdclient, char *host, acetables *a
 	printf("[Helloworld !] => user added\n");
 	
 	/* Parent result must be returned (or NULL) */
-	return NULL;	
+	return n;	
 }
 
 

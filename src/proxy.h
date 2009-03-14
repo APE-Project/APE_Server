@@ -82,5 +82,6 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape);
 void proxy_connect_all(acetables *g_ape);
 void proxy_onconnect(ape_proxy *proxy);
 void proxy_process_eol(connection *co);
+void proxy_init_from_conf(acetables *g_ape);
 #endif
 

@@ -234,7 +234,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									co[events[i].data.fd].buffer.data + co[events[i].data.fd].buffer.length, 
 									co[events[i].data.fd].buffer.size - co[events[i].data.fd].buffer.length);
 						
-
+						
 						if (readb == -1 && errno == EAGAIN) {
 							
 							/*
@@ -244,10 +244,11 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 							if (co[events[i].data.fd].stream_type == STREAM_OUT) {
 									
 									proxy_process_eol(&co[events[i].data.fd]);
-									
+									co[events[i].data.fd].buffer.length = 0;
+							} else {
+								co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
+								printf("Recu : %s\n", co[events[i].data.fd].buffer.data);
 							}
-							
-							co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
 							break;
 						} else {
 							if (readb < 1) {
@@ -271,6 +272,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
 									
 									((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
+									printf("THROTTELED\n");
 								}
 								
 								clear_buffer(&co[events[i].data.fd]);
