@@ -25,6 +25,7 @@
 #include "plugins.h"
 #include "config.h"
 #include "utils.h"
+#include "proxy.h"
 
 void do_register(acetables *g_ape) // register_raw("RAW", Nparam (without IP and time, with sessid), callback_func, NEEDSOMETHING?, g_ape);
 {
@@ -45,6 +46,9 @@ void do_register(acetables *g_ape) // register_raw("RAW", Nparam (without IP and
 	register_raw("SESSION",   	-3, raw_session,	NEED_SESSID, g_ape);
 	
 	register_raw("KONG", 		2, raw_pong, 		NEED_SESSID, g_ape);
+	
+	register_raw("PROXY_CONNECT", 	3, raw_proxy_connect, 	NEED_SESSID, g_ape);
+	
 }
 
 void register_raw(char *raw, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape)
@@ -529,4 +533,21 @@ unsigned int raw_pong(callbackp *callbacki)
 	}
 	return (FOR_NOTHING);
 }
+
+
+unsigned int raw_proxy_connect(callbackp *callbacki)
+{
+	ape_proxy *proxy;
+	
+	proxy = proxy_init_by_host_port(callbacki->param[2], callbacki->param[3], callbacki->g_ape);
+	
+	if (proxy == NULL) {
+		send_error(callbacki->call_user, "PROXY_ERROR");
+	} else {
+		proxy_attach(proxy, callbacki->call_user->pipe->pubid, 1, callbacki->g_ape);
+	}
+	
+	return (FOR_NOTHING);
+}
+
 

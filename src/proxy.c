@@ -41,22 +41,32 @@ void proxy_init_from_conf(acetables *g_ape)
 	
 	while (conf != NULL) {
 		if (strcasecmp(conf->section, "Proxy") == 0) {
-			char *host, *port;
+			char *host, *port, *readonly, *id;
 			int iPort;
 
-			
 			host = ape_config_get_key(conf, "host");
 			port = ape_config_get_key(conf, "port");
+			readonly = ape_config_get_key(conf, "readonly");
+			id = ape_config_get_key(conf, "id");
 			
-			if (host != NULL && port != NULL) {
+			if (host != NULL && port != NULL && readonly != NULL && id != NULL) {
 				struct hostent *h;
+				
 				iPort = atoi(port);
 				if ((h = gethostbyname(host)) != NULL) {
 					printf("Cache : (%s) : %s\n", host, inet_ntoa(*((struct in_addr *)h->h_addr)));
 					proxy_cache_addip(host, inet_ntoa(*((struct in_addr *)h->h_addr)), g_ape);
+					
+					if (strcasecmp(readonly, "true") == 0) {
+						proxy_init(id, host, iPort, g_ape);
+					} else {
+						;//
+					}
 				} else {
 					printf("[Warn] Unable to resolve : %s\n", host);
 				}
+			} else {
+				printf("[Warn] Proxy : Configuration error\n");
 			}
 			
 		}
@@ -64,12 +74,43 @@ void proxy_init_from_conf(acetables *g_ape)
 	}
 }
 
+
+ape_proxy *proxy_init_by_host_port(char *host, char *port, acetables *g_ape)
+{
+	ape_proxy *proxy;
+	apeconfig *conf = g_ape->srv;
+	
+	while (conf != NULL) {
+		if (strcasecmp(conf->section, "Proxy") == 0) {
+			char *h, *p, *id;
+			
+			h = ape_config_get_key(conf, "host");
+			p = ape_config_get_key(conf, "port");
+			id = ape_config_get_key(conf, "id");
+
+			
+			if (h != NULL && p != NULL && id != NULL && strcasecmp(host, h) == 0 && strcasecmp(port, p) == 0) {
+				if ((proxy = proxy_init(id, host, atoi(port), g_ape)) != NULL) {
+
+					return proxy;
+				}
+			}
+					
+		}
+		conf = conf->next;
+	}
+
+	return NULL;
+}
+
 ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 {
 	ape_proxy *proxy;
 
 	ape_proxy_cache *host_cache;
-
+	
+	printf("Init : %s:%i\n", host, port);
+	
 	if (strlen(ident) > 32 || ((host_cache = proxy_cache_gethostbyname(host, g_ape)) == NULL)) {
 		return NULL;
 	}
@@ -139,8 +180,7 @@ void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ap
 	to->allow_write = allow_write;
 	to->next = proxy->to;
 	proxy->to = to;
-	
-	printf("Proxy attached to %s\n", gpipe->pubid);
+
 }
 
 void proxy_flush(ape_proxy *proxy)
@@ -153,11 +193,11 @@ void proxy_process_eol(connection *co)
 {
 	ape_proxy *proxy = co->attach;
 	char *data = co->buffer.data;
-	
-	if (proxy->to == NULL) {
+	data[co->buffer.length] = '\0';
+	//if (proxy->to == NULL) {
 		printf("data : %s\n", data);
-		printf("Proxy is not attached\n");
-	}
+
+	//}
 }
 
 /* Not used for now */
@@ -215,7 +255,7 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 
 void proxy_onconnect(ape_proxy *proxy)
 {
-	printf("Proxy connected\n");
+	printf("[Proxy] %s connected\n", proxy->identifier);
 }
 
 
