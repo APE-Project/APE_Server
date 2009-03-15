@@ -298,6 +298,7 @@ void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape)
 		}
 		to = to->next;
 	}
+	free(raw->data);
 	free(raw);
 }
 

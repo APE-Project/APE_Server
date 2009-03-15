@@ -406,7 +406,7 @@ void send_raws(subuser *user)
 	raw = user->rawhead;
 	
 	if (!(user->user->flags & FLG_PCONNECT)) {
-		sendf(user->fd, "%s", HEADER);
+		sendbin(user->fd, HEADER, strlen(HEADER));
 	}
 	if (raw != NULL) {
 		sendbin(user->fd, "[\n", 2);
