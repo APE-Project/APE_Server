@@ -409,7 +409,7 @@ void send_raws(subuser *user)
 		sendf(user->fd, "%s", HEADER);
 	}
 	if (raw != NULL) {
-		sendf(user->fd, "[\n");
+		sendbin(user->fd, "[\n", 2);
 	}
 	while(raw != NULL) {
 
