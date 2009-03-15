@@ -37,10 +37,10 @@ static uint8_t map2[] =
      0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33
  };
  
-int base64_decode(uint8_t * out, const char *in, int out_length)
+int base64_decode(char* out, const char *in, int out_length)
 {
      int i, v;
-     uint8_t *dst = out;
+     char *dst = out;
  
      v = 0;
      for (i = 0; in[i] && in[i] != '='; i++) {

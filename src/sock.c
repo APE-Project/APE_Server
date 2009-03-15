@@ -212,7 +212,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 							if (ret == 0 && serror == 0) {
 								((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_CONNECTED;
 								((ape_proxy *)(co[events[i].data.fd].attach))->sock.fd = events[i].data.fd;
-								proxy_onconnect((ape_proxy *)(co[events[i].data.fd].attach));
+								proxy_onevent((ape_proxy *)(co[events[i].data.fd].attach), "CONNECT", g_ape);
 							} else { /* This can be happen ? epoll seems set EPOLLIN as if the host is disconnecting */
 								((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
 								//epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
@@ -220,7 +220,6 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								close(events[i].data.fd);
 							}
 
-							
 							break;
 						}
 					}
@@ -243,7 +242,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 							
 							if (co[events[i].data.fd].stream_type == STREAM_OUT) {
 									
-									proxy_process_eol(&co[events[i].data.fd]);
+									proxy_process_eol(&co[events[i].data.fd], g_ape);
 									co[events[i].data.fd].buffer.length = 0;
 							} else {
 								co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
@@ -271,7 +270,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
 									
 									((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
-									printf("THROTTELED %s\n", ((ape_proxy *)(co[events[i].data.fd].attach))->identifier);
+									proxy_onevent((ape_proxy *)(co[events[i].data.fd].attach), "DISCONNECT", g_ape);
 								}
 								
 								clear_buffer(&co[events[i].data.fd]);
@@ -385,9 +384,33 @@ int sendf(int sock, char *buf, ...)
 	} else {
 		printf("Bot: %s\n", buff);
 	}
-	len = t_bytes;
+
 	free(buff);
 
 	return (n == -1 ? -1 : 0);
 }
 
+int sendbin(int sock, char *bin, int len)
+{
+	int t_bytes = 0, r_bytes, n = 0;
+
+	r_bytes = len;
+	
+	if (sock != 0) {
+		while(t_bytes < len) {
+			n = write(sock, bin + t_bytes, r_bytes);
+			if (n == -1) {
+				/* Not implemented yet :/ */
+				if (errno == EAGAIN) {
+					printf("Allo Allo, y'a dla merde dans le tuyau ?!!\n");
+					/* TODO: Data must be buffered and sent via epoll EPOLLOUT */
+				}
+				break; 
+			}
+			t_bytes += n;
+			r_bytes -= n;
+		}
+	}
+
+	return (n == -1 ? -1 : 0);	
+}

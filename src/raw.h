@@ -105,6 +105,7 @@ unsigned int raw_pconnect(struct _callbackp *);
 unsigned int raw_script(struct _callbackp *);
 unsigned int raw_pong(struct _callbackp *);
 unsigned int raw_proxy_connect(struct _callbackp *);
+unsigned int raw_proxy_write(struct _callbackp *);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void register_raw(char *raw, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape);
 void unregister_raw(char *raw, acetables *g_ape);

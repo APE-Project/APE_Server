@@ -22,7 +22,7 @@
 #ifndef _IBASE64
 #define _IBASE64
 
-int base64_decode(uint8_t * out, const char *in, int out_length);
+int base64_decode(char * out, const char *in, int out_length);
 char *base64_encode(char * src, int len);
 
 #endif

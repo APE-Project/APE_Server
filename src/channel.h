@@ -48,7 +48,7 @@ typedef struct CHANNEL
 typedef struct BANNED
 {
 	char ip[16];
-	char reason[256];
+	char reason[257];
 	
 	long int expire;
 	

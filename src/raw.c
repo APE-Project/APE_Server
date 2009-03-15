@@ -48,7 +48,7 @@ void do_register(acetables *g_ape) // register_raw("RAW", Nparam (without IP and
 	register_raw("KONG", 		2, raw_pong, 		NEED_SESSID, g_ape);
 	
 	register_raw("PROXY_CONNECT", 	3, raw_proxy_connect, 	NEED_SESSID, g_ape);
-	
+	register_raw("PROXY_WRITE", 	3, raw_proxy_write, 	NEED_SESSID, g_ape);
 }
 
 void register_raw(char *raw, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape)
@@ -538,16 +538,38 @@ unsigned int raw_pong(callbackp *callbacki)
 unsigned int raw_proxy_connect(callbackp *callbacki)
 {
 	ape_proxy *proxy;
+	RAW *newraw;
+	json *jlist = NULL;
 	
 	proxy = proxy_init_by_host_port(callbacki->param[2], callbacki->param[3], callbacki->g_ape);
 	
 	if (proxy == NULL) {
-		send_error(callbacki->call_user, "PROXY_ERROR");
+		send_error(callbacki->call_user, "PROXY_INIT_ERROR");
 	} else {
 		proxy_attach(proxy, callbacki->call_user->pipe->pubid, 1, callbacki->g_ape);
+		
+		set_json("pipe", NULL, &jlist);
+		json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);
+	
+		newraw = forge_raw(RAW_PROXY, jlist);
+		post_raw(newraw, callbacki->call_user);		
 	}
 	
 	return (FOR_NOTHING);
 }
 
+unsigned int raw_proxy_write(callbackp *callbacki)
+{
+	ape_proxy *proxy;
+
+	if ((proxy = proxy_are_linked(callbacki->call_user->pipe->pubid, callbacki->param[2], callbacki->g_ape)) == NULL) {
+		send_error(callbacki->call_user, "UNKNOWN_PIPE");
+	} else if (proxy->state != PROXY_CONNECTED) {
+		send_error(callbacki->call_user, "PROXY_NOT_CONNETED");
+	} else {
+		proxy_write(proxy, callbacki->param[3]);
+	}
+	
+	return (FOR_NOTHING);
+}
 

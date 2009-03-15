@@ -56,6 +56,8 @@ struct _ape_proxy
 	ape_proxy_pipe *to;
 	
 	struct _ape_proxy *next;
+	
+	struct _extend *properties;
 };
 
 typedef struct _ape_proxy_cache ape_proxy_cache;
@@ -80,10 +82,13 @@ void proxy_cache_addip(char *name, char *ip, acetables *g_ape);
 void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ape);
 int proxy_connect(ape_proxy *proxy, acetables *g_ape);
 void proxy_connect_all(acetables *g_ape);
-void proxy_onconnect(ape_proxy *proxy);
-void proxy_process_eol(connection *co);
+void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape);
+void proxy_process_eol(connection *co, acetables *g_ape);
 void proxy_init_from_conf(acetables *g_ape);
 ape_proxy *proxy_init_by_host_port(char *host, char *port, acetables *g_ape);
-
+struct json *get_json_object_proxy(ape_proxy *proxy);
+void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape);
+ape_proxy *proxy_are_linked(char *pubid, char *pubid_proxy, acetables *g_ape);
+void proxy_write(ape_proxy *proxy, char *data);
 #endif
 

@@ -37,6 +37,7 @@
 
 void setnonblocking(int fd);
 int sendf(int sock, char *buf, ...);
+int sendbin(int sock, char *bin, int len);
 unsigned int sockroutine(size_t port, acetables *g_ape);
 
 

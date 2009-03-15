@@ -194,7 +194,7 @@ enum {
 #define RAW_KICK		"KICKED"
 #define RAW_BAN			"BANNED"
 #define RAW_WHOIS		"WHOIS"
-
+#define RAW_PROXY		"PROXY"
 
 USERS *seek_user(char *nick, char *linkid, acetables *g_ape);
 USERS *init_user(acetables *g_ape);

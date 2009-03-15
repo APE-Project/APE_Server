@@ -27,6 +27,7 @@
 #include "errno.h"
 #include "http.h"
 #include "config.h"
+#include "base64.h"
 
 #include <sys/epoll.h>
 #include <netdb.h> 
@@ -128,6 +129,7 @@ ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 	
 	proxy->to = NULL;
 	proxy->next = NULL;
+	proxy->properties = NULL;
 	
 	proxy->pipe = init_pipe(proxy, PROXY_PIPE, g_ape);
 	
@@ -176,11 +178,11 @@ void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ap
 		return;
 	}
 	to = xmalloc(sizeof(*to));
-	strncpy(to->pipe, gpipe->pubid, 32);
+	memcpy(to->pipe, gpipe->pubid, strlen(gpipe->pubid)+1);
+
 	to->allow_write = allow_write;
 	to->next = proxy->to;
 	proxy->to = to;
-
 }
 
 void proxy_flush(ape_proxy *proxy)
@@ -188,16 +190,47 @@ void proxy_flush(ape_proxy *proxy)
 	
 }
 
-
-void proxy_process_eol(connection *co)
+ape_proxy *proxy_are_linked(char *pubid, char *pubid_proxy, acetables *g_ape)
 {
+	transpipe *pipe = get_pipe(pubid_proxy, g_ape);
+	struct _ape_proxy_pipe *ppipe;
+	
+	if (pipe == NULL || pipe->type != PROXY_PIPE || ((ppipe = ((ape_proxy *)(pipe->pipe))->to) == NULL)) {
+		return NULL;
+	}
+	
+	while (ppipe != NULL) {
+		if (strcmp(pubid, ppipe->pipe) == 0) {
+			return ((ape_proxy *)(pipe->pipe));
+		}
+		ppipe = ppipe->next;
+	}
+	
+	return NULL;
+}
+
+void proxy_process_eol(connection *co, acetables *g_ape)
+{
+	char *b64;
 	ape_proxy *proxy = co->attach;
 	char *data = co->buffer.data;
 	data[co->buffer.length] = '\0';
-	//if (proxy->to == NULL) {
-		printf("data : %s\n", data);
-
-	//}
+	
+	RAW *newraw;
+	json *jlist = NULL;
+	
+	b64 = base64_encode(data, strlen(data));
+	
+	set_json("data", b64, &jlist);
+	set_json("event", "READ", &jlist);
+	set_json("proxy", NULL, &jlist);
+	json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);	
+	
+	newraw = forge_raw("PROXY_EVENT", jlist);
+	
+	proxy_post_raw(newraw, proxy, g_ape);
+	
+	free(b64);	
 }
 
 /* Not used for now */
@@ -251,11 +284,78 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 
 }
 
-
-
-void proxy_onconnect(ape_proxy *proxy)
+void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape)
 {
-	printf("[Proxy] %s connected\n", proxy->identifier);
+	ape_proxy_pipe *to = proxy->to;
+	transpipe *pipe;
+	
+	while (to != NULL) {
+		pipe = get_pipe(to->pipe, g_ape);
+		if (pipe != NULL && pipe->type == USER_PIPE) {
+			post_raw(copy_raw(raw), pipe->pipe);
+		} else {
+			;//
+		}
+		to = to->next;
+	}
+	free(raw);
 }
 
+
+void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape)
+{
+	RAW *newraw;
+	json *jlist = NULL;
+	
+	printf("Event : %s\n", event);
+	set_json("event", event, &jlist);
+	set_json("proxy", NULL, &jlist);
+	json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);	
+	
+	newraw = forge_raw("PROXY_EVENT", jlist);
+	
+	proxy_post_raw(newraw, proxy, g_ape);
+}
+
+void proxy_write(ape_proxy *proxy, char *data)
+{
+	char *b64;
+	int len;
+	if (proxy->state != PROXY_CONNECTED) {
+		return;
+	}
+	
+	b64 = malloc((strlen(data)*2)+4);
+	len = base64_decode(b64, data, (strlen(data)*2)+4);
+	
+	sendbin(proxy->sock.fd, b64, len);
+}
+
+struct json *get_json_object_proxy(ape_proxy *proxy)
+{
+	json *jstr = NULL;
+	json *jprop = NULL;
+	char port[8];
+
+	set_json("pubid", proxy->pipe->pubid, &jstr);
+	
+	
+	set_json("properties", NULL, &jstr);
+	
+	extend *eTmp = proxy->properties;
+	
+	while (eTmp != NULL) {
+		set_json(eTmp->key, eTmp->val, &jprop);
+		eTmp = eTmp->next;
+	}
+	sprintf(port, "%i", proxy->sock.port);
+	set_json("host", proxy->sock.host->host, &jprop);
+	set_json("ip", proxy->sock.host->ip, &jprop);
+	set_json("port", port, &jprop);
+	
+	json_attach(jstr, jprop, JSON_OBJECT);
+	
+	
+	return jstr;
+}
 
