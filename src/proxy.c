@@ -308,7 +308,6 @@ void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape)
 	RAW *newraw;
 	json *jlist = NULL;
 	
-	printf("Event : %s\n", event);
 	set_json("event", event, &jlist);
 	set_json("proxy", NULL, &jlist);
 	json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);	

@@ -32,12 +32,10 @@
 	E.g. Bad sessid, bad param
 	Note : time is not defined in this case
 */
-#define ERR_BAD_PARAM 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"value\":\"001\"}}\n]\n"
-#define ERR_BAD_RAW 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"value\":\"002\"}}\n]\n"
-#define ERR_NICK_USED 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"value\":\"003\"}}\n]\n"
-#define ERR_BAD_SESSID 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"value\":\"004\"}}\n]\n"
-#define ERR_BAD_NICK		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"value\":\"005\"}}\n]\n"
-#define ERR_CONNECT		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"value\":\"006\"}}\n]\n"
+#define ERR_BAD_PARAM 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"001\",\"value\":\"BAD_PARAM\"}}\n]\n"
+#define ERR_BAD_RAW 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"002\",\"value\":\"BAD_RAW\"}}\n]\n"
+#define ERR_BAD_SESSID 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"004\",\"value\":\"BAD_SESSID\"}}\n]\n"
+#define ERR_CONNECT		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"200\",\"value\":\"UNKNOWN_CONNECTION_ERROR\"}}\n]\n"
 
 
 

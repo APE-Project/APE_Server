@@ -12,6 +12,9 @@
 
 #define MODULE_NAME "chat"
 
+#define ERR_NICK_USED 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"300\",\"value\":\"NICK_USED\"}}\n]\n"
+#define ERR_BAD_NICK		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"301\",\"value\":\"BAD_NICK\"}}\n]\n"
+
 static void hash_user(USERS *user, char *nick, acetables *g_ape);
 static USERS *get_user_by_nickname(char *nick, acetables *g_ape);
 /* This declaration is mandatory */
@@ -50,12 +53,12 @@ static unsigned int chat_connect(callbackp *callbacki)
 
 	
 	if (!isvalidnick(callbacki->param[1])) {
-		ENVOI(callbacki->fdclient, "BAD_NICKNAME");
+		ENVOI(callbacki->fdclient, ERR_BAD_NICK);
 		
 		return (FOR_NOTHING);		
 	}
 	if (get_user_by_nickname(callbacki->param[1], callbacki->g_ape)) {
-		ENVOI(callbacki->fdclient, "NICK_USED");
+		ENVOI(callbacki->fdclient, ERR_NICK_USED);
 		
 		return (FOR_NOTHING);
 	}

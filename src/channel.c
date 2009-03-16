@@ -317,7 +317,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 		user_actif_chan = getuchan(user_actif, chan);
 		
 		if (user_passif_chan == NULL || user_actif_chan == NULL || ((user_actif_chan->level < lvl || user_actif_chan->level < user_passif_chan->level) && !(user_actif->flags & FLG_AUTOOP)) || lvl < 1 || lvl > 32) {
-			send_error(user_actif, "SETLEVEL_ERROR");
+			send_error(user_actif, "SETLEVEL_ERROR", "110");
 		
 			return 0;
 		}
@@ -375,7 +375,7 @@ unsigned int settopic(USERS *user, CHANNEL *chan, char *topic)
 	
 	if (list == NULL || list->level < 3 || strlen(topic)+1 > MAX_TOPIC_LEN) {
 		
-		send_error(user, "SETTOPIC_ERROR");
+		send_error(user, "SETTOPIC_ERROR", "111");
 		
 	} else {
 		memcpy(chan->topic, topic, strlen(topic)+1);

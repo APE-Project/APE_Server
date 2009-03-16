@@ -235,7 +235,7 @@ unsigned int raw_script(callbackp *callbacki)
 {
 	char *domain = CONFIG_VAL(Server, domain, callbacki->g_ape->srv);
 	if (domain == NULL) {
-		send_error(callbacki->call_user, "NO_DOMAIN");
+		send_error(callbacki->call_user, "NO_DOMAIN", "201");
 	} else {
 		int i;
 		sendf(callbacki->fdclient, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, domain);
@@ -259,7 +259,7 @@ unsigned int raw_join(callbackp *callbacki)
 		
 		if (jchan == NULL) {
 			
-			send_error(callbacki->call_user, "CANT_JOIN_CHANNEL");
+			send_error(callbacki->call_user, "CANT_JOIN_CHANNEL", "202");
 			
 		} else {
 		
@@ -268,7 +268,7 @@ unsigned int raw_join(callbackp *callbacki)
 	
 	} else if (isonchannel(callbacki->call_user, jchan)) {
 		
-		send_error(callbacki->call_user, "ALREADY_ON_CHANNEL");
+		send_error(callbacki->call_user, "ALREADY_ON_CHANNEL", "100");
 
 	} else {
 		blist = getban(jchan, callbacki->call_user->ip);
@@ -318,7 +318,7 @@ unsigned int raw_setlevel(callbackp *callbacki)
 	USERS *recver;
 	
 	if ((recver = seek_user(callbacki->param[3], callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_USER");
+		send_error(callbacki->call_user, "UNKNOWN_USER", "102");
 	} else {
 		setlevel(callbacki->call_user, recver, getchan(callbacki->param[2], callbacki->g_ape), atoi(callbacki->param[4]));
 	}
@@ -332,10 +332,10 @@ unsigned int raw_left(callbackp *callbacki)
 
 		
 	if ((chan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_CHANNEL");
+		send_error(callbacki->call_user, "UNKNOWN_CHANNEL", "103");
 		
 	} else if (!isonchannel(callbacki->call_user, chan)) {
-		send_error(callbacki->call_user, "NOT_IN_CHANNEL");
+		send_error(callbacki->call_user, "NOT_IN_CHANNEL", "104");
 	
 	} else {
 	
@@ -361,23 +361,23 @@ unsigned int raw_kick(callbackp *callbacki)
 	USERS *victim;
 
 	if ((chan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_CHANNEL");
+		send_error(callbacki->call_user, "UNKNOWN_CHANNEL", "103");
 		
 	} else if (!isonchannel(callbacki->call_user, chan)) {
-		send_error(callbacki->call_user, "NOT_IN_CHANNEL");
+		send_error(callbacki->call_user, "NOT_IN_CHANNEL", "104");
 		
 	} else if (getuchan(callbacki->call_user, chan)->level < 3) {
-		send_error(callbacki->call_user, "CANT_KICK");
+		send_error(callbacki->call_user, "CANT_KICK", "105");
 		
 	} else {
 		victim = seek_user(callbacki->param[3], chan->name, callbacki->g_ape);
 		
 		if (victim == NULL) {
 
-			send_error(callbacki->call_user, "UNKNOWN_USER");
+			send_error(callbacki->call_user, "UNKNOWN_USER", "102");
 		} else if (victim->flags & FLG_NOKICK) {
 			
-			send_error(callbacki->call_user, "USER_PROTECTED");
+			send_error(callbacki->call_user, "USER_PROTECTED", "106");
 			// haha ;-)
 			
 			jlist = NULL;
@@ -423,27 +423,27 @@ unsigned int raw_ban(callbackp *callbacki)
 	USERS *victim;
 
 	if ((chan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_CHANNEL");
+		send_error(callbacki->call_user, "UNKNOWN_CHANNEL", "103");
 		
 	
 	} else if (!isonchannel(callbacki->call_user, chan)) {
 
-		send_error(callbacki->call_user, "NOT_IN_CHANNEL");
+		send_error(callbacki->call_user, "NOT_IN_CHANNEL", "104");
 	
 	} else if (getuchan(callbacki->call_user, chan)->level < 3) {
 
 		
-		send_error(callbacki->call_user, "CANT_BAN");
+		send_error(callbacki->call_user, "CANT_BAN", "107");
 		
 	} else {
 		victim = seek_user(callbacki->param[3], chan->name, callbacki->g_ape);
 		
 		if (victim == NULL) {
 
-			send_error(callbacki->call_user, "UNKNOWN_USER");
+			send_error(callbacki->call_user, "UNKNOWN_USER", "102");
 			
 		} else if (victim->flags & FLG_NOKICK) {
-			send_error(callbacki->call_user, "USER_PROTECTED");
+			send_error(callbacki->call_user, "USER_PROTECTED", "106");
 			
 			// Bad boy :-)
 			jlist = NULL;
@@ -459,7 +459,7 @@ unsigned int raw_ban(callbackp *callbacki)
 			
 		} else if (strlen(callbacki->param[4]) > 255 || atoi(callbacki->param[5]) > 44640) { // 31 days max
 
-			send_error(callbacki->call_user, "REASON_OR_TIME_TOO_LONG");
+			send_error(callbacki->call_user, "REASON_OR_TIME_TOO_LONG", "107");
 		} else {
 			ban(chan, callbacki->call_user, victim->ip, callbacki->param[4], atoi(callbacki->param[5]), callbacki->g_ape);
 		}
@@ -482,7 +482,7 @@ unsigned int raw_session(callbackp *callbacki)
 			}
 		}
 		if (set_session(callbacki->call_user, callbacki->param[3], callbacki->param[4], (callbacki->nParam == 4 ? 0 : 1)) == NULL) {
-			send_error(callbacki->call_user, "SESSION_ERROR");
+			send_error(callbacki->call_user, "SESSION_ERROR", "203");
 		} else if (shutdown) {
 			/* little hack to closing the connection (webkit bug) */
 			send_msg_sub(getsubuser(callbacki->call_user, callbacki->host), "close", "close");
@@ -510,7 +510,7 @@ unsigned int raw_session(callbackp *callbacki)
 		post_raw_sub(newraw, getsubuser(callbacki->call_user, callbacki->host));
 
 	} else {
-		send_error(callbacki->call_user, "SESSION_ERROR_PARAMS");
+		send_error(callbacki->call_user, "SESSION_ERROR_PARAMS", "108");
 	}
 	return (FOR_NOTHING);
 }
@@ -544,7 +544,7 @@ unsigned int raw_proxy_connect(callbackp *callbacki)
 	proxy = proxy_init_by_host_port(callbacki->param[2], callbacki->param[3], callbacki->g_ape);
 	
 	if (proxy == NULL) {
-		send_error(callbacki->call_user, "PROXY_INIT_ERROR");
+		send_error(callbacki->call_user, "PROXY_INIT_ERROR", "204");
 	} else {
 		proxy_attach(proxy, callbacki->call_user->pipe->pubid, 1, callbacki->g_ape);
 		
@@ -563,9 +563,9 @@ unsigned int raw_proxy_write(callbackp *callbacki)
 	ape_proxy *proxy;
 
 	if ((proxy = proxy_are_linked(callbacki->call_user->pipe->pubid, callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_PIPE");
+		send_error(callbacki->call_user, "UNKNOWN_PIPE", "109");
 	} else if (proxy->state != PROXY_CONNECTED) {
-		send_error(callbacki->call_user, "PROXY_NOT_CONNETED");
+		send_error(callbacki->call_user, "PROXY_NOT_CONNETED", "205");
 	} else {
 		proxy_write(proxy, callbacki->param[3]);
 	}

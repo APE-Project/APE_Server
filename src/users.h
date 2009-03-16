@@ -223,7 +223,7 @@ void do_died(subuser *user);
 void check_timeout(acetables *g_ape);
 void grant_aceop(USERS *user);
 
-void send_error(USERS *user, char *msg);
+void send_error(USERS *user, char *msg, char *code);
 void send_msg(USERS *user, char *msg, char *type);
 void send_msg_sub(subuser *sub, char *msg, char *type);
 void send_msg_channel(CHANNEL *chan, char *msg, char *type);

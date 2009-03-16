@@ -502,10 +502,19 @@ void check_timeout(acetables *g_ape)
 
 }
 
-void send_error(USERS *user, char *msg)
+void send_error(USERS *user, char *msg, char *code)
 {
-	send_msg(user, msg, RAW_ERR);
+	RAW *newraw;
+	json *jlist = NULL;
+	
+	set_json("code", code, &jlist);
+	set_json("value", msg, &jlist);
+	
+	newraw = forge_raw(RAW_ERR, jlist);
+	
+	post_raw(newraw, user);	
 }
+
 
 void send_msg(USERS *user, char *msg, char *type)
 {
@@ -827,7 +836,7 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 	
 	if (sender != NULL) {
 		if (recver == NULL) {
-			send_error(sender, "UNKNOWN_PIPE");
+			send_error(sender, "UNKNOWN_PIPE", "109");
 			return 0;
 		}
 	
