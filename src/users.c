@@ -507,8 +507,8 @@ void send_error(USERS *user, char *msg, char *code)
 	RAW *newraw;
 	json *jlist = NULL;
 	
-	set_json("code", code, &jlist);
 	set_json("value", msg, &jlist);
+	set_json("code", code, &jlist);
 	
 	newraw = forge_raw(RAW_ERR, jlist);
 	
