@@ -12,8 +12,8 @@
 
 #define MODULE_NAME "chat"
 
-#define ERR_NICK_USED 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"300\",\"value\":\"NICK_USED\"}}\n]\n"
-#define ERR_BAD_NICK		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"301\",\"value\":\"BAD_NICK\"}}\n]\n"
+#define ERR_NICK_USED 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"005\",\"value\":\"NICK_USED\"}}\n]\n"
+#define ERR_BAD_NICK		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"006\",\"value\":\"BAD_NICK\"}}\n]\n"
 
 static void hash_user(USERS *user, char *nick, acetables *g_ape);
 static USERS *get_user_by_nickname(char *nick, acetables *g_ape);
