@@ -27,6 +27,7 @@
 #include "handle_http.h"
 #include "utils.h"
 #include "proxy.h"
+#include "pipe.h"
 
 unsigned int isvalidchan(char *name) 
 {

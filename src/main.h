@@ -46,7 +46,7 @@
 #define MAX_MSG_LEN 	1024
 #define MAX_RAW_LEN 	1024
 
-#define TIMEOUT_SEC 3000
+#define TIMEOUT_SEC 45
 
 #define SERVER_NAME "APE.Server"
 
@@ -77,34 +77,6 @@ typedef struct _acetables
 	} proxy;
 	struct _extend *properties;
 } acetables;
-
-//acetables *g_ape;
-
-enum {
-	CHANNEL_PIPE = 0,
-	USER_PIPE,
-	PROXY_PIPE
-};
-
-typedef struct _pipe_link pipe_link;
-struct _pipe_link {
-	struct _transpipe *plink;
-	struct _pipe_link *next;
-};
-
-typedef struct _transpipe transpipe;
-struct _transpipe
-{
-	void *pipe;
-	struct _pipe_link *link;
-	
-	int type;
-	
-	char pubid[33];
-};
-
-
-
 
 #define HEADER "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nContent-Type: text/html\r\n\r\n"
 

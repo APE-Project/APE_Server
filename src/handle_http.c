@@ -25,23 +25,6 @@
 #include "raw.h"
 #include "utils.h"
 
-const char basic_chars[16] = { 	'a', 'b', 'c', 'd', 'e', 'f', '0', '1',
-				'2', '3', '4', '5', '6', '7', '8', '9'
-			};
-
-
-void gen_sessid_new(char *input, acetables *g_ape)
-{
-	unsigned int i;
-	
-	do {
-		for (i = 0; i < 32; i++) {
-			input[i] = basic_chars[rand()%16];
-		}
-		input[32] = '\0';
-	} while(seek_user_id(input, g_ape) != NULL || seek_user_simple(input, g_ape) != NULL); // Colision verification
-}
-
 
 
 static unsigned int fixpacket(char *pSock, int type)
@@ -142,20 +125,6 @@ char *getfirstparam(char *input)
 	} else {
 		return &pInput[1];
 	}	
-}
-
-transpipe *init_pipe(void *pipe, int type, acetables *g_ape)
-{
-	transpipe *npipe = NULL;
-	
-	npipe = xmalloc(sizeof(*npipe));
-	npipe->pipe = pipe;
-	npipe->type = type;
-	npipe->link = NULL;
-	
-	gen_sessid_new(npipe->pubid, g_ape);
-	hashtbl_append(g_ape->hPubid, npipe->pubid, (void *)npipe);
-	return npipe;
 }
 
 subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)

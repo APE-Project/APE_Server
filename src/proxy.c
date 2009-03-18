@@ -28,6 +28,7 @@
 #include "http.h"
 #include "config.h"
 #include "base64.h"
+#include "pipe.h"
 
 #include <sys/epoll.h>
 #include <netdb.h> 

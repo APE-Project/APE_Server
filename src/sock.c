@@ -35,7 +35,7 @@
 #include "utils.h"
 #include "ticks.h"
 #include "proxy.h"
-
+#include "pipe.h"
 
 static int newSockListen(unsigned int port) // BIND
 {

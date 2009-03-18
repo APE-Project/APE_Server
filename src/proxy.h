@@ -44,7 +44,7 @@ struct _ape_proxy
 	int eol; // FLushing at CRLF
 	
 	/* proxy pipe */
-	transpipe *pipe;
+	struct _transpipe *pipe;
 	
 	struct {
 		struct _ape_proxy_cache *host;

@@ -31,6 +31,7 @@
 #include "raw.h"
 #include "json.h"
 #include "plugins.h"
+#include "pipe.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -93,28 +94,6 @@ USERS *seek_user_simple(char *pubid, acetables *g_ape)
 	}
 	
 	return gpipe->pipe;
-	
-}
-
-void *get_pipe(char *pubid, acetables *g_ape)
-{
-	if (strlen(pubid) != 32) {
-		return NULL;
-	}
-	return hashtbl_seek(g_ape->hPubid, pubid);
-}
-
-
-/* pubid : recver; user = sender */
-void *get_pipe_strict(char *pubid, USERS *user, acetables *g_ape)
-{
-	transpipe *pipe = get_pipe(pubid, g_ape);
-	
-	if (pipe != NULL && pipe->type == CHANNEL_PIPE && !isonchannel(user, pipe->pipe)) {
-		return NULL;
-	}
-	
-	return pipe;
 	
 }
 
@@ -362,19 +341,6 @@ void post_raw_channel(RAW *raw, struct CHANNEL *chan)
 	free(raw);
 }
 
-/* to manage subuser use post_to_pipe() instead */
-void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape)
-{
-	transpipe *spipe;
-	
-	if ((spipe = get_pipe(pipe, g_ape)) != NULL) {
-		if (spipe->type == CHANNEL_PIPE) {
-			post_raw_channel(raw, spipe->pipe);
-		} else {
-			post_raw(raw, spipe->pipe);
-		}
-	}
-}
 
 void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser)
 {

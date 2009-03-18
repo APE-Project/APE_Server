@@ -28,6 +28,7 @@
 #include "json.h"
 #include "extend.h"
 
+
 #define FLG_NOFLAG	0x00
 #define FLG_AUTOOP 	0x01
 #define FLG_NOKICK 	0x02
@@ -63,7 +64,7 @@ typedef struct USERS
 		struct _session *data;
 	} sessions;
 	
-	transpipe *pipe;
+	struct _transpipe *pipe;
 	
 	struct {
 		int nlink;
@@ -202,8 +203,7 @@ USERS *init_user(acetables *g_ape);
 USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape);
 USERS *seek_user_id(char *sessid, acetables *g_ape);
 USERS *seek_user_simple(char *nick, acetables *g_ape);
-void *get_pipe(char *pubid, acetables *g_ape);
-void *get_pipe_strict(char *pubid, USERS *user, acetables *g_ape);
+
 
 RAW *forge_raw(char *raw, struct json *jlist);
 RAW *copy_raw(RAW *input);
@@ -213,7 +213,7 @@ void post_raw_sub(RAW *raw, subuser *sub);
 void post_raw_channel(RAW *raw, struct CHANNEL *chan);
 void post_raw_restricted(RAW *raw, USERS *user, subuser *sub);
 void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser);
-void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape);
+
 
 void send_raws(subuser *user);
 
