@@ -1,0 +1,93 @@
+/*
+  Copyright (C) 2006, 2007, 2008, 2009  Anthony Catel <a.catel@weelya.com>
+
+  This file is part of ACE Server.
+  ACE is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  ACE is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with ACE ; if not, write to the Free Software Foundation,
+  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+*/
+
+/* pipe.c */
+
+#include "pipe.h"
+#include "utils.h"
+
+
+const char basic_chars[16] = { 	'a', 'b', 'c', 'd', 'e', 'f', '0', '1',
+				'2', '3', '4', '5', '6', '7', '8', '9'
+			};
+
+
+void gen_sessid_new(char *input, acetables *g_ape)
+{
+	unsigned int i;
+	
+	do {
+		for (i = 0; i < 32; i++) {
+			input[i] = basic_chars[rand()%16];
+		}
+		input[32] = '\0';
+	} while(seek_user_id(input, g_ape) != NULL || seek_user_simple(input, g_ape) != NULL); // Colision verification
+}
+
+
+transpipe *init_pipe(void *pipe, int type, acetables *g_ape)
+{
+	transpipe *npipe = NULL;
+	
+	npipe = xmalloc(sizeof(*npipe));
+	npipe->pipe = pipe;
+	npipe->type = type;
+	npipe->link = NULL;
+	
+	gen_sessid_new(npipe->pubid, g_ape);
+	hashtbl_append(g_ape->hPubid, npipe->pubid, (void *)npipe);
+	return npipe;
+}
+
+
+/* to manage subuser use post_to_pipe() instead */
+void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape)
+{
+	transpipe *spipe;
+	
+	if ((spipe = get_pipe(pipe, g_ape)) != NULL) {
+		if (spipe->type == CHANNEL_PIPE) {
+			post_raw_channel(raw, spipe->pipe);
+		} else {
+			post_raw(raw, spipe->pipe);
+		}
+	}
+}
+
+void *get_pipe(char *pubid, acetables *g_ape)
+{
+	if (strlen(pubid) != 32) {
+		return NULL;
+	}
+	return hashtbl_seek(g_ape->hPubid, pubid);
+}
+
+/* pubid : recver; user = sender */
+void *get_pipe_strict(char *pubid, USERS *user, acetables *g_ape)
+{
+	transpipe *pipe = get_pipe(pubid, g_ape);
+	
+	if (pipe != NULL && pipe->type == CHANNEL_PIPE && !isonchannel(user, pipe->pipe)) {
+		return NULL;
+	}
+	
+	return pipe;
+	
+}
+
