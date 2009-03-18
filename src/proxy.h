@@ -34,6 +34,8 @@ struct _ape_proxy_pipe
 	struct _ape_proxy_pipe *next;
 };
 
+
+
 typedef struct _ape_proxy ape_proxy;
 struct _ape_proxy
 {
@@ -52,13 +54,16 @@ struct _ape_proxy
 	
 	int state;
 	
+	int nlink;
 	/* List of allowed user/pipe */
 	ape_proxy_pipe *to;
 	
 	struct _ape_proxy *next;
+	struct _ape_proxy *prev;
 	
 	struct _extend *properties;
 };
+
 
 typedef struct _ape_proxy_cache ape_proxy_cache;
 struct _ape_proxy_cache
@@ -90,5 +95,7 @@ struct json *get_json_object_proxy(ape_proxy *proxy);
 void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape);
 ape_proxy *proxy_are_linked(char *pubid, char *pubid_proxy, acetables *g_ape);
 void proxy_write(ape_proxy *proxy, char *data);
+void proxy_detach(ape_proxy *proxy, char *pipe, acetables *g_ape);
+void proxy_shutdown(ape_proxy *proxy, acetables *g_ape);
 #endif
 

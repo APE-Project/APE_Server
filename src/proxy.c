@@ -109,8 +109,7 @@ ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 	ape_proxy *proxy;
 
 	ape_proxy_cache *host_cache;
-	
-	printf("Init : %s:%i\n", host, port);
+
 	
 	if (strlen(ident) > 32 || ((host_cache = proxy_cache_gethostbyname(host, g_ape)) == NULL)) {
 		return NULL;
@@ -126,6 +125,7 @@ ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 	proxy->eol = 0;
 	
 	proxy->state = PROXY_NOT_CONNECTED;
+	proxy->nlink = 0;
 	
 	proxy->to = NULL;
 	proxy->next = NULL;
@@ -133,7 +133,14 @@ ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 	
 	proxy->pipe = init_pipe(proxy, PROXY_PIPE, g_ape);
 	
+	
+	proxy->prev = NULL;
+	
 	proxy->next = g_ape->proxy.list;
+	if (proxy->next != NULL) {
+		proxy->next->prev = proxy;
+	}
+	
 	g_ape->proxy.list = proxy;
 	
 	return proxy;
@@ -181,14 +188,71 @@ void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ap
 	memcpy(to->pipe, gpipe->pubid, strlen(gpipe->pubid)+1);
 
 	to->allow_write = allow_write;
+	
 	to->next = proxy->to;
 	proxy->to = to;
+	
+	proxy->nlink++;
+}
+
+void proxy_detach_all(char *pipe, acetables *g_ape)
+{
+		
+}
+
+void proxy_detach(ape_proxy *proxy, char *pipe, acetables *g_ape)
+{
+	ape_proxy_pipe **to;
+
+	if (proxy == NULL || get_pipe(pipe, g_ape) == NULL) {
+		return;
+	}
+
+	to = &(proxy->to);
+	
+	while (*to != NULL) {
+		if (strcmp((*to)->pipe, pipe) == 0) {
+			ape_proxy_pipe *pTo = *to;
+			*to = (*to)->next;
+			free(pTo);
+			proxy->nlink--;
+			break;
+		}
+		to = &(*to)->next;
+	}
+	if (!proxy->nlink) {
+		proxy_shutdown(proxy, g_ape);
+	}
+		
+}
+
+// proxy->to must be clean
+void proxy_shutdown(ape_proxy *proxy, acetables *g_ape)
+{
+
+	if (proxy->state == PROXY_CONNECTED) {
+		shutdown(proxy->sock.fd, 2);
+	}
+	if (proxy->prev != NULL) {
+		proxy->prev->next = proxy->next;
+	} else {
+		g_ape->proxy.list = proxy->next;
+	}
+	if (proxy->next != NULL) {
+		proxy->next->prev = proxy->prev;
+	}
+	
+	hashtbl_erase(g_ape->hPubid, proxy->pipe->pubid);
+	free(proxy->pipe);
+	
+	free(proxy);
 }
 
 void proxy_flush(ape_proxy *proxy)
 {
 	
 }
+
 
 ape_proxy *proxy_are_linked(char *pubid, char *pubid_proxy, acetables *g_ape)
 {

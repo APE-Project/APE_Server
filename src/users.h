@@ -70,6 +70,7 @@ typedef struct USERS
 		struct _link_list *ulink;
 	} links;
 	struct _extend *properties;
+
 	
 	struct _subuser *subuser;
 	int nsub;

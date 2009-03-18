@@ -86,15 +86,24 @@ enum {
 	PROXY_PIPE
 };
 
+typedef struct _pipe_link pipe_link;
+struct _pipe_link {
+	struct _transpipe *plink;
+	struct _pipe_link *next;
+};
 
 typedef struct _transpipe transpipe;
 struct _transpipe
 {
 	void *pipe;
+	struct _pipe_link *link;
+	
 	int type;
 	
 	char pubid[33];
 };
+
+
 
 
 #define HEADER "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nContent-Type: text/html\r\n\r\n"

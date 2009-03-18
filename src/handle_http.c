@@ -147,9 +147,11 @@ char *getfirstparam(char *input)
 transpipe *init_pipe(void *pipe, int type, acetables *g_ape)
 {
 	transpipe *npipe = NULL;
+	
 	npipe = xmalloc(sizeof(*npipe));
 	npipe->pipe = pipe;
 	npipe->type = type;
+	npipe->link = NULL;
 	
 	gen_sessid_new(npipe->pubid, g_ape);
 	hashtbl_append(g_ape->hPubid, npipe->pubid, (void *)npipe);

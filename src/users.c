@@ -152,6 +152,7 @@ USERS *init_user(acetables *g_ape)
 	
 	nuser->links.ulink = NULL;
 	nuser->links.nlink = 0;
+
 	
 	nuser->lastping[0] = '\0';
 	
