@@ -194,12 +194,10 @@ void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ap
 	proxy->to = to;
 	
 	proxy->nlink++;
+	
+	link_pipe(gpipe, proxy->pipe, NULL);
 }
 
-void proxy_detach_all(char *pipe, acetables *g_ape)
-{
-	
-}
 
 void proxy_detach(ape_proxy *proxy, char *pipe, acetables *g_ape)
 {

@@ -62,7 +62,7 @@ void destroy_pipe(transpipe *pipe, acetables *g_ape)
 	free(pipe);
 }
 
-void link_pipe(transpipe *pipe_origin, transpipe *pipe_to)
+void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(struct _transpipe *, struct _transpipe *, acetables *))
 {
 	struct _pipe_link *link;
 	
@@ -71,6 +71,7 @@ void link_pipe(transpipe *pipe_origin, transpipe *pipe_to)
 	}
 	link = xmalloc(sizeof(*link));
 	
+	link->on_unlink = on_unlink;
 	link->plink = pipe_to;
 	link->next = pipe_origin->link;
 	pipe_origin->link = link;

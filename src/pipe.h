@@ -35,6 +35,8 @@ typedef struct _pipe_link pipe_link;
 struct _pipe_link {
 	struct _transpipe *plink;
 	struct _pipe_link *next;
+	
+	void (*on_unlink)(struct _transpipe *, struct _transpipe *, acetables *);
 };
 
 typedef struct _transpipe transpipe;
@@ -52,7 +54,7 @@ transpipe *init_pipe(void *pipe, int type, acetables *g_ape);
 void destroy_pipe(transpipe *pipe, acetables *g_ape);
 
 void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape);
-
+void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(struct _transpipe *, struct _transpipe *, acetables *));
 void *get_pipe(char *pubid, acetables *g_ape);
 void *get_pipe_strict(char *pubid, struct USERS *user, acetables *g_ape);
 void gen_sessid_new(char *input, acetables *g_ape);
