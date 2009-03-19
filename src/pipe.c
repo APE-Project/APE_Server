@@ -57,7 +57,7 @@ transpipe *init_pipe(void *pipe, int type, acetables *g_ape)
 
 void destroy_pipe(transpipe *pipe, acetables *g_ape)
 {
-	unlink_all_pipe(pipe);
+	unlink_all_pipe(pipe, g_ape);
 	hashtbl_erase(g_ape->hPubid, pipe->pubid);
 	free(pipe);
 }
@@ -75,9 +75,10 @@ void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(str
 	link->plink = pipe_to;
 	link->next = pipe_origin->link;
 	pipe_origin->link = link;
+
 }
 
-void unlink_all_pipe(transpipe *origin)
+void unlink_all_pipe(transpipe *origin, acetables *g_ape)
 {
 	struct _pipe_link *link, *plink;
 	
@@ -88,7 +89,12 @@ void unlink_all_pipe(transpipe *origin)
 	
 	while (link != NULL) {
 		plink = link->next;
-		free(plink);
+		if (link->on_unlink != NULL) {
+			/* Calling callback if any */
+
+			link->on_unlink(origin, link->plink, g_ape);
+		}
+		free(link);
 		link = plink;
 	}
 	origin->link = NULL;

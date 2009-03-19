@@ -58,5 +58,5 @@ void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(str
 void *get_pipe(char *pubid, acetables *g_ape);
 void *get_pipe_strict(char *pubid, struct USERS *user, acetables *g_ape);
 void gen_sessid_new(char *input, acetables *g_ape);
-void unlink_all_pipe(transpipe *origin);
+void unlink_all_pipe(transpipe *origin, acetables *g_ape);
 #endif

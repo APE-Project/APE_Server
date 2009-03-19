@@ -195,22 +195,21 @@ void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ap
 	
 	proxy->nlink++;
 	
-	link_pipe(gpipe, proxy->pipe, NULL);
+	link_pipe(gpipe, proxy->pipe, proxy_detach);
 }
 
 
-void proxy_detach(ape_proxy *proxy, char *pipe, acetables *g_ape)
+void proxy_detach(transpipe *unlinker, transpipe *tproxy, acetables *g_ape)
 {
 	ape_proxy_pipe **to;
-
-	if (proxy == NULL || get_pipe(pipe, g_ape) == NULL) {
-		return;
-	}
+	ape_proxy *proxy = tproxy->pipe;
 
 	to = &(proxy->to);
-	
+
 	while (*to != NULL) {
-		if (strcmp((*to)->pipe, pipe) == 0) {
+
+		if (strcmp((*to)->pipe, unlinker->pubid) == 0) {
+
 			ape_proxy_pipe *pTo = *to;
 			*to = (*to)->next;
 			free(pTo);
@@ -220,9 +219,9 @@ void proxy_detach(ape_proxy *proxy, char *pipe, acetables *g_ape)
 		to = &(*to)->next;
 	}
 	if (!proxy->nlink) {
+
 		proxy_shutdown(proxy, g_ape);
 	}
-		
 }
 
 // proxy->to must be clean
@@ -240,7 +239,7 @@ void proxy_shutdown(ape_proxy *proxy, acetables *g_ape)
 	if (proxy->next != NULL) {
 		proxy->next->prev = proxy->prev;
 	}
-	
+	printf("Destroying proxy pipe\n");
 	destroy_pipe(proxy->pipe, g_ape);
 	
 	free(proxy);
