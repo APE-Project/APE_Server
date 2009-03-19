@@ -78,7 +78,8 @@ enum {
 	PROXY_NOT_CONNECTED = 0,
 	PROXY_IN_PROGRESS,
 	PROXY_CONNECTED,
-	PROXY_THROTTLED
+	PROXY_THROTTLED,
+	PROXY_TOFREE
 };
 
 ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape);

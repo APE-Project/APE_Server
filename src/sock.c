@@ -269,8 +269,14 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									}
 								} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
 									
-									((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
-									proxy_onevent((ape_proxy *)(co[events[i].data.fd].attach), "DISCONNECT", g_ape);
+									if (((ape_proxy *)(co[events[i].data.fd].attach))->state == PROXY_TOFREE) {
+										free(co[events[i].data.fd].attach);
+										co[events[i].data.fd].attach = NULL;								
+									} else {
+									
+										((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
+										proxy_onevent((ape_proxy *)(co[events[i].data.fd].attach), "DISCONNECT", g_ape);
+									}
 								}
 								
 								clear_buffer(&co[events[i].data.fd]);

@@ -230,6 +230,7 @@ void proxy_shutdown(ape_proxy *proxy, acetables *g_ape)
 
 	if (proxy->state == PROXY_CONNECTED) {
 		shutdown(proxy->sock.fd, 2);
+		proxy->state = PROXY_TOFREE;
 	}
 	if (proxy->prev != NULL) {
 		proxy->prev->next = proxy->next;
@@ -239,10 +240,11 @@ void proxy_shutdown(ape_proxy *proxy, acetables *g_ape)
 	if (proxy->next != NULL) {
 		proxy->next->prev = proxy->prev;
 	}
-	printf("Destroying proxy pipe\n");
-	destroy_pipe(proxy->pipe, g_ape);
 	
-	free(proxy);
+	destroy_pipe(proxy->pipe, g_ape);
+	if (proxy->state != PROXY_TOFREE) {
+		free(proxy);
+	}
 }
 
 void proxy_flush(ape_proxy *proxy)
