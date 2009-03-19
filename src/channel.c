@@ -94,14 +94,13 @@ void rmchan(CHANNEL *chan, acetables *g_ape)
 		return;
 	}
 	rmallban(chan);
-	
-	
-	hashtbl_erase(g_ape->hPubid, chan->pipe->pubid);
-	free(chan->pipe);
+
 		
 	hashtbl_erase(g_ape->hLusers, chan->name);
 	
 	clear_properties(&chan->properties);
+	
+	destroy_pipe(chan->pipe, g_ape);
 	
 	free(chan);
 	chan = NULL;

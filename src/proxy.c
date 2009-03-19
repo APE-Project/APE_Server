@@ -243,8 +243,7 @@ void proxy_shutdown(ape_proxy *proxy, acetables *g_ape)
 		proxy->next->prev = proxy->prev;
 	}
 	
-	hashtbl_erase(g_ape->hPubid, proxy->pipe->pubid);
-	free(proxy->pipe);
+	destroy_pipe(proxy->pipe, g_ape);
 	
 	free(proxy);
 }

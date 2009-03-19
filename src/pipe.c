@@ -55,6 +55,43 @@ transpipe *init_pipe(void *pipe, int type, acetables *g_ape)
 	return npipe;
 }
 
+void destroy_pipe(transpipe *pipe, acetables *g_ape)
+{
+	unlink_all_pipe(pipe);
+	hashtbl_erase(g_ape->hPubid, pipe->pubid);
+	free(pipe);
+}
+
+void link_pipe(transpipe *pipe_origin, transpipe *pipe_to)
+{
+	struct _pipe_link *link;
+	
+	if (pipe_origin == NULL || pipe_to == NULL) {
+		return;
+	}
+	link = xmalloc(sizeof(*link));
+	
+	link->plink = pipe_to;
+	link->next = pipe_origin->link;
+	pipe_origin->link = link;
+}
+
+void unlink_all_pipe(transpipe *origin)
+{
+	struct _pipe_link *link, *plink;
+	
+	if (origin == NULL) {
+		return;
+	}
+	link = origin->link;
+	
+	while (link != NULL) {
+		plink = link->next;
+		free(plink);
+		link = plink;
+	}
+	origin->link = NULL;
+}
 
 /* to manage subuser use post_to_pipe() instead */
 void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape)

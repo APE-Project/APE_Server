@@ -188,8 +188,7 @@ void deluser(USERS *user, acetables *g_ape)
 	clear_subusers(user);
 
 	hashtbl_erase(g_ape->hSessid, user->sessid);
-	hashtbl_erase(g_ape->hPubid, user->pipe->pubid);
-	free(user->pipe);
+
 	
 	g_ape->nConnected--;
 
@@ -205,7 +204,8 @@ void deluser(USERS *user, acetables *g_ape)
 
 	clear_sessions(user);
 	clear_properties(&user->properties);
-
+	destroy_pipe(user->pipe, g_ape);
+	
 	free(user);
 
 	user = NULL;
