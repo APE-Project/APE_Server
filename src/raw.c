@@ -117,7 +117,7 @@ unsigned int checkraw(clientget *cget, subuser **iuser, acetables *g_ape)
 					return (CONNECT_SHUTDOWN);
 				} else {
 					sub = getsubuser(guser, cget->host);
-					if (sub != NULL && sub->fd != cget->fdclient && sub->state == ALIVE) {
+					if (sub != NULL && sub->user->transport == TRANSPORT_LONGPOLLING && sub->fd != cget->fdclient && sub->state == ALIVE) {
 						CLOSE(sub->fd);
 						shutdown(sub->fd, 2);
 						sub->state = ADIED;
