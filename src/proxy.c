@@ -247,11 +247,6 @@ void proxy_shutdown(ape_proxy *proxy, acetables *g_ape)
 	}
 }
 
-void proxy_flush(ape_proxy *proxy)
-{
-	
-}
-
 
 ape_proxy *proxy_are_linked(char *pubid, char *pubid_proxy, acetables *g_ape)
 {
@@ -402,7 +397,7 @@ struct json *get_json_object_proxy(ape_proxy *proxy)
 	char port[8];
 
 	set_json("pubid", proxy->pipe->pubid, &jstr);
-	
+	set_json("casttype", "proxy", &jstr);
 	
 	set_json("properties", NULL, &jstr);
 	

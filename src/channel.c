@@ -530,7 +530,7 @@ struct json *get_json_object_channel(CHANNEL *chan)
 	//set_json("topic", chan->topic, &jstr);
 	//set_json("name", chan->name, &jstr); // See below
 	set_json("pubid", chan->pipe->pubid, &jstr);
-	
+	set_json("casttype", "multi", &jstr);
 	
 	//if (chan->properties != NULL) {
 	json *jprop = NULL;

@@ -415,7 +415,7 @@ struct json *get_json_object_user(USERS *user)
 	if (user != NULL) {
 	
 		set_json("pubid", user->pipe->pubid, &jstr);
-		//set_json("casttype", "uni", &jstr);
+		set_json("casttype", "uni", &jstr);
 		if (user->properties != NULL) {
 			json *jprop = NULL;
 			set_json("properties", NULL, &jstr);
@@ -813,7 +813,7 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 
 	set_json("pipe", NULL, &jlist);
 	
-	set_json("casttype", (recver->type == USER_PIPE ? "uni" : "multi"), &jextra);
+	//set_json("casttype", (recver->type == USER_PIPE ? "uni" : "multi"), &jextra);
 	
 	jlist_copy = json_copy(jlist);
 	jextra_copy = json_copy(jextra);

@@ -114,7 +114,7 @@ static void clear_buffer(connection *co)
 
 unsigned int sockroutine(size_t port, acetables *g_ape)
 {
-	int basemem = 16, epoll_fd;
+	int basemem = 512, epoll_fd;
 	struct epoll_event ev, *events;
 
 	int s_listen, new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i;
