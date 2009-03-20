@@ -281,7 +281,7 @@ void proxy_process_eol(connection *co, acetables *g_ape)
 	
 	set_json("data", b64, &jlist);
 	set_json("event", "READ", &jlist);
-	set_json("proxy", NULL, &jlist);
+	set_json("pipe", NULL, &jlist);
 	json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);	
 	
 	newraw = forge_raw("PROXY_EVENT", jlist);
