@@ -416,6 +416,7 @@ struct json *get_json_object_user(USERS *user)
 	
 		set_json("pubid", user->pipe->pubid, &jstr);
 		set_json("casttype", "uni", &jstr);
+		
 		if (user->properties != NULL) {
 			json *jprop = NULL;
 			set_json("properties", NULL, &jstr);
@@ -797,7 +798,7 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 {
 	USERS *sender = from->user;
 	transpipe *recver = get_pipe_strict(pipe, sender, g_ape);
-	json *jextra = NULL, *jlist_copy = NULL, *jextra_copy = NULL;
+	json *jlist_copy = NULL;
 	RAW *newraw;
 	
 	
@@ -812,18 +813,13 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 	}
 
 	set_json("pipe", NULL, &jlist);
-	
-	//set_json("casttype", (recver->type == USER_PIPE ? "uni" : "multi"), &jextra);
-	
-	jlist_copy = json_copy(jlist);
-	jextra_copy = json_copy(jextra);
 
 	
-	json_concat(jextra, (recver->type == USER_PIPE ? get_json_object_user(sender) : get_json_object_channel(recver->pipe)));	
-	json_concat(jextra_copy, (recver->type == USER_PIPE ? get_json_object_user(recver->pipe) : get_json_object_channel(recver->pipe)));
+	jlist_copy = json_copy(jlist);
+
 	
-	json_attach(jlist, jextra, JSON_OBJECT);
-	json_attach(jlist_copy, jextra_copy, JSON_OBJECT);
+	json_attach(jlist, (recver->type == USER_PIPE ? get_json_object_user(sender) : get_json_object_channel(recver->pipe)), JSON_OBJECT);
+	json_attach(jlist_copy, (recver->type == USER_PIPE ? get_json_object_user(recver->pipe) : get_json_object_channel(recver->pipe)), JSON_OBJECT);
 	
 	newraw = forge_raw(rawname, jlist);
 	
