@@ -367,7 +367,7 @@ void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape)
 	json *jlist = NULL;
 	
 	set_json("event", event, &jlist);
-	set_json("proxy", NULL, &jlist);
+	set_json("pipe", NULL, &jlist);
 	json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);	
 	
 	newraw = forge_raw("PROXY_EVENT", jlist);

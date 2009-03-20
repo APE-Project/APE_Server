@@ -35,8 +35,17 @@
 #define FLG_BOTMANAGE 	0x04
 #define FLG_PCONNECT 	0x08
 
+
 #define MAX_SESSION_LENGTH 102400 // 100 ko
 #define MAX_HOST_LENGTH 256
+
+
+enum {
+	TRANSPORT_LONGPOLLING,
+	TRANSPORT_POLLING,
+	TRANSPORT_JSONP,
+	TRANSPORT_IFRAME
+};
 
 // Le 25/12/2006 à 02:15:19 Joyeux Noël
 
@@ -53,6 +62,8 @@ typedef struct USERS
 	char ip[16]; // ipv4
 	
 	long int idle;
+	
+	int transport;
 	
 	struct USERS *next;
 	struct USERS *prev;

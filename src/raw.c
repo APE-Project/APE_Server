@@ -29,7 +29,7 @@
 
 void do_register(acetables *g_ape) // register_raw("RAW", Nparam (without IP and time, with sessid), callback_func, NEEDSOMETHING?, g_ape);
 {
-	register_raw("CONNECT",		0, raw_connect, 	NEED_NOTHING, g_ape);
+	register_raw("CONNECT",		1, raw_connect, 	NEED_NOTHING, g_ape);
 	register_raw("PCONNECT",	1, raw_pconnect, 	NEED_NOTHING, g_ape);
 	register_raw("SCRIPT",    	-1, raw_script,		NEED_NOTHING, g_ape);
 	
@@ -201,6 +201,14 @@ unsigned int raw_connect(callbackp *callbacki)
 		
 		return (FOR_NOTHING);
 	}
+	
+	if (strcmp(callbacki->param[1], "2") == 0) {
+		nuser->transport = TRANSPORT_IFRAME;
+		nuser->flags |= FLG_PCONNECT;
+	} else {
+		nuser->transport = TRANSPORT_LONGPOLLING;
+	}
+	
 	set_json("sessid", nuser->sessid, &jstr);
 	set_json("user", NULL, &jstr);
 	

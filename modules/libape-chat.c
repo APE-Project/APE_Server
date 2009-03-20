@@ -72,7 +72,12 @@ static unsigned int chat_connect(callbackp *callbacki)
 		
 		return (FOR_NOTHING);
 	}
-	
+	if (strcmp(callbacki->param[2], "2") == 0) {
+		nuser->transport = TRANSPORT_IFRAME;
+		nuser->flags |= FLG_PCONNECT;
+	} else {
+		nuser->transport = TRANSPORT_LONGPOLLING;
+	}	
 	hash_user(nuser, callbacki->param[1], callbacki->g_ape);
 	add_property_str(&nuser->properties, "name", callbacki->param[1]);
 
@@ -139,7 +144,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	add_property(&g_ape->properties, "nicklist", hashtbl_init());
 
 	// Overriding connect raw
-	register_raw("CONNECT",	1, chat_connect, NEED_NOTHING, g_ape);
+	register_raw("CONNECT",	2, chat_connect, NEED_NOTHING, g_ape);
 }
 
 
