@@ -1,25 +1,25 @@
 /*
   Copyright (C) 2006, 2007, 2008, 2009  Anthony Catel <a.catel@weelya.com>
 
-  This file is part of ACE Server.
-  ACE is free software; you can redistribute it and/or modify
+  This file is part of APE Server.
+  APE is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
   (at your option) any later version.
 
-  ACE is distributed in the hope that it will be useful,
+  APE is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with ACE ; if not, write to the Free Software Foundation,
+  along with APE ; if not, write to the Free Software Foundation,
   Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-/* raw.c */
+/* cmd.c */
 
-#include "raw.h"
+#include "cmd.h"
 #include "hash.h"
 #include "json.h"
 #include "plugins.h"
@@ -27,58 +27,59 @@
 #include "utils.h"
 #include "proxy.h"
 
-void do_register(acetables *g_ape) // register_raw("RAW", Nparam (without IP and time, with sessid), callback_func, NEEDSOMETHING?, g_ape);
-{
-	register_raw("CONNECT",		1, raw_connect, 	NEED_NOTHING, g_ape);
-	register_raw("PCONNECT",	1, raw_pconnect, 	NEED_NOTHING, g_ape);
-	register_raw("SCRIPT",    	-1, raw_script,		NEED_NOTHING, g_ape);
-	
-	register_raw("CHECK", 		1, raw_check, 		NEED_SESSID, g_ape);
-	register_raw("SEND", 		3, raw_send, 		NEED_SESSID, g_ape);
 
-	register_raw("QUIT", 		1, raw_quit, 		NEED_SESSID, g_ape);
-	register_raw("SETLEVEL", 	4, raw_setlevel, 	NEED_SESSID, g_ape); // Module
-	register_raw("SETTOPIC", 	3, raw_settopic, 	NEED_SESSID, g_ape); // Module
-	register_raw("JOIN", 		2, raw_join, 		NEED_SESSID, g_ape);
-	register_raw("LEFT", 		2, raw_left, 		NEED_SESSID, g_ape);
-	register_raw("KICK", 		3, raw_kick, 		NEED_SESSID, g_ape); // Module
-	register_raw("BAN",		5, raw_ban,		NEED_SESSID, g_ape); // Module
-	register_raw("SESSION",   	-3, raw_session,	NEED_SESSID, g_ape);
+void do_register(acetables *g_ape) // register_raw("CMD", Nparam (without IP and time, with sessid), callback_func, NEEDSOMETHING?, g_ape);
+{
+	register_cmd("CONNECT",		1, cmd_connect, 	NEED_NOTHING, g_ape);
+	register_cmd("PCONNECT",	1, cmd_pconnect, 	NEED_NOTHING, g_ape);
+	register_cmd("SCRIPT",         -1, cmd_script,		NEED_NOTHING, g_ape);
 	
-	register_raw("KONG", 		2, raw_pong, 		NEED_SESSID, g_ape);
+	register_cmd("CHECK", 		1, cmd_check, 		NEED_SESSID, g_ape);
+	register_cmd("SEND", 		3, cmd_send, 		NEED_SESSID, g_ape);
+
+	register_cmd("QUIT", 		1, cmd_quit, 		NEED_SESSID, g_ape);
+	register_cmd("SETLEVEL", 	4, cmd_setlevel, 	NEED_SESSID, g_ape); // Module
+	register_cmd("SETTOPIC", 	3, cmd_settopic, 	NEED_SESSID, g_ape); // Module
+	register_cmd("JOIN", 		2, cmd_join, 		NEED_SESSID, g_ape);
+	register_cmd("LEFT", 		2, cmd_left, 		NEED_SESSID, g_ape);
+	register_cmd("KICK", 		3, cmd_kick, 		NEED_SESSID, g_ape); // Module
+	register_cmd("BAN",		5, cmd_ban,		NEED_SESSID, g_ape); // Module
+	register_cmd("SESSION",        -3, cmd_session,		NEED_SESSID, g_ape);
 	
-	register_raw("PROXY_CONNECT", 	3, raw_proxy_connect, 	NEED_SESSID, g_ape);
-	register_raw("PROXY_WRITE", 	3, raw_proxy_write, 	NEED_SESSID, g_ape);
+	register_cmd("KONG", 		2, cmd_pong, 		NEED_SESSID, g_ape);
+	
+	register_cmd("PROXY_CONNECT", 	3, cmd_proxy_connect, 	NEED_SESSID, g_ape);
+	register_cmd("PROXY_WRITE", 	3, cmd_proxy_write, 	NEED_SESSID, g_ape);
 }
 
-void register_raw(char *raw, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape)
+void register_cmd(char *cmd, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape)
 {
-	callback *new_raw, *old_raw;
+	callback *new_cmd, *old_cmd;
 	
-	new_raw = (callback *) xmalloc(sizeof(*new_raw));
+	new_cmd = (callback *) xmalloc(sizeof(*new_cmd));
 	
-	new_raw->nParam = nParam;
-	new_raw->func = func;
-	new_raw->need = need;
+	new_cmd->nParam = nParam;
+	new_cmd->func = func;
+	new_cmd->need = need;
 	
 	/* Unregister old raw if exists */
-	if ((old_raw = (callback *)hashtbl_seek(g_ape->hCallback, raw)) != NULL) {
-		hashtbl_erase(g_ape->hCallback, raw);
+	if ((old_cmd = (callback *)hashtbl_seek(g_ape->hCallback, cmd)) != NULL) {
+		hashtbl_erase(g_ape->hCallback, cmd);
 	}
 	
-	hashtbl_append(g_ape->hCallback, raw, (void *)new_raw);
+	hashtbl_append(g_ape->hCallback, cmd, (void *)new_cmd);
 	
 }
 
-void unregister_raw(char *raw, acetables *g_ape)
+void unregister_cmd(char *cmd, acetables *g_ape)
 {
-	hashtbl_erase(g_ape->hCallback, raw);
+	hashtbl_erase(g_ape->hCallback, cmd);
 }
 
-unsigned int checkraw(clientget *cget, subuser **iuser, acetables *g_ape)
+unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 {
-	char *param[64+1], *raw;
-	callback *rawback;
+	char *param[64+1], *cmd;
+	callback *cmdback;
 	
 	size_t nTok;
 	
@@ -91,17 +92,18 @@ unsigned int checkraw(clientget *cget, subuser **iuser, acetables *g_ape)
 	nTok = explode('&', cget->get, param, 64);
 	
 	if (nTok < 1) {
-		raw = NULL;
+		cmd = NULL;
 	} else {
-		raw = param[0];
+		cmd = param[0];
 
 	}
 
-	rawback = (callback *)hashtbl_seek(g_ape->hCallback, raw);
-	if (rawback != NULL) { // Cool 27/12/2006 00:00 j'ai 20 ans xD
-		if ((nTok-1) == rawback->nParam || (rawback->nParam < 0 && (nTok-1) >= (rawback->nParam*-1) && (rawback->nParam*-1) <= 16)) {
+	cmdback = (callback *)hashtbl_seek(g_ape->hCallback, cmd);
+	if (cmdback != NULL) {
+		if ((nTok-1) == cmdback->nParam || (cmdback->nParam < 0 && (nTok-1) >= (cmdback->nParam*-1) && (cmdback->nParam*-1) <= 16)) {
+			int tmpfd = 0;
 			callbackp cp;
-			switch(rawback->need) {
+			switch(cmdback->need) {
 				case NEED_SESSID:
 					guser = seek_user_id(param[1], g_ape);
 					break;
@@ -110,34 +112,44 @@ unsigned int checkraw(clientget *cget, subuser **iuser, acetables *g_ape)
 					break;
 			}
 			
-			if (rawback->need != NEED_NOTHING) {
+			if (cmdback->need != NEED_NOTHING) {
 				if (guser == NULL) {
-					ENVOI(cget->fdclient, ERR_BAD_SESSID);
+					SENDH(cget->fdclient, ERR_BAD_SESSID);
 					
 					return (CONNECT_SHUTDOWN);
 				} else {
 					sub = getsubuser(guser, cget->host);
-					if (sub != NULL && sub->user->transport == TRANSPORT_LONGPOLLING && sub->fd != cget->fdclient && sub->state == ALIVE) {
-						CLOSE(sub->fd);
-						shutdown(sub->fd, 2);
-						sub->state = ADIED;
+					if (sub != NULL && sub->fd != cget->fdclient && sub->state == ALIVE) {
+						if (guser->transport == TRANSPORT_IFRAME) {
+							/* iframe is already open on "sub" */
+							tmpfd = sub->fd; /* Forward data directly to iframe */
+							CLOSE(cget->fdclient);
+							shutdown(cget->fdclient, 2); /* Immediatly close controller */
+						} else {
+							/* Only one connection is allowed per user/host */
+							CLOSE(sub->fd);
+							shutdown(sub->fd, 2);
+							sub->state = ADIED;
+							sub->fd = cget->fdclient;					
+						}
 					} else if (sub == NULL) {
 						sub = addsubuser(cget->fdclient, cget->host, guser);
+
 					}
 					guser->idle = (long int)time(NULL); // update user idle
+
 					sub->idle = guser->idle; // Update subuser idle
-					sub->fd = cget->fdclient;
 					
 				}
 			}
 			cp.param = param;
-			cp.fdclient = cget->fdclient;
+			cp.fdclient = (tmpfd ? tmpfd : cget->fdclient);
 			cp.call_user = guser,
 			cp.g_ape = g_ape;
 			cp.nParam = nTok-1;
 			cp.host = cget->host;
 			
-			flag = rawback->func(&cp);
+			flag = cmdback->func(&cp);
 			
 			if (flag & FOR_NULL) {
 				guser = NULL;
@@ -146,17 +158,18 @@ unsigned int checkraw(clientget *cget, subuser **iuser, acetables *g_ape)
 			} 
 			
 			if (guser != NULL) {
-				
+
 				if (sub == NULL && (sub = getsubuser(guser, cget->host)) == NULL) {
 					
-					sub = addsubuser(cget->fdclient, cget->host, guser);
-					
+					if ((sub = addsubuser(cget->fdclient, cget->host, guser)) == NULL) {
+						return (CONNECT_SHUTDOWN);
+					}
+					if (guser->transport == TRANSPORT_IFRAME) {
+						sendbin(sub->fd, HEADER, strlen(HEADER));
+					}			
 				}
-				if (sub == NULL) {
-					
-					return (CONNECT_SHUTDOWN);
-				}
-				*iuser = sub;
+
+				*iuser = (tmpfd ? NULL : sub);
 				if (flag & FOR_UPDATE_IP) {
 					/*
 						TODO : Fix IP management
@@ -167,9 +180,7 @@ unsigned int checkraw(clientget *cget, subuser **iuser, acetables *g_ape)
 						strncpy(guser->ip, cget->ip_client, 16); // never trust foreign data
 					}
 				}
-				if ((guser->flags & FLG_PCONNECT)) {
-					sendf(sub->fd, "%s", HEADER);
-				}
+
 
 				sub->state = ALIVE;
 				return (CONNECT_KEEPALIVE);
@@ -178,15 +189,15 @@ unsigned int checkraw(clientget *cget, subuser **iuser, acetables *g_ape)
 			return (CONNECT_SHUTDOWN);
 		} else {
 
-			ENVOI(cget->fdclient, ERR_BAD_PARAM);
+			SENDH(cget->fdclient, ERR_BAD_PARAM);
 		}
-	} else { // unregistered Raw
-		ENVOI(cget->fdclient, ERR_BAD_RAW);
+	} else { // unregistered CMD
+		SENDH(cget->fdclient, ERR_BAD_CMD);
 	}
 	return (CONNECT_SHUTDOWN);
 }
 
-unsigned int raw_connect(callbackp *callbacki)
+unsigned int cmd_connect(callbackp *callbacki)
 {
 	USERS *nuser;
 	RAW *newraw;
@@ -197,7 +208,7 @@ unsigned int raw_connect(callbackp *callbacki)
 	callbacki->call_user = nuser;
 	
 	if (nuser == NULL) {
-		ENVOI(callbacki->fdclient, ERR_CONNECT);
+		SENDH(callbacki->fdclient, ERR_CONNECT);
 		
 		return (FOR_NOTHING);
 	}
@@ -223,13 +234,13 @@ unsigned int raw_connect(callbackp *callbacki)
 
 }
 /* Deprecated */
-unsigned int raw_pconnect(callbackp *callbacki)
+unsigned int cmd_pconnect(callbackp *callbacki)
 {
 	USERS *nuser;
 
 	nuser = adduser(callbacki->fdclient, callbacki->host, callbacki->g_ape);
 	if (nuser == NULL) {
-		ENVOI(callbacki->fdclient, ERR_CONNECT);
+		SENDH(callbacki->fdclient, ERR_CONNECT);
 		
 		return (FOR_NOTHING);
 	}
@@ -239,7 +250,7 @@ unsigned int raw_pconnect(callbackp *callbacki)
 
 }
 
-unsigned int raw_script(callbackp *callbacki)
+unsigned int cmd_script(callbackp *callbacki)
 {
 	char *domain = CONFIG_VAL(Server, domain, callbacki->g_ape->srv);
 	if (domain == NULL) {
@@ -255,7 +266,7 @@ unsigned int raw_script(callbackp *callbacki)
 	return (FOR_NOTHING);
 }
 
-unsigned int raw_join(callbackp *callbacki)
+unsigned int cmd_join(callbackp *callbacki)
 {
 	CHANNEL *jchan;
 	RAW *newraw;
@@ -298,12 +309,12 @@ unsigned int raw_join(callbackp *callbacki)
 	return (FOR_NOTHING);
 }
 
-unsigned int raw_check(callbackp *callbacki)
+unsigned int cmd_check(callbackp *callbacki)
 {
 	return (FOR_NOTHING);
 }
 
-unsigned int raw_send(callbackp *callbacki)
+unsigned int cmd_send(callbackp *callbacki)
 {
 	json *jlist = NULL;
 
@@ -313,7 +324,7 @@ unsigned int raw_send(callbackp *callbacki)
 	
 	return (FOR_NOTHING);
 }
-unsigned int raw_quit(callbackp *callbacki)
+unsigned int cmd_quit(callbackp *callbacki)
 {
 	QUIT(callbacki->fdclient);
 	deluser(callbacki->call_user, callbacki->g_ape); // After that callbacki->call_user is free'd
@@ -321,7 +332,7 @@ unsigned int raw_quit(callbackp *callbacki)
 	return (FOR_NULL);
 }
 
-unsigned int raw_setlevel(callbackp *callbacki)
+unsigned int cmd_setlevel(callbackp *callbacki)
 {
 	USERS *recver;
 	
@@ -334,7 +345,7 @@ unsigned int raw_setlevel(callbackp *callbacki)
 }
 
 
-unsigned int raw_left(callbackp *callbacki)
+unsigned int cmd_left(callbackp *callbacki)
 {
 	CHANNEL *chan;
 
@@ -353,14 +364,14 @@ unsigned int raw_left(callbackp *callbacki)
 	return (FOR_NOTHING);
 }
 
-unsigned int raw_settopic(callbackp *callbacki)
+unsigned int cmd_settopic(callbackp *callbacki)
 {
 	settopic(callbacki->call_user, getchan(callbacki->param[2], callbacki->g_ape), callbacki->param[3]);
 	
 	return (FOR_NOTHING);
 }
 
-unsigned int raw_kick(callbackp *callbacki)
+unsigned int cmd_kick(callbackp *callbacki)
 {
 	CHANNEL *chan;
 	RAW *newraw;
@@ -422,7 +433,7 @@ unsigned int raw_kick(callbackp *callbacki)
 	
 }
 
-unsigned int raw_ban(callbackp *callbacki)
+unsigned int cmd_ban(callbackp *callbacki)
 {
 	CHANNEL *chan;
 	RAW *newraw;
@@ -477,7 +488,7 @@ unsigned int raw_ban(callbackp *callbacki)
 	return (FOR_NOTHING);
 }
 
-unsigned int raw_session(callbackp *callbacki)
+unsigned int cmd_session(callbackp *callbacki)
 {
 	if (strcmp(callbacki->param[2], "set") == 0 && (callbacki->nParam == 4 || callbacki->nParam == 5)) {
 		int shutdown = 1;
@@ -524,7 +535,7 @@ unsigned int raw_session(callbackp *callbacki)
 }
 
 /* This is usefull to ask all subuser to update their sessions */
-unsigned int raw_pong(callbackp *callbacki)
+unsigned int cmd_pong(callbackp *callbacki)
 {
 	if (strcmp(callbacki->param[2], callbacki->call_user->lastping) == 0) {
 		RAW *newraw;
@@ -543,7 +554,7 @@ unsigned int raw_pong(callbackp *callbacki)
 }
 
 
-unsigned int raw_proxy_connect(callbackp *callbacki)
+unsigned int cmd_proxy_connect(callbackp *callbacki)
 {
 	ape_proxy *proxy;
 	RAW *newraw;
@@ -566,7 +577,7 @@ unsigned int raw_proxy_connect(callbackp *callbacki)
 	return (FOR_NOTHING);
 }
 
-unsigned int raw_proxy_write(callbackp *callbacki)
+unsigned int cmd_proxy_write(callbackp *callbacki)
 {
 	ape_proxy *proxy;
 

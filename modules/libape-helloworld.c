@@ -15,8 +15,7 @@ static ace_plugin_infos infos_module = {
 
 
 
-
-static unsigned int raw_helloworld(callbackp *callbacki)
+static unsigned int cmd_helloworld(callbackp *callbacki)
 {
 	/* Sending a simple raw "Monkey" with "Helloworld" value */
 	send_msg(callbacki->call_user, "Helloworld", "Monkey");
@@ -31,7 +30,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded (passe
 	printf("Helloworld loaded ;-) [Conf foo : %s]\n", READ_CONF("foo"));
 	
 	/* Adding a new raw GET /?q&HELLOWORLD&[SESSID]&[ANTICACHE] */
-	register_raw("HELLOWORLD", 1, raw_helloworld, NEED_SESSID, g_ape);
+	register_cmd("HELLOWORLD", 1, cmd_helloworld, NEED_SESSID, g_ape);
 }
 
 /* Passed to callbacks list */

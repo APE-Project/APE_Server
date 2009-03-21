@@ -1,31 +1,30 @@
 /*
   Copyright (C) 2006, 2007, 2008, 2009  Anthony Catel <a.catel@weelya.com>
 
-  This file is part of ACE Server.
-  ACE is free software; you can redistribute it and/or modify
+  This file is part of APE Server.
+  APE is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
   (at your option) any later version.
 
-  ACE is distributed in the hope that it will be useful,
+  APE is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with ACE ; if not, write to the Free Software Foundation,
+  along with APE ; if not, write to the Free Software Foundation,
   Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
 /* proxy.h */
 
-#ifndef _PROXY
-#define _PROXY
+#ifndef _PROXY_H
+#define _PROXY_H
 
 #include "http.h"
 
 typedef struct _ape_proxy_pipe ape_proxy_pipe;
-
 struct _ape_proxy_pipe
 {
 	int allow_write;
@@ -98,5 +97,6 @@ ape_proxy *proxy_are_linked(char *pubid, char *pubid_proxy, acetables *g_ape);
 void proxy_write(ape_proxy *proxy, char *data);
 void proxy_detach(struct _transpipe *unlinker, struct _transpipe *tproxy, acetables *g_ape);
 void proxy_shutdown(ape_proxy *proxy, acetables *g_ape);
+
 #endif
 

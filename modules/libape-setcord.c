@@ -16,7 +16,7 @@ static ace_plugin_infos infos_module = {
 };
 
 
-static unsigned int raw_setpos(callbackp *callbacki)
+static unsigned int cmd_setpos(callbackp *callbacki)
 {
 	/* ->param[1] is not used (sessid) */
 	int x = abs(atoi(callbacki->param[3])), y = abs(atoi(callbacki->param[4]));
@@ -50,7 +50,7 @@ static unsigned int raw_setpos(callbackp *callbacki)
 
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
-	register_raw("SETPOS", 4, raw_setpos, NEED_SESSID, g_ape);
+	register_cmd("SETPOS", 4, cmd_setpos, NEED_SESSID, g_ape);
 }
 
 static ace_callbacks callbacks = {

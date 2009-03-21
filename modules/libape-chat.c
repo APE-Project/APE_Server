@@ -144,7 +144,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	add_property(&g_ape->properties, "nicklist", hashtbl_init());
 
 	// Overriding connect raw
-	register_raw("CONNECT",	2, chat_connect, NEED_NOTHING, g_ape);
+	register_cmd("CONNECT",	2, chat_connect, NEED_NOTHING, g_ape);
 }
 
 

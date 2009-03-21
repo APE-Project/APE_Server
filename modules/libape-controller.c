@@ -14,7 +14,7 @@ static ace_plugin_infos infos_module = {
 	"controller.conf" // config file (bin/)
 };
 
-static unsigned int raw_control(callbackp *callbacki)
+static unsigned int cmd_control(callbackp *callbacki)
 {
 	CHANNEL *jchan;
 
@@ -37,7 +37,7 @@ static unsigned int raw_control(callbackp *callbacki)
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
 
-	register_raw("CONTROL", 5, raw_control, NEED_NOTHING, g_ape);
+	register_cmd("CONTROL", 5, cmd_control, NEED_NOTHING, g_ape);
 }
 
 

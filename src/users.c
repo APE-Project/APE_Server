@@ -1,24 +1,23 @@
 /*
   Copyright (C) 2006, 2007, 2008, 2009  Anthony Catel <a.catel@weelya.com>
 
-  This file is part of ACE Server.
-  ACE is free software; you can redistribute it and/or modify
+  This file is part of APE Server.
+  APE is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
   (at your option) any later version.
 
-  ACE is distributed in the hope that it will be useful,
+  APE is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with ACE ; if not, write to the Free Software Foundation,
+  along with APE ; if not, write to the Free Software Foundation,
   Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
 /* users.c */
-
 
 
 #include "hash.h"
@@ -28,7 +27,7 @@
 
 #include "users.h"
 #include "config.h"
-#include "raw.h"
+#include "cmd.h"
 #include "json.h"
 #include "plugins.h"
 #include "pipe.h"
@@ -263,37 +262,23 @@ RAW *copy_raw(RAW *input)
 void post_raw_sub(RAW *raw, subuser *sub)
 {
 
-	//if (sub->state == ADIED) {
-	if (1) {	
-
-		if (raw->priority == 0) {
-			if (sub->rawhead == NULL) {
-				sub->rawhead = raw;
-			}
-			if (sub->rawfoot != NULL) {
-				sub->rawfoot->next = raw;
-			}
-			sub->rawfoot = raw;
-		} else {
-			
-			if (sub->rawfoot == NULL) {
-				sub->rawfoot = raw;
-			}		
-			raw->next = sub->rawhead;
+	if (raw->priority == 0) {
+		if (sub->rawhead == NULL) {
 			sub->rawhead = raw;
 		}
-		(sub->nraw)++;
-
+		if (sub->rawfoot != NULL) {
+			sub->rawfoot->next = raw;
+		}
+		sub->rawfoot = raw;
 	} else {
 		
-		if (!(sub->user->flags & FLG_PCONNECT)) {
-			sendf(sub->fd, "%s[\n%s\n]\n", HEADER, raw->data);
-		} else {
-			sendf(sub->fd, "[\n%s\n]\n", raw->data);
-		}
-		
-		do_died(sub);
+		if (sub->rawfoot == NULL) {
+			sub->rawfoot = raw;
+		}		
+		raw->next = sub->rawhead;
+		sub->rawhead = raw;
 	}
+	(sub->nraw)++;
 	
 }
 void post_raw(RAW *raw, USERS *user)
@@ -372,7 +357,8 @@ void send_raws(subuser *user)
 	}
 	raw = user->rawhead;
 	
-	if (!(user->user->flags & FLG_PCONNECT)) {
+	if (!(user->user->flags & FLG_PCONNECT) || !user->headers_sent) {
+		user->headers_sent = 1;
 		sendbin(user->fd, HEADER, strlen(HEADER));
 	}
 	if (raw != NULL) {
@@ -402,8 +388,9 @@ void do_died(subuser *user)
 
 	if (user->state == ALIVE && user->user->type == HUMAN && !(user->user->flags & FLG_PCONNECT)) {
 		user->state = ADIED;
+		user->headers_sent = 0;
+		
 		shutdown(user->fd, 2);
-
 	}
 }
 
@@ -632,6 +619,7 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 	sub->rawfoot = NULL;
 	sub->nraw = 0;
 	sub->wait_for_free = 0;
+	sub->headers_sent = 0;
 	
 	sub->idle = time(NULL);
 	sub->need_update = 0;
@@ -657,6 +645,7 @@ subuser *getsubuser(USERS *user, char *channel)
 
 	while (current != NULL) {
 		if (strcmp(current->channel, channel) == 0) {
+			
 			return current;
 		}
 		current = current->next;
