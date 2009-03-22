@@ -47,7 +47,7 @@ struct json_childs {
 
 struct jsontring {
 	char *jstring;
-	size_t jsize;
+	int jsize;
 };
 
 void set_json(char *name, char *value, struct json **jprev);

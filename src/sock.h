@@ -30,9 +30,17 @@
 #include <fcntl.h>
 #include "main.h"
 
-#define SENDH(x, y) sendf(x, "%s%s", HEADER, y)
-#define CLOSE(x) sendf(x, "%sCLOSE\n", HEADER)
-#define QUIT(x) sendf(x, "%sQUIT\n", HEADER)
+#define SENDH(x, y) \
+	sendbin(x, HEADER, HEADER_LEN);\
+	sendbin(x, y, strlen(y))
+	
+#define CLOSE(x) \
+	sendbin(x, HEADER, HEADER_LEN);\
+	sendbin(x, "CLOSE", 5)
+
+#define QUIT(x) \
+	sendbin(x, HEADER, HEADER_LEN);\
+	sendbin(x, "QUIT", 4)
 
 
 void setnonblocking(int fd);

@@ -231,11 +231,12 @@ RAW *forge_raw(char *raw, struct json *jlist)
 	string = jsontr(jstruct, NULL);
 
 	new_raw = xmalloc(sizeof(*new_raw));
-	new_raw->data = xmalloc(sizeof(char) * (strlen(string->jstring)+1));
+	
+	new_raw->len = strlen(string->jstring);	
+	new_raw->data = xstrdup(string->jstring);
+
 	new_raw->next = NULL;
 	new_raw->priority = 0;
-	
-	memcpy(new_raw->data, string->jstring, strlen(string->jstring)+1);
 	
 	free(string->jstring);
 	free(string);
@@ -250,10 +251,10 @@ RAW *copy_raw(RAW *input)
 
 	new_raw = xmalloc(sizeof(*new_raw));
 	new_raw->data = xstrdup(input->data);
+	new_raw->len = input->len;
 	
 	new_raw->next = input->next;
 	new_raw->priority = input->priority;
-
 	
 	return new_raw;	
 }
@@ -358,18 +359,19 @@ void send_raws(subuser *user)
 	
 	if (!(user->user->flags & FLG_PCONNECT) || !user->headers_sent) {
 		user->headers_sent = 1;
-		sendbin(user->fd, HEADER, strlen(HEADER));
+		sendbin(user->fd, HEADER, HEADER_LEN);
 	}
 	if (raw != NULL) {
 		sendbin(user->fd, "[\n", 2);
 	}
 	while(raw != NULL) {
 
+		sendbin(user->fd, raw->data, raw->len);
+		
 		if (raw->next != NULL) {
-			sendf(user->fd, "%s,\n", raw->data);
+			sendbin(user->fd, ",\n", 2);
 		} else {
-			sendf(user->fd, "%s\n]\n", raw->data);
-			
+			sendbin(user->fd, "\n]\n", 3);	
 		}
 		older = raw;
 		raw = raw->next;
@@ -540,16 +542,19 @@ void clear_sessions(USERS *user)
 session *set_session(USERS *user, char *key, char *val, int update)
 {
 	session *new_session = NULL, *sTmp = NULL;
-	
-	if (strlen(key) > 32 || user->sessions.length+strlen(val) > MAX_SESSION_LENGTH) {
+	int vlen = strlen(val);
+		
+	if (strlen(key) > 32 || user->sessions.length+vlen > MAX_SESSION_LENGTH) {
 		return NULL;
 	}
 	
 	if ((sTmp = get_session(user, key)) != NULL) {
-		if (strlen(val) > strlen(sTmp->val)) {
-			sTmp->val = xrealloc(sTmp->val, sizeof(char) * (strlen(val)+1)); // if new val is bigger than previous
+		int tvlen = strlen(sTmp->val);
+		
+		if (vlen > tvlen) {
+			sTmp->val = xrealloc(sTmp->val, sizeof(char) * (vlen+1)); // if new val is bigger than previous
 		}
-		user->sessions.length += (strlen(val) - strlen(sTmp->val)); // update size
+		user->sessions.length += (vlen - tvlen); // update size
 		strcpy(sTmp->key, key);
 		strcpy(sTmp->val, val);
 		if (update) {
@@ -561,9 +566,9 @@ session *set_session(USERS *user, char *key, char *val, int update)
 	sTmp = user->sessions.data;
 	
 	new_session = xmalloc(sizeof(*new_session));
-	new_session->val = xmalloc(sizeof(char) * (strlen(val)+1));
+	new_session->val = xmalloc(sizeof(char) * (vlen+1));
 	
-	user->sessions.length += strlen(val);
+	user->sessions.length += vlen;
 	
 	strcpy(new_session->key, key);
 	strcpy(new_session->val, val);

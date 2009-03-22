@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
+
 void *xmalloc(size_t size)
 {
 	void *r = malloc(size);
@@ -141,5 +142,4 @@ char *xstrdup(const char *s)
 	}
 	return x;
 }
-
 

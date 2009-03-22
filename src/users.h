@@ -153,6 +153,7 @@ typedef struct userslist
 typedef struct RAW
 {
 	char *data;
+	int len;
 	struct RAW *next;
 	int priority;
 } RAW;
@@ -259,5 +260,6 @@ struct _users_link *are_linked(USERS *a, USERS *b);
 void destroy_link(USERS *a, USERS *b);
 
 int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *restrict, acetables *g_ape);
+
 #endif
 

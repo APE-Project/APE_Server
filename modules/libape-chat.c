@@ -53,12 +53,12 @@ static unsigned int chat_connect(callbackp *callbacki)
 
 	
 	if (!isvalidnick(callbacki->param[1])) {
-		ENVOI(callbacki->fdclient, ERR_BAD_NICK);
+		SENDH(callbacki->fdclient, ERR_BAD_NICK);
 		
 		return (FOR_NOTHING);		
 	}
 	if (get_user_by_nickname(callbacki->param[1], callbacki->g_ape)) {
-		ENVOI(callbacki->fdclient, ERR_NICK_USED);
+		SENDH(callbacki->fdclient, ERR_NICK_USED);
 		
 		return (FOR_NOTHING);
 	}
@@ -68,7 +68,7 @@ static unsigned int chat_connect(callbackp *callbacki)
 	callbacki->call_user = nuser;
 	
 	if (nuser == NULL) {
-		ENVOI(callbacki->fdclient, ERR_CONNECT);
+		SENDH(callbacki->fdclient, ERR_CONNECT);
 		
 		return (FOR_NOTHING);
 	}

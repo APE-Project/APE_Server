@@ -97,7 +97,8 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 		cmd = param[0];
 
 	}
-
+	
+	/* TODO: Making a simple chainlist can be more efficient since we do not have many cmds */
 	cmdback = (callback *)hashtbl_seek(g_ape->hCallback, cmd);
 	if (cmdback != NULL) {
 		if ((nTok-1) == cmdback->nParam || (cmdback->nParam < 0 && (nTok-1) >= (cmdback->nParam*-1) && (cmdback->nParam*-1) <= 16)) {
@@ -180,9 +181,11 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 						strncpy(guser->ip, cget->ip_client, 16); // never trust foreign data
 					}
 				}
-
-
-				sub->state = ALIVE;
+				
+				/* If tmpfd is set, we do not have reasons to change this state */
+				if (!tmpfd) {
+					sub->state = ALIVE;
+				}
 				return (CONNECT_KEEPALIVE);
 				
 			}
@@ -261,7 +264,7 @@ unsigned int cmd_script(callbackp *callbacki)
 		for (i = 1; i <= callbacki->nParam; i++) {
 			sendf(callbacki->fdclient, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", callbacki->param[i]);
 		}
-		sendf(callbacki->fdclient, "</head>\n<body>\n</body>\n</html>");
+		sendbin(callbacki->fdclient, "</head>\n<body>\n</body>\n</html>", 30);
 	}
 	return (FOR_NOTHING);
 }
