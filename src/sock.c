@@ -261,6 +261,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								if (co[events[i].data.fd].stream_type == STREAM_IN && co[events[i].data.fd].attach != NULL) {
 									
 									if (events[i].data.fd == ((subuser *)(co[events[i].data.fd].attach))->fd) {
+										((subuser *)(co[events[i].data.fd].attach))->headers_sent = 0;
 										((subuser *)(co[events[i].data.fd].attach))->state = ADIED;
 									}
 									if (((subuser *)(co[events[i].data.fd].attach))->wait_for_free == 1) {

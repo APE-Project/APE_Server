@@ -62,7 +62,7 @@ void register_cmd(char *cmd, int nParam, unsigned int (*func)(callbackp *), unsi
 	new_cmd->func = func;
 	new_cmd->need = need;
 	
-	/* Unregister old raw if exists */
+	/* Unregister old cmd if exists */
 	if ((old_cmd = (callback *)hashtbl_seek(g_ape->hCallback, cmd)) != NULL) {
 		hashtbl_erase(g_ape->hCallback, cmd);
 	}

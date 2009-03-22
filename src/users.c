@@ -253,8 +253,7 @@ RAW *copy_raw(RAW *input)
 	
 	new_raw->next = input->next;
 	new_raw->priority = input->priority;
-	
-	//memcpy(new_raw->data, input->data, strlen(input->data)+1);
+
 	
 	return new_raw;	
 }

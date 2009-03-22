@@ -75,7 +75,7 @@ typedef struct _acetables
 	struct _extend *properties;
 } acetables;
 
-#define HEADER "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nContent-Type: text/html\r\n\r\n"
+#define HEADER "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: text/html\r\n\r\n"
 
 
 #define FIRE_EVENT(event, ret, arg...) \
