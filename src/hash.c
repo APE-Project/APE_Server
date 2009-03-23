@@ -98,7 +98,7 @@ void hashtbl_append(HTBL **htbl, char *key, void *structaddr)
 			if (strcasecmp(hDbl->key, key) == 0) {
 				free(hTmp->key);
 				free(hTmp);
-				hDbl->addrs = (void *)structaddr; // Si c'est la même clef on remplace juste l'adresse de la structure pointé.
+				hDbl->addrs = (void *)structaddr;
 				return;
 			} else {
 				hDbl = hDbl->next;
