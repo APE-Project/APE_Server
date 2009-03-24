@@ -606,7 +606,13 @@ void sendback_session(USERS *user, session *sess)
 subuser *addsubuser(int fd, char *channel, USERS *user)
 {
 	subuser *sub;
-	
+	CHANLIST *chanl;
+	CHANNEL *chan;
+	userslist *ulist;
+	json *jlist = NULL;
+	RAW *newraw;
+	char level[8];
+		
 	if (getsubuser(user, channel) != NULL || strlen(channel) > MAX_HOST_LENGTH) {
 		return NULL;
 	}
@@ -628,11 +634,49 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 	sub->idle = time(NULL);
 	sub->need_update = 0;
 	
-	
-	
 	if (user->nsub) {
+		#if 0
 		sub->need_update = 1;
 		ping_request(user);
+		#endif
+		chanl = user->chan_foot;
+
+		while (chanl != NULL) {
+
+			chan = chanl->chaninfo;
+			
+			if (chan->interactive) {
+
+				jlist = NULL;
+;
+
+				ulist = chan->head;
+				while (ulist != NULL) {
+		
+					struct json *juser = NULL;
+			
+					if (ulist->userinfo != user) {
+						//make_link(user, ulist->userinfo);
+					}
+			
+					sprintf(level, "%i", ulist->level);
+					set_json("level", level, &juser);
+					
+					json_concat(juser, get_json_object_user(ulist->userinfo));
+		
+					json_attach(jlist, juser, JSON_ARRAY);
+
+					ulist = ulist->next;
+				}
+			}			
+			set_json("pipe", NULL, &jlist);
+			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+	
+			newraw = forge_raw(RAW_CHANNEL, jlist);
+
+			post_raw_sub(newraw, sub);			
+			chanl = chanl->next;
+		}
 	}
 	
 	(user->nsub)++;

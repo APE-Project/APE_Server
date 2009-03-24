@@ -72,7 +72,7 @@ void process_http(connection *co)
 
 				return;
 			}
-			if (pos == 1 || (pos == 2 && data[0] == '\r')) {
+			if (pos == 1 || (pos == 2 && *data == '\r')) {
 				
 
 				if (co->http.type == HTTP_GET) {
