@@ -136,11 +136,12 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 					} else if (sub == NULL) {
 						sub = addsubuser(cget->fdclient, cget->host, guser);
 
+					} else if (sub != NULL) {
+						sub->fd = cget->fdclient;
 					}
 					guser->idle = (long int)time(NULL); // update user idle
 
 					sub->idle = guser->idle; // Update subuser idle
-					
 				}
 			}
 			cp.param = param;
