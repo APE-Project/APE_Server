@@ -20,15 +20,15 @@ static unsigned int cmd_control(callbackp *callbacki)
 
 	
 	if (strcmp(callbacki->param[1], READ_CONF("password")) != 0) {
-		ENVOI(callbacki->fdclient, "ERR BAD_PASSWORD");
+		SENDH(callbacki->fdclient, "ERR BAD_PASSWORD");
 		
 	} else if ((jchan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
-		ENVOI(callbacki->fdclient, "ERR NOT_A_CHANNEL");
+		SENDH(callbacki->fdclient, "ERR NOT_A_CHANNEL");
 		
 	} else {
 		if (strcasecmp(callbacki->param[3], "POSTMSG") == 0) {
 			send_msg_channel(jchan, callbacki->param[5], callbacki->param[4]);
-			ENVOI(callbacki->fdclient, "OK POSTED");
+			SENDH(callbacki->fdclient, "OK POSTED");
 		}
 	}
 	return (FOR_NOTHING);
