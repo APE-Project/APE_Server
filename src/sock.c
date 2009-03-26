@@ -232,7 +232,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 							}
 
 						} else if (co[events[i].data.fd].stream_type == STREAM_IN && g_ape->bufout[events[i].data.fd].buf != NULL) {
-							printf("EPOLLOUT Sending queue...\n");
+
 							if (sendqueue(events[i].data.fd, g_ape) == 1) {
 								if (co[events[i].data.fd].attach != NULL && ((subuser *)(co[events[i].data.fd].attach))->burn_after_writing) {
 									do_died((subuser *)(co[events[i].data.fd].attach));
@@ -419,7 +419,7 @@ static int sendqueue(int sock, acetables *g_ape)
 			if (errno == EAGAIN && r_bytes > 0) {
 				memmove(bufout->buf, bufout->buf + t_bytes, r_bytes);
 				bufout->buflen = r_bytes;
-				printf("Not enough again\n");
+
 				return 0;
 			}
 			break;
@@ -430,7 +430,7 @@ static int sendqueue(int sock, acetables *g_ape)
 	
 	bufout->buflen = 0;
 	free(bufout->buf);
-	printf("Free queue\n");
+
 	bufout->buf = NULL;
 	
 	return 1;
