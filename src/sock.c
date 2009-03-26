@@ -417,7 +417,6 @@ static int sendqueue(int sock, acetables *g_ape)
 		n = write(sock, bufout->buf + t_bytes, r_bytes);
 		if (n == -1) {
 			if (errno == EAGAIN && r_bytes > 0) {
-				bufout->buf = &bufout->buf[r_bytes];
 				memmove(bufout->buf, bufout->buf + t_bytes, r_bytes);
 				bufout->buflen = r_bytes;
 				printf("Not enough again\n");
