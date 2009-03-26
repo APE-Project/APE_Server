@@ -62,6 +62,8 @@ typedef struct _acetables
 	
 	struct _ticks_callback *timers;
 	
+	struct _socks_bufout *bufout;
+	
 	unsigned int nConnected;
 
 	struct _ace_plugins *plugins;

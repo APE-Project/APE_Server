@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 	
 	g_ape->hCallback = hashtbl_init();
 	
-
+	g_ape->bufout = NULL;
 
 	
 	g_ape->uHead = NULL;

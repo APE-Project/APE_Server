@@ -224,7 +224,7 @@ void post_raw_restricted(RAW *raw, USERS *user, subuser *sub);
 void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser);
 
 
-void send_raws(subuser *user);
+void send_raws(subuser *user, acetables *g_ape);
 
 void deluser(USERS *user, acetables *g_ape);
 

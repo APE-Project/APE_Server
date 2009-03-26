@@ -115,7 +115,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 			
 			if (cmdback->need != NEED_NOTHING) {
 				if (guser == NULL) {
-					SENDH(cget->fdclient, ERR_BAD_SESSID);
+					SENDH(cget->fdclient, ERR_BAD_SESSID, g_ape);
 					
 					return (CONNECT_SHUTDOWN);
 				} else {
@@ -124,11 +124,11 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 						if (guser->transport == TRANSPORT_IFRAME) {
 							/* iframe is already open on "sub" */
 							tmpfd = sub->fd; /* Forward data directly to iframe */
-							CLOSE(cget->fdclient);
+							CLOSE(cget->fdclient, g_ape);
 							shutdown(cget->fdclient, 2); /* Immediatly close controller */
 						} else {
 							/* Only one connection is allowed per user/host */
-							CLOSE(sub->fd);
+							CLOSE(sub->fd, g_ape);
 							shutdown(sub->fd, 2);
 							sub->state = ADIED;
 							sub->fd = cget->fdclient;					
@@ -167,7 +167,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 						return (CONNECT_SHUTDOWN);
 					}
 					if (guser->transport == TRANSPORT_IFRAME) {
-						sendbin(sub->fd, HEADER, strlen(HEADER));
+						sendbin(sub->fd, HEADER, strlen(HEADER), g_ape);
 					}			
 				}
 
@@ -193,10 +193,10 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 			return (CONNECT_SHUTDOWN);
 		} else {
 
-			SENDH(cget->fdclient, ERR_BAD_PARAM);
+			SENDH(cget->fdclient, ERR_BAD_PARAM, g_ape);
 		}
 	} else { // unregistered CMD
-		SENDH(cget->fdclient, ERR_BAD_CMD);
+		SENDH(cget->fdclient, ERR_BAD_CMD, g_ape);
 	}
 	return (CONNECT_SHUTDOWN);
 }
@@ -212,7 +212,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	callbacki->call_user = nuser;
 	
 	if (nuser == NULL) {
-		SENDH(callbacki->fdclient, ERR_CONNECT);
+		SENDH(callbacki->fdclient, ERR_CONNECT, callbacki->g_ape);
 		
 		return (FOR_NOTHING);
 	}
@@ -244,7 +244,7 @@ unsigned int cmd_pconnect(callbackp *callbacki)
 
 	nuser = adduser(callbacki->fdclient, callbacki->host, callbacki->g_ape);
 	if (nuser == NULL) {
-		SENDH(callbacki->fdclient, ERR_CONNECT);
+		SENDH(callbacki->fdclient, ERR_CONNECT, callbacki->g_ape);
 		
 		return (FOR_NOTHING);
 	}
@@ -261,11 +261,11 @@ unsigned int cmd_script(callbackp *callbacki)
 		send_error(callbacki->call_user, "NO_DOMAIN", "201");
 	} else {
 		int i;
-		sendf(callbacki->fdclient, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, domain);
+		sendf(callbacki->fdclient, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, domain);
 		for (i = 1; i <= callbacki->nParam; i++) {
-			sendf(callbacki->fdclient, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", callbacki->param[i]);
+			sendf(callbacki->fdclient, callbacki->g_ape, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", callbacki->param[i]);
 		}
-		sendbin(callbacki->fdclient, "</head>\n<body>\n</body>\n</html>", 30);
+		sendbin(callbacki->fdclient, "</head>\n<body>\n</body>\n</html>", 30, callbacki->g_ape);
 	}
 	return (FOR_NOTHING);
 }
@@ -330,7 +330,7 @@ unsigned int cmd_send(callbackp *callbacki)
 }
 unsigned int cmd_quit(callbackp *callbacki)
 {
-	QUIT(callbacki->fdclient);
+	QUIT(callbacki->fdclient, callbacki->g_ape);
 	deluser(callbacki->call_user, callbacki->g_ape); // After that callbacki->call_user is free'd
 	
 	return (FOR_NULL);
@@ -590,7 +590,7 @@ unsigned int cmd_proxy_write(callbackp *callbacki)
 	} else if (proxy->state != PROXY_CONNECTED) {
 		send_error(callbacki->call_user, "PROXY_NOT_CONNETED", "205");
 	} else {
-		proxy_write(proxy, callbacki->param[3]);
+		proxy_write(proxy, callbacki->param[3], callbacki->g_ape);
 	}
 	
 	return (FOR_NOTHING);

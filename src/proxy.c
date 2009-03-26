@@ -375,7 +375,7 @@ void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape)
 	proxy_post_raw(newraw, proxy, g_ape);
 }
 
-void proxy_write(ape_proxy *proxy, char *data)
+void proxy_write(ape_proxy *proxy, char *data, acetables *g_ape)
 {
 	char *b64;
 	int len;
@@ -386,7 +386,7 @@ void proxy_write(ape_proxy *proxy, char *data)
 	b64 = xmalloc(strlen(data)+1);
 	len = base64_decode(b64, data, strlen(data)+1);
 	
-	sendbin(proxy->sock.fd, b64, len);
+	sendbin(proxy->sock.fd, b64, len, g_ape);
 	free(b64);
 }
 

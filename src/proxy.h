@@ -94,7 +94,7 @@ ape_proxy *proxy_init_by_host_port(char *host, char *port, acetables *g_ape);
 struct json *get_json_object_proxy(ape_proxy *proxy);
 void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape);
 ape_proxy *proxy_are_linked(char *pubid, char *pubid_proxy, acetables *g_ape);
-void proxy_write(ape_proxy *proxy, char *data);
+void proxy_write(ape_proxy *proxy, char *data, acetables *g_ape);
 void proxy_detach(struct _transpipe *unlinker, struct _transpipe *tproxy, acetables *g_ape);
 void proxy_shutdown(ape_proxy *proxy, acetables *g_ape);
 

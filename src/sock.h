@@ -30,23 +30,30 @@
 #include <fcntl.h>
 #include "main.h"
 
-#define SENDH(x, y) \
-	sendbin(x, HEADER, HEADER_LEN);\
-	sendbin(x, y, strlen(y))
+#define SENDH(x, y, g_ape) \
+	sendbin(x, HEADER, HEADER_LEN, g_ape);\
+	sendbin(x, y, strlen(y), g_ape)
 	
-#define CLOSE(x) \
-	sendbin(x, HEADER, HEADER_LEN);\
-	sendbin(x, "CLOSE", 5)
+#define CLOSE(x, g_ape) \
+	sendbin(x, HEADER, HEADER_LEN, g_ape);\
+	sendbin(x, "CLOSE", 5, g_ape)
 
-#define QUIT(x) \
-	sendbin(x, HEADER, HEADER_LEN);\
-	sendbin(x, "QUIT", 4)
+#define QUIT(x, g_ape) \
+	sendbin(x, HEADER, HEADER_LEN, g_ape);\
+	sendbin(x, "QUIT", 4, g_ape)
 
 
 void setnonblocking(int fd);
-int sendf(int sock, char *buf, ...);
-int sendbin(int sock, char *bin, int len);
+int sendf(int sock, acetables *g_ape, char *buf, ...);
+int sendbin(int sock, char *bin, int len, acetables *g_ape);
 unsigned int sockroutine(size_t port, acetables *g_ape);
+
+struct _socks_bufout
+{
+	int fd;
+	char *buf;
+	int buflen;
+};
 
 #endif
 

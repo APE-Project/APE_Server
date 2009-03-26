@@ -348,7 +348,7 @@ void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser)
 /*
 	Send queue to socket
 */
-void send_raws(subuser *user)
+void send_raws(subuser *user, acetables *g_ape)
 {
 	RAW *raw, *older;
 
@@ -359,19 +359,19 @@ void send_raws(subuser *user)
 	
 	if (!(user->user->flags & FLG_PCONNECT) || !user->headers_sent) {
 		user->headers_sent = 1;
-		sendbin(user->fd, HEADER, HEADER_LEN);
+		sendbin(user->fd, HEADER, HEADER_LEN, g_ape);
 	}
 	if (raw != NULL) {
-		sendbin(user->fd, "[\n", 2);
+		sendbin(user->fd, "[\n", 2, g_ape);
 	}
 	while(raw != NULL) {
 
-		sendbin(user->fd, raw->data, raw->len);
+		sendbin(user->fd, raw->data, raw->len, g_ape);
 		
 		if (raw->next != NULL) {
-			sendbin(user->fd, ",\n", 2);
+			sendbin(user->fd, ",\n", 2, g_ape);
 		} else {
-			sendbin(user->fd, "\n]\n", 3);	
+			sendbin(user->fd, "\n]\n", 3, g_ape);	
 		}
 		older = raw;
 		raw = raw->next;
@@ -446,7 +446,7 @@ void check_timeout(acetables *g_ape)
 					continue;
 				}
 				if ((*n)->state == ALIVE && (*n)->nraw && !(*n)->need_update) {
-					send_raws(*n);
+					send_raws(*n, g_ape);
 					do_died(*n);
 				}
 				n = &(*n)->next;

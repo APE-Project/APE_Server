@@ -72,7 +72,7 @@ static int newSockListen(unsigned int port) // BIND
 	return sock;
 }
 
-static void growup(int *basemem, connection **conn_list, struct epoll_event **epoll)
+static void growup(int *basemem, connection **conn_list, struct epoll_event **epoll, struct _socks_bufout **bufout)
 {
 	*basemem *= 2;
 
@@ -81,6 +81,9 @@ static void growup(int *basemem, connection **conn_list, struct epoll_event **ep
 	
 	*conn_list = xrealloc(*conn_list, 
 			sizeof(connection) * (*basemem));
+						
+	*bufout = xrealloc(*bufout, 
+			sizeof(struct _socks_bufout) * (*basemem));
 }
 
 void setnonblocking(int fd)
@@ -131,6 +134,8 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 	g_ape->epoll_fd = &epoll_fd;
 	
 	events = xmalloc(sizeof(*events) * basemem);
+	
+	g_ape->bufout = xmalloc(sizeof(struct _socks_bufout) * basemem);
 
 	if ((s_listen = newSockListen(port)) < 0) {
 		return 0;
@@ -169,16 +174,16 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						if (new_fd == -1) {
 							break;
 						}
-
+						
 						if (new_fd + 4 == basemem) {
 							/*
 								Increase connection & events size
 							*/
-							growup(&basemem, &co, &events);
+							growup(&basemem, &co, &events, &g_ape->bufout);
 						}
 
 						strncpy(co[new_fd].ip_client, inet_ntoa(their_addr.sin_addr), 16);
-					
+						
 						co[new_fd].buffer.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
 						co[new_fd].buffer.size = DEFAULT_BUFFER_SIZE;
 						co[new_fd].buffer.length = 0;
@@ -187,6 +192,10 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						co[new_fd].attach = NULL;
 						
 						co[new_fd].stream_type = STREAM_IN;
+					
+						g_ape->bufout[new_fd].fd = new_fd;
+						g_ape->bufout[new_fd].buf = NULL;
+						g_ape->bufout[new_fd].buflen = 0;
 					
 						setnonblocking(new_fd);
 
@@ -281,8 +290,13 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								}
 								
 								clear_buffer(&co[events[i].data.fd]);
+								
+								if (g_ape->bufout[events[i].data.fd].buf != NULL) {
+									free(g_ape->bufout[events[i].data.fd].buf);
+									g_ape->bufout[events[i].data.fd].buflen = 0;
+								}
+								
 								close(events[i].data.fd);
-
 							
 								break;
 							} else if (co[events[i].data.fd].http.ready != -1) {
@@ -333,7 +347,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 				if (proxy->state == PROXY_NOT_CONNECTED && ((psock = proxy_connect(proxy, g_ape)) != 0)) {
 					http_state http_s = {0, HTTP_NULL, 0, -1, 0, 0, 0};
 					if (psock + 4 == basemem) {
-						growup(&basemem, &co, &events);
+						growup(&basemem, &co, &events, &g_ape->bufout);
 					}
 					co[psock].ip_client[0] = '\0';
 					co[psock].buffer.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
@@ -358,7 +372,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 	return 0;
 }
 
-int sendf(int sock, char *buf, ...)
+int sendf(int sock, acetables *g_ape, char *buf, ...)
 {
 	char *buff;
 	
@@ -370,14 +384,14 @@ int sendf(int sock, char *buf, ...)
 	vasprintf(&buff, buf, val);
 	va_end(val);
 
-	r_bytes = sendbin(sock, buff, strlen(buff));
+	r_bytes = sendbin(sock, buff, strlen(buff), g_ape);
 
 	free(buff);
 
 	return r_bytes;
 }
 
-int sendbin(int sock, char *bin, int len)
+int sendbin(int sock, char *bin, int len, acetables *g_ape)
 {
 	int t_bytes = 0, r_bytes, n = 0;
 
@@ -388,9 +402,19 @@ int sendbin(int sock, char *bin, int len)
 			n = write(sock, bin + t_bytes, r_bytes);
 			if (n == -1) {
 				/* Not implemented yet :/ */
-				if (errno == EAGAIN) {
-					printf("Allo Allo, y'a dla merde dans le tuyau ?!!\n");
-					/* TODO: Data must be buffered and sent via epoll EPOLLOUT */
+				if (errno == EAGAIN && r_bytes > 0) {
+					/* Keep data */
+					if (g_ape->bufout[sock].buf == NULL) {
+						g_ape->bufout[sock].buf = xmalloc(sizeof(char) * r_bytes);
+						g_ape->bufout[sock].buflen = r_bytes;
+					} else {
+						g_ape->bufout[sock].buflen += r_bytes;
+						g_ape->bufout[sock].buf = xrealloc(g_ape->bufout[sock].buf, sizeof(char) * g_ape->bufout[sock].buflen);
+					}
+					
+					memcpy(g_ape->bufout[sock].buf + (g_ape->bufout[sock].buflen - r_bytes), bin + t_bytes, r_bytes);
+					
+					printf("%i bufferised\n", r_bytes);
 				}
 				break; 
 			}
