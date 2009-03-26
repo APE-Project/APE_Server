@@ -642,15 +642,14 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 		chanl = user->chan_foot;
 
 		while (chanl != NULL) {
-
+			jlist = NULL;
 			chan = chanl->chaninfo;
 			
 			if (chan->interactive) {
 
-				jlist = NULL;
-;
-
 				ulist = chan->head;
+				set_json("users", NULL, &jlist);
+				
 				while (ulist != NULL) {
 		
 					struct json *juser = NULL;
@@ -668,8 +667,9 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 
 					ulist = ulist->next;
 				}
-			}			
+			}
 			set_json("pipe", NULL, &jlist);
+			
 			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 	
 			newraw = forge_raw(RAW_CHANNEL, jlist);
