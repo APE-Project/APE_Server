@@ -37,7 +37,7 @@
 #include "proxy.h"
 #include "pipe.h"
 
-static void sendqueue(int sock, acetables *g_ape);
+static int sendqueue(int sock, acetables *g_ape);
 
 static int newSockListen(unsigned int port) // BIND
 {
@@ -233,7 +233,12 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 
 						} else if (co[events[i].data.fd].stream_type == STREAM_IN && g_ape->bufout[events[i].data.fd].buf != NULL) {
 							printf("EPOLLOUT Sending queue...\n");
-							sendqueue(events[i].data.fd, g_ape);
+							if (sendqueue(events[i].data.fd, g_ape) == 1) {
+								if (co[events[i].data.fd].attach != NULL && ((subuser *)(co[events[i].data.fd].attach))->burn_after_writing) {
+									do_died((subuser *)(co[events[i].data.fd].attach));
+									((subuser *)(co[events[i].data.fd].attach))->burn_after_writing = 0;
+								}
+							}
 						}
 					}
 					if (events[i].events & EPOLLIN) {
@@ -381,7 +386,7 @@ int sendf(int sock, acetables *g_ape, char *buf, ...)
 {
 	char *buff;
 	
-	int r_bytes;
+	int finish;
 	
 	va_list val;
 	
@@ -389,20 +394,20 @@ int sendf(int sock, acetables *g_ape, char *buf, ...)
 	vasprintf(&buff, buf, val);
 	va_end(val);
 
-	r_bytes = sendbin(sock, buff, strlen(buff), g_ape);
+	finish = sendbin(sock, buff, strlen(buff), g_ape);
 
 	free(buff);
 
-	return r_bytes;
+	return finish;
 }
 
-static void sendqueue(int sock, acetables *g_ape)
+static int sendqueue(int sock, acetables *g_ape)
 {
 	int t_bytes = 0, r_bytes, n = 0;
 	struct _socks_bufout bufout = g_ape->bufout[sock];
 	
 	if (bufout.buf == NULL) {
-		return;
+		return 1;
 	}
 	
 	r_bytes = bufout.buflen;
@@ -414,6 +419,7 @@ static void sendqueue(int sock, acetables *g_ape)
 				bufout.buf = &bufout.buf[r_bytes];
 				bufout.buflen = r_bytes;
 				printf("Not enough again\n");
+				return 0;
 			} else if (r_bytes <= 0) {
 				printf("assertion ?!\n");
 			}
@@ -426,6 +432,8 @@ static void sendqueue(int sock, acetables *g_ape)
 	bufout.buflen = 0;
 	free(bufout.buf);
 	bufout.buf = NULL;
+	
+	return 1;
 }
 
 int sendbin(int sock, char *bin, int len, acetables *g_ape)
@@ -451,7 +459,7 @@ int sendbin(int sock, char *bin, int len, acetables *g_ape)
 					
 					memcpy(g_ape->bufout[sock].buf + (g_ape->bufout[sock].buflen - r_bytes), bin + t_bytes, r_bytes);
 					
-					printf("%i bufferised\n", r_bytes);
+					return 0;
 				}
 				break; 
 			}
@@ -460,6 +468,6 @@ int sendbin(int sock, char *bin, int len, acetables *g_ape)
 		}
 	}
 
-	return (n == -1 ? -1 : 0);	
+	return 1;
 }
 

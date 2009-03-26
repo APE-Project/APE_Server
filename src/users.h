@@ -114,6 +114,8 @@ struct _subuser
 	struct RAW *rawhead;
 	struct RAW *rawfoot;
 	
+	int burn_after_writing;
+	
 	long int idle;
 };
 
@@ -224,7 +226,7 @@ void post_raw_restricted(RAW *raw, USERS *user, subuser *sub);
 void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser);
 
 
-void send_raws(subuser *user, acetables *g_ape);
+int send_raws(subuser *user, acetables *g_ape);
 
 void deluser(USERS *user, acetables *g_ape);
 

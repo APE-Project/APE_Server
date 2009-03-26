@@ -348,12 +348,13 @@ void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser)
 /*
 	Send queue to socket
 */
-void send_raws(subuser *user, acetables *g_ape)
+int send_raws(subuser *user, acetables *g_ape)
 {
 	RAW *raw, *older;
-
+	int finish = 1;
+	
 	if (user->nraw == 0 || user->rawhead == NULL) {
-		return;
+		return 1;
 	}
 	raw = user->rawhead;
 	
@@ -362,16 +363,16 @@ void send_raws(subuser *user, acetables *g_ape)
 		sendbin(user->fd, HEADER, HEADER_LEN, g_ape);
 	}
 	if (raw != NULL) {
-		sendbin(user->fd, "[\n", 2, g_ape);
+		finish = sendbin(user->fd, "[\n", 2, g_ape);
 	}
 	while(raw != NULL) {
 
-		sendbin(user->fd, raw->data, raw->len, g_ape);
+		finish = sendbin(user->fd, raw->data, raw->len, g_ape);
 		
 		if (raw->next != NULL) {
-			sendbin(user->fd, ",\n", 2, g_ape);
+			finish = sendbin(user->fd, ",\n", 2, g_ape);
 		} else {
-			sendbin(user->fd, "\n]\n", 3, g_ape);	
+			finish = sendbin(user->fd, "\n]\n", 3, g_ape);	
 		}
 		older = raw;
 		raw = raw->next;
@@ -383,6 +384,8 @@ void send_raws(subuser *user, acetables *g_ape)
 	user->rawhead = NULL;
 	user->rawfoot = NULL;
 	user->nraw = 0;
+	
+	return finish;
 }
 void do_died(subuser *user)
 {
@@ -446,8 +449,13 @@ void check_timeout(acetables *g_ape)
 					continue;
 				}
 				if ((*n)->state == ALIVE && (*n)->nraw && !(*n)->need_update) {
-					send_raws(*n, g_ape);
-					do_died(*n);
+				
+					/* Data completetly sent => closed */
+					if (send_raws(*n, g_ape)) {
+						do_died(*n);
+					} else {
+						(*n)->burn_after_writing = 1;
+					}
 				}
 				n = &(*n)->next;
 			}
@@ -630,6 +638,8 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 	sub->nraw = 0;
 	sub->wait_for_free = 0;
 	sub->headers_sent = 0;
+	
+	sub->burn_after_writing = 0;
 	
 	sub->idle = time(NULL);
 	sub->need_update = 0;
