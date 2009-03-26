@@ -17,18 +17,17 @@ static ace_plugin_infos infos_module = {
 static unsigned int cmd_control(callbackp *callbacki)
 {
 	CHANNEL *jchan;
-
 	
 	if (strcmp(callbacki->param[1], READ_CONF("password")) != 0) {
-		SENDH(callbacki->fdclient, "ERR BAD_PASSWORD");
+		SENDH(callbacki->fdclient, "ERR BAD_PASSWORD", callbacki->g_ape);
 		
 	} else if ((jchan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
-		SENDH(callbacki->fdclient, "ERR NOT_A_CHANNEL");
+		SENDH(callbacki->fdclient, "ERR NOT_A_CHANNEL", callbacki->g_ape);
 		
 	} else {
 		if (strcasecmp(callbacki->param[3], "POSTMSG") == 0) {
 			send_msg_channel(jchan, callbacki->param[5], callbacki->param[4]);
-			SENDH(callbacki->fdclient, "OK POSTED");
+			SENDH(callbacki->fdclient, "OK POSTED", callbacki->g_ape);
 		}
 	}
 	return (FOR_NOTHING);
