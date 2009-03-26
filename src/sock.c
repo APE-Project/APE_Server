@@ -37,6 +37,8 @@
 #include "proxy.h"
 #include "pipe.h"
 
+static void sendqueue(int sock, acetables *g_ape);
+
 static int newSockListen(unsigned int port) // BIND
 {
 	int sock;
@@ -199,7 +201,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 					
 						setnonblocking(new_fd);
 
-						cev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI;
+						cev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI | EPOLLOUT;
 						cev.data.fd = new_fd;
 					
 						epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_fd, &cev);
@@ -229,104 +231,107 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								close(events[i].data.fd);
 							}
 
-							break;
+						} else if (co[events[i].data.fd].stream_type == STREAM_IN && g_ape->bufout[events[i].data.fd].buf != NULL) {
+							printf("EPOLLOUT Sending queue...\n");
+							sendqueue(events[i].data.fd, g_ape);
 						}
 					}
-					
-					do {
-						/*
-							TODO : Check if maximum data read can improve perf
-							Huge data may attempt to increase third parameter
-						*/
-						readb = read(events[i].data.fd, 
-									co[events[i].data.fd].buffer.data + co[events[i].data.fd].buffer.length, 
-									co[events[i].data.fd].buffer.size - co[events[i].data.fd].buffer.length);
-						
-						
-						if (readb == -1 && errno == EAGAIN) {
-							
+					if (events[i].events & EPOLLIN) {
+						do {
 							/*
-								Nothing to read again
+								TODO : Check if maximum data read can improve perf
+								Huge data may attempt to increase third parameter
 							*/
-							
-							if (co[events[i].data.fd].stream_type == STREAM_OUT) {
-									
-									proxy_process_eol(&co[events[i].data.fd], g_ape);
-									co[events[i].data.fd].buffer.length = 0;
-							} else {
-								co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
-							}
-							break;
-						} else {
-							if (readb < 1) {
-								#if 0
-								TODO :
-								if (events[i].events & EPOLLRDHUP) {
-									/* 
-									   Client hangup the connection (half-closed)
-									*/
-								}
-								#endif
-								if (co[events[i].data.fd].stream_type == STREAM_IN && co[events[i].data.fd].attach != NULL) {
-									
-									if (events[i].data.fd == ((subuser *)(co[events[i].data.fd].attach))->fd) {
-										((subuser *)(co[events[i].data.fd].attach))->headers_sent = 0;
-										((subuser *)(co[events[i].data.fd].attach))->state = ADIED;
-									}
-									if (((subuser *)(co[events[i].data.fd].attach))->wait_for_free == 1) {
-										free(co[events[i].data.fd].attach);
-										co[events[i].data.fd].attach = NULL;						
-									}
-								} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
-									
-									if (((ape_proxy *)(co[events[i].data.fd].attach))->state == PROXY_TOFREE) {
-										free(co[events[i].data.fd].attach);
-										co[events[i].data.fd].attach = NULL;								
-									} else {
-									
-										((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
-										proxy_onevent((ape_proxy *)(co[events[i].data.fd].attach), "DISCONNECT", g_ape);
-									}
-								}
-								
-								clear_buffer(&co[events[i].data.fd]);
-								
-								if (g_ape->bufout[events[i].data.fd].buf != NULL) {
-									free(g_ape->bufout[events[i].data.fd].buf);
-									g_ape->bufout[events[i].data.fd].buflen = 0;
-								}
-								
-								close(events[i].data.fd);
-							
-								break;
-							} else if (co[events[i].data.fd].http.ready != -1) {
-								co[events[i].data.fd].buffer.length += readb;
-
-								if (co[events[i].data.fd].buffer.length == co[events[i].data.fd].buffer.size) {
-									co[events[i].data.fd].buffer.size *= 2;
-									co[events[i].data.fd].buffer.data = xrealloc(co[events[i].data.fd].buffer.data, 
-															sizeof(char) * (co[events[i].data.fd].buffer.size + 1));
-									
-								}
-								if (co[events[i].data.fd].stream_type == STREAM_IN) {
-									process_http(&co[events[i].data.fd]);
-								
-									if (co[events[i].data.fd].http.ready == 1) {
-										co[events[i].data.fd].attach = checkrecv(co[events[i].data.fd].buffer.data, 
-															events[i].data.fd, g_ape, co[events[i].data.fd].ip_client);
-									
-										co[events[i].data.fd].buffer.length = 0;
-										co[events[i].data.fd].http.ready = -1;
-			
-									} else if (co[events[i].data.fd].http.error == 1) {
-										shutdown(events[i].data.fd, 2);
-									}
-								}
-							}
+							readb = read(events[i].data.fd, 
+										co[events[i].data.fd].buffer.data + co[events[i].data.fd].buffer.length, 
+										co[events[i].data.fd].buffer.size - co[events[i].data.fd].buffer.length);
 						
-						}
+						
+							if (readb == -1 && errno == EAGAIN) {
+							
+								/*
+									Nothing to read again
+								*/
+							
+								if (co[events[i].data.fd].stream_type == STREAM_OUT) {
+									
+										proxy_process_eol(&co[events[i].data.fd], g_ape);
+										co[events[i].data.fd].buffer.length = 0;
+								} else {
+									co[events[i].data.fd].buffer.data[co[events[i].data.fd].buffer.length] = '\0';
+								}
+								break;
+							} else {
+								if (readb < 1) {
+									#if 0
+									TODO :
+									if (events[i].events & EPOLLRDHUP) {
+										/* 
+										   Client hangup the connection (half-closed)
+										*/
+									}
+									#endif
+									if (co[events[i].data.fd].stream_type == STREAM_IN && co[events[i].data.fd].attach != NULL) {
+									
+										if (events[i].data.fd == ((subuser *)(co[events[i].data.fd].attach))->fd) {
+											((subuser *)(co[events[i].data.fd].attach))->headers_sent = 0;
+											((subuser *)(co[events[i].data.fd].attach))->state = ADIED;
+										}
+										if (((subuser *)(co[events[i].data.fd].attach))->wait_for_free == 1) {
+											free(co[events[i].data.fd].attach);
+											co[events[i].data.fd].attach = NULL;						
+										}
+									} else if (co[events[i].data.fd].stream_type == STREAM_OUT) {
+									
+										if (((ape_proxy *)(co[events[i].data.fd].attach))->state == PROXY_TOFREE) {
+											free(co[events[i].data.fd].attach);
+											co[events[i].data.fd].attach = NULL;								
+										} else {
+									
+											((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
+											proxy_onevent((ape_proxy *)(co[events[i].data.fd].attach), "DISCONNECT", g_ape);
+										}
+									}
+								
+									clear_buffer(&co[events[i].data.fd]);
+								
+									if (g_ape->bufout[events[i].data.fd].buf != NULL) {
+										free(g_ape->bufout[events[i].data.fd].buf);
+										g_ape->bufout[events[i].data.fd].buflen = 0;
+									}
+								
+									close(events[i].data.fd);
+							
+									break;
+								} else if (co[events[i].data.fd].http.ready != -1) {
+									co[events[i].data.fd].buffer.length += readb;
+
+									if (co[events[i].data.fd].buffer.length == co[events[i].data.fd].buffer.size) {
+										co[events[i].data.fd].buffer.size *= 2;
+										co[events[i].data.fd].buffer.data = xrealloc(co[events[i].data.fd].buffer.data, 
+																sizeof(char) * (co[events[i].data.fd].buffer.size + 1));
+									
+									}
+									if (co[events[i].data.fd].stream_type == STREAM_IN) {
+										process_http(&co[events[i].data.fd]);
+								
+										if (co[events[i].data.fd].http.ready == 1) {
+											co[events[i].data.fd].attach = checkrecv(co[events[i].data.fd].buffer.data, 
+																events[i].data.fd, g_ape, co[events[i].data.fd].ip_client);
+									
+											co[events[i].data.fd].buffer.length = 0;
+											co[events[i].data.fd].http.ready = -1;
+			
+										} else if (co[events[i].data.fd].http.error == 1) {
+											shutdown(events[i].data.fd, 2);
+										}
+									}
+								}
+						
+							}
 					
-					} while(readb >= 0);
+						} while(readb >= 0);
+					}
 				}			
 			}
 		}
@@ -389,6 +394,38 @@ int sendf(int sock, acetables *g_ape, char *buf, ...)
 	free(buff);
 
 	return r_bytes;
+}
+
+static void sendqueue(int sock, acetables *g_ape)
+{
+	int t_bytes = 0, r_bytes, n = 0;
+	struct _socks_bufout bufout = g_ape->bufout[sock];
+	
+	if (bufout.buf == NULL) {
+		return;
+	}
+	
+	r_bytes = bufout.buflen;
+	
+	while(t_bytes < bufout.buflen) {
+		n = write(sock, bufout.buf + t_bytes, r_bytes);
+		if (n == -1) {
+			if (errno == EAGAIN && r_bytes > 0) {
+				bufout.buf = &bufout.buf[r_bytes];
+				bufout.buflen = r_bytes;
+				printf("Not enough again\n");
+			} else if (r_bytes <= 0) {
+				printf("assertion ?!\n");
+			}
+			break;
+		}
+		t_bytes += n;
+		r_bytes -= n;		
+	}
+	printf("Clearing...\n");
+	bufout.buflen = 0;
+	free(bufout.buf);
+	bufout.buf = NULL;
 }
 
 int sendbin(int sock, char *bin, int len, acetables *g_ape)
