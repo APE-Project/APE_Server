@@ -404,20 +404,20 @@ int sendf(int sock, acetables *g_ape, char *buf, ...)
 static int sendqueue(int sock, acetables *g_ape)
 {
 	int t_bytes = 0, r_bytes, n = 0;
-	struct _socks_bufout bufout = g_ape->bufout[sock];
+	struct _socks_bufout *bufout = &g_ape->bufout[sock];
 	
-	if (bufout.buf == NULL) {
+	if (bufout->buf == NULL) {
 		return 1;
 	}
 	
-	r_bytes = bufout.buflen;
+	r_bytes = bufout->buflen;
 	
-	while(t_bytes < bufout.buflen) {
-		n = write(sock, bufout.buf + t_bytes, r_bytes);
+	while(t_bytes < bufout->buflen) {
+		n = write(sock, bufout->buf + t_bytes, r_bytes);
 		if (n == -1) {
 			if (errno == EAGAIN && r_bytes > 0) {
-				bufout.buf = &bufout.buf[r_bytes];
-				bufout.buflen = r_bytes;
+				bufout->buf = &bufout->buf[r_bytes];
+				bufout->buflen = r_bytes;
 				printf("Not enough again\n");
 				return 0;
 			} else if (r_bytes <= 0) {
@@ -429,9 +429,10 @@ static int sendqueue(int sock, acetables *g_ape)
 		r_bytes -= n;		
 	}
 	printf("Clearing...\n");
-	bufout.buflen = 0;
-	free(bufout.buf);
-	bufout.buf = NULL;
+	bufout->buflen = 0;
+	free(bufout->buf);
+	printf("After free\n");
+	bufout->buf = NULL;
 	
 	return 1;
 }
