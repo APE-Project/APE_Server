@@ -303,8 +303,9 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 									if (g_ape->bufout[events[i].data.fd].buf != NULL) {
 										free(g_ape->bufout[events[i].data.fd].buf);
 										g_ape->bufout[events[i].data.fd].buflen = 0;
+										g_ape->bufout[events[i].data.fd].buf = NULL;
 									}
-								
+									
 									close(events[i].data.fd);
 							
 									break;
@@ -417,21 +418,20 @@ static int sendqueue(int sock, acetables *g_ape)
 		if (n == -1) {
 			if (errno == EAGAIN && r_bytes > 0) {
 				bufout->buf = &bufout->buf[r_bytes];
+				memmove(bufout->buf, bufout->buf + t_bytes, r_bytes);
 				bufout->buflen = r_bytes;
 				printf("Not enough again\n");
 				return 0;
-			} else if (r_bytes <= 0) {
-				printf("assertion ?!\n");
 			}
 			break;
 		}
 		t_bytes += n;
 		r_bytes -= n;		
 	}
-	printf("Clearing...\n");
+	
 	bufout->buflen = 0;
 	free(bufout->buf);
-	printf("After free\n");
+	printf("Free queue\n");
 	bufout->buf = NULL;
 	
 	return 1;
