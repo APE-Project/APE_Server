@@ -489,9 +489,7 @@ unsigned int cmd_ban(callbackp *callbacki)
 unsigned int cmd_session(callbackp *callbacki)
 {
 	if (strcmp(callbacki->param[2], "set") == 0 && (callbacki->nParam == 4 || callbacki->nParam == 5)) {
-		int shutdown = 1;
 		if (callbacki->nParam == 5) {
-			shutdown = 0;
 			subuser *tmpSub = getsubuser(callbacki->call_user, callbacki->host);
 		
 			if (tmpSub != NULL) {
@@ -500,9 +498,6 @@ unsigned int cmd_session(callbackp *callbacki)
 		}
 		if (set_session(callbacki->call_user, callbacki->param[3], callbacki->param[4], (callbacki->nParam == 4 ? 0 : 1)) == NULL) {
 			send_error(callbacki->call_user, "SESSION_ERROR", "203");
-		} else if (shutdown) {
-			/* little hack to closing the connection (webkit bug) */
-			send_msg_sub(getsubuser(callbacki->call_user, callbacki->host), "close", "close");
 		}
 	} else if (strcmp(callbacki->param[2], "get") == 0 && callbacki->nParam >= 3) {
 		int i;

@@ -28,7 +28,6 @@
 
 #include "channel.h"
 
-
 #include <signal.h>
 #include <syslog.h>
 #include <sys/resource.h>
@@ -36,9 +35,8 @@
 #include "ticks.h"
 #include "proxy.h"
 
-#define _VERSION "0.8.0"
+#define _VERSION "0.9.0"
 
-#define _RLIMIT_ 50000
 
 static void signal_handler(int sign)
 {
@@ -50,12 +48,12 @@ static void signal_pipe(int sign)
 	return;
 }
 
-static void inc_rlimit()
+static void inc_rlimit(int nofile)
 {
 	struct rlimit rl;
 	
-	rl.rlim_cur = _RLIMIT_;
-	rl.rlim_max = _RLIMIT_;
+	rl.rlim_cur = nofile;
+	rl.rlim_max = nofile;
 	
 	setrlimit(RLIMIT_NOFILE, &rl);
 }
@@ -124,7 +122,7 @@ int main(int argc, char **argv)
 	signal(SIGPIPE, &signal_pipe);
 	
 	if (getuid() == 0) {
-		inc_rlimit();
+		inc_rlimit(atoi(CONFIG_VAL(Server, rlimit_nofile, srv)));
 	} else {
 		printf("[ERR] You must run APE as root\n");
 		return 0;
