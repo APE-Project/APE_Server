@@ -172,15 +172,9 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				}
 
 				*iuser = (tmpfd ? NULL : sub);
+				
 				if (flag & FOR_UPDATE_IP) {
-					/*
-						TODO : Fix IP management
-					*/
-					if (strcmp(cget->ip_client, "127.0.0.1") == 0) { // Becareful, a local user can spoof his ip address
-						strncpy(guser->ip, cget->ip_get, 16);
-					} else {
-						strncpy(guser->ip, cget->ip_client, 16); // never trust foreign data
-					}
+					strncpy(guser->ip, cget->ip_get, 16);
 				}
 				
 				/* If tmpfd is set, we do not have reasons to change this state */

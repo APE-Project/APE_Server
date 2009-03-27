@@ -53,6 +53,7 @@ struct _socks_bufout
 	int fd;
 	char *buf;
 	int buflen;
+	int allocsize;
 };
 
 #endif

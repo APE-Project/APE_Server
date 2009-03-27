@@ -32,14 +32,13 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 
 char *getpost(char *input);
 int getqueryip(char *base, char *output);
-char *getfirstparam(char *input);
+
 
 
 typedef struct clientget
 {
 	int fdclient;
 	char *get;
-	char ip_client[16];
 	char ip_get[16];
 	char host[MAX_HOST_LENGTH];
 } clientget ;

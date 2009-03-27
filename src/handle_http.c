@@ -110,14 +110,14 @@ int getqueryip(char *base, char *output)
 	
 }
 
-char *getfirstparam(char *input)
+static char *getfirstparam(char *input, char sep)
 {
 
 	char *pInput;
 	/*
 		Should be replaced by a simple strchr
 	*/	
-	for (pInput = input; *pInput && *pInput != '&'; pInput++);
+	for (pInput = input; *pInput && *pInput != sep; pInput++);
 	
 	if (!*pInput || !pInput[1]) {
 		return NULL;
@@ -131,23 +131,26 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 
 	unsigned int op;
 	subuser *user = NULL;
-
+	int local = (strcmp(ip_client, "127.0.0.1") == 0);
+	
 	clientget *cget = xmalloc(sizeof(*cget));
 
 
-	if (strlen(pSock) < 3 || getqueryip(pSock, cget->ip_get) == 0) {  // get query IP (from htaccess)
+	if (strlen(pSock) < 3 || (local && getqueryip(pSock, cget->ip_get) == 0)) {  // get query IP (from htaccess)
 		free(cget);
 		shutdown(fdclient, 2);
 		return NULL;		
 	}
-
-	strncpy(cget->ip_client, ip_client, 16); // get real IP (from socket)
+	if (!local) {
+		strncpy(cget->ip_get, ip_client, 16); // get real IP (from socket)
+	}
+	
 	cget->fdclient = fdclient;
 	
 	gethost(pSock, cget->host);
 
 	if (strncasecmp(pSock, "GET", 3) == 0) {
-		if (fixpacket(pSock, 0) == 0 || (cget->get = getfirstparam(pSock)) == NULL) {
+		if (!fixpacket(pSock, 0) || (cget->get = getfirstparam(pSock, (local ? '&' : '?'))) == NULL) {
 			free(cget);
 			
 			shutdown(fdclient, 2);
@@ -167,7 +170,7 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 		return NULL;		
 	}
 	fixpacket(cget->get, 1);
-	
+
 	op = checkcmd(cget, &user, g_ape);
 
 	switch (op) {

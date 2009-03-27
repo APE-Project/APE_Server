@@ -198,7 +198,8 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						g_ape->bufout[new_fd].fd = new_fd;
 						g_ape->bufout[new_fd].buf = NULL;
 						g_ape->bufout[new_fd].buflen = 0;
-					
+						g_ape->bufout[new_fd].allocsize = 0;
+						
 						setnonblocking(new_fd);
 
 						cev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI | EPOLLOUT;
@@ -304,6 +305,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 										free(g_ape->bufout[events[i].data.fd].buf);
 										g_ape->bufout[events[i].data.fd].buflen = 0;
 										g_ape->bufout[events[i].data.fd].buf = NULL;
+										g_ape->bufout[events[i].data.fd].allocsize = 0;
 									}
 									
 									close(events[i].data.fd);
@@ -448,19 +450,22 @@ int sendbin(int sock, char *bin, int len, acetables *g_ape)
 			if (n == -1) {
 				if (errno == EAGAIN && r_bytes > 0) {
 					if (g_ape->bufout[sock].buf == NULL) {
-						/* TODO : Allocate more than r_bytes to decrease realloc calls */
-						g_ape->bufout[sock].buf = xmalloc(sizeof(char) * r_bytes);
+						g_ape->bufout[sock].allocsize = r_bytes + 128; /* add padding to prevent extra data to be reallocated */
+						g_ape->bufout[sock].buf = xmalloc(sizeof(char) * g_ape->bufout[sock].allocsize);
 						g_ape->bufout[sock].buflen = r_bytes;
 					} else {
-						g_ape->bufout[sock].buflen += r_bytes;						
-						g_ape->bufout[sock].buf = xrealloc(g_ape->bufout[sock].buf, sizeof(char) * g_ape->bufout[sock].buflen);
+						g_ape->bufout[sock].buflen += r_bytes;
+						if (g_ape->bufout[sock].buflen > g_ape->bufout[sock].allocsize) {
+							g_ape->bufout[sock].allocsize = g_ape->bufout[sock].buflen + 128;
+							g_ape->bufout[sock].buf = xrealloc(g_ape->bufout[sock].buf, sizeof(char) * g_ape->bufout[sock].allocsize);
+						}
 					}
 					
 					memcpy(g_ape->bufout[sock].buf + (g_ape->bufout[sock].buflen - r_bytes), bin + t_bytes, r_bytes);
 					
 					return 0;
 				}
-				break; 
+				break;
 			}
 			t_bytes += n;
 			r_bytes -= n;
