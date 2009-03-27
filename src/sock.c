@@ -54,7 +54,7 @@ static int newSockListen(unsigned int port, acetables *g_ape) // BIND
 	
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = inet_addr(CONFIG_VAL(Server, ip, g_ape->srv)); /*INADDR_ANY;*/
+	addr.sin_addr.s_addr = inet_addr(CONFIG_VAL(Server, ip, g_ape->srv));
 	memset(&(addr.sin_zero), '\0', 8);
 	
 	
@@ -66,7 +66,7 @@ static int newSockListen(unsigned int port, acetables *g_ape) // BIND
 		return -3;
 	}
 
-	if (listen(sock, 50000) == -1)
+	if (listen(sock, 2048) == -1)
 	{
 		printf("ERREUR: listen().. (%s line: %i)\n",__FILE__, __LINE__);
 		return -4;
@@ -132,7 +132,12 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 	
 	connection *co = xmalloc(sizeof(*co) * basemem);
 
-	epoll_fd = epoll_create(40000);
+	epoll_fd = epoll_create(1); /* the param is not used */
+	
+	if (epoll_fd < 0) {
+		printf("[ERR] Not enougth memory\n");
+		exit(0);		
+	}
 	
 	g_ape->epoll_fd = &epoll_fd;
 	

@@ -134,8 +134,6 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 	int local = (strcmp(ip_client, "127.0.0.1") == 0);
 	
 	clientget *cget = xmalloc(sizeof(*cget));
-	
-	printf("IP client : %s\n", ip_client);
 
 	if (strlen(pSock) < 3 || (local && getqueryip(pSock, cget->ip_get) == 0)) {  // get query IP (from htaccess)
 		free(cget);
