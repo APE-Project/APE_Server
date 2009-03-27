@@ -48,6 +48,5 @@ apeconfig *ape_config_get_section(apeconfig *conf, const char *section);
 #define CONFIG_VAL(section, key, srv) \
 	(ape_config_get_key(ape_config_get_section(srv, #section), #key) == NULL ? "" : ape_config_get_key(ape_config_get_section(srv, #section), #key))
 
-
 #endif
 

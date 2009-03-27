@@ -36,10 +36,11 @@
 #include "ticks.h"
 #include "proxy.h"
 #include "pipe.h"
+#include "config.h"
 
 static int sendqueue(int sock, acetables *g_ape);
 
-static int newSockListen(unsigned int port) // BIND
+static int newSockListen(unsigned int port, acetables *g_ape) // BIND
 {
 	int sock;
 	struct sockaddr_in addr;
@@ -53,7 +54,7 @@ static int newSockListen(unsigned int port) // BIND
 	
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = INADDR_ANY;
+	addr.sin_addr.s_addr = inet_addr(CONFIG_VAL(Server, ip, g_ape->srv)); /*INADDR_ANY;*/
 	memset(&(addr.sin_zero), '\0', 8);
 	
 	
@@ -139,7 +140,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 	
 	g_ape->bufout = xmalloc(sizeof(struct _socks_bufout) * basemem);
 
-	if ((s_listen = newSockListen(port)) < 0) {
+	if ((s_listen = newSockListen(port, g_ape)) < 0) {
 		return 0;
 	}
 
