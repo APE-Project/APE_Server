@@ -24,7 +24,7 @@
 #include "handle_http.h"
 #include "cmd.h"
 #include "utils.h"
-
+#include "config.h"
 
 static unsigned int fixpacket(char *pSock, int type)
 {
@@ -131,7 +131,7 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 
 	unsigned int op;
 	subuser *user = NULL;
-	int local = (strcmp(ip_client, "127.0.0.1") == 0);
+	int local = (strcmp(ip_client, CONFIG_VAL(Server, ip_local, g_ape->srv)) == 0);
 	
 	clientget *cget = xmalloc(sizeof(*cget));
 

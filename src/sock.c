@@ -54,7 +54,7 @@ static int newSockListen(unsigned int port, acetables *g_ape) // BIND
 	
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = inet_addr(CONFIG_VAL(Server, ip, g_ape->srv));
+	addr.sin_addr.s_addr = inet_addr(CONFIG_VAL(Server, ip_listen, g_ape->srv));
 	memset(&(addr.sin_zero), '\0', 8);
 	
 	
@@ -121,6 +121,7 @@ static void clear_buffer(connection *co)
 unsigned int sockroutine(size_t port, acetables *g_ape)
 {
 	int basemem = 512, epoll_fd;
+
 	struct epoll_event ev, *events;
 
 	int s_listen, new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i;
@@ -275,6 +276,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 								break;
 							} else {
 								if (readb < 1) {
+
 									#if 0
 									TODO :
 									if (events[i].events & EPOLLRDHUP) {

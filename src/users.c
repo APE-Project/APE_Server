@@ -165,7 +165,7 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 	
 	addsubuser(fdclient, host, nuser);
 
-	
+	printf("New user added...\n");
 	return nuser;
 	
 }
