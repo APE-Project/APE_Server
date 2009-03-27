@@ -363,16 +363,16 @@ int send_raws(subuser *user, acetables *g_ape)
 		sendbin(user->fd, HEADER, HEADER_LEN, g_ape);
 	}
 	if (raw != NULL) {
-		finish = sendbin(user->fd, "[\n", 2, g_ape);
+		finish &= sendbin(user->fd, "[\n", 2, g_ape);
 	}
 	while(raw != NULL) {
 
-		finish = sendbin(user->fd, raw->data, raw->len, g_ape);
+		finish &= sendbin(user->fd, raw->data, raw->len, g_ape);
 		
 		if (raw->next != NULL) {
-			finish = sendbin(user->fd, ",\n", 2, g_ape);
+			finish &= sendbin(user->fd, ",\n", 2, g_ape);
 		} else {
-			finish = sendbin(user->fd, "\n]\n", 3, g_ape);	
+			finish &= sendbin(user->fd, "\n]\n", 3, g_ape);	
 		}
 		older = raw;
 		raw = raw->next;

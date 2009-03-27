@@ -419,7 +419,7 @@ static int sendqueue(int sock, acetables *g_ape)
 			if (errno == EAGAIN && r_bytes > 0) {
 				memmove(bufout->buf, bufout->buf + t_bytes, r_bytes);
 				bufout->buflen = r_bytes;
-
+				/* Decrease memory size ? */
 				return 0;
 			}
 			break;
@@ -446,14 +446,13 @@ int sendbin(int sock, char *bin, int len, acetables *g_ape)
 		while(t_bytes < len) {
 			n = write(sock, bin + t_bytes, r_bytes);
 			if (n == -1) {
-				/* Not implemented yet :/ */
 				if (errno == EAGAIN && r_bytes > 0) {
-					/* Keep data */
 					if (g_ape->bufout[sock].buf == NULL) {
+						/* TODO : Allocate more than r_bytes to decrease realloc calls */
 						g_ape->bufout[sock].buf = xmalloc(sizeof(char) * r_bytes);
 						g_ape->bufout[sock].buflen = r_bytes;
 					} else {
-						g_ape->bufout[sock].buflen += r_bytes;
+						g_ape->bufout[sock].buflen += r_bytes;						
 						g_ape->bufout[sock].buf = xrealloc(g_ape->bufout[sock].buf, sizeof(char) * g_ape->bufout[sock].buflen);
 					}
 					
