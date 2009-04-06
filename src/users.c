@@ -689,6 +689,15 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 		}
 	}
 	
+	jlist = NULL;
+	
+	set_json("user", NULL, &jlist);
+	json_attach(jlist, get_json_object_user(user), JSON_OBJECT);	
+	
+	newraw = forge_raw("IDENT", jlist);
+	
+	post_raw_sub(newraw, sub);
+	
 	(user->nsub)++;
 	
 	user->subuser = sub;

@@ -219,14 +219,12 @@ unsigned int cmd_connect(callbackp *callbacki)
 	}
 	
 	set_json("sessid", nuser->sessid, &jstr);
-	set_json("user", NULL, &jstr);
-	
-	json_attach(jstr, get_json_object_user(nuser), JSON_OBJECT);	
 	
 	newraw = forge_raw(RAW_LOGIN, jstr);
 
 	post_raw(newraw, nuser);
-
+	
+	
 	
 	return (FOR_LOGIN | FOR_UPDATE_IP);
 
