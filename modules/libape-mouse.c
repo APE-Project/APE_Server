@@ -36,11 +36,11 @@ static unsigned int cmd_setmouse(callbackp *callbacki)
 			json *jeach = NULL;
 			
 			if (explode(',', callbacki->param[i], param, 2) != 1) {
-				printf("Pass...\n");
+				set_json("x", param[0], &jeach);
+				set_json("y", param[1], &jeach);
 				continue;
 			}
 			
-			set_json("cord", callbacki->param[i], &jeach);
 			json_attach(jlist, jeach, JSON_ARRAY);
 		}
 
