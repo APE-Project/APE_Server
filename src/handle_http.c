@@ -46,7 +46,7 @@ static unsigned int fixpacket(char *pSock, int type)
 	}
 	return 0;
 }
-int gethost(char *base, char *output) // Catch the host HTTP header
+static int gethost(char *base, char *output) // Catch the host HTTP header
 {
 	char *pBase;
 	int i;
@@ -70,7 +70,7 @@ int gethost(char *base, char *output) // Catch the host HTTP header
 	return 1;
 }
 
-char *getpost(char *input) // Catch Post datas
+static char *getpost(char *input) // Catch Post datas
 {
 	char *pInput;
 	
@@ -82,7 +82,8 @@ char *getpost(char *input) // Catch Post datas
 		return &pInput[4];
 	}
 }
-int getqueryip(char *base, char *output)
+
+static int getqueryip(char *base, char *output)
 {
 	int i, size = strlen(base), step, x = 0;
 	

@@ -30,10 +30,6 @@
 
 subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client);
 
-char *getpost(char *input);
-int getqueryip(char *base, char *output);
-
-
 
 typedef struct clientget
 {
