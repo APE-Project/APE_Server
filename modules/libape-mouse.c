@@ -35,11 +35,12 @@ static unsigned int cmd_setmouse(callbackp *callbacki)
 			char *param[2];
 			json *jeach = NULL;
 			
-			if (explode(',', callbacki->param[i], param, 2) != 1) {
-				set_json("x", param[0], &jeach);
-				set_json("y", param[1], &jeach);
+			if (explode(',', callbacki->param[i], param, 2) != 1) {				
 				continue;
 			}
+			
+			set_json("y", param[1], &jeach);
+			set_json("x", param[0], &jeach);
 			
 			json_attach(jlist, jeach, JSON_ARRAY);
 		}
