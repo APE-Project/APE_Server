@@ -19,7 +19,7 @@ static ace_plugin_infos infos_module = {
 static unsigned int cmd_setmouse(callbackp *callbacki)
 {
 
-	json *jlist, *jpos;
+	json *jlist;
 
 	if (get_pipe_strict(callbacki->param[2], callbacki->call_user, callbacki->g_ape) == NULL) {
 
@@ -27,15 +27,16 @@ static unsigned int cmd_setmouse(callbackp *callbacki)
 
 	} else {
 		int i;
-		jlist = NULL, jpos = NULL;
+		jlist = NULL;
 		
 		set_json("pos", NULL, &jlist);
 		
 		for (i = 3; i < callbacki->nParam; i++) {
-			set_json("cord", callbacki->param[i], &jpos);
+			json *jeach = NULL;
+			set_json("cord", callbacki->param[i], &jeach);
+			json_attach(jlist, jeach, JSON_ARRAY);
 		}
-		
-		json_attach(jlist, jpos, JSON_ARRAY);
+
 		
 		//printf("Param : %i\n", callbacki->nParam);
 		post_to_pipe(jlist, "MOUSEPOS", callbacki->param[2], getsubuser(callbacki->call_user, callbacki->host), NULL, callbacki->g_ape);
