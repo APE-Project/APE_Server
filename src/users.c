@@ -165,7 +165,6 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 	
 	addsubuser(fdclient, host, nuser);
 
-	printf("New user added...\n");
 	return nuser;
 	
 }
@@ -683,8 +682,8 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 	
 			newraw = forge_raw(RAW_CHANNEL, jlist);
-
-			post_raw_sub(newraw, sub);			
+			newraw->priority = 1;
+			post_raw_sub(newraw, sub);
 			chanl = chanl->next;
 		}
 	}
@@ -695,7 +694,7 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 	json_attach(jlist, get_json_object_user(user), JSON_OBJECT);	
 	
 	newraw = forge_raw("IDENT", jlist);
-	
+	newraw->priority = 1;
 	post_raw_sub(newraw, sub);
 	
 	(user->nsub)++;
