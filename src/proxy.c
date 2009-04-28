@@ -333,7 +333,7 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
         }
 	proxy->state = PROXY_IN_PROGRESS;
 	
-	cev.events = EPOLLIN | EPOLLET | EPOLLOUT | EPOLLRDHUP | EPOLLPRI;
+	cev.events = EPOLLIN | EPOLLET | EPOLLOUT | EPOLLPRI;
 	cev.data.fd = sock;
 
 	epoll_ctl(*(g_ape->epoll_fd), EPOLL_CTL_ADD, sock, &cev);

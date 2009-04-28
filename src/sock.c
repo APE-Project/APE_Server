@@ -152,7 +152,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 
 	setnonblocking(s_listen);
 	
-	ev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI;
+	ev.events = EPOLLIN | EPOLLET | EPOLLPRI;
 	ev.data.fd = s_listen;
 	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, s_listen, &ev);
 	
