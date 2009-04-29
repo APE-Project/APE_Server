@@ -31,7 +31,7 @@ static unsigned int cmd_setmouse(callbackp *callbacki)
 		
 		set_json("pos", NULL, &jlist);
 		
-		for (i = 3; i < callbacki->nParam; i++) {
+		for (i = callbacki->nParam; i >= 3; i--) {
 			char *param[2];
 			json *jeach = NULL;
 			
