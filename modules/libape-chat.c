@@ -8,7 +8,6 @@
 
 #include "plugins.h"
 #include "global_plugins.h"
-#include "libape-mysql.h"
 
 #define MODULE_NAME "chat"
 
