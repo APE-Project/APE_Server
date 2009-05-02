@@ -9,6 +9,7 @@
 #include "plugins.h"
 #include "global_plugins.h"
 
+
 #define MODULE_NAME "chat"
 
 #define ERR_NICK_USED 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"005\",\"value\":\"NICK_USED\"}}\n]\n"
@@ -80,11 +81,13 @@ static unsigned int chat_connect(callbackp *callbacki)
 	hash_user(nuser, callbacki->param[1], callbacki->g_ape);
 	add_property_str(&nuser->properties, "name", callbacki->param[1]);
 
-
+		
+	subuser_restor(getsubuser(callbacki->call_user, callbacki->host));
+	
 	set_json("sessid", nuser->sessid, &jstr);
 	
 	newraw = forge_raw(RAW_LOGIN, jstr);
-
+	newraw->priority = 1;
 	post_raw(newraw, nuser);
 	
 	#if 0

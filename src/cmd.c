@@ -135,7 +135,9 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 						}
 					} else if (sub == NULL) {
 						sub = addsubuser(cget->fdclient, cget->host, guser);
-
+						if (sub != NULL) {
+							subuser_restor(sub);
+						}
 					} else if (sub != NULL) {
 						sub->fd = cget->fdclient;
 					}
@@ -166,6 +168,8 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 					if ((sub = addsubuser(cget->fdclient, cget->host, guser)) == NULL) {
 						return (CONNECT_SHUTDOWN);
 					}
+					subuser_restor(sub);
+					
 					if (guser->transport == TRANSPORT_IFRAME) {
 						sendbin(sub->fd, HEADER, strlen(HEADER), g_ape);
 					}			
@@ -218,10 +222,13 @@ unsigned int cmd_connect(callbackp *callbacki)
 		nuser->transport = TRANSPORT_LONGPOLLING;
 	}
 	
+	subuser_restor(getsubuser(callbacki->call_user, callbacki->host));
+	
 	set_json("sessid", nuser->sessid, &jstr);
 	
 	newraw = forge_raw(RAW_LOGIN, jstr);
-
+	newraw->priority = 1;
+	
 	post_raw(newraw, nuser);
 	
 	

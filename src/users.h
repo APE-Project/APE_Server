@@ -252,6 +252,7 @@ void sendback_session(USERS *user, session *sess);
 subuser *addsubuser(int fd, char *channel, USERS *user);
 subuser *getsubuser(USERS *user, char *channel);
 void delsubuser(subuser **current);
+void subuser_restor(subuser *sub);
 
 void clear_subusers(USERS *user);
 void clear_subuser_raws(subuser *sub);
