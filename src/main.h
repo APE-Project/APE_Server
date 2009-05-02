@@ -25,7 +25,7 @@
 
 
 #include <stdarg.h>
-#include <pthread.h>
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
