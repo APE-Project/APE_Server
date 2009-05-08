@@ -455,6 +455,8 @@ void check_timeout(acetables *g_ape)
 					} else {
 						(*n)->burn_after_writing = 1;
 					}
+				} else {
+					FIRE_EVENT_NONSTOP(tickuser, *n, g_ape);
 				}
 				n = &(*n)->next;
 			}

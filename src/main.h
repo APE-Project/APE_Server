@@ -117,5 +117,19 @@ typedef struct _acetables
 			cplug = cplug->next; \
 		} \
 	}
+
+#define FIRE_EVENT_NONSTOP(event, arg...) \
+	if (g_ape->plugins != NULL) { \
+		ace_plugins *cplug = g_ape->plugins; \
+		while (cplug != NULL) { \
+			if (cplug->cb != NULL && cplug->cb->c_##event != NULL && cplug->fire.c_##event == 0) { \
+				cplug->fire.c_##event = 1; \
+				cplug->cb->c_##event(arg); \
+				cplug->fire.c_##event = 0; \
+			} \
+			cplug = cplug->next; \
+		} \
+	}
 #endif
+
 

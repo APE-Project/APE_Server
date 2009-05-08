@@ -47,6 +47,7 @@ struct _ace_callbacks
 	CHANNEL *(*c_mkchan)(char *, char *, acetables *);
 	void (*c_join)(USERS *, CHANNEL *, acetables *);
 	void (*c_left)(USERS *, CHANNEL *, acetables *);
+	void (*c_tickuser)(subuser *, acetables *);
 	void (*c_post_raw)(RAW *, USERS *);
 };
 

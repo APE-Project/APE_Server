@@ -209,7 +209,7 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 						
 						setnonblocking(new_fd);
 
-						cev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLPRI | EPOLLOUT;
+						cev.events = EPOLLIN | EPOLLET | EPOLLPRI | EPOLLOUT;
 						cev.data.fd = new_fd;
 					
 						epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_fd, &cev);

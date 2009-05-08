@@ -65,6 +65,8 @@ void unfire(ace_plugins *plug)
 	
 	plug->fire.c_join = 0;
 	plug->fire.c_left = 0;
+	
+	plug->fire.c_tickuser = 0;
 }
 
 

@@ -65,6 +65,7 @@ struct _ace_plugins
 		unsigned int c_mkchan;
 		unsigned int c_join;
 		unsigned int c_left;
+		unsigned int c_tickuser;
 		unsigned int c_post_raw;
 	} fire;
 
