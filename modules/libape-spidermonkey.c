@@ -1,5 +1,23 @@
-/* (c) Anthony Catel <a.catel@weelya.com> - Weelya - 2009 */
-/* Javascript plugins support using spidermonkey API */
+/*
+  Copyright (C) 2006, 2007, 2008, 2009  Anthony Catel <a.catel@weelya.com>
+
+  This file is part of APE Server.
+  APE is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  APE is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with APE ; if not, write to the Free Software Foundation,
+  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+*/
+
+/* Javascript plugins support using (awesome) spidermonkey API */
 
 #define XP_UNIX
 #define JS_THREADSAFE
@@ -14,8 +32,25 @@
 
 /* Return the global SpiderMonkey Runtime instance e.g. ASMR->runtime */
 #define ASMR ((ape_sm_runtime *)get_property(g_ape->properties, "sm_runtime")->val)
-#define APE_JS_NATIVE(func_name) static JSBool func_name(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
+/* JSNative macro prototype */
+#define APE_JS_NATIVE(func_name) \
+	static JSBool func_name(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval) \
+	{ \
+		ape_sm_compiled *asc; \
+		acetables *g_ape; \
+		asc = JS_GetPrivate(cx, obj); \
+		g_ape = asc->g_ape;
+
+typedef struct _ape_sm_callbacks ape_sm_callbacks;
+
+struct _ape_sm_callbacks
+{
+	char *callbackname;
+	JSFunction *func;
+	
+	struct _ape_sm_callbacks *next;
+};
 
 typedef struct _ape_sm_compiled ape_sm_compiled;
 struct _ape_sm_compiled {
@@ -26,6 +61,9 @@ struct _ape_sm_compiled {
 	JSObject *global;
 	JSObject *scriptObj;
 	
+	acetables *g_ape;
+	ape_sm_callbacks *callbacks;
+	
 	struct _ape_sm_compiled *next;
 };
 
@@ -35,6 +73,8 @@ struct _ape_sm_runtime {
 	
 	ape_sm_compiled *scripts;
 };
+
+/* Define APE Table as global (to be resolved in JSNative calls) */
 
 
 static ace_plugin_infos infos_module = {
@@ -56,7 +96,7 @@ static JSClass global_class = {
 
 /* The main Ape Object (global) */
 static JSClass ape_class = {
-	"Ape", 0,
+	"Ape", JSCLASS_HAS_PRIVATE,
 	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
 	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
 	    JSCLASS_NO_OPTIONAL_MEMBERS
@@ -74,19 +114,20 @@ static void reportError(JSContext *cx, const char *message, JSErrorReport *repor
 
 
 APE_JS_NATIVE(ape_sm_addEvent)
-{
-	char event[32];
+//{
+	const char *event;
+	JSFunction *callback;
 	
 	*rval = JSVAL_NULL;	
 	if (argc != 2) {
 		return JS_TRUE;
 	}
 	
-	if (JS_ConvertArguments(cx, argc-1, argv, "s", event) == JS_FALSE) {
+	if (!JS_ConvertArguments(cx, argc, argv, "sf", &event, &callback)) {
 		printf("Cannot convert...\n");
 		return JS_TRUE;
 	}
-	
+
 	printf("Event : %s\n", event);
 	
 	return JS_TRUE;
@@ -98,7 +139,8 @@ static void ape_sm_define_ape(ape_sm_compiled *asc)
 	JSObject *obj;
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
-
+	
+	JS_SetPrivate(asc->cx, obj, asc);
 	
 	JS_DefineFunction(asc->cx, obj, "addEvent", ape_sm_addEvent, 2, 0);
 }
@@ -114,7 +156,6 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 	glob_t globbuf;
 
-	
 	rt = JS_NewRuntime(8L * 1024L * 1024L); // 8 Mio allocated
 	
 	if (rt == NULL) {
@@ -148,18 +189,21 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 			ape_sm_define_ape(asc);
 
 			asc->bytecode = JS_CompileFile(asc->cx, asc->global, asc->filename);
-			
-			
+						
 			if (asc->bytecode == NULL) {
 				JS_DestroyScript(asc->cx, asc->bytecode);
 			
-			} else {
-			
+			} else {			
 				asc->scriptObj = JS_NewScriptObject(asc->cx, asc->bytecode);
 				
-				/* Adding to the root (avoiding the script to be GC collected) */
+				/* Adding to the root (prevent the script to be GC collected) */
 				JS_AddNamedRoot(asc->cx, asc->scriptObj, asc->filename);
-
+				
+				/* put the Ape table on the script structure */
+				asc->g_ape = g_ape;
+				
+				asc->callbacks = NULL;
+				
 				/* Run the script */
 				JS_ExecuteScript(asc->cx, asc->global, asc->bytecode, &rval);
 			}
