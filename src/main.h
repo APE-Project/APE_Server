@@ -39,7 +39,7 @@
 #define DEFAULT_BUFFER_SIZE 2048
 
 #define MAX_NICK_LEN 	16 // move to module
-#define MAX_CHAN_LEN 	16
+#define MAX_CHAN_LEN 	40
 #define MAX_MSG_LEN 	1024
 #define MAX_RAW_LEN 	1024
 

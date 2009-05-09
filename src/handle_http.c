@@ -46,6 +46,8 @@ static unsigned int fixpacket(char *pSock, int type)
 	}
 	return 0;
 }
+
+/* Reading the host http header */
 static int gethost(char *base, char *output) // Catch the host HTTP header
 {
 	char *pBase;
@@ -70,7 +72,8 @@ static int gethost(char *base, char *output) // Catch the host HTTP header
 	return 1;
 }
 
-static char *getpost(char *input) // Catch Post datas
+/* Reading post data from the HTTP streaming incoming */
+static char *getpost(char *input)
 {
 	char *pInput;
 	
@@ -148,7 +151,7 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 	cget->fdclient = fdclient;
 	
 	gethost(pSock, cget->host);
-
+	
 	if (strncasecmp(pSock, "GET", 3) == 0) {
 		if (!fixpacket(pSock, 0) || (cget->get = getfirstparam(pSock, (local ? '&' : '?'))) == NULL) {
 			free(cget);

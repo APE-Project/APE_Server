@@ -28,6 +28,7 @@ const char basic_chars[16] = { 	'a', 'b', 'c', 'd', 'e', 'f', '0', '1',
 			};
 
 
+/* Generate a string (32 chars) used for sessid and pubid */
 void gen_sessid_new(char *input, acetables *g_ape)
 {
 	unsigned int i;
@@ -40,7 +41,7 @@ void gen_sessid_new(char *input, acetables *g_ape)
 	} while(seek_user_id(input, g_ape) != NULL || seek_user_simple(input, g_ape) != NULL); // Colision verification
 }
 
-
+/* Init a pipe (user, channel, proxy) */
 transpipe *init_pipe(void *pipe, int type, acetables *g_ape)
 {
 	transpipe *npipe = NULL;
@@ -62,6 +63,7 @@ void destroy_pipe(transpipe *pipe, acetables *g_ape)
 	free(pipe);
 }
 
+/* Link a pipe to another (e.g. user <=> proxy) */
 void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(struct _transpipe *, struct _transpipe *, acetables *))
 {
 	struct _pipe_link *link;
@@ -71,7 +73,9 @@ void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(str
 	}
 	link = xmalloc(sizeof(*link));
 	
+	/* on_unlink is called when the pipe is deleted */
 	link->on_unlink = on_unlink;
+	
 	link->plink = pipe_to;
 	link->next = pipe_origin->link;
 	pipe_origin->link = link;
@@ -90,8 +94,8 @@ void unlink_all_pipe(transpipe *origin, acetables *g_ape)
 	while (link != NULL) {
 		plink = link->next;
 		if (link->on_unlink != NULL) {
+		
 			/* Calling callback if any */
-
 			link->on_unlink(origin, link->plink, g_ape);
 		}
 		free(link);

@@ -36,6 +36,8 @@
 #include <time.h>
 #include "utils.h"
 
+
+/* Checking whether the user is in a channel */
 unsigned int isonchannel(USERS *user, CHANNEL *chan)
 {
 	CHANLIST *clist;
