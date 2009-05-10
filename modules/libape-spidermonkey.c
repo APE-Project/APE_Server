@@ -49,7 +49,7 @@ typedef struct _ape_sm_callback ape_sm_callback;
 struct _ape_sm_callback
 {
 	char *callbackname;
-	jsval *func;
+	jsval func;
 	
 	struct _ape_sm_callback *next;
 };
@@ -119,30 +119,30 @@ APE_JS_NATIVE(ape_sm_addEvent)
 	const char *event;
 
 	ape_sm_callback *ascb;
-	
+
 	*rval = JSVAL_NULL;
 	
 	if (argc != 2) {
 		return JS_TRUE;
 	}
 	
+	
 	if (!JS_ConvertArguments(cx, argc-1, argv, "s", &event)) {
 		return JS_FALSE;
 	}
+	
 	ascb = xmalloc(sizeof(*ascb));
 	
-	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, ascb->func)) {
+	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, &ascb->func)) {
 		free(ascb);
 		return JS_FALSE;
 	}
+	JS_AddRoot(cx, &ascb->func);
 	
 	ascb->next = asc->callbacks;
 	ascb->callbackname = xstrdup(event);
-
 	
 	asc->callbacks = ascb;
-	
-	printf("Event : %s\n", event);
 	
 	return JS_TRUE;
 }
@@ -163,8 +163,8 @@ APE_JS_NATIVE(ape_sm_echo)
 
 
 static JSFunctionSpec ape_funcs[] = {
-    JS_FS("addEvent",   ape_sm_addEvent,	2, 0, 0),
-    JS_FS("echo",  	ape_sm_echo,  		1, 0, 0),
+    JS_FS("addEvent",   ape_sm_addEvent,	2, 0, 0), /* Ape.addEvent('name', function() { }); */
+    JS_FS("echo",  	ape_sm_echo,  		1, 0, 0), /* Ape.echo('stdout\n'); */
     JS_FS_END
 };
 
@@ -195,9 +195,12 @@ static void ape_fire_callback(const char *name, acetables *g_ape)
 			printf("Callback : %s\n", cb->callbackname);
 			if (strcasecmp(name, cb->callbackname) == 0) {
 				jsval rval;
+				
+				JS_SetContextThread(asc->cx);
 				JS_BeginRequest(asc->cx);
-					JS_CallFunctionValue(asc->cx, asc->global, *(cb->func), 0, NULL, &rval);
+					JS_CallFunctionValue(asc->cx, asc->global, (cb->func), 0, NULL, &rval);
 				JS_EndRequest(asc->cx);
+				JS_ClearContextThread(asc->cx);
 			}
 		}
 		
@@ -230,45 +233,59 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 	glob("./scripts/*.ape.js", 0, NULL, &globbuf);
 	
+
 	for (i = 0; i < globbuf.gl_pathc; i++) {
 		ape_sm_compiled *asc = xmalloc(sizeof(*asc));
+
 		
 		asc->filename = (void *)xstrdup(globbuf.gl_pathv[i]);
+
 		asc->cx = JS_NewContext(rt, 8192);
 		
+		if (asc->cx == NULL) {
+			free(asc->filename);
+			free(asc);
+			continue;
+		}
+		
+		JS_SetContextThread(asc->cx);
 		JS_BeginRequest(asc->cx);
+			
 			JS_SetOptions(asc->cx, JSOPTION_VAROBJFIX);
 			JS_SetVersion(asc->cx, JSVERSION_LATEST);
 			JS_SetErrorReporter(asc->cx, reportError);
-
+			
 			asc->global = JS_NewObject(asc->cx, &global_class, NULL, NULL);
 			
 			JS_InitStandardClasses(asc->cx, asc->global);
 			
 			/* define the Ape Object */
 			ape_sm_define_ape(asc);
-
+			
 			asc->bytecode = JS_CompileFile(asc->cx, asc->global, asc->filename);
-						
+			
 			if (asc->bytecode == NULL) {
 				JS_DestroyScript(asc->cx, asc->bytecode);
 			
 			} else {			
 				asc->scriptObj = JS_NewScriptObject(asc->cx, asc->bytecode);
-				
+
 				/* Adding to the root (prevent the script to be GC collected) */
 				JS_AddNamedRoot(asc->cx, asc->scriptObj, asc->filename);
-				
+
 				/* put the Ape table on the script structure */
 				asc->g_ape = g_ape;
-				
+
 				asc->callbacks = NULL;
 				
 				/* Run the script */
 				JS_ExecuteScript(asc->cx, asc->global, asc->bytecode, &rval);
+				
+				
 			}
 		JS_EndRequest(asc->cx);
-		
+		JS_ClearContextThread(asc->cx);
+
 		if (asc->bytecode == NULL) {
 			/* cleaning memory */
 		} else {
@@ -279,7 +296,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	globfree(&globbuf);
 	
 	APE_JS_EVENT("init");
-
+	
 }
 
 static ace_callbacks callbacks = {
