@@ -33,6 +33,8 @@
 /* Return the global SpiderMonkey Runtime instance e.g. ASMR->runtime */
 #define ASMR ((ape_sm_runtime *)get_property(g_ape->properties, "sm_runtime")->val)
 
+#define APE_JS_EVENT(cb) ape_fire_callback(cb, g_ape)
+
 /* JSNative macro prototype */
 #define APE_JS_NATIVE(func_name) \
 	static JSBool func_name(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval) \
@@ -42,14 +44,14 @@
 		asc = JS_GetPrivate(cx, obj); \
 		g_ape = asc->g_ape;
 
-typedef struct _ape_sm_callbacks ape_sm_callbacks;
+typedef struct _ape_sm_callback ape_sm_callback;
 
-struct _ape_sm_callbacks
+struct _ape_sm_callback
 {
 	char *callbackname;
-	JSFunction *func;
+	jsval *func;
 	
-	struct _ape_sm_callbacks *next;
+	struct _ape_sm_callback *next;
 };
 
 typedef struct _ape_sm_compiled ape_sm_compiled;
@@ -62,7 +64,7 @@ struct _ape_sm_compiled {
 	JSObject *scriptObj;
 	
 	acetables *g_ape;
-	ape_sm_callbacks *callbacks;
+	ape_sm_callback *callbacks;
 	
 	struct _ape_sm_compiled *next;
 };
@@ -74,8 +76,6 @@ struct _ape_sm_runtime {
 	ape_sm_compiled *scripts;
 };
 
-/* Define APE Table as global (to be resolved in JSNative calls) */
-
 
 static ace_plugin_infos infos_module = {
 	"Javascript embeded", 	// Module Name
@@ -83,6 +83,7 @@ static ace_plugin_infos infos_module = {
 	"Anthony Catel",	// Module Author
 	NULL			// Config file
 };
+
 
 
 /* Standard javascript object */
@@ -116,22 +117,56 @@ static void reportError(JSContext *cx, const char *message, JSErrorReport *repor
 APE_JS_NATIVE(ape_sm_addEvent)
 //{
 	const char *event;
-	JSFunction *callback;
+
+	ape_sm_callback *ascb;
 	
-	*rval = JSVAL_NULL;	
+	*rval = JSVAL_NULL;
+	
 	if (argc != 2) {
 		return JS_TRUE;
 	}
 	
-	if (!JS_ConvertArguments(cx, argc, argv, "sf", &event, &callback)) {
-		printf("Cannot convert...\n");
-		return JS_TRUE;
+	if (!JS_ConvertArguments(cx, argc-1, argv, "s", &event)) {
+		return JS_FALSE;
 	}
+	ascb = xmalloc(sizeof(*ascb));
+	
+	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, ascb->func)) {
+		free(ascb);
+		return JS_FALSE;
+	}
+	
+	ascb->next = asc->callbacks;
+	ascb->callbackname = xstrdup(event);
 
+	
+	asc->callbacks = ascb;
+	
 	printf("Event : %s\n", event);
 	
 	return JS_TRUE;
 }
+
+APE_JS_NATIVE(ape_sm_echo)
+//{
+	const char *string;
+	*rval = JSVAL_NULL;
+	
+	if (!JS_ConvertArguments(cx, argc, argv, "s", &string)) {
+		return JS_FALSE;
+	}
+	
+	printf("%s", string);
+
+	return JS_TRUE;
+}
+
+
+static JSFunctionSpec ape_funcs[] = {
+    JS_FS("addEvent",   ape_sm_addEvent,	2, 0, 0),
+    JS_FS("echo",  	ape_sm_echo,  		1, 0, 0),
+    JS_FS_END
+};
 
 
 static void ape_sm_define_ape(ape_sm_compiled *asc)
@@ -139,12 +174,37 @@ static void ape_sm_define_ape(ape_sm_compiled *asc)
 	JSObject *obj;
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
-	
 	JS_SetPrivate(asc->cx, obj, asc);
 	
-	JS_DefineFunction(asc->cx, obj, "addEvent", ape_sm_addEvent, 2, 0);
+	JS_DefineFunctions(asc->cx, obj, ape_funcs);
+
 }
 
+static void ape_fire_callback(const char *name, acetables *g_ape)
+{
+	ape_sm_compiled *asc = ASMR->scripts;
+	
+	if (asc == NULL) {
+		return;
+	}
+	
+	while (asc != NULL) {
+		ape_sm_callback *cb;
+		
+		for (cb = asc->callbacks; cb != NULL; cb = cb->next) {
+			printf("Callback : %s\n", cb->callbackname);
+			if (strcasecmp(name, cb->callbackname) == 0) {
+				jsval rval;
+				JS_BeginRequest(asc->cx);
+					JS_CallFunctionValue(asc->cx, asc->global, *(cb->func), 0, NULL, &rval);
+				JS_EndRequest(asc->cx);
+			}
+		}
+		
+		asc = asc->next;
+	}
+	
+}
 
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
@@ -218,6 +278,8 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	}
 	globfree(&globbuf);
 	
+	APE_JS_EVENT("init");
+
 }
 
 static ace_callbacks callbacks = {
