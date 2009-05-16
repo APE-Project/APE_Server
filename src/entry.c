@@ -35,6 +35,9 @@
 #include "ticks.h"
 #include "proxy.h"
 
+#include <grp.h>
+#include <pwd.h>
+
 #define _VERSION "0.9.0"
 
 
@@ -43,28 +46,41 @@ static void signal_handler(int sign)
 	printf("\nShutdown...!\n\n");
 	exit(1);
 }
-static void signal_pipe(int sign)
-{
-	return;
-}
 
-static void inc_rlimit(int nofile)
+static int inc_rlimit(int nofile)
 {
 	struct rlimit rl;
 	
 	rl.rlim_cur = nofile;
 	rl.rlim_max = nofile;
 	
-	setrlimit(RLIMIT_NOFILE, &rl);
+	return setrlimit(RLIMIT_NOFILE, &rl);
+}
+
+static void ape_daemon()
+{
+	if (0 != fork()) { 
+		exit(0);
+	}
+	if (-1 == setsid()) {
+		
+		exit(0);
+	}
+	signal(SIGHUP, SIG_IGN);
+	
+	if (0 != fork()) {
+		exit(0);
+	}
+	printf("Starting daemon.... pid : %i\n\n", getpid());
 }
 
 int main(int argc, char **argv) 
 {
 	apeconfig *srv;
 	
-	int random;
+	int random, s_listen;
 	unsigned int getrandom;
-
+	int im_r00t = 0;
 	
 	char cfgfile[512] = APE_CONFIG_FILE;
 	
@@ -94,18 +110,11 @@ int main(int argc, char **argv)
 	}
 	
 	
-	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0) {
-		if (0 != fork()) { 
-			exit(0);
-		}
-		if (-1 == setsid()) {
-			exit(0);
-		}
-		signal(SIGHUP, SIG_IGN);
-		if (0 != fork()) {
-			exit(0);
-		}
+	if (getuid() == 0) {
+		im_r00t = 1;
 	}
+
+	
 	printf("   _   ___ ___ \n");
 	printf("  /_\\ | _ \\ __|\n");
 	printf(" / _ \\|  _/ _| \n");
@@ -115,18 +124,10 @@ int main(int argc, char **argv)
 	printf("Version : %s\n", _VERSION);
 	printf("Build   : %s %s\n", __DATE__, __TIME__);
 	printf("Author  : Weelya (contact@weelya.com)\n\n");
-	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes")==0) {
-		printf("Starting daemon.... pid : %i\n\n", getpid());
-	}
+
 	signal(SIGINT, &signal_handler);
-	signal(SIGPIPE, &signal_pipe);
-	
-	if (getuid() == 0) {
-		inc_rlimit(atoi(CONFIG_VAL(Server, rlimit_nofile, srv)));
-	} else {
-		printf("[ERR] You must run APE as root\n");
-		return 0;
-	}
+	signal(SIGPIPE, SIG_IGN);
+
 	
 	if (TICKS_RATE < 1) {
 		printf("[ERR] TICKS_RATE cant be less than 1\n");
@@ -142,6 +143,54 @@ int main(int argc, char **argv)
 	srand(getrandom);
 	close(random);
 	
+	
+	if ((s_listen = newSockListen(atoi(CONFIG_VAL(Server, port, srv)), CONFIG_VAL(Server, ip_listen, srv))) < 0) {
+		return 0;
+	}
+	
+	if (im_r00t) {
+		struct group *grp = NULL;
+		struct passwd *pwd = NULL;
+		
+		if (inc_rlimit(atoi(CONFIG_VAL(Server, rlimit_nofile, srv))) == -1) {
+			printf("[WARN] Cannot set the max filedescriptos limit (setrlimit)\n");
+		}
+		
+		/* Get the user information (uid section) */
+		if ((pwd = getpwnam(CONFIG_VAL(uid, user, srv))) == NULL) {
+			printf("[ERR] Can\'t find username %s\n", CONFIG_VAL(uid, user, srv));
+			return -1;
+		}
+		if (pwd->pw_uid == 0) {
+			printf("[ERR] %s uid can\'t be 0\n", CONFIG_VAL(uid, user, srv));
+			return -1;			
+		}
+		
+		/* Get the group information (uid section) */
+		if ((grp = getgrnam(CONFIG_VAL(uid, group, srv))) == NULL) {
+			printf("[ERR] Can\'t find group %s\n", CONFIG_VAL(uid, group, srv));
+			return -1;
+		}
+		if (grp->gr_gid == 0) {
+			printf("[ERR] %s gid can\'t be 0\n", CONFIG_VAL(uid, group, srv));
+			return -1;
+		}
+		
+		setgid(grp->gr_gid);
+		setgroups(0, NULL);
+
+		initgroups(CONFIG_VAL(uid, user, srv), grp->gr_gid);
+		
+		setuid(pwd->pw_uid);
+	} else {
+		printf("[WARN] You have to run \'aped\' as root to increase r_limit\n");
+	}
+	
+	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0) {
+		ape_daemon();
+	}
+	
+		
 	g_ape = xmalloc(sizeof(*g_ape));
 	
 	g_ape->hLogin = hashtbl_init();
@@ -188,7 +237,7 @@ int main(int argc, char **argv)
 	
 	//proxy_init("olol", "localhost", 1337, g_ape);
 	
-	sockroutine(atoi(CONFIG_VAL(Server, port, g_ape->srv)), g_ape);
+	sockroutine(s_listen, g_ape);
 	
 	hashtbl_free(g_ape->hLogin);
 	hashtbl_free(g_ape->hSessid);

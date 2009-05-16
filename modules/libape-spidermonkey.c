@@ -192,7 +192,7 @@ static void ape_fire_callback(const char *name, acetables *g_ape)
 		ape_sm_callback *cb;
 		
 		for (cb = asc->callbacks; cb != NULL; cb = cb->next) {
-			printf("Callback : %s\n", cb->callbackname);
+			
 			if (strcasecmp(name, cb->callbackname) == 0) {
 				jsval rval;
 				
@@ -299,8 +299,20 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 }
 
+static USERS *ape_cb_add_user(unsigned int fdclient, char *host, acetables *g_ape)
+{
+
+	USERS *n = adduser(fdclient, host, g_ape);
+	
+	if (n != NULL) {
+		APE_JS_EVENT("adduser");
+	}
+
+	return n;	
+}
+
 static ace_callbacks callbacks = {
-	NULL,				/* Called when new user is added */
+	ape_cb_add_user,				/* Called when new user is added */
 	NULL,				/* Called when a user is disconnected */
 	NULL,				/* Called when new chan is created */
 	NULL,				/* Called when a user join a channel */

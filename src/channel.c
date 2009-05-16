@@ -146,7 +146,7 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 		
 		newraw = forge_raw(RAW_JOIN, jlist);
 		post_raw_channel_restricted(newraw, chan, user);
-	
+		
 		jlist = NULL;
 		set_json("users", NULL, &jlist);
 

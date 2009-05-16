@@ -40,7 +40,7 @@
 
 static int sendqueue(int sock, acetables *g_ape);
 
-static int newSockListen(unsigned int port, acetables *g_ape) // BIND
+int newSockListen(unsigned int port, char *listen_ip)
 {
 	int sock;
 	struct sockaddr_in addr;
@@ -54,15 +54,18 @@ static int newSockListen(unsigned int port, acetables *g_ape) // BIND
 	
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = inet_addr(CONFIG_VAL(Server, ip_listen, g_ape->srv));
-	memset(&(addr.sin_zero), '\0', 8);
+	//addr.sin_addr.s_addr = inet_addr(CONFIG_VAL(Server, ip_listen, g_ape->srv));
 	
+	
+	addr.sin_addr.s_addr = inet_addr(listen_ip);
+	
+	memset(&(addr.sin_zero), '\0', 8);
 	
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
 
 	if (bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == -1)
 	{
-		printf("ERREUR: bind(%i).. (%s line: %i)\n", port, __FILE__, __LINE__);
+		printf("ERREUR: bind(%i) (non-root ?).. (%s line: %i)\n", port, __FILE__, __LINE__);
 		return -3;
 	}
 
@@ -118,13 +121,13 @@ static void clear_buffer(connection *co)
 	co->attach = NULL;
 }
 
-unsigned int sockroutine(size_t port, acetables *g_ape)
+unsigned int sockroutine(int s_listen, acetables *g_ape)
 {
 	int basemem = 512, epoll_fd;
 
 	struct epoll_event ev, *events;
 
-	int s_listen, new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i;
+	int new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i;
 	
 	struct timeval t_start, t_end;	
 	unsigned int ticks = 0;
@@ -145,10 +148,6 @@ unsigned int sockroutine(size_t port, acetables *g_ape)
 	events = xmalloc(sizeof(*events) * basemem);
 	
 	g_ape->bufout = xmalloc(sizeof(struct _socks_bufout) * basemem);
-
-	if ((s_listen = newSockListen(port, g_ape)) < 0) {
-		return 0;
-	}
 
 	setnonblocking(s_listen);
 	

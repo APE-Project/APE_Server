@@ -42,11 +42,11 @@
 	sendbin(x, HEADER, HEADER_LEN, g_ape);\
 	sendbin(x, "QUIT", 4, g_ape)
 
-
+int newSockListen(unsigned int port, char *listen_ip);
 void setnonblocking(int fd);
 int sendf(int sock, acetables *g_ape, char *buf, ...);
 int sendbin(int sock, char *bin, int len, acetables *g_ape);
-unsigned int sockroutine(size_t port, acetables *g_ape);
+unsigned int sockroutine(int s_listen, acetables *g_ape);
 
 struct _socks_bufout
 {

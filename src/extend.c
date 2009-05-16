@@ -22,6 +22,7 @@
 #include "extend.h"
 #include "main.h"
 #include "utils.h"
+#include "json.h"
 
 extend *get_property(extend *current, char *key)
 {
@@ -53,7 +54,7 @@ extend *add_property_str(extend **entry, char *key, char *val)
 {
 	extend *new_property = NULL, *eTmp;
 	
-	if (strlen(key) > 32) {
+	if (strlen(key) > EXTEND_KEY_LENGTH) {
 		return NULL;
 	}
 	if ((eTmp = get_property(*entry, key)) != NULL) {
@@ -87,13 +88,10 @@ extend *add_property(extend **entry, char *key, void *val)
 {
 	extend *new_property = NULL, *eTmp;
 	
-	if (strlen(key) > 32) {
+	if (strlen(key) > EXTEND_KEY_LENGTH || (eTmp = get_property(*entry, key)) != NULL) {
 		return NULL;
 	}
-	if ((eTmp = get_property(*entry, key)) != NULL) {
-		return NULL;
-	}
-	
+
 	eTmp = *entry;
 	
 	new_property = xmalloc(sizeof(*new_property));
@@ -108,5 +106,12 @@ extend *add_property(extend **entry, char *key, void *val)
 	return new_property;
 	
 }
+
+#if 0
+extend *add_property_json(extend **entry, char *key, struct json *jlist)
+{
+	
+}
+#endif
 
 

@@ -22,12 +22,19 @@
 #ifndef _EXTEND_H
 #define _EXTEND_H
 
+#define EXTEND_KEY_LENGTH 32
+
+enum {
+	EXTEND_STR,
+	EXTEND_JSON,
+	EXTEND_POINTER
+};
 
 typedef struct _extend extend;
 
 struct _extend
 {
-	char key[33];
+	char key[EXTEND_KEY_LENGTH+1];
 	void *val;
 	
 	int allocval;

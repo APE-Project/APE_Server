@@ -84,6 +84,26 @@ MYSQL_ROW ape_mysql_row(const char *query, MYSQL_RES **res, acetables *g_ape)
 	return mysql_fetch_row(*res);
 }
 
+MYSQL_RES *ape_mysql_selectf(acetables *g_ape, char *buf, ...)
+{
+	MYSQL_RES *res;
+	
+	char *buff;
+
+	va_list val;
+	
+	va_start(val, buf);
+	vasprintf(&buff, buf, val);
+	va_end(val);
+	
+	res = ape_mysql_select(buff, g_ape);
+	
+	free(buff);
+	
+	return res;
+}
+
+
 char *ape_mysql_get(const char *query, acetables *g_ape)
 {
 	MYSQL_RES *res;

@@ -100,7 +100,6 @@ typedef struct _acetables
 		} \
 	} \
 	if (ret != NULL) { \
-		printf("NULLED\n"); \
 		return ret; \
 	}
  
