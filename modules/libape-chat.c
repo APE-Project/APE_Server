@@ -48,7 +48,7 @@ static unsigned int chat_connect(callbackp *callbacki)
 {
 	USERS *nuser;
 	RAW *newraw;
-	
+	json *jprop = NULL;
 	struct json *jstr = NULL;
 
 	
@@ -77,10 +77,14 @@ static unsigned int chat_connect(callbackp *callbacki)
 		nuser->flags |= FLG_PCONNECT;
 	} else {
 		nuser->transport = TRANSPORT_LONGPOLLING;
-	}	
+	}
 	hash_user(nuser, callbacki->param[1], callbacki->g_ape);
-	add_property_str(&nuser->properties, "name", callbacki->param[1]);
-
+	
+	set_json("name", callbacki->param[1], &jprop);
+	set_json("test", callbacki->param[2], &jprop);
+	
+	add_property(&nuser->properties, "name", jprop, EXTEND_JSON, EXTEND_ISPUBLIC);
+	
 		
 	subuser_restor(getsubuser(callbacki->call_user, callbacki->host));
 	
@@ -128,19 +132,20 @@ void change_nick(USERS *user, char *nick, acetables *g_ape)
 	hashtbl_erase(get_property(g_ape->properties, "nicklist")->val, get_property(user->properties, "name")->val);
 	hash_user(user, nick, g_ape);
 	
-	add_property_str(&user->properties, "name", nick);
+	add_property(&user->properties, "name", nick, EXTEND_STR, EXTEND_ISPUBLIC);
 	
 	while (clist != NULL) {
 		//RAW *new_raw;
 		
 		clist = clist->next;
 	}
+	//TODO
 }
 
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
 	// Adding hashtable identified by "nicklist" to g_ape properties
-	add_property(&g_ape->properties, "nicklist", hashtbl_init());
+	add_property(&g_ape->properties, "nicklist", hashtbl_init(), EXTEND_POINTER, EXTEND_ISPRIVATE);
 
 	// Overriding connect raw
 	register_cmd("CONNECT",	2, chat_connect, NEED_NOTHING, g_ape);

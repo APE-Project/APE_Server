@@ -50,6 +50,8 @@ void clear_properties(extend **entry)
 	}
 	*entry = NULL;
 }
+
+#if 0
 extend *add_property_str(extend **entry, char *key, char *val)
 {
 	extend *new_property = NULL, *eTmp;
@@ -83,7 +85,6 @@ extend *add_property_str(extend **entry, char *key, char *val)
 	
 }
 
-
 extend *add_property(extend **entry, char *key, void *val)
 {
 	extend *new_property = NULL, *eTmp;
@@ -106,12 +107,43 @@ extend *add_property(extend **entry, char *key, void *val)
 	return new_property;
 	
 }
-
-#if 0
-extend *add_property_json(extend **entry, char *key, struct json *jlist)
-{
-	
-}
 #endif
 
+extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility)
+{
+	extend *new_property = NULL, *eTmp;
+	
+	if (strlen(key) > EXTEND_KEY_LENGTH || (eTmp = get_property(*entry, key)) != NULL) {
+		return NULL;
+	}
+	
+	eTmp = *entry;
+	
+	new_property = xmalloc(sizeof(*new_property));
+	
+	strcpy(new_property->key, key);
+	
+	switch(etype) {
+		case EXTEND_STR:
+			new_property->val = xmalloc(sizeof(char) * (strlen(val)+1));
+			strcpy(new_property->val, val);		
+			break;
+		case EXTEND_POINTER:
+		default:
+			visibility = EXTEND_ISPRIVATE;
+		case EXTEND_JSON:
+			new_property->val = val;
+			new_property->allocval = 0;			
+			break;		
+	}
+
+	new_property->next = eTmp;
+	new_property->type = etype;
+	new_property->visibility = visibility;
+	
+	*entry = new_property;
+	
+	return new_property;	
+
+}
 

@@ -24,11 +24,16 @@
 
 #define EXTEND_KEY_LENGTH 32
 
-enum {
+typedef enum {
 	EXTEND_STR,
 	EXTEND_JSON,
 	EXTEND_POINTER
-};
+} EXTEND_TYPE;
+
+typedef enum {
+	EXTEND_ISPUBLIC,
+	EXTEND_ISPRIVATE
+} EXTEND_PUBLIC;
 
 typedef struct _extend extend;
 
@@ -39,11 +44,14 @@ struct _extend
 	
 	int allocval;
 	
+	EXTEND_TYPE type;
+	EXTEND_PUBLIC visibility;
+	
 	struct _extend *next;
 };
 
 extend *get_property(extend *current, char *key);
 void clear_properties(extend **entry);
-extend *add_property_str(extend **entry, char *key, char *val);
-extend *add_property(extend **entry, char *key, void *val);
+//extend *add_property_str(extend **entry, char *key, char *val);
+extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility);
 #endif

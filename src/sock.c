@@ -184,9 +184,7 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 						}
 						
 						if (new_fd + 4 == basemem) {
-							/*
-								Increase connection & events size
-							*/
+							/* Increase connection & events size */
 							growup(&basemem, &co, &events, &g_ape->bufout);
 						}
 

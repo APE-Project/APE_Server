@@ -400,33 +400,6 @@ void do_died(subuser *user)
 }
 
 
-struct json *get_json_object_user(USERS *user)
-{
-	json *jstr = NULL;
-	
-	if (user != NULL) {
-	
-		set_json("pubid", user->pipe->pubid, &jstr);
-		set_json("casttype", "uni", &jstr);
-		
-		if (user->properties != NULL) {
-			json *jprop = NULL;
-			set_json("properties", NULL, &jstr);
-			
-			extend *eTmp = user->properties;
-			
-			while (eTmp != NULL) {
-				set_json(eTmp->key, eTmp->val, &jprop);
-				eTmp = eTmp->next;
-			}
-			json_attach(jstr, jprop, JSON_OBJECT);
-		}
-
-	} else {
-		set_json("pubid", SERVER_NAME, &jstr);
-	}
-	return jstr;
-}
 
 void check_timeout(acetables *g_ape)
 {
@@ -897,5 +870,51 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 	post_raw_restricted(newraw, sender, from);
 	
 	return 1;
+}
+
+
+struct json *get_json_object_user(USERS *user)
+{
+	json *jstr = NULL;
+	
+	if (user != NULL) {
+	
+		set_json("pubid", user->pipe->pubid, &jstr);
+		set_json("casttype", "uni", &jstr);
+		
+		if (user->properties != NULL) {
+			int has_prop = 0;
+			
+			json *jprop = NULL;
+						
+			extend *eTmp = user->properties;
+			
+			while (eTmp != NULL) {
+				if (eTmp->visibility == EXTEND_ISPUBLIC) {
+					if (!has_prop) {
+						has_prop = 1;
+						set_json("properties", NULL, &jstr);
+					}
+					if (eTmp->type == EXTEND_JSON) {
+						json *jcopy = json_copy(eTmp->val);
+						
+						set_json(eTmp->key, NULL, &jprop);
+						
+						json_attach(jprop, jcopy, JSON_OBJECT);
+					} else {
+						set_json(eTmp->key, eTmp->val, &jprop);
+					}			
+				}
+				eTmp = eTmp->next;
+			}
+			if (has_prop) {
+				json_attach(jstr, jprop, JSON_ARRAY);
+			}
+		}
+
+	} else {
+		set_json("pubid", SERVER_NAME, &jstr);
+	}
+	return jstr;
 }
 
