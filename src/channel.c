@@ -539,8 +539,17 @@ struct json *get_json_object_channel(CHANNEL *chan)
 	extend *eTmp = chan->properties;
 	
 	while (eTmp != NULL) {
-		set_json(eTmp->key, eTmp->val, &jprop);
-		eTmp = eTmp->next;
+		if (eTmp->visibility == EXTEND_ISPUBLIC) {
+			if (eTmp->type == EXTEND_JSON) {
+				json *jcopy = json_copy(eTmp->val);
+				
+				set_json(eTmp->key, NULL, &jprop);
+				
+				json_attach(jprop, jcopy, JSON_OBJECT);
+			} else {
+				set_json(eTmp->key, eTmp->val, &jprop);
+			}
+		}
 	}
 	/* a little hack to have the same behaviour than user */
 	set_json("name", chan->name, &jprop);

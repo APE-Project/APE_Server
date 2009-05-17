@@ -48,7 +48,7 @@ static unsigned int chat_connect(callbackp *callbacki)
 {
 	USERS *nuser;
 	RAW *newraw;
-	json *jprop = NULL;
+	
 	struct json *jstr = NULL;
 
 	
@@ -77,14 +77,10 @@ static unsigned int chat_connect(callbackp *callbacki)
 		nuser->flags |= FLG_PCONNECT;
 	} else {
 		nuser->transport = TRANSPORT_LONGPOLLING;
-	}
+	}	
 	hash_user(nuser, callbacki->param[1], callbacki->g_ape);
-	
-	set_json("name", callbacki->param[1], &jprop);
-	set_json("test", callbacki->param[2], &jprop);
-	
-	add_property(&nuser->properties, "name", jprop, EXTEND_JSON, EXTEND_ISPUBLIC);
-	
+	add_property(&nuser->properties, "name", callbacki->param[1], EXTEND_STR, EXTEND_ISPUBLIC);
+
 		
 	subuser_restor(getsubuser(callbacki->call_user, callbacki->host));
 	
