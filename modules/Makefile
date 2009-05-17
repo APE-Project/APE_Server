@@ -7,9 +7,9 @@ all: modules
 
 modules: libape-chat.c libape-mysql.c libape-setcord.c libape-helloworld.c
 	
-	#$(CC) $(CFLAGS) -Wl,-soname,libmod_setcord.so -o lib/libmod_setcord.so libape-setcord.c
+	$(CC) $(CFLAGS) -Wl,-soname,libmod_setcord.so -o lib/libmod_setcord.so libape-setcord.c
 	#$(CC) $(CFLAGS) -Wl,-soname,libmod_mouse.so -o lib/libmod_mouse.so libape-mouse.c
-	#$(CC) $(CFLAGS) -Wl,-soname,libmod_controller.so -o lib/libmod_controller.so libape-controller.c	
+	$(CC) $(CFLAGS) -Wl,-soname,libmod_controller.so -o lib/libmod_controller.so libape-controller.c	
 	$(CC) $(CFLAGS) -Wl,-soname,libmod_chat.so -o lib/libmod_chat.so libape-chat.c
 	#$(CC) $(CFLAGS) -Wl,-soname,libmod_spidermonkey.so -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../../js/src/ -I../../js/src/Linux_All_DBG.OBJ -L../../js/src/Linux_All_DBG.OBJ/ -ljs
 	

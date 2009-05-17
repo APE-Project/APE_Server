@@ -229,7 +229,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	asr->runtime = rt;
 	asr->scripts = NULL;
 	
-	add_property(&g_ape->properties, "sm_runtime", asr);
+	add_property(&g_ape->properties, "sm_runtime", asr, EXTEND_POINTER, EXTEND_ISPRIVATE);
 
 	glob("./scripts/*.ape.js", 0, NULL, &globbuf);
 	

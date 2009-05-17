@@ -19,7 +19,7 @@ static void init_module(acetables *g_ape)
 {
 	MYSQL *mysql = mysql_init(NULL);
 	
-	add_property(&g_ape->properties, "mysql", mysql);
+	add_property(&g_ape->properties, "mysql", mysql, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	
 	/* init the connection to MySQL */
 	if (!ape_mysql_connect(g_ape)) {

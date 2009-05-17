@@ -38,8 +38,8 @@ static unsigned int cmd_setpos(callbackp *callbacki)
 			jlist = NULL;
 			
 			/* Adding two persistant properties to calling user */
-			add_property_str(&callbacki->call_user->properties, "x", itos(x, cx));
-			add_property_str(&callbacki->call_user->properties, "y", itos(y, cy));
+			add_property(&callbacki->call_user->properties, "x", itos(x, cx), EXTEND_STR, EXTEND_ISPUBLIC);
+			add_property(&callbacki->call_user->properties, "y", itos(y, cy), EXTEND_STR, EXTEND_ISPUBLIC);
 			
 			post_to_pipe(jlist, "POSITIONS", callbacki->param[2], getsubuser(callbacki->call_user, callbacki->host), NULL, callbacki->g_ape);
 		}
