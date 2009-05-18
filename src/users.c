@@ -908,7 +908,7 @@ struct json *get_json_object_user(USERS *user)
 				eTmp = eTmp->next;
 			}
 			if (has_prop) {
-				json_attach(jstr, jprop, JSON_ARRAY);
+				json_attach(jstr, jprop, JSON_OBJECT);
 			}
 		}
 
