@@ -8,7 +8,7 @@
 
 #include "plugins.h"
 #include "global_plugins.h"
-
+#include "libape-mysql.h"
 
 #define MODULE_NAME "chat"
 
@@ -138,6 +138,20 @@ void change_nick(USERS *user, char *nick, acetables *g_ape)
 	//TODO
 }
 
+
+unsigned int chat_send(callbackp *callbacki)
+{
+	json *jlist = NULL;
+
+	set_json("msg", callbacki->param[3], &jlist);
+	
+	//ape_mysql_queryf("");
+	
+	post_to_pipe(jlist, RAW_DATA, callbacki->param[2], getsubuser(callbacki->call_user, callbacki->host), NULL, callbacki->g_ape);
+	
+	return (FOR_NOTHING);
+}
+
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
 	// Adding hashtable identified by "nicklist" to g_ape properties
@@ -145,6 +159,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 	// Overriding connect raw
 	register_cmd("CONNECT",	2, chat_connect, NEED_NOTHING, g_ape);
+	register_cmd("SEND", 	3, chat_send, 	NEED_SESSID, g_ape);
 }
 
 

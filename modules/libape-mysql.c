@@ -1,7 +1,11 @@
+#define _GNU_SOURCE
+
 #include "libape-mysql.h"
 
 #include "plugins.h"
 #include "global_plugins.h"
+
+#include <stdio.h>
 
 #define MODULE_NAME "mysql"
 
@@ -55,6 +59,26 @@ MYSQL *ape_mysql_query(const char *query, acetables *g_ape)
 	}
 	return mysql;
 }
+
+MYSQL *ape_mysql_queryf(acetables *g_ape, const char *buf, ...)
+{
+	MYSQL *mysql;
+	
+	char *buff;
+
+	va_list val;
+	
+	va_start(val, buf);
+	vasprintf(&buff, buf, val);
+	va_end(val);
+	
+	mysql = ape_mysql_query(buff, g_ape);
+	
+	free(buff);
+	
+	return mysql;
+}
+
 
 MYSQL_RES *ape_mysql_select(const char *query, acetables *g_ape)
 {
