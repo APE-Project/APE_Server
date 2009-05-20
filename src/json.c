@@ -86,6 +86,34 @@ struct json *json_copy(struct json *jbase)
 	return new_json;
 }
 
+void json_free(struct json *jbase)
+{
+
+	struct json_childs *jchilds = jbase->jchilds;
+	
+	free(jbase->name);
+	
+	if (jbase->value != NULL) {
+		free(jbase->value);
+	}
+
+	
+	if (jbase->next != NULL) {
+		json_free(jbase->next);
+
+	}
+		
+	while (jchilds != NULL) {
+
+		json_free(jchilds->child);
+		
+		jchilds = jchilds->next;
+	}
+	
+	free(jbase);
+
+}
+
 void json_attach(struct json *json_father, struct json *json_child, unsigned int type)
 {
 	struct json_childs *ochild = json_father->jchilds, *nchild;

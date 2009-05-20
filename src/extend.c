@@ -24,32 +24,114 @@
 #include "utils.h"
 #include "json.h"
 
-extend *get_property(extend *current, char *key)
+
+extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility)
 {
-	while (current != NULL) {
-		if (strcmp(current->key, key) == 0) {
-			return current;
+	extend *new_property = NULL, *eTmp;
+	
+	if (strlen(key) > EXTEND_KEY_LENGTH) {
+		return NULL;
+	}
+	
+	if (get_property(*entry, key) != NULL) {
+		del_property(entry, key);
+	}
+	
+	eTmp = *entry;
+	
+	new_property = xmalloc(sizeof(*new_property));
+	
+	strcpy(new_property->key, key);
+	
+	switch(etype) {
+		case EXTEND_STR:
+			new_property->val = xmalloc(sizeof(char) * (strlen(val)+1));
+			strcpy(new_property->val, val);		
+			break;
+		case EXTEND_POINTER:
+		default:
+			visibility = EXTEND_ISPRIVATE;
+		case EXTEND_JSON:
+			new_property->val = val;
+			new_property->allocval = 0;			
+			break;		
+	}
+
+	new_property->next = eTmp;
+	new_property->type = etype;
+	new_property->visibility = visibility;
+	
+	*entry = new_property;
+	
+	return new_property;	
+
+}
+
+
+extend *get_property(extend *entry, char *key)
+{
+	while (entry != NULL) {
+		if (strcmp(entry->key, key) == 0) {
+			return entry;
 		}
-		current = current->next;
+		entry = entry->next;
 	}
 	
 	return NULL;
 	
 }
+
+
+void del_property(extend **entry, char *key)
+{
+
+	while (*entry != NULL) {
+		if (strcmp((*entry)->key, key) == 0) {
+			extend *pEntry = *entry;
+			*entry = (*entry)->next;
+			
+			switch(pEntry->type) {
+				case EXTEND_STR:
+					free(pEntry->val);
+					break;
+				case EXTEND_JSON:
+					json_free(pEntry->val);
+					break;
+				default:
+					break;
+			}
+			
+			free(pEntry);
+			
+			return;
+		}
+		entry = &(*entry)->next;
+	}
+
+}
+
 void clear_properties(extend **entry)
 {
-	extend *pExtend = *entry, *pTmp;
+	extend *pEntry = *entry, *pTmp;
 
-	while (pExtend != NULL) {
-		pTmp = pExtend->next;
-		if (pExtend->allocval == 1) {
-			free(pExtend->val);
+	while (pEntry != NULL) {
+		pTmp = pEntry->next;
+		switch(pEntry->type) {
+			case EXTEND_STR:
+				free(pEntry->val);
+				break;
+			case EXTEND_JSON:
+				json_free(pEntry->val);
+				break;
+			default:
+				break;
 		}
-		free(pExtend);
-		pExtend = pTmp;
+		free(pEntry);
+		pEntry = pTmp;
 	}
 	*entry = NULL;
 }
+
 
 #if 0
 extend *add_property_str(extend **entry, char *key, char *val)
@@ -109,41 +191,5 @@ extend *add_property(extend **entry, char *key, void *val)
 }
 #endif
 
-extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility)
-{
-	extend *new_property = NULL, *eTmp;
-	
-	if (strlen(key) > EXTEND_KEY_LENGTH || (eTmp = get_property(*entry, key)) != NULL) {
-		return NULL;
-	}
-	
-	eTmp = *entry;
-	
-	new_property = xmalloc(sizeof(*new_property));
-	
-	strcpy(new_property->key, key);
-	
-	switch(etype) {
-		case EXTEND_STR:
-			new_property->val = xmalloc(sizeof(char) * (strlen(val)+1));
-			strcpy(new_property->val, val);		
-			break;
-		case EXTEND_POINTER:
-		default:
-			visibility = EXTEND_ISPRIVATE;
-		case EXTEND_JSON:
-			new_property->val = val;
-			new_property->allocval = 0;			
-			break;		
-	}
 
-	new_property->next = eTmp;
-	new_property->type = etype;
-	new_property->visibility = visibility;
-	
-	*entry = new_property;
-	
-	return new_property;	
-
-}
 

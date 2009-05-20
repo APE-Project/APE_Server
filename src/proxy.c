@@ -242,6 +242,7 @@ void proxy_shutdown(ape_proxy *proxy, acetables *g_ape)
 	}
 	
 	destroy_pipe(proxy->pipe, g_ape);
+	
 	if (proxy->state != PROXY_TOFREE) {
 		free(proxy);
 	}

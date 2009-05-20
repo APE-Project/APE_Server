@@ -336,12 +336,14 @@ void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser)
 		return;
 	}
 	list = chan->head;
+	
 	while (list) {
 		if (list->userinfo != ruser) {
 			post_raw(copy_raw(raw), list->userinfo);
 		}
 		list = list->next;
 	}
+	
 	free(raw->data);
 	free(raw);
 }
