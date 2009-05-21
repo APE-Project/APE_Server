@@ -25,6 +25,18 @@
 #include "json.h"
 
 
+
+/*
+	Add a property to an object (user, channel, proxy, acetables)
+	
+	
+	EXTEND_STR : allocate memory for val and free it when the property is deleted
+	EXTEND_JSON : put the given "json" object on the properties. This object is free'ed using json_free when the property is deleted
+	EXTEND_POINTER : add a private pointer as property (must be private. see EXTEND_PUBLIC)
+	
+	EXTEND_ISPUBLIC : The property is added to the json tree sent with get_json_object_*
+	EXTEND_ISPRIVATE : The property is not shown in get_json_object_*
+*/
 extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility)
 {
 	extend *new_property = NULL, *eTmp;
@@ -33,27 +45,28 @@ extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EX
 		return NULL;
 	}
 	
-	if (get_property(*entry, key) != NULL) {
-		del_property(entry, key);
-	}
-	
+	/* Delete older property with this key (if any) */
+	del_property(entry, key);
+
 	eTmp = *entry;
 	
 	new_property = xmalloc(sizeof(*new_property));
 	
+	/* The key cannot be longer than EXTEND_KEY_LENGTH */
 	strcpy(new_property->key, key);
 	
 	switch(etype) {
 		case EXTEND_STR:
-			new_property->val = xmalloc(sizeof(char) * (strlen(val)+1));
+			new_property->val = xstrdup(val);
 			strcpy(new_property->val, val);		
 			break;
 		case EXTEND_POINTER:
 		default:
+			/* a pointer must be a private property */
 			visibility = EXTEND_ISPRIVATE;
 		case EXTEND_JSON:
-			new_property->val = val;
-			new_property->allocval = 0;			
+			/* /!\ the JSON tree (val) is free'ed when this property is removed */
+			new_property->val = val;		
 			break;		
 	}
 

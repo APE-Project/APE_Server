@@ -42,8 +42,6 @@ struct _extend
 	char key[EXTEND_KEY_LENGTH+1];
 	void *val;
 	
-	int allocval;
-	
 	EXTEND_TYPE type;
 	EXTEND_PUBLIC visibility;
 	
