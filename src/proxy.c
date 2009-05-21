@@ -351,7 +351,7 @@ void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape)
 	while (to != NULL) {
 		pipe = get_pipe(to->pipe, g_ape);
 		if (pipe != NULL && pipe->type == USER_PIPE) {
-			post_raw(copy_raw(raw), pipe->pipe);
+			post_raw(copy_raw(raw), pipe->pipe, g_ape);
 		} else {
 			;//
 		}

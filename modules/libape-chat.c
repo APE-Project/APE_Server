@@ -82,13 +82,13 @@ static unsigned int chat_connect(callbackp *callbacki)
 	add_property(&nuser->properties, "name", callbacki->param[1], EXTEND_STR, EXTEND_ISPUBLIC);
 
 	
-	subuser_restor(getsubuser(callbacki->call_user, callbacki->host));
+	subuser_restor(getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
 	
 	set_json("sessid", nuser->sessid, &jstr);
 	
 	newraw = forge_raw(RAW_LOGIN, jstr);
 	newraw->priority = 1;
-	post_raw(newraw, nuser);
+	post_raw(newraw, nuser, callbacki->g_ape);
 	
 	#if 0
 	
@@ -138,6 +138,7 @@ void change_nick(USERS *user, char *nick, acetables *g_ape)
 	//TODO
 }
 
+
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
 	// Adding hashtable identified by "nicklist" to g_ape properties
@@ -153,7 +154,9 @@ static ace_callbacks callbacks = {
 	chat_deluser,			/* Called when a user is disconnected */
 	NULL,				/* Called when new chan is created */
 	NULL,				/* Called when a user join a channel */
-	NULL				/* Called when a user leave a channel */
+	NULL,				/* Called when a user leave a channel */
+	NULL,				/* Called at each tick, passing a subuser */
+	NULL				/* Called when a subuser receiv a message */
 };
 
 APE_INIT_PLUGIN(MODULE_NAME, init_module, callbacks)

@@ -18,7 +18,7 @@ static ace_plugin_infos infos_module = {
 static unsigned int cmd_helloworld(callbackp *callbacki)
 {
 	/* Sending a simple raw "Monkey" with "Helloworld" value */
-	send_msg(callbacki->call_user, "Helloworld", "Monkey");
+	send_msg(callbacki->call_user, "Helloworld", "Monkey", callbacki->g_ape);
 	
 	/* Most used return */
 	return (FOR_NOTHING);

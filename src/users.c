@@ -260,9 +260,11 @@ RAW *copy_raw(RAW *input)
 	return new_raw;	
 }
 
-void post_raw_sub(RAW *raw, subuser *sub)
+void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape)
 {
 
+	FIRE_EVENT_NULL(post_raw_sub, raw, sub, g_ape);
+	
 	if (raw->priority == 0) {
 		if (sub->rawhead == NULL) {
 			sub->rawhead = raw;
@@ -282,19 +284,19 @@ void post_raw_sub(RAW *raw, subuser *sub)
 	(sub->nraw)++;
 	
 }
-void post_raw(RAW *raw, USERS *user)
+void post_raw(RAW *raw, USERS *user, acetables *g_ape)
 {
 	subuser *sub = user->subuser;
 	
 	while (sub != NULL) {
-		post_raw_sub(copy_raw(raw), sub);
+		post_raw_sub(copy_raw(raw), sub, g_ape);
 		sub = sub->next;
 	}
 	free(raw->data);
 	free(raw);
 }
 
-void post_raw_restricted(RAW *raw, USERS *user, subuser *sub)
+void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape)
 {
 	subuser *tSub = user->subuser;
 	
@@ -303,7 +305,7 @@ void post_raw_restricted(RAW *raw, USERS *user, subuser *sub)
 	}
 	while (tSub != NULL) {
 		if (sub != tSub) {
-			post_raw_sub(copy_raw(raw), tSub);
+			post_raw_sub(copy_raw(raw), tSub, g_ape);
 		}
 		tSub = tSub->next;
 	}
@@ -311,7 +313,7 @@ void post_raw_restricted(RAW *raw, USERS *user, subuser *sub)
 	free(raw);	
 }
 
-void post_raw_channel(RAW *raw, struct CHANNEL *chan)
+void post_raw_channel(RAW *raw, struct CHANNEL *chan, acetables *g_ape)
 {
 	userslist *list;
 	
@@ -320,7 +322,7 @@ void post_raw_channel(RAW *raw, struct CHANNEL *chan)
 	}
 	list = chan->head;
 	while (list) {
-		post_raw(copy_raw(raw), list->userinfo);
+		post_raw(copy_raw(raw), list->userinfo, g_ape);
 		list = list->next;
 	}
 	free(raw->data);
@@ -328,7 +330,7 @@ void post_raw_channel(RAW *raw, struct CHANNEL *chan)
 }
 
 
-void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser)
+void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser, acetables *g_ape)
 {
 	userslist *list;
 	
@@ -339,7 +341,7 @@ void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser)
 	
 	while (list) {
 		if (list->userinfo != ruser) {
-			post_raw(copy_raw(raw), list->userinfo);
+			post_raw(copy_raw(raw), list->userinfo, g_ape);
 		}
 		list = list->next;
 	}
@@ -444,7 +446,7 @@ void check_timeout(acetables *g_ape)
 
 }
 
-void send_error(USERS *user, char *msg, char *code)
+void send_error(USERS *user, char *msg, char *code, acetables *g_ape)
 {
 	RAW *newraw;
 	json *jlist = NULL;
@@ -454,11 +456,11 @@ void send_error(USERS *user, char *msg, char *code)
 	
 	newraw = forge_raw(RAW_ERR, jlist);
 	
-	post_raw(newraw, user);	
+	post_raw(newraw, user, g_ape);	
 }
 
 
-void send_msg(USERS *user, char *msg, char *type)
+void send_msg(USERS *user, char *msg, char *type, acetables *g_ape)
 {
 	RAW *newraw;
 	json *jlist = NULL;
@@ -467,10 +469,10 @@ void send_msg(USERS *user, char *msg, char *type)
 	
 	newraw = forge_raw(type, jlist);
 	
-	post_raw(newraw, user);	
+	post_raw(newraw, user, g_ape);	
 }
 
-void send_msg_channel(CHANNEL *chan, char *msg, char *type)
+void send_msg_channel(CHANNEL *chan, char *msg, char *type, acetables *g_ape)
 {
 	RAW *newraw;
 	json *jlist = NULL;
@@ -479,10 +481,10 @@ void send_msg_channel(CHANNEL *chan, char *msg, char *type)
 	
 	newraw = forge_raw(type, jlist);
 	
-	post_raw_channel(newraw, chan);
+	post_raw_channel(newraw, chan, g_ape);
 }
 
-void send_msg_sub(subuser *sub, char *msg, char *type)
+void send_msg_sub(subuser *sub, char *msg, char *type, acetables *g_ape)
 {
 	RAW *newraw;
 	json *jlist = NULL;
@@ -491,7 +493,7 @@ void send_msg_sub(subuser *sub, char *msg, char *type)
 	
 	newraw = forge_raw(type, jlist);
 	
-	post_raw_sub(newraw, sub);		
+	post_raw_sub(newraw, sub, g_ape);		
 }
 
 session *get_session(USERS *user, char *key)
@@ -525,7 +527,7 @@ void clear_sessions(USERS *user)
 	user->sessions.length = 0;
 }
 
-session *set_session(USERS *user, char *key, char *val, int update)
+session *set_session(USERS *user, char *key, char *val, int update, acetables *g_ape)
 {
 	session *new_session = NULL, *sTmp = NULL;
 	int vlen = strlen(val);
@@ -544,7 +546,7 @@ session *set_session(USERS *user, char *key, char *val, int update)
 		strcpy(sTmp->key, key);
 		strcpy(sTmp->val, val);
 		if (update) {
-			sendback_session(user, sTmp);
+			sendback_session(user, sTmp, g_ape);
 		}
 		return sTmp;
 	}
@@ -562,12 +564,12 @@ session *set_session(USERS *user, char *key, char *val, int update)
 	
 	user->sessions.data = new_session;
 	if (update) {
-		sendback_session(user, new_session);
+		sendback_session(user, new_session, g_ape);
 	}	
 	return new_session;
 }
 
-void sendback_session(USERS *user, session *sess)
+void sendback_session(USERS *user, session *sess, acetables *g_ape)
 {
 	subuser *current = user->subuser;
 	
@@ -582,7 +584,7 @@ void sendback_session(USERS *user, session *sess)
 			json_attach(jlist, jobj, JSON_OBJECT);
 			newraw = forge_raw("SESSIONS", jlist);
 			newraw->priority = 1;
-			post_raw_sub(newraw, current);
+			post_raw_sub(newraw, current, g_ape);
 		}
 		current = current->next;
 	}	
@@ -624,7 +626,7 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 	return sub;
 }
 
-void subuser_restor(subuser *sub)
+void subuser_restor(subuser *sub, acetables *g_ape)
 {
 	CHANLIST *chanl;
 	CHANNEL *chan;
@@ -671,7 +673,7 @@ void subuser_restor(subuser *sub)
 
 		newraw = forge_raw(RAW_CHANNEL, jlist);
 		newraw->priority = 1;
-		post_raw_sub(newraw, sub);
+		post_raw_sub(newraw, sub, g_ape);
 		chanl = chanl->next;
 	}
 
@@ -683,7 +685,7 @@ void subuser_restor(subuser *sub)
 	
 	newraw = forge_raw("IDENT", jlist);
 	newraw->priority = 1;
-	post_raw_sub(newraw, sub);
+	post_raw_sub(newraw, sub, g_ape);
 	
 }
 
@@ -746,7 +748,7 @@ void clear_subuser_raws(subuser *sub)
 	sub->nraw = 0;
 	sub = sub->next;	
 }
-void ping_request(USERS *user)
+void ping_request(USERS *user, acetables *g_ape)
 {
 
 	struct timeval t;
@@ -754,7 +756,7 @@ void ping_request(USERS *user)
 
 	sprintf(user->lastping, "%li%li", t.tv_sec, t.tv_usec);
 	
-	send_msg(user, user->lastping, "KING");	
+	send_msg(user, user->lastping, "KING", g_ape);	
 }
 
 struct _users_link *are_linked(USERS *a, USERS *b)
@@ -842,7 +844,7 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 	
 	if (sender != NULL) {
 		if (recver == NULL) {
-			send_error(sender, "UNKNOWN_PIPE", "109");
+			send_error(sender, "UNKNOWN_PIPE", "109", g_ape);
 			return 0;
 		}
 	
@@ -862,14 +864,14 @@ int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *re
 	newraw = forge_raw(rawname, jlist);
 	
 	if (recver->type == USER_PIPE) {
-		post_raw(newraw, recver->pipe);
+		post_raw(newraw, recver->pipe, g_ape);
 	} else {
-		post_raw_channel_restricted(newraw, recver->pipe, sender);
+		post_raw_channel_restricted(newraw, recver->pipe, sender, g_ape);
 	}
 
 	newraw = forge_raw(rawname, jlist_copy);
 	
-	post_raw_restricted(newraw, sender, from);
+	post_raw_restricted(newraw, sender, from, g_ape);
 	
 	return 1;
 }

@@ -23,7 +23,7 @@ static unsigned int cmd_setpos(callbackp *callbacki)
 	char cx[8], cy[8];
 	
 	if (x > 10000 || y > 10000) {
-		send_error(callbacki->call_user, "BAD_POS", "302");
+		send_error(callbacki->call_user, "BAD_POS", "302", callbacki->g_ape);
 	} else {
 
 		json *jlist;
@@ -31,7 +31,7 @@ static unsigned int cmd_setpos(callbackp *callbacki)
 		/* Get channel structure by name */
 		if (get_pipe_strict(callbacki->param[2], callbacki->call_user, callbacki->g_ape) == NULL) {
 
-			send_error(callbacki->call_user, "UNKNOWN_PIPE", "109");
+			send_error(callbacki->call_user, "UNKNOWN_PIPE", "109", callbacki->g_ape);
 		
 		/* Check if calling user is on this channel */
 		} else {

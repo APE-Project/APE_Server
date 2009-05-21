@@ -48,7 +48,7 @@ struct _ace_callbacks
 	void (*c_join)(USERS *, CHANNEL *, acetables *);
 	void (*c_left)(USERS *, CHANNEL *, acetables *);
 	void (*c_tickuser)(subuser *, acetables *);
-	void (*c_post_raw)(RAW *, USERS *);
+	void (*c_post_raw_sub)(RAW *, subuser *, acetables *);
 };
 
 typedef struct _plug_config plug_config;

@@ -75,8 +75,8 @@ void rmallban(CHANNEL *chan);
 struct userslist *getlist(char *chan, acetables *g_ape);
 struct userslist *getuchan(struct USERS *user, CHANNEL *chan);
 	
-unsigned int setlevel(struct USERS *user_actif, struct USERS *user_passif, CHANNEL *chan, unsigned int lvl);
-unsigned int settopic(struct USERS *user, CHANNEL *chan, char *topic);
+unsigned int setlevel(struct USERS *user_actif, struct USERS *user_passif, CHANNEL *chan, unsigned int lvl, acetables *g_ape);
+unsigned int settopic(struct USERS *user, CHANNEL *chan, char *topic, acetables *g_ape);
 unsigned int isvalidchan(char *name);
 
 struct json *get_json_object_channel(CHANNEL *chan);

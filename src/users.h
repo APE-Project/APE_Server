@@ -219,11 +219,11 @@ USERS *seek_user_simple(char *nick, acetables *g_ape);
 RAW *forge_raw(char *raw, struct json *jlist);
 RAW *copy_raw(RAW *input);
 
-void post_raw(RAW *raw, USERS *user);
-void post_raw_sub(RAW *raw, subuser *sub);
-void post_raw_channel(RAW *raw, struct CHANNEL *chan);
-void post_raw_restricted(RAW *raw, USERS *user, subuser *sub);
-void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser);
+void post_raw(RAW *raw, USERS *user, acetables *g_ape);
+void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape);
+void post_raw_channel(RAW *raw, struct CHANNEL *chan, acetables *g_ape);
+void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape);
+void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser, acetables *g_ape);
 
 
 int send_raws(subuser *user, acetables *g_ape);
@@ -235,28 +235,28 @@ void do_died(subuser *user);
 void check_timeout(acetables *g_ape);
 void grant_aceop(USERS *user);
 
-void send_error(USERS *user, char *msg, char *code);
-void send_msg(USERS *user, char *msg, char *type);
-void send_msg_sub(subuser *sub, char *msg, char *type);
-void send_msg_channel(CHANNEL *chan, char *msg, char *type);
+void send_error(USERS *user, char *msg, char *code, acetables *g_ape);
+void send_msg(USERS *user, char *msg, char *type, acetables *g_ape);
+void send_msg_sub(subuser *sub, char *msg, char *type, acetables *g_ape);
+void send_msg_channel(CHANNEL *chan, char *msg, char *type, acetables *g_ape);
 
 unsigned int isonchannel(USERS *user, CHANNEL *chan);
 
 struct json *get_json_object_user(USERS *user);
 
 session *get_session(USERS *user, char *key);
-session *set_session(USERS *user, char *key, char *val, int update);
+session *set_session(USERS *user, char *key, char *val, int update, acetables *g_ape);
 void clear_sessions(USERS *user);
-void sendback_session(USERS *user, session *sess);
+void sendback_session(USERS *user, session *sess, acetables *g_ape);
 
 subuser *addsubuser(int fd, char *channel, USERS *user);
 subuser *getsubuser(USERS *user, char *channel);
 void delsubuser(subuser **current);
-void subuser_restor(subuser *sub);
+void subuser_restor(subuser *sub, acetables *g_ape);
 
 void clear_subusers(USERS *user);
 void clear_subuser_raws(subuser *sub);
-void ping_request(USERS *user);
+void ping_request(USERS *user, acetables *g_ape);
 
 void make_link(USERS *a, USERS *b);
 struct _users_link *are_linked(USERS *a, USERS *b);

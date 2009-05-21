@@ -145,7 +145,7 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 		json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 		
 		newraw = forge_raw(RAW_JOIN, jlist);
-		post_raw_channel_restricted(newraw, chan, user);
+		post_raw_channel_restricted(newraw, chan, user, g_ape);
 		
 		jlist = NULL;
 		set_json("users", NULL, &jlist);
@@ -175,7 +175,7 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 	json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 	
 	newraw = forge_raw(RAW_CHANNEL, jlist);
-	post_raw(newraw, user);
+	post_raw(newraw, user, g_ape);
 	
 	#if 0
 	if (user->flags & FLG_AUTOOP) {
@@ -259,7 +259,7 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 				json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 				
 				newraw = forge_raw(RAW_LEFT, jlist);
-				post_raw_channel(newraw, chan);
+				post_raw_channel(newraw, chan, g_ape);
 			} else if (chan->head == NULL) {
 				rmchan(chan, g_ape); // A verifier
 			}
@@ -303,7 +303,7 @@ userslist *getuchan(USERS *user, CHANNEL *chan)
 }
 
 // TODO : Rewrite this f***g ugly function
-unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsigned int lvl)
+unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsigned int lvl, acetables *g_ape)
 {
 	RAW *newraw;
 	userslist *user_passif_chan, *user_actif_chan;
@@ -317,7 +317,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 		user_actif_chan = getuchan(user_actif, chan);
 		
 		if (user_passif_chan == NULL || user_actif_chan == NULL || ((user_actif_chan->level < lvl || user_actif_chan->level < user_passif_chan->level) && !(user_actif->flags & FLG_AUTOOP)) || lvl < 1 || lvl > 32) {
-			send_error(user_actif, "SETLEVEL_ERROR", "110");
+			send_error(user_actif, "SETLEVEL_ERROR", "110", g_ape);
 		
 			return 0;
 		}
@@ -338,7 +338,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 		
 			newraw = forge_raw(RAW_SETLEVEL, jlist);
-			post_raw_channel(newraw, chan);
+			post_raw_channel(newraw, chan, g_ape);
 		}
 		return 1;
 	} else if (user_passif_chan != NULL && lvl > 0 && lvl < 32) {		
@@ -358,14 +358,14 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 		
 			newraw = forge_raw(RAW_SETLEVEL, jlist);
-			post_raw_channel(newraw, chan);
+			post_raw_channel(newraw, chan, g_ape);
 			
 		}
 		return 1;
 	}
 	return 0;
 }
-unsigned int settopic(USERS *user, CHANNEL *chan, char *topic)
+unsigned int settopic(USERS *user, CHANNEL *chan, char *topic, acetables *g_ape)
 {
 	RAW *newraw;
 	userslist *list;
@@ -375,7 +375,7 @@ unsigned int settopic(USERS *user, CHANNEL *chan, char *topic)
 	
 	if (list == NULL || list->level < 3 || strlen(topic)+1 > MAX_TOPIC_LEN) {
 		
-		send_error(user, "SETTOPIC_ERROR", "111");
+		send_error(user, "SETTOPIC_ERROR", "111", g_ape);
 		
 	} else {
 		memcpy(chan->topic, topic, strlen(topic)+1);
@@ -389,7 +389,7 @@ unsigned int settopic(USERS *user, CHANNEL *chan, char *topic)
 		json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 		
 		newraw = forge_raw(RAW_SETTOPIC, jlist);
-		post_raw_channel(newraw, chan);
+		post_raw_channel(newraw, chan, g_ape);
 		
 		return 1;
 	}
@@ -432,7 +432,7 @@ void ban(CHANNEL *chan, USERS *banner, char *ip, char *reason, unsigned int expi
 			
 			newraw = forge_raw(RAW_BAN, jlist);
 			
-			post_raw(newraw, uTmp->userinfo);
+			post_raw(newraw, uTmp->userinfo, g_ape);
 			
 			if (isban == 0) {
 				blist = xmalloc(sizeof(*blist));

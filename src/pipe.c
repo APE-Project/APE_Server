@@ -111,9 +111,9 @@ void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape)
 	
 	if ((spipe = get_pipe(pipe, g_ape)) != NULL) {
 		if (spipe->type == CHANNEL_PIPE) {
-			post_raw_channel(raw, spipe->pipe);
+			post_raw_channel(raw, spipe->pipe, g_ape);
 		} else {
-			post_raw(raw, spipe->pipe);
+			post_raw(raw, spipe->pipe, g_ape);
 		}
 	}
 }

@@ -26,7 +26,7 @@ static unsigned int cmd_control(callbackp *callbacki)
 		
 	} else {
 		if (strcasecmp(callbacki->param[3], "POSTMSG") == 0) {
-			send_msg_channel(jchan, callbacki->param[5], callbacki->param[4]);
+			send_msg_channel(jchan, callbacki->param[5], callbacki->param[4], callbacki->g_ape);
 			SENDH(callbacki->fdclient, "OK POSTED", callbacki->g_ape);
 		}
 	}

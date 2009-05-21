@@ -23,7 +23,7 @@ static unsigned int cmd_setmouse(callbackp *callbacki)
 
 	if (get_pipe_strict(callbacki->param[2], callbacki->call_user, callbacki->g_ape) == NULL) {
 
-		send_error(callbacki->call_user, "UNKNOWN_PIPE", "109");
+		send_error(callbacki->call_user, "UNKNOWN_PIPE", "109", callbacki->g_ape);
 
 	} else {
 		int i;
