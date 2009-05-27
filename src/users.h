@@ -209,14 +209,14 @@ enum {
 #define RAW_BAN			"BANNED"
 #define RAW_PROXY		"PROXY"
 
-USERS *seek_user(char *nick, char *linkid, acetables *g_ape);
+USERS *seek_user(const char *nick, const char *linkid, acetables *g_ape);
 USERS *init_user(acetables *g_ape);
 USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape);
-USERS *seek_user_id(char *sessid, acetables *g_ape);
-USERS *seek_user_simple(char *nick, acetables *g_ape);
+USERS *seek_user_id(const char *sessid, acetables *g_ape);
+USERS *seek_user_simple(const char *nick, acetables *g_ape);
 
 
-RAW *forge_raw(char *raw, struct json *jlist);
+RAW *forge_raw(const char *raw, struct json *jlist);
 RAW *copy_raw(RAW *input);
 
 void post_raw(RAW *raw, USERS *user, acetables *g_ape);
@@ -235,22 +235,22 @@ void do_died(subuser *user);
 void check_timeout(acetables *g_ape);
 void grant_aceop(USERS *user);
 
-void send_error(USERS *user, char *msg, char *code, acetables *g_ape);
-void send_msg(USERS *user, char *msg, char *type, acetables *g_ape);
-void send_msg_sub(subuser *sub, char *msg, char *type, acetables *g_ape);
-void send_msg_channel(CHANNEL *chan, char *msg, char *type, acetables *g_ape);
+void send_error(USERS *user, const char *msg, const char *code, acetables *g_ape);
+void send_msg(USERS *user, const char *msg, const char *type, acetables *g_ape);
+void send_msg_sub(subuser *sub, const char *msg, const char *type, acetables *g_ape);
+void send_msg_channel(CHANNEL *chan, const char *msg, const char *type, acetables *g_ape);
 
 unsigned int isonchannel(USERS *user, CHANNEL *chan);
 
 struct json *get_json_object_user(USERS *user);
 
-session *get_session(USERS *user, char *key);
-session *set_session(USERS *user, char *key, char *val, int update, acetables *g_ape);
+session *get_session(USERS *user, const char *key);
+session *set_session(USERS *user, const char *key, const char *val, int update, acetables *g_ape);
 void clear_sessions(USERS *user);
 void sendback_session(USERS *user, session *sess, acetables *g_ape);
 
-subuser *addsubuser(int fd, char *channel, USERS *user);
-subuser *getsubuser(USERS *user, char *channel);
+subuser *addsubuser(int fd, const char *channel, USERS *user);
+subuser *getsubuser(USERS *user, const char *channel);
 void delsubuser(subuser **current);
 void subuser_restor(subuser *sub, acetables *g_ape);
 
@@ -262,7 +262,7 @@ void make_link(USERS *a, USERS *b);
 struct _users_link *are_linked(USERS *a, USERS *b);
 void destroy_link(USERS *a, USERS *b);
 
-int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *restrict, acetables *g_ape);
+int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, void *restrict, acetables *g_ape);
 
 #endif
 

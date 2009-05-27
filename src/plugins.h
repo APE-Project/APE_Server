@@ -33,11 +33,11 @@ typedef struct _ace_plugins ace_plugins;
 
 struct _ace_plugin_infos
 {
-	char *name;
-	char *version;
-	char *author;
+	const char *name;
+	const char *version;
+	const char *author;
 	
-	char *conf_file;
+	const char *conf_file;
 	
 	struct _plug_config *conf;
 };
@@ -48,7 +48,7 @@ struct _ace_plugins
 	/* Module Handle */
 	void *hPlug;
 	
-	char *modulename;
+	const char *modulename;
 	
 	/* Module info */
 	ace_plugin_infos *infos;

@@ -105,7 +105,7 @@ void unlink_all_pipe(transpipe *origin, acetables *g_ape)
 }
 
 /* to manage subuser use post_to_pipe() instead */
-void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape)
+void post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape)
 {
 	transpipe *spipe;
 	
@@ -118,7 +118,7 @@ void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape)
 	}
 }
 
-void *get_pipe(char *pubid, acetables *g_ape)
+void *get_pipe(const char *pubid, acetables *g_ape)
 {
 	if (strlen(pubid) != 32) {
 		return NULL;
@@ -127,7 +127,7 @@ void *get_pipe(char *pubid, acetables *g_ape)
 }
 
 /* pubid : recver; user = sender */
-void *get_pipe_strict(char *pubid, USERS *user, acetables *g_ape)
+void *get_pipe_strict(const char *pubid, USERS *user, acetables *g_ape)
 {
 	transpipe *pipe = get_pipe(pubid, g_ape);
 	

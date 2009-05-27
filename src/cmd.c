@@ -52,7 +52,7 @@ void do_register(acetables *g_ape) // register_raw("CMD", Nparam (without IP and
 	register_cmd("PROXY_WRITE", 	3, cmd_proxy_write, 	NEED_SESSID, g_ape);
 }
 
-void register_cmd(char *cmd, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape)
+void register_cmd(const char *cmd, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape)
 {
 	callback *new_cmd, *old_cmd;
 	
@@ -71,7 +71,7 @@ void register_cmd(char *cmd, int nParam, unsigned int (*func)(callbackp *), unsi
 	
 }
 
-void unregister_cmd(char *cmd, acetables *g_ape)
+void unregister_cmd(const char *cmd, acetables *g_ape)
 {
 	hashtbl_erase(g_ape->hCallback, cmd);
 }

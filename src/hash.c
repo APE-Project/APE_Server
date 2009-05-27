@@ -69,7 +69,7 @@ void hashtbl_free(HTBL **htbl)
 	free(htbl);	
 }
 
-void hashtbl_append(HTBL **htbl, char *key, void *structaddr)
+void hashtbl_append(HTBL **htbl, const char *key, void *structaddr)
 {
 	unsigned int key_hash;
 	HTBL *hTmp, *hDbl;
@@ -111,7 +111,7 @@ void hashtbl_append(HTBL **htbl, char *key, void *structaddr)
 }
 
 
-void hashtbl_erase(HTBL **htbl, char *key)
+void hashtbl_erase(HTBL **htbl, const char *key)
 {
 	unsigned int key_hash;
 	HTBL *hTmp, *hPrev;
@@ -141,7 +141,7 @@ void hashtbl_erase(HTBL **htbl, char *key)
 	}
 }
 
-void * hashtbl_seek(HTBL **htbl, char *key)
+void * hashtbl_seek(HTBL **htbl, const char *key)
 {
 	unsigned int key_hash;
 	HTBL *hTmp;

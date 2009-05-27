@@ -48,9 +48,9 @@ struct _extend
 	struct _extend *next;
 };
 
-extend *get_property(extend *entry, char *key);
+extend *get_property(extend *entry, const char *key);
 void clear_properties(extend **entry);
-void del_property(extend **entry, char *key);
+void del_property(extend **entry, const char *key);
 //extend *add_property_str(extend **entry, char *key, char *val);
-extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility);
+extend *add_property(extend **entry, const char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility);
 #endif
