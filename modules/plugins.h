@@ -22,6 +22,9 @@
 
 #ifndef _MODULES_APE_H
 #define _MODULES_APE_H
+#if __cplusplus
+	extern "C" {
+#endif
 
 #include "../src/main.h"
 #include "../src/channel.h"
@@ -59,8 +62,14 @@ struct _plug_config
 	struct _plug_config *next;
 };
 
+#if __cplusplus
+#define APE_PLUGIN_ENTRY_POINT extern "C"
+#else
+#define APE_PLUGIN_ENTRY_POINT
+#endif
+
 #define APE_INIT_PLUGIN(modname, initfunc, modcallbacks) \
-	void ape_module_init(ace_plugins *module) \
+	APE_PLUGIN_ENTRY_POINT void ape_module_init(ace_plugins *module) \
 	{ \
 		 infos_module.conf = NULL; \
 		 module->cb = &modcallbacks; \
@@ -68,5 +77,10 @@ struct _plug_config
 		 module->loader = initfunc; \
 		 module->modulename = modname; \
 	}
+
+#if __cplusplus
+	}
+#endif
+
 #endif
 
