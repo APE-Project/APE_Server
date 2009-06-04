@@ -7,6 +7,6 @@ To compile APE you need :
 # cd modules/
 # make
 # cd ../bin/
-# ./aced
+# ./aped
 
-For more details : http://www.ape-project.org/
+For further details : http://www.ape-project.org/
