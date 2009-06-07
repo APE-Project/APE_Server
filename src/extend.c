@@ -37,7 +37,7 @@
 	EXTEND_ISPUBLIC : The property is added to the json tree sent with get_json_object_*
 	EXTEND_ISPRIVATE : The property is not shown in get_json_object_*
 */
-extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility)
+extend *add_property(extend **entry, const char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility)
 {
 	extend *new_property = NULL, *eTmp;
 	
@@ -81,7 +81,7 @@ extend *add_property(extend **entry, char *key, void *val, EXTEND_TYPE etype, EX
 }
 
 
-extend *get_property(extend *entry, char *key)
+extend *get_property(extend *entry, const char *key)
 {
 	while (entry != NULL) {
 		if (strcmp(entry->key, key) == 0) {
@@ -95,7 +95,7 @@ extend *get_property(extend *entry, char *key)
 }
 
 
-void del_property(extend **entry, char *key)
+void del_property(extend **entry, const char *key)
 {
 
 	while (*entry != NULL) {
@@ -180,7 +180,7 @@ extend *add_property_str(extend **entry, char *key, char *val)
 	
 }
 
-extend *add_property(extend **entry, char *key, void *val)
+extend *add_property(extend **entry, const char *key, void *val)
 {
 	extend *new_property = NULL, *eTmp;
 	

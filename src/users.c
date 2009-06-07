@@ -64,7 +64,7 @@ void grant_aceop(USERS *user)
 }
 
 // return user with a channel pubid
-USERS *seek_user(char *pubid, char *linkid, acetables *g_ape)
+USERS *seek_user(const char *pubid, const char *linkid, acetables *g_ape)
 {
 	USERS *suser;
 	CHANLIST *clist;
@@ -84,7 +84,7 @@ USERS *seek_user(char *pubid, char *linkid, acetables *g_ape)
 	
 	return NULL;
 }
-USERS *seek_user_simple(char *pubid, acetables *g_ape)
+USERS *seek_user_simple(const char *pubid, acetables *g_ape)
 {
 	transpipe *gpipe;
 
@@ -98,7 +98,7 @@ USERS *seek_user_simple(char *pubid, acetables *g_ape)
 	
 }
 
-USERS *seek_user_id(char *sessid, acetables *g_ape)
+USERS *seek_user_id(const char *sessid, acetables *g_ape)
 {
 	if (strlen(sessid) != 32) {
 		return NULL;
@@ -212,7 +212,7 @@ void deluser(USERS *user, acetables *g_ape)
 }
 
 
-RAW *forge_raw(char *raw, struct json *jlist)
+RAW *forge_raw(const char *raw, struct json *jlist)
 {
 	RAW *new_raw;
 	char unixtime[16];
@@ -448,7 +448,7 @@ void check_timeout(acetables *g_ape)
 
 }
 
-void send_error(USERS *user, char *msg, char *code, acetables *g_ape)
+void send_error(USERS *user, const char *msg, const char *code, acetables *g_ape)
 {
 	RAW *newraw;
 	json *jlist = NULL;
@@ -462,7 +462,7 @@ void send_error(USERS *user, char *msg, char *code, acetables *g_ape)
 }
 
 
-void send_msg(USERS *user, char *msg, char *type, acetables *g_ape)
+void send_msg(USERS *user, const char *msg, const char *type, acetables *g_ape)
 {
 	RAW *newraw;
 	json *jlist = NULL;
@@ -474,7 +474,7 @@ void send_msg(USERS *user, char *msg, char *type, acetables *g_ape)
 	post_raw(newraw, user, g_ape);	
 }
 
-void send_msg_channel(CHANNEL *chan, char *msg, char *type, acetables *g_ape)
+void send_msg_channel(CHANNEL *chan, const char *msg, const char *type, acetables *g_ape)
 {
 	RAW *newraw;
 	json *jlist = NULL;
@@ -486,7 +486,7 @@ void send_msg_channel(CHANNEL *chan, char *msg, char *type, acetables *g_ape)
 	post_raw_channel(newraw, chan, g_ape);
 }
 
-void send_msg_sub(subuser *sub, char *msg, char *type, acetables *g_ape)
+void send_msg_sub(subuser *sub, const char *msg, const char *type, acetables *g_ape)
 {
 	RAW *newraw;
 	json *jlist = NULL;
@@ -498,7 +498,7 @@ void send_msg_sub(subuser *sub, char *msg, char *type, acetables *g_ape)
 	post_raw_sub(newraw, sub, g_ape);		
 }
 
-session *get_session(USERS *user, char *key)
+session *get_session(USERS *user, const char *key)
 {
 	session *current = user->sessions.data;
 	
@@ -529,7 +529,7 @@ void clear_sessions(USERS *user)
 	user->sessions.length = 0;
 }
 
-session *set_session(USERS *user, char *key, char *val, int update, acetables *g_ape)
+session *set_session(USERS *user, const char *key, const char *val, int update, acetables *g_ape)
 {
 	session *new_session = NULL, *sTmp = NULL;
 	int vlen = strlen(val);
@@ -593,7 +593,7 @@ void sendback_session(USERS *user, session *sess, acetables *g_ape)
 	
 }
 
-subuser *addsubuser(int fd, char *channel, USERS *user, acetables *g_ape)
+subuser *addsubuser(int fd, const char *channel, USERS *user, acetables *g_ape)
 {
 	subuser *sub;
 		
@@ -704,7 +704,7 @@ void subuser_restor(subuser *sub, acetables *g_ape)
 	
 }
 
-subuser *getsubuser(USERS *user, char *channel)
+subuser *getsubuser(USERS *user, const char *channel)
 {
 	subuser *current = user->subuser;
 	
@@ -849,7 +849,7 @@ void destroy_link(USERS *a, USERS *b)
 
 
 
-int post_to_pipe(json *jlist, char *rawname, char *pipe, subuser *from, void *restrict, acetables *g_ape)
+int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, void *restrict, acetables *g_ape)
 {
 	USERS *sender = from->user;
 	transpipe *recver = get_pipe_strict(pipe, sender, g_ape);

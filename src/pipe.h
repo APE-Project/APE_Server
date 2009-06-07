@@ -53,10 +53,10 @@ struct _transpipe
 transpipe *init_pipe(void *pipe, int type, acetables *g_ape);
 void destroy_pipe(transpipe *pipe, acetables *g_ape);
 
-void post_raw_pipe(RAW *raw, char *pipe, acetables *g_ape);
+void post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape);
 void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(struct _transpipe *, struct _transpipe *, acetables *));
-void *get_pipe(char *pubid, acetables *g_ape);
-void *get_pipe_strict(char *pubid, struct USERS *user, acetables *g_ape);
+void *get_pipe(const char *pubid, acetables *g_ape);
+void *get_pipe_strict(const char *pubid, struct USERS *user, acetables *g_ape);
 void gen_sessid_new(char *input, acetables *g_ape);
 void unlink_all_pipe(transpipe *origin, acetables *g_ape);
 

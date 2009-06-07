@@ -105,8 +105,8 @@ unsigned int cmd_pong(struct _callbackp *);
 unsigned int cmd_proxy_connect(struct _callbackp *);
 unsigned int cmd_proxy_write(struct _callbackp *);
 ///////////////////////////////////////////////////////////////////////////////////////////////
-void register_cmd(char *cmd, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape);
-void unregister_cmd(char *cmd, acetables *g_ape);
+void register_cmd(const char *cmd, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape);
+void unregister_cmd(const char *cmd, acetables *g_ape);
 
 #endif
 

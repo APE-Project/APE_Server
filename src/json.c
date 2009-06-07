@@ -27,7 +27,7 @@
 #include "json.h"
 #include "utils.h"
 
-void set_json(char *name, char *value, struct json **jprev)
+void set_json(const char *name, const char *value, struct json **jprev)
 {
 	struct json *new_json, *old_json = *jprev;
 	

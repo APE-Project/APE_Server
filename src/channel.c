@@ -80,7 +80,7 @@ CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
 	
 }
 
-CHANNEL *getchan(char *chan, acetables *g_ape)
+CHANNEL *getchan(const char *chan, acetables *g_ape)
 {
 	if (strlen(chan) > MAX_CHAN_LEN) {
 		return NULL;
@@ -270,7 +270,7 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 	}
 	
 }
-userslist *getlist(char *chan, acetables *g_ape)
+userslist *getlist(const char *chan, acetables *g_ape)
 {
 	CHANNEL *lchan;
 	
@@ -365,7 +365,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 	}
 	return 0;
 }
-unsigned int settopic(USERS *user, CHANNEL *chan, char *topic, acetables *g_ape)
+unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape)
 {
 	RAW *newraw;
 	userslist *list;
@@ -396,7 +396,7 @@ unsigned int settopic(USERS *user, CHANNEL *chan, char *topic, acetables *g_ape)
 	return 0;
 }
 
-void ban(CHANNEL *chan, USERS *banner, char *ip, char *reason, unsigned int expire, acetables *g_ape) // Ban IP
+void ban(CHANNEL *chan, USERS *banner, const char *ip, char *reason, unsigned int expire, acetables *g_ape) // Ban IP
 {
 	userslist *uTmp, *tUtmp;
 	RAW *newraw;
@@ -454,7 +454,7 @@ void ban(CHANNEL *chan, USERS *banner, char *ip, char *reason, unsigned int expi
 
 }
 
-BANNED *getban(CHANNEL *chan, char *ip)
+BANNED *getban(CHANNEL *chan, const char *ip)
 {
 	BANNED *blist, *bTmp, *bWait;
 	
@@ -483,7 +483,7 @@ BANNED *getban(CHANNEL *chan, char *ip)
 	return NULL;
 }
 
-void rmban(CHANNEL *chan, char *ip)
+void rmban(CHANNEL *chan, const char *ip)
 {
 	BANNED *blist, *bTmp, *bWait;
 	
