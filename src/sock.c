@@ -273,7 +273,6 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 								break;
 							} else {
 								if (readb < 1) {
-
 									#if 0
 									TODO :
 									if (events[i].events & EPOLLRDHUP) {

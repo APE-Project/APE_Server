@@ -165,7 +165,7 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 	
 	g_ape->nConnected++;
 	
-	addsubuser(fdclient, host, nuser);
+	addsubuser(fdclient, host, nuser, g_ape);
 
 	return nuser;
 	
@@ -427,11 +427,13 @@ void check_timeout(acetables *g_ape)
 					continue;
 				}
 				if ((*n)->state == ALIVE && (*n)->nraw && !(*n)->need_update) {
-				
+
 					/* Data completetly sent => closed */
 					if (send_raws(*n, g_ape)) {
+
 						do_died(*n);
 					} else {
+
 						(*n)->burn_after_writing = 1;
 					}
 				} else {
@@ -591,7 +593,7 @@ void sendback_session(USERS *user, session *sess, acetables *g_ape)
 	
 }
 
-subuser *addsubuser(int fd, char *channel, USERS *user)
+subuser *addsubuser(int fd, char *channel, USERS *user, acetables *g_ape)
 {
 	subuser *sub;
 		
@@ -622,6 +624,19 @@ subuser *addsubuser(int fd, char *channel, USERS *user)
 	(user->nsub)++;
 	
 	user->subuser = sub;
+	
+	/* if the previous subuser have some messages in queue, copy them to the new subuser */
+	if (sub->next != NULL && sub->next->nraw) {
+		RAW *rTmp;
+		
+		for (rTmp = sub->next->rawhead; rTmp != NULL; rTmp = rTmp->next) {
+			if (rTmp->priority == 1) {
+				continue;
+			}
+			post_raw_sub(copy_raw(rTmp), sub, g_ape);
+		}
+
+	}
 
 	return sub;
 }

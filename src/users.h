@@ -249,7 +249,7 @@ session *set_session(USERS *user, char *key, char *val, int update, acetables *g
 void clear_sessions(USERS *user);
 void sendback_session(USERS *user, session *sess, acetables *g_ape);
 
-subuser *addsubuser(int fd, char *channel, USERS *user);
+subuser *addsubuser(int fd, char *channel, USERS *user, acetables *g_ape);
 subuser *getsubuser(USERS *user, char *channel);
 void delsubuser(subuser **current);
 void subuser_restor(subuser *sub, acetables *g_ape);

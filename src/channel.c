@@ -550,6 +550,8 @@ struct json *get_json_object_channel(CHANNEL *chan)
 				set_json(eTmp->key, eTmp->val, &jprop);
 			}
 		}
+		
+		eTmp = eTmp->next;
 	}
 	/* a little hack to have the same behaviour than user */
 	set_json("name", chan->name, &jprop);

@@ -74,6 +74,8 @@ struct _ticks_callback *add_timeout(unsigned int sec, void *callback, void *para
 	return new_timer;
 }
 
+/* Exec callback "times"x each "sec" */
+/* If "times" is 0, the function is executed indefinitifvly */
 
 struct _ticks_callback *add_periodical(unsigned int sec, int times, void *callback, void *params, acetables *g_ape)
 {

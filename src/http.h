@@ -25,7 +25,7 @@
 #include "sock.h"
 #include "users.h"
 
-#define MAX_CONTENT_LENGTH 51200 // 50ko
+#define MAX_CONTENT_LENGTH 51200 // 50kb
 
 typedef struct _http_state http_state;
 

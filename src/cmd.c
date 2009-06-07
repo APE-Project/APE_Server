@@ -134,7 +134,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 							sub->fd = cget->fdclient;					
 						}
 					} else if (sub == NULL) {
-						sub = addsubuser(cget->fdclient, cget->host, guser);
+						sub = addsubuser(cget->fdclient, cget->host, guser, g_ape);
 						if (sub != NULL) {
 							subuser_restor(sub, g_ape);
 						}
@@ -165,7 +165,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 
 				if (sub == NULL && (sub = getsubuser(guser, cget->host)) == NULL) {
 					
-					if ((sub = addsubuser(cget->fdclient, cget->host, guser)) == NULL) {
+					if ((sub = addsubuser(cget->fdclient, cget->host, guser, g_ape)) == NULL) {
 						return (CONNECT_SHUTDOWN);
 					}
 					subuser_restor(sub, g_ape);
