@@ -35,6 +35,7 @@
 #include "../src/plugins.h"
 #include "../src/ticks.h"
 #include "../src/pipe.h"
+#include "../src/raw.h"
 
 #include <stdarg.h>
 

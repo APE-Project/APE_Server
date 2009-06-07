@@ -37,6 +37,7 @@
 #include "proxy.h"
 #include "pipe.h"
 #include "config.h"
+#include "raw.h"
 
 static int sendqueue(int sock, acetables *g_ape);
 

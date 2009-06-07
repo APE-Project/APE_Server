@@ -152,14 +152,6 @@ typedef struct userslist
 	/* TODO: it can be intersting to extend this */
 } userslist;
 
-typedef struct RAW
-{
-	char *data;
-	int len;
-	struct RAW *next;
-	int priority;
-} RAW;
-
 
 typedef struct _session session;
 
@@ -216,17 +208,6 @@ USERS *seek_user_id(const char *sessid, acetables *g_ape);
 USERS *seek_user_simple(const char *nick, acetables *g_ape);
 
 
-RAW *forge_raw(const char *raw, struct json *jlist);
-RAW *copy_raw(RAW *input);
-
-void post_raw(RAW *raw, USERS *user, acetables *g_ape);
-void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape);
-void post_raw_channel(RAW *raw, struct CHANNEL *chan, acetables *g_ape);
-void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape);
-void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser, acetables *g_ape);
-
-
-int send_raws(subuser *user, acetables *g_ape);
 
 void deluser(USERS *user, acetables *g_ape);
 

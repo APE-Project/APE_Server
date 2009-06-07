@@ -31,6 +31,7 @@
 #include "json.h"
 #include "plugins.h"
 #include "pipe.h"
+#include "raw.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -211,187 +212,6 @@ void deluser(USERS *user, acetables *g_ape)
 	user = NULL;
 }
 
-
-RAW *forge_raw(const char *raw, struct json *jlist)
-{
-	RAW *new_raw;
-	char unixtime[16];
-	
-	struct jsontring *string;
-	struct json *jstruct = NULL;
-	
-	sprintf(unixtime, "%li", time(NULL));
-
-	set_json("datas", NULL, &jstruct);
-	
-	json_attach(jstruct, jlist, JSON_OBJECT);
-	
-	set_json("time", unixtime, &jstruct);
-	set_json("raw", raw, &jstruct);
-
-	string = jsontr(jstruct, NULL);
-
-	new_raw = xmalloc(sizeof(*new_raw));
-	
-	new_raw->len = strlen(string->jstring);	
-	new_raw->data = xstrdup(string->jstring);
-
-	new_raw->next = NULL;
-	new_raw->priority = 0;
-	
-	free(string->jstring);
-	free(string);
-	
-	return new_raw;
-}
-
-// CoW
-RAW *copy_raw(RAW *input)
-{
-	RAW *new_raw;
-
-	new_raw = xmalloc(sizeof(*new_raw));
-	new_raw->data = xstrdup(input->data);
-	new_raw->len = input->len;
-	
-	new_raw->next = input->next;
-	new_raw->priority = input->priority;
-	
-	return new_raw;	
-}
-
-void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape)
-{
-
-	FIRE_EVENT_NULL(post_raw_sub, raw, sub, g_ape);
-	
-	if (raw->priority == 0) {
-		if (sub->rawhead == NULL) {
-			sub->rawhead = raw;
-		}
-		if (sub->rawfoot != NULL) {
-			sub->rawfoot->next = raw;
-		}
-		sub->rawfoot = raw;
-	} else {
-		
-		if (sub->rawfoot == NULL) {
-			sub->rawfoot = raw;
-		}		
-		raw->next = sub->rawhead;
-		sub->rawhead = raw;
-	}
-	(sub->nraw)++;
-	
-}
-void post_raw(RAW *raw, USERS *user, acetables *g_ape)
-{
-	subuser *sub = user->subuser;
-	
-	while (sub != NULL) {
-		post_raw_sub(copy_raw(raw), sub, g_ape);
-		sub = sub->next;
-	}
-	free(raw->data);
-	free(raw);
-}
-
-void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape)
-{
-	subuser *tSub = user->subuser;
-	
-	if (sub == NULL) {
-		return;
-	}
-	while (tSub != NULL) {
-		if (sub != tSub) {
-			post_raw_sub(copy_raw(raw), tSub, g_ape);
-		}
-		tSub = tSub->next;
-	}
-	free(raw->data);
-	free(raw);	
-}
-
-void post_raw_channel(RAW *raw, struct CHANNEL *chan, acetables *g_ape)
-{
-	userslist *list;
-	
-	if (chan == NULL || raw == NULL || chan->head == NULL) {
-		return;
-	}
-	list = chan->head;
-	while (list) {
-		post_raw(copy_raw(raw), list->userinfo, g_ape);
-		list = list->next;
-	}
-	free(raw->data);
-	free(raw);
-}
-
-
-void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser, acetables *g_ape)
-{
-	userslist *list;
-	
-	if (chan == NULL || raw == NULL || chan->head == NULL) {
-		return;
-	}
-	list = chan->head;
-	
-	while (list) {
-		if (list->userinfo != ruser) {
-			post_raw(copy_raw(raw), list->userinfo, g_ape);
-		}
-		list = list->next;
-	}
-	
-	free(raw->data);
-	free(raw);
-}
-
-/*
-	Send queue to socket
-*/
-int send_raws(subuser *user, acetables *g_ape)
-{
-	RAW *raw, *older;
-	int finish = 1;
-	
-	if (user->nraw == 0 || user->rawhead == NULL) {
-		return 1;
-	}
-	raw = user->rawhead;
-	
-	if (!(user->user->flags & FLG_PCONNECT) || !user->headers_sent) {
-		user->headers_sent = 1;
-		sendbin(user->fd, HEADER, HEADER_LEN, g_ape);
-	}
-	if (raw != NULL) {
-		finish &= sendbin(user->fd, "[\n", 2, g_ape);
-	}
-	while(raw != NULL) {
-
-		finish &= sendbin(user->fd, raw->data, raw->len, g_ape);
-		
-		if (raw->next != NULL) {
-			finish &= sendbin(user->fd, ",\n", 2, g_ape);
-		} else {
-			finish &= sendbin(user->fd, "\n]\n", 3, g_ape);	
-		}
-		older = raw;
-		raw = raw->next;
-		
-		free(older->data);
-		free(older);
-	}
-	
-	user->rawhead = NULL;
-	user->rawfoot = NULL;
-	user->nraw = 0;
-	
-	return finish;
-}
 void do_died(subuser *user)
 {
 
@@ -402,8 +222,6 @@ void do_died(subuser *user)
 		shutdown(user->fd, 2);
 	}
 }
-
-
 
 void check_timeout(acetables *g_ape)
 {
@@ -460,7 +278,6 @@ void send_error(USERS *user, const char *msg, const char *code, acetables *g_ape
 	
 	post_raw(newraw, user, g_ape);	
 }
-
 
 void send_msg(USERS *user, const char *msg, const char *type, acetables *g_ape)
 {
@@ -846,51 +663,6 @@ void destroy_link(USERS *a, USERS *b)
 		
 	}	
 }
-
-
-
-int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, void *restrict, acetables *g_ape)
-{
-	USERS *sender = from->user;
-	transpipe *recver = get_pipe_strict(pipe, sender, g_ape);
-	json *jlist_copy = NULL;
-	RAW *newraw;
-	
-	
-	if (sender != NULL) {
-		if (recver == NULL) {
-			send_error(sender, "UNKNOWN_PIPE", "109", g_ape);
-			return 0;
-		}
-	
-		set_json("sender", NULL, &jlist);
-		json_attach(jlist, get_json_object_user(sender), JSON_OBJECT);
-	}
-
-	set_json("pipe", NULL, &jlist);
-
-	
-	jlist_copy = json_copy(jlist);
-
-	
-	json_attach(jlist, (recver->type == USER_PIPE ? get_json_object_user(sender) : get_json_object_channel(recver->pipe)), JSON_OBJECT);
-	json_attach(jlist_copy, (recver->type == USER_PIPE ? get_json_object_user(recver->pipe) : get_json_object_channel(recver->pipe)), JSON_OBJECT);
-	
-	newraw = forge_raw(rawname, jlist);
-	
-	if (recver->type == USER_PIPE) {
-		post_raw(newraw, recver->pipe, g_ape);
-	} else {
-		post_raw_channel_restricted(newraw, recver->pipe, sender, g_ape);
-	}
-
-	newraw = forge_raw(rawname, jlist_copy);
-	
-	post_raw_restricted(newraw, sender, from, g_ape);
-	
-	return 1;
-}
-
 
 struct json *get_json_object_user(USERS *user)
 {

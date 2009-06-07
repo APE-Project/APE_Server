@@ -24,6 +24,7 @@
 
 #include "users.h"
 #include "main.h"
+#include "raw.h"
 
 enum {
 	CHANNEL_PIPE = 0,

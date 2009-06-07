@@ -26,7 +26,7 @@
 #include "config.h"
 #include "utils.h"
 #include "proxy.h"
-
+#include "raw.h"
 
 void do_register(acetables *g_ape) // register_raw("CMD", Nparam (without IP and time, with sessid), callback_func, NEEDSOMETHING?, g_ape);
 {

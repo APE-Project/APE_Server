@@ -29,6 +29,7 @@
 #include "config.h"
 #include "base64.h"
 #include "pipe.h"
+#include "raw.h"
 
 #include <sys/epoll.h>
 #include <netdb.h> 
@@ -343,24 +344,6 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 
 }
 
-void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape)
-{
-	ape_proxy_pipe *to = proxy->to;
-	transpipe *pipe;
-	
-	while (to != NULL) {
-		pipe = get_pipe(to->pipe, g_ape);
-		if (pipe != NULL && pipe->type == USER_PIPE) {
-			post_raw(copy_raw(raw), pipe->pipe, g_ape);
-		} else {
-			;//
-		}
-		to = to->next;
-	}
-	free(raw->data);
-	free(raw);
-}
-
 
 void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape)
 {
@@ -408,7 +391,9 @@ struct json *get_json_object_proxy(ape_proxy *proxy)
 		set_json(eTmp->key, eTmp->val, &jprop);
 		eTmp = eTmp->next;
 	}
+	
 	sprintf(port, "%i", proxy->sock.port);
+	
 	set_json("host", proxy->sock.host->host, &jprop);
 	set_json("ip", proxy->sock.host->ip, &jprop);
 	set_json("port", port, &jprop);
