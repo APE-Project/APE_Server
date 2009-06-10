@@ -43,6 +43,8 @@ void post_raw_channel(RAW *raw, struct CHANNEL *chan, acetables *g_ape);
 void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape);
 void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser, acetables *g_ape);
 void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape);
+void post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape);
+int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, void *restrict, acetables *g_ape);
 
 int send_raws(subuser *user, acetables *g_ape);
 

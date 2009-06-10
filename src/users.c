@@ -85,6 +85,7 @@ USERS *seek_user(const char *pubid, const char *linkid, acetables *g_ape)
 	
 	return NULL;
 }
+
 USERS *seek_user_simple(const char *pubid, acetables *g_ape)
 {
 	transpipe *gpipe;

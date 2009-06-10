@@ -199,6 +199,22 @@ void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape)
 	free(raw);
 }
 
+
+/* to manage subuser use post_to_pipe() instead */
+void post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape)
+{
+	transpipe *spipe;
+	
+	if ((spipe = get_pipe(pipe, g_ape)) != NULL) {
+		if (spipe->type == CHANNEL_PIPE) {
+			post_raw_channel(raw, spipe->pipe, g_ape);
+		} else {
+			post_raw(raw, spipe->pipe, g_ape);
+		}
+	}
+}
+
+
 int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, void *restrict, acetables *g_ape)
 {
 	USERS *sender = from->user;

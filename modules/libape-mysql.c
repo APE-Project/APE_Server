@@ -145,7 +145,7 @@ char *ape_mysql_get(const char *query, acetables *g_ape)
 }
 
 static ace_callbacks callbacks = {
-	NULL,			/* Called when new user is added */
+	NULL,				/* Called when new user is added */
 	NULL,				/* Called when a user is disconnected */
 	NULL,				/* Called when new chan is created */
 	NULL,				/* Called when a user join a channel */

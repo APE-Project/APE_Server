@@ -243,7 +243,6 @@ void make_link(USERS *a, USERS *b);
 struct _users_link *are_linked(USERS *a, USERS *b);
 void destroy_link(USERS *a, USERS *b);
 
-int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, void *restrict, acetables *g_ape);
 
 #endif
 
