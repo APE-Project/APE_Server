@@ -147,7 +147,6 @@ static unsigned int chat_clist(callbackp *callbacki)
 	
 	int has_list = 0;
 	
-	
 	for (item = callbacki->g_ape->hLusers->first; item != NULL; item = item->lnext) {
 		chan = (CHANNEL *)item->addrs;
 		
@@ -160,6 +159,7 @@ static unsigned int chat_clist(callbackp *callbacki)
 		}
 		
 	}
+	
 	if (!has_list) {
 		send_error(callbacki->call_user, "NO_CHANNEL", "112", callbacki->g_ape);
 	} else {
