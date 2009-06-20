@@ -42,7 +42,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 static ace_callbacks callbacks = {
 	NULL,				/* Called when new user is added */
-	NULL,			/* Called when a user is disconnected */
+	NULL,				/* Called when a user is disconnected */
 	NULL,				/* Called when new chan is created */
 	NULL,				/* Called when a user join a channel */
 	NULL				/* Called when a user leave a channel */

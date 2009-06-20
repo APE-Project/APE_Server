@@ -22,6 +22,9 @@
 #ifndef _JSON_H
 #define _JSON_H
 
+
+#include "json_parser.h"
+
 enum {
 	JSON_ARRAY = 0,
 	JSON_OBJECT
@@ -49,6 +52,38 @@ struct jsontring {
 	char *jstring;
 	int jsize;
 };
+
+typedef struct _json_item {
+        char *key;
+	
+	int type;
+	
+        struct JSON_value_struct jval;
+	
+	
+        struct _json_item *father;
+        struct _json_item *child;
+
+        struct _json_item *next;
+	
+
+} json_item;
+
+enum {
+	JSON_ITEM_OBJ,
+	JSON_ITEM_VAL
+};
+
+typedef struct _json_context {
+	int key_under;
+	int start_depth;
+		
+	json_item *head;
+	json_item *current_cx;
+
+	
+} json_context;
+
 
 void set_json(const char *name, const char *value, struct json **jprev);
 struct json *json_copy(struct json *jbase);

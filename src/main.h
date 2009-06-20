@@ -50,12 +50,12 @@
 
 typedef struct _acetables
 {
-	HTBL **hLogin;
-	HTBL **hSessid;
-	HTBL **hLusers;
-	HTBL **hCallback;
+	HTBL *hLogin;
+	HTBL *hSessid;
+	HTBL *hLusers;
+	HTBL *hCallback;
 
-	HTBL **hPubid;
+	HTBL *hPubid;
 
 	struct apeconfig *srv;
 	struct USERS *uHead;

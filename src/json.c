@@ -231,3 +231,131 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 	return string;
 }
 
+
+static json_item *init_json_item()
+{
+	
+	json_item *jval = malloc(sizeof(*jval));
+
+	jval->father = NULL;
+	jval->child = NULL;
+	
+	jval->next = NULL;
+	jval->key = NULL;
+	
+	return jval;
+}
+
+
+static int json_callback(void *ctx, int type, const JSON_value* value)
+{
+	json_context *cx = (json_context *)ctx;
+	json_item *jval = NULL;
+	
+	switch(type) {
+		case JSON_T_OBJECT_BEGIN:
+		case JSON_T_ARRAY_BEGIN:
+			
+			if (!cx->key_under) {
+				jval = init_json_item();
+				
+				if (cx->current_cx != NULL) {
+					if (cx->start_depth) {
+						cx->current_cx->child = jval;
+						jval->father = cx->current_cx;
+					} else {
+						jval->father = cx->current_cx->father;
+						cx->current_cx->next = jval;
+					}
+				}
+				cx->current_cx = jval;
+			}
+			cx->start_depth = 1;
+			cx->key_under = 0;
+			break;
+		case JSON_T_OBJECT_END:
+		case JSON_T_ARRAY_END:
+			
+			/* If the father node exists, back to it */
+			if (cx->current_cx->father != NULL) {
+				cx->current_cx = cx->current_cx->father;
+			}
+			cx->start_depth = 0;
+			cx->key_under = 0;
+			break;
+
+		case JSON_T_KEY:
+			jval = init_json_item();
+
+			if (cx->start_depth) {
+				cx->current_cx->child = jval;
+				jval->father = cx->current_cx;
+				cx->start_depth = 0;
+			} else {
+				jval->father = cx->current_cx->father;
+				cx->current_cx->next = jval;
+			}				
+
+			
+			cx->current_cx = jval;
+			cx->key_under = 1;
+			cx->current_cx->key = strdup(value->vu.str.value);
+			
+			break;  
+			
+		case JSON_T_INTEGER:
+		case JSON_T_FLOAT:
+		case JSON_T_NULL:
+		case JSON_T_TRUE:
+		case JSON_T_FALSE:
+		case JSON_T_STRING:
+						
+			if (!cx->key_under) {
+			
+				jval = init_json_item();
+
+				if (cx->start_depth) {
+					cx->current_cx->child = jval;
+					jval->father = cx->current_cx;
+					cx->start_depth = 0;
+				} else {
+					jval->father = cx->current_cx->father;
+					cx->current_cx->next = jval;
+				}	
+		
+				cx->current_cx = jval;				
+			}
+			cx->key_under = 0;
+			
+			switch(type) {
+				case JSON_T_INTEGER:
+					cx->current_cx->jval.vu.integer_value = value->vu.integer_value;
+					break;
+				case JSON_T_FLOAT:
+					cx->current_cx->jval.vu.float_value = value->vu.float_value;
+					break;
+				case JSON_T_NULL:
+				case JSON_T_FALSE:
+					cx->current_cx->jval.vu.integer_value = 0;
+					break;
+				case JSON_T_TRUE:
+					cx->current_cx->jval.vu.integer_value = 1;
+					break;
+				case JSON_T_STRING:
+					cx->current_cx->jval.vu.str.value = strdup(value->vu.str.value);				
+					break;
+			}
+					
+			break;
+		default:
+
+			break;
+	}
+	
+    	if (cx->head == NULL && cx->current_cx != NULL) {
+    		cx->head = cx->current_cx;
+    	}
+    	
+	return 1;
+}
+

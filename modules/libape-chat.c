@@ -138,6 +138,37 @@ void change_nick(USERS *user, char *nick, acetables *g_ape)
 	//TODO
 }
 
+static unsigned int chat_clist(callbackp *callbacki)
+{
+	CHANNEL *chan;
+	HTBL_ITEM *item;
+	json *jlist = NULL;
+	RAW *newraw;
+	
+	int has_list = 0;
+	
+	
+	for (item = callbacki->g_ape->hLusers->first; item != NULL; item = item->lnext) {
+		chan = (CHANNEL *)item->addrs;
+		
+		if (chan->interactive) {
+			if (!has_list) {
+				set_json("list", NULL, &jlist);
+				has_list = 1;
+			}
+			json_attach(jlist, get_json_object_channel(chan), JSON_ARRAY);
+		}
+		
+	}
+	if (!has_list) {
+		send_error(callbacki->call_user, "NO_CHANNEL", "112", callbacki->g_ape);
+	} else {
+		newraw = forge_raw("CLIST", jlist);
+		post_raw(newraw, callbacki->call_user, callbacki->g_ape);
+	}
+	
+	return (FOR_NOTHING);
+}
 
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
@@ -146,6 +177,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 	// Overriding connect raw
 	register_cmd("CONNECT",	2, chat_connect, NEED_NOTHING, g_ape);
+	register_cmd("CLIST",	1, chat_clist, NEED_SESSID, g_ape);
 }
 
 

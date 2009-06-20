@@ -88,6 +88,7 @@ CHANNEL *getchan(const char *chan, acetables *g_ape)
 	}
 	return (CHANNEL *)hashtbl_seek(g_ape->hLusers, chan);	
 }
+
 void rmchan(CHANNEL *chan, acetables *g_ape)
 {
 
@@ -106,6 +107,7 @@ void rmchan(CHANNEL *chan, acetables *g_ape)
 	free(chan);
 	chan = NULL;
 }
+
 void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 {
 	userslist *list, *ulist;
@@ -271,6 +273,7 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 	}
 	
 }
+
 userslist *getlist(const char *chan, acetables *g_ape)
 {
 	CHANNEL *lchan;
@@ -366,6 +369,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 	}
 	return 0;
 }
+
 unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape)
 {
 	RAW *newraw;

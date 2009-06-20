@@ -24,16 +24,27 @@
 
 typedef struct HTBL
 {
-	char *key;
-	void *addrs;
-	struct HTBL *next;
+	struct _htbl_item *first;
+	struct _htbl_item **table;
 } HTBL;
 
-HTBL **hashtbl_init();
 
-void hashtbl_free(HTBL **htbl);
-void *hashtbl_seek(HTBL **htbl, const char *key);
-void hashtbl_erase(HTBL **htbl, const char *key);
-void hashtbl_append(HTBL **htbl, const char *key, void *structaddr);
+typedef struct _htbl_item
+{
+	char *key;
+	void *addrs;
+	struct _htbl_item *next;
+	
+	struct _htbl_item *lnext;
+	struct _htbl_item *lprev;
+	
+} HTBL_ITEM;
+
+HTBL *hashtbl_init();
+
+void hashtbl_free(HTBL *htbl);
+void *hashtbl_seek(HTBL *htbl, const char *key);
+void hashtbl_erase(HTBL *htbl, const char *key);
+void hashtbl_append(HTBL *htbl, const char *key, void *structaddr);
 
 #endif

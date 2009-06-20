@@ -39,25 +39,31 @@ static unsigned int hach_string(const char *str)
         return (hash & 0x7FFFFFFF)%(HACH_TABLE_MAX-1);
 }
 
-HTBL **hashtbl_init()
+HTBL *hashtbl_init()
 {
-	HTBL **htbl;
+	HTBL_ITEM **htbl_item;
+	HTBL *htbl;
 	
-	htbl = (HTBL **) xmalloc( sizeof(*htbl) * (HACH_TABLE_MAX + 1) );
-
+	htbl = xmalloc(sizeof(*htbl));
 	
-	memset(htbl, 0, sizeof(*htbl) * (HACH_TABLE_MAX + 1));
+	htbl_item = (HTBL_ITEM **) xmalloc( sizeof(*htbl_item) * (HACH_TABLE_MAX + 1) );
+	
+	memset(htbl_item, 0, sizeof(*htbl_item) * (HACH_TABLE_MAX + 1));
+	
+	htbl->first = NULL;
+	htbl->table = htbl_item;
 	
 	return htbl;
 }
-void hashtbl_free(HTBL **htbl)
+
+void hashtbl_free(HTBL *htbl)
 {
 	size_t i;
-	HTBL *hTmp;
-	HTBL *hNext;
+	HTBL_ITEM *hTmp;
+	HTBL_ITEM *hNext;
 	
 	for (i = 0; i < (HACH_TABLE_MAX + 1); i++) {
-		hTmp = htbl[i];
+		hTmp = htbl->table[i];
 		while (hTmp != 0) {
 			hNext = hTmp->next;
 			free(hTmp->key);
@@ -66,13 +72,15 @@ void hashtbl_free(HTBL **htbl)
 			hTmp = hNext;
 		}
 	}
+	
+	free(htbl->table);
 	free(htbl);	
 }
 
-void hashtbl_append(HTBL **htbl, const char *key, void *structaddr)
+void hashtbl_append(HTBL *htbl, const char *key, void *structaddr)
 {
 	unsigned int key_hash;
-	HTBL *hTmp, *hDbl;
+	HTBL_ITEM *hTmp, *hDbl;
 	
 	if (key == NULL) {
 		return;
@@ -80,19 +88,26 @@ void hashtbl_append(HTBL **htbl, const char *key, void *structaddr)
 	
 	key_hash = hach_string(key);
 	
-	hTmp = (HTBL *)xmalloc(sizeof(*hTmp));
-
+	hTmp = (HTBL_ITEM *)xmalloc(sizeof(*hTmp));
 	
 	hTmp->next = NULL;
+	hTmp->lnext = htbl->first;
+	hTmp->lprev = NULL;
+	
+	if (htbl->first != NULL) {
+		htbl->first->lprev = hTmp;
+	}
+	
 	hTmp->key = xmalloc(sizeof(char) * (strlen(key)+1));
-
+	
+	htbl->first = hTmp;
 	
 	hTmp->addrs = (void *)structaddr;
 	
 	memcpy(hTmp->key, key, strlen(key)+1);
 	
-	if (htbl[key_hash] != NULL) {
-		hDbl = htbl[key_hash];
+	if (htbl->table[key_hash] != NULL) {
+		hDbl = htbl->table[key_hash];
 		
 		while (hDbl != NULL) {
 			if (strcasecmp(hDbl->key, key) == 0) {
@@ -104,17 +119,17 @@ void hashtbl_append(HTBL **htbl, const char *key, void *structaddr)
 				hDbl = hDbl->next;
 			}
 		}
-		hTmp->next = htbl[key_hash];
+		hTmp->next = htbl->table[key_hash];
 	}
 	
-	htbl[key_hash] = hTmp;
+	htbl->table[key_hash] = hTmp;
 }
 
 
-void hashtbl_erase(HTBL **htbl, const char *key)
+void hashtbl_erase(HTBL *htbl, const char *key)
 {
 	unsigned int key_hash;
-	HTBL *hTmp, *hPrev;
+	HTBL_ITEM *hTmp, *hPrev;
 	
 	if (key == NULL) {
 		return;
@@ -122,7 +137,7 @@ void hashtbl_erase(HTBL **htbl, const char *key)
 	
 	key_hash = hach_string(key);
 	
-	hTmp = htbl[key_hash];
+	hTmp = htbl->table[key_hash];
 	hPrev = NULL;
 	
 	while (hTmp != NULL) {
@@ -130,8 +145,18 @@ void hashtbl_erase(HTBL **htbl, const char *key)
 			if (hPrev != NULL) {
 				hPrev->next = hTmp->next;
 			} else {
-				htbl[key_hash] = hTmp->next;
+				htbl->table[key_hash] = hTmp->next;
 			}
+			
+			if (hTmp->lprev == NULL) {
+				htbl->first = hTmp->lnext;
+			} else {
+				hTmp->lprev->lnext = hTmp->lnext;
+			}
+			if (hTmp->lnext != NULL) {
+				hTmp->lnext->lprev = hTmp->lprev;
+			}
+			
 			free(hTmp->key);
 			free(hTmp);
 			return;
@@ -141,10 +166,10 @@ void hashtbl_erase(HTBL **htbl, const char *key)
 	}
 }
 
-void * hashtbl_seek(HTBL **htbl, const char *key)
+void *hashtbl_seek(HTBL *htbl, const char *key)
 {
 	unsigned int key_hash;
-	HTBL *hTmp;
+	HTBL_ITEM *hTmp;
 	
 	if (key == NULL) {
 		return NULL;
@@ -152,7 +177,7 @@ void * hashtbl_seek(HTBL **htbl, const char *key)
 	
 	key_hash = hach_string(key);
 	
-	hTmp = htbl[key_hash];
+	hTmp = htbl->table[key_hash];
 	
 	while (hTmp != NULL) {
 		if (strcasecmp(hTmp->key, key) == 0) {
