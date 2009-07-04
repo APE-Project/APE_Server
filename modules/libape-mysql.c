@@ -49,6 +49,18 @@ int ape_mysql_connect(acetables *g_ape)
 	return 1;
 }
 
+
+char *ape_mysql_real_escape_string(const char *str, acetables *g_ape)
+{
+        MYSQL *mysql = mysql_instance(g_ape);
+	unsigned int n = strlen(str);
+        char *buf = xmalloc(n*2+1);
+        
+	mysql_real_escape_string(mysql, buf, str, n);
+	
+	return buf;
+}
+
 MYSQL *ape_mysql_query(const char *query, acetables *g_ape)
 {
 	MYSQL *mysql = mysql_instance(g_ape);

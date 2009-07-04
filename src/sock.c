@@ -105,7 +105,7 @@ void setnonblocking(int fd)
 	fcntl(fd, F_SETFL, old_flags);	
 }
 
-static void clear_buffer(connection *co)
+static void clear_buffer(connection *co, int *tfd)
 {
 	free(co->buffer.data);
 	co->buffer.size = 0;
@@ -120,6 +120,24 @@ static void clear_buffer(connection *co)
 	co->http.ready = 0;
 	co->http.read = 0;
 	co->attach = NULL;
+	
+	(*tfd)--;
+}
+
+static void check_idle(struct _socks_list *sl)
+{
+	int i = 0, x = 0;
+	long int current_time = time(NULL);
+	
+	for (i = 0; x < *sl->tfd; i++) {
+		if (sl->co[i].buffer.size) {
+			x++;
+			if (sl->co[i].attach == NULL && sl->co[i].idle <= current_time-TCP_TIMEOUT) {
+				shutdown(i, 2);
+			}
+		}
+		
+	}
 }
 
 unsigned int sockroutine(int s_listen, acetables *g_ape)
@@ -127,8 +145,9 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 	int basemem = 512, epoll_fd;
 
 	struct epoll_event ev, *events;
+	struct _socks_list sl;
 
-	int new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i;
+	int new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i, tfd = 0;
 	
 	struct timeval t_start, t_end;	
 	unsigned int ticks = 0;
@@ -136,7 +155,12 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 	
 	
 	connection *co = xmalloc(sizeof(*co) * basemem);
-
+	
+	memset(co, 0, sizeof(*co) * basemem);
+	
+	sl.co = co;
+	sl.tfd = &tfd;
+	
 	epoll_fd = epoll_create(1); /* the param is not used */
 	
 	if (epoll_fd < 0) {
@@ -155,6 +179,8 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 	ev.events = EPOLLIN | EPOLLET | EPOLLPRI;
 	ev.data.fd = s_listen;
 	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, s_listen, &ev);
+	
+	add_periodical(5, 0, check_idle, &sl, g_ape);
 	
 	while (1) {
 		
@@ -194,9 +220,10 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 						co[new_fd].buffer.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
 						co[new_fd].buffer.size = DEFAULT_BUFFER_SIZE;
 						co[new_fd].buffer.length = 0;
-					
+						
 						co[new_fd].http = http;
 						co[new_fd].attach = NULL;
+						co[new_fd].idle = time(NULL);
 						
 						co[new_fd].stream_type = STREAM_IN;
 					
@@ -211,7 +238,7 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 						cev.data.fd = new_fd;
 					
 						epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_fd, &cev);
-						
+						tfd++;
 					
 					}
 					continue;
@@ -233,7 +260,7 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 							} else { /* This can be happen ? epoll seems set EPOLLIN as if the host is disconnecting */
 								((ape_proxy *)(co[events[i].data.fd].attach))->state = PROXY_THROTTLED;
 								//epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
-								clear_buffer(&co[events[i].data.fd]);
+								clear_buffer(&co[events[i].data.fd], &tfd);
 								close(events[i].data.fd);
 							}
 
@@ -304,7 +331,7 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 										}
 									}
 								
-									clear_buffer(&co[events[i].data.fd]);
+									clear_buffer(&co[events[i].data.fd], &tfd);
 								
 									if (g_ape->bufout[events[i].data.fd].buf != NULL) {
 										free(g_ape->bufout[events[i].data.fd].buf);
@@ -371,10 +398,12 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 					co[psock].buffer.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
 					co[psock].buffer.size = DEFAULT_BUFFER_SIZE;
 					co[psock].buffer.length = 0;
-				
+					
+					co[psock].idle = time(NULL);
 					co[psock].http = http_s;
 					co[psock].attach = proxy;
 					co[psock].stream_type = STREAM_OUT;
+					tfd++;
 				}
 
 

@@ -53,6 +53,7 @@ struct _connection {
 	http_state http;
 	
 	int stream_type;
+	long int idle;
 	
 	struct {
 		char *data;	

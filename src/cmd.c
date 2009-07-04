@@ -80,6 +80,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 {
 	char *param[64+1], *cmd;
 	callback *cmdback;
+	json_item *ijson;
 	
 	size_t nTok;
 	
@@ -87,8 +88,9 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 	
 	USERS *guser = NULL;
 	subuser *sub = NULL;
-	
 
+	ijson = init_json_parser(cget->get);
+	
 	nTok = explode('&', cget->get, param, 64);
 	
 	if (nTok < 1) {

@@ -30,6 +30,8 @@
 #include <fcntl.h>
 #include "main.h"
 
+#define TCP_TIMEOUT 20 // ~Timeout if the socket is not identified to APE
+
 #define SENDH(x, y, g_ape) \
 	sendbin(x, HEADER, HEADER_LEN, g_ape);\
 	sendbin(x, y, strlen(y), g_ape)
@@ -41,6 +43,8 @@
 #define QUIT(x, g_ape) \
 	sendbin(x, HEADER, HEADER_LEN, g_ape);\
 	sendbin(x, "QUIT", 4, g_ape)
+	
+#define IDLE_SHUTDOWN 15
 
 int newSockListen(unsigned int port, char *listen_ip);
 void setnonblocking(int fd);
@@ -54,6 +58,12 @@ struct _socks_bufout
 	char *buf;
 	int buflen;
 	int allocsize;
+};
+
+struct _socks_list
+{
+	struct _connection *co;
+	int *tfd;
 };
 
 #endif

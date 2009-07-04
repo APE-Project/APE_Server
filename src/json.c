@@ -231,7 +231,6 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 	return string;
 }
 
-
 static json_item *init_json_item()
 {
 	
@@ -245,7 +244,6 @@ static json_item *init_json_item()
 	
 	return jval;
 }
-
 
 static int json_callback(void *ctx, int type, const JSON_value* value)
 {
@@ -357,5 +355,40 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
     	}
     	
 	return 1;
+}
+
+json_item *init_json_parser(const char *json_string)
+{
+	const char *pRaw;
+	JSON_config config;
+
+	struct JSON_parser_struct* jc = NULL;
+	
+	json_context jcx = {0, 0, NULL, NULL};
+
+	init_JSON_config(&config);
+	
+	config.depth                  = 15;
+	config.callback               = &json_callback;
+	config.callback_ctx           = &jcx;
+	
+	config.allow_comments         = 0;
+	config.handle_floats_manually = 0;
+
+	jc = new_JSON_parser(&config);
+
+	for (pRaw = json_string; *pRaw; pRaw++) {
+		if (!JSON_parser_char(jc, *pRaw)) {
+		    delete_JSON_parser(jc);
+		    return NULL;
+		}
+	}
+	
+	if (!JSON_parser_done(jc)) {
+		delete_JSON_parser(jc);
+		return NULL;
+	}
+
+	return jcx.head;	
 }
 

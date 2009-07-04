@@ -99,9 +99,9 @@ int seof(char *buf)
 	int pos = 0;
 	
 	for (pBuf = buf; pBuf[pos] != '\0'; pos++) {
-		if (pos == 4096) {
+		/*if (pos == 4096) {
 			return -1;
-		}
+		}*/
 		if (pBuf[pos] == '\n') {
 			return pos+1;
 		}
