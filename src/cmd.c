@@ -155,17 +155,20 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 		}
 		cp.param = json_lookup(ijson->child, "params");
 		cp.fdclient = (tmpfd ? tmpfd : cget->fdclient);
-		cp.call_user = guser,
+		cp.call_user = guser;
 		cp.g_ape = g_ape;
 		cp.host = cget->host;
 		
 		flag = cmdback->func(&cp);
 		
-		if (flag & FOR_NULL) {
+		if (flag & RETURN_NULL) {
 			guser = NULL;
-		} else if (flag & FOR_LOGIN) {
+		} else if (flag & RETURN_LOGIN) {
 			guser = cp.call_user;
-		} 
+		} else if (flag & RETURN_BAD_PARAMS) {
+			guser = NULL;
+			SENDH(cget->fdclient, ERR_BAD_PARAM, g_ape);
+		}
 		
 		if (guser != NULL) {
 
@@ -183,7 +186,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 
 			*iuser = (tmpfd ? NULL : sub);
 			
-			if (flag & FOR_UPDATE_IP) {
+			if (flag & RETURN_UPDATE_IP) {
 				strncpy(guser->ip, cget->ip_get, 16);
 			}
 			
@@ -207,7 +210,9 @@ unsigned int cmd_connect(callbackp *callbacki)
 	USERS *nuser;
 	RAW *newraw;
 	struct json *jstr = NULL;
-
+	
+	APE_PARAMS_INIT();
+	
 	nuser = adduser(callbacki->fdclient, callbacki->host, callbacki->g_ape);
 	
 	callbacki->call_user = nuser;
@@ -215,7 +220,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	if (nuser == NULL) {
 		SENDH(callbacki->fdclient, ERR_CONNECT, callbacki->g_ape);
 		
-		return (FOR_NOTHING);
+		return (RETURN_NOTHING);
 	}
 	
 	if (JINT(transport) == 2) {
@@ -235,7 +240,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	post_raw(newraw, nuser, callbacki->g_ape);
 	
 	
-	return (FOR_LOGIN | FOR_UPDATE_IP);
+	return (RETURN_LOGIN | RETURN_UPDATE_IP);
 
 }
 /* Deprecated */
@@ -247,11 +252,11 @@ unsigned int cmd_pconnect(callbackp *callbacki)
 	if (nuser == NULL) {
 		SENDH(callbacki->fdclient, ERR_CONNECT, callbacki->g_ape);
 		
-		return (FOR_NOTHING);
+		return (RETURN_NOTHING);
 	}
 	nuser->flags |= FLG_PCONNECT;
 	
-	return (FOR_LOGIN | FOR_UPDATE_IP);
+	return (RETURN_LOGIN | RETURN_UPDATE_IP);
 
 }
 
@@ -268,7 +273,7 @@ unsigned int cmd_script(callbackp *callbacki)
 		}
 		sendbin(callbacki->fdclient, "</head>\n<body>\n</body>\n</html>", 30, callbacki->g_ape);
 	}*/
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 
 unsigned int cmd_join(callbackp *callbacki)
@@ -277,6 +282,9 @@ unsigned int cmd_join(callbackp *callbacki)
 	RAW *newraw;
 	json *jlist;
 	BANNED *blist;
+	
+	APE_PARAMS_INIT();
+	
 	char *chan_name = JSTR(channel);
 	
 	if (chan_name != NULL) {
@@ -314,13 +322,14 @@ unsigned int cmd_join(callbackp *callbacki)
 				join(callbacki->call_user, jchan, callbacki->g_ape);
 			}
 		}
+		return (RETURN_NOTHING);
 	}
-	return (FOR_NOTHING);
+	return (RETURN_BAD_PARAMS);
 }
 
 unsigned int cmd_check(callbackp *callbacki)
 {
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 
 unsigned int cmd_send(callbackp *callbacki)
@@ -328,22 +337,26 @@ unsigned int cmd_send(callbackp *callbacki)
 	json *jlist = NULL;
 	char *msg, *pipe;
 	
+	APE_PARAMS_INIT();
+	
 	if ((msg = JSTR(msg)) != NULL && (pipe = JSTR(pipe)) != NULL) {
 	
 		set_json("msg", msg, &jlist);
 
 		post_to_pipe(jlist, RAW_DATA, pipe, getsubuser(callbacki->call_user, callbacki->host), NULL, callbacki->g_ape);
-	
+		
+		return (RETURN_NOTHING);
 	}
 	
-	return (FOR_NOTHING);
+	return (RETURN_BAD_PARAMS);
+	
 }
 unsigned int cmd_quit(callbackp *callbacki)
 {
 	QUIT(callbacki->fdclient, callbacki->g_ape);
 	deluser(callbacki->call_user, callbacki->g_ape); // After that callbacki->call_user is free'd
 	
-	return (FOR_NULL);
+	return (RETURN_NULL);
 }
 
 #if 0
@@ -356,7 +369,7 @@ unsigned int cmd_setlevel(callbackp *callbacki)
 	} else {
 		setlevel(callbacki->call_user, recver, getchan(callbacki->param[2], callbacki->g_ape), atoi(callbacki->param[4]), callbacki->g_ape);
 	}
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 #endif
 
@@ -364,6 +377,8 @@ unsigned int cmd_left(callbackp *callbacki)
 {
 	CHANNEL *chan;
 	char *chan_name;
+	
+	APE_PARAMS_INIT();
 	
 	if ((chan_name = JSTR(channel)) != NULL) {
 	
@@ -377,8 +392,11 @@ unsigned int cmd_left(callbackp *callbacki)
 	
 			left(callbacki->call_user, chan, callbacki->g_ape);
 		}
+		
+		return (RETURN_NOTHING);
 	}
-	return (FOR_NOTHING);
+	
+	return (RETURN_BAD_PARAMS);
 }
 
 #if 0
@@ -386,7 +404,7 @@ unsigned int cmd_settopic(callbackp *callbacki)
 {
 	settopic(callbacki->call_user, getchan(callbacki->param[2], callbacki->g_ape), callbacki->param[3], callbacki->g_ape);
 	
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 
 unsigned int cmd_kick(callbackp *callbacki)
@@ -447,7 +465,7 @@ unsigned int cmd_kick(callbackp *callbacki)
 		
 	}
 	
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 	
 }
 
@@ -503,7 +521,7 @@ unsigned int cmd_ban(callbackp *callbacki)
 		
 	}
 	
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 
 
@@ -546,7 +564,7 @@ unsigned int cmd_session(callbackp *callbacki)
 	} else {
 		send_error(callbacki->call_user, "SESSION_ERROR_PARAMS", "108", callbacki->g_ape);
 	}
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 
 /* This is usefull to ask all subuser to update their sessions */
@@ -565,7 +583,7 @@ unsigned int cmd_pong(callbackp *callbacki)
 	
 		post_raw_sub(newraw, getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
 	}
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 
 
@@ -589,7 +607,7 @@ unsigned int cmd_proxy_connect(callbackp *callbacki)
 		post_raw(newraw, callbacki->call_user, callbacki->g_ape);		
 	}
 	
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 
 unsigned int cmd_proxy_write(callbackp *callbacki)
@@ -604,6 +622,6 @@ unsigned int cmd_proxy_write(callbackp *callbacki)
 		proxy_write(proxy, callbacki->param[3], callbacki->g_ape);
 	}
 	
-	return (FOR_NOTHING);
+	return (RETURN_NOTHING);
 }
 #endif

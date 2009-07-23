@@ -52,11 +52,13 @@ void do_register(acetables *g_ape);
 
 /* Flag returned by cmd callback */
 
-#define FOR_NOTHING 	0x00
-#define FOR_LOGIN 	0x01
-#define FOR_SESSID 	0x02
-#define FOR_NULL	0x04
-#define FOR_UPDATE_IP	0x08
+
+#define RETURN_LOGIN 		0x01
+#define RETRUN_SESSID 		0x02
+#define RETURN_NULL		0x04
+#define RETURN_UPDATE_IP	0x08
+#define RETURN_NOTHING 		0x10
+#define RETURN_BAD_PARAMS 	0x20
 
 typedef struct _callbackp callbackp;
 

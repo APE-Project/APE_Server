@@ -108,14 +108,17 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string);
 json_item *init_json_parser(const char *json_string);
 json_item *json_lookup(json_item *head, char *path);
 
+#define APE_PARAMS_INIT() \
+	json_item *json_params = NULL
+
 #define JSTR(key) \
-	(char *)(callbacki->param != NULL ? json_lookup(callbacki->param->child, #key)->jval.vu.str.value : NULL)
+	(char *)(callbacki->param != NULL && (json_params = json_lookup(callbacki->param, #key)) != NULL ? json_params->jval.vu.str.value : NULL)
 
 #define JINT(key) \
-	(int)(callbacki->param != NULL ? json_lookup(callbacki->param->child, #key)->jval.vu.integer_value : 0)
+	(int)(callbacki->param != NULL && (json_params = json_lookup(callbacki->param, #key)) != NULL ? json_params->jval.vu.integer_value : 0)
 	
 #define JFLOAT(key) \
-	(callbacki->param != NULL ? json_lookup(callbacki->param->child, #key)->jval.vu.float_value : 0.)
+	(callbacki->param != NULL && (json_params = json_lookup(callbacki->param, #key)) != NULL ? json_params->jval.vu.float_value : 0.)
 	
 #define JGET_STR(head, key) \
 	json_lookup(head, #key)->jval.vu.str.value
