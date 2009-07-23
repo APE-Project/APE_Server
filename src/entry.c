@@ -38,7 +38,7 @@
 #include <grp.h>
 #include <pwd.h>
 
-#define _VERSION "0.9.0"
+#define _VERSION "1.0-PRE1"
 
 
 static void signal_handler(int sign)

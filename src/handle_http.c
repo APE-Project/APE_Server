@@ -158,6 +158,8 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 			
 			shutdown(fdclient, 2);
 			return NULL;			
+		} else {
+			urldecode(cget->get);
 		}
 	} else if (strncasecmp(pSock, "POST", 4) == 0) {
 		if ((cget->get = getpost(pSock)) == NULL) {

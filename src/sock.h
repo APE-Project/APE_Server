@@ -43,8 +43,6 @@
 #define QUIT(x, g_ape) \
 	sendbin(x, HEADER, HEADER_LEN, g_ape);\
 	sendbin(x, "QUIT", 4, g_ape)
-	
-#define IDLE_SHUTDOWN 15
 
 int newSockListen(unsigned int port, char *listen_ip);
 void setnonblocking(int fd);

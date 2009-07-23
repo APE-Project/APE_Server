@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2007, 2008  Anthony Catel <a.catel@weelya.com>
+  Copyright (C) 2006, 2007, 2008, 2009  Anthony Catel <a.catel@weelya.com>
 
   This file is part of APE Server.
   APE is free software; you can redistribute it and/or modify
@@ -31,10 +31,22 @@ void set_json(const char *name, const char *value, struct json **jprev)
 {
 	struct json *new_json, *old_json = *jprev;
 	
+	
 	new_json = xmalloc(sizeof(struct json));
 	
-	new_json->name = xstrdup(name);
-	new_json->value = (value != NULL ? xstrdup(value) : NULL);
+	new_json->name.len = strlen(name);
+	new_json->name.buf = xmalloc(sizeof(char) * (new_json->name.len + 1));
+	memcpy(new_json->name.buf, name, new_json->name.len + 1);
+	
+	
+	new_json->value.len = (value != NULL ? strlen(value) : 0);
+	
+	if (new_json->value.len) {
+		new_json->value.buf = xmalloc(sizeof(char) * (new_json->value.len + 1));
+		memcpy(new_json->value.buf, value, new_json->value.len + 1);
+	} else {
+		new_json->value.buf = NULL;
+	}
 	
 	new_json->jfather = NULL;
 	new_json->jchilds = NULL;
@@ -54,9 +66,21 @@ struct json *json_copy(struct json *jbase)
 	struct json *new_json = xmalloc(sizeof(struct json));
 	struct json_childs *jchilds = jbase->jchilds;
 	
-	new_json->name = xstrdup(jbase->name);
-	new_json->value = (jbase->value != NULL ? xstrdup(jbase->value) : NULL);
+	new_json->name.len = jbase->name.len;
+	new_json->name.buf = xmalloc(sizeof(char) * (new_json->name.len + 1));
 	
+	memcpy(new_json->name.buf, jbase->name.buf, new_json->name.len + 1);
+	
+	new_json->value.len = jbase->value.len;
+	
+	if (jbase->value.len) {
+		
+		new_json->value.buf = xmalloc(sizeof(char) * (new_json->value.len + 1));
+		memcpy(new_json->value.buf, jbase->value.buf, new_json->value.len + 1);
+	
+	} else {
+		new_json->value.buf = NULL;
+	}
 	new_json->prev = NULL;
 	new_json->next = NULL;
 	new_json->jfather = NULL;
@@ -91,10 +115,10 @@ void json_free(struct json *jbase)
 
 	struct json_childs *jchilds = jbase->jchilds;
 	
-	free(jbase->name);
+	free(jbase->name.buf);
 	
-	if (jbase->value != NULL) {
-		free(jbase->value);
+	if (jbase->value.buf != NULL) {
+		free(jbase->value.buf);
 	}
 
 	
@@ -163,17 +187,18 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 	
 	if (string == NULL) { // initial size
 		string = xmalloc(sizeof(struct jsontring));
-		string->jsize = strlen(jlist->name)+3 + 
-				(jlist->jchilds == NULL ? (jlist->value != NULL ? strlen(jlist->value)+2 : 4) : 0) + 
+		string->jsize = jlist->name.len+3 + 
+				(jlist->jchilds == NULL ? (jlist->value.buf != NULL ? jlist->value.len+2 : 4) : 0) + 
 				(jlist->prev == NULL ? 2 : 1) + (jlist->next == NULL && jlist->jchilds == NULL ? 1 : 0) + 2; /* Estimate init size ~ 2 bytes */
 				
 		string->jstring = xmalloc(sizeof(char) * string->jsize);
+		string->len = 0;
 		
 	} else {
 
 		string_osize = string->jsize;
-		string->jsize += strlen(jlist->name)+3 + 
-				(jlist->jchilds == NULL ? (jlist->value != NULL ? strlen(jlist->value)+2 : 4) : 0) + 
+		string->jsize += jlist->name.len+3 + 
+				(jlist->jchilds == NULL ? (jlist->value.buf != NULL ? jlist->value.len+2 : 4) : 0) + 
 				(jlist->prev == NULL ? 2 : 1) + (jlist->next == NULL && jlist->jchilds == NULL ? 1 : 0) + 2; /* Estimate new size ~ 2 bytes */
 				
 		string->jstring = xrealloc(string->jstring, sizeof(char) * string->jsize);
@@ -184,19 +209,38 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 	pjson = jlist->next;
 	
 	if (jlist->prev == NULL) {
-		sprintf(string->jstring, "%s{", string->jstring);
+		string->jstring[string->len++] = '{';
+		//sprintf(string->jstring, "%s{", string->jstring);
 	}
-	sprintf(string->jstring, "%s\"%s\":", string->jstring, jlist->name);
-	free(jlist->name);
+	
+	string->jstring[string->len++] = '"';
+	
+	memcpy(&string->jstring[string->len], jlist->name.buf, jlist->name.len);
+	
+	string->len += jlist->name.len;
+	
+	string->jstring[string->len++] = '"';
+	string->jstring[string->len++] = ':';
+	
+	//sprintf(string->jstring, "%s\"%s\":", string->jstring, jlist->name);
+
+	
+	free(jlist->name.buf);
 	if (pchild == NULL) {
-		if (jlist->value != NULL) {
-			sprintf(string->jstring, "%s\"%s\"", string->jstring, jlist->value);
-			free(jlist->value);
+		if (jlist->value.buf != NULL) {
+			string->jstring[string->len++] = '"';
+			memcpy(&string->jstring[string->len], jlist->value.buf, jlist->value.len);
+			string->len += jlist->value.len;
+			string->jstring[string->len++] = '"';
+
+			free(jlist->value.buf);
 		} else {
-			sprintf(string->jstring, "%snull", string->jstring);
+			strncpy(&string->jstring[string->len], "null", 4);
+			string->len += 4;
+
 		}
 	} else if (pchild->type == JSON_ARRAY) {
-		sprintf(string->jstring, "%s[", string->jstring);
+		string->jstring[string->len++] = '[';
 	}
 	while (pchild != NULL) {
 		struct json_childs *pPchild = pchild;
@@ -206,16 +250,17 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 		pchild = pchild->next;
 		
 		if (pchild == NULL && pPchild->type == JSON_ARRAY) {
-			sprintf(string->jstring, "%s]", string->jstring);
+			string->jstring[string->len++] = ']';
+
 		} else if (pchild != NULL) {
-			sprintf(string->jstring, "%s,", string->jstring);
+			string->jstring[string->len++] = ',';
 		}
 		free(pPchild);
 	}
 	if (jlist->next == NULL) {
-		sprintf(string->jstring, "%s}", string->jstring);
+		string->jstring[string->len++] = '}';
 	} else {
-		sprintf(string->jstring, "%s,", string->jstring);
+		string->jstring[string->len++] = ',';
 	}
 	if (pjson != NULL) {
 
@@ -240,7 +285,14 @@ static json_item *init_json_item()
 	jval->child = NULL;
 	
 	jval->next = NULL;
-	jval->key = NULL;
+	jval->key.val = NULL;
+	jval->key.len = 0;
+	
+	jval->jval.vu.str.value = NULL;
+	jval->jval.vu.integer_value = 0;
+	jval->jval.vu.float_value = 0.;
+	
+	jval->type = -1;
 	
 	return jval;
 }
@@ -297,7 +349,8 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 			
 			cx->current_cx = jval;
 			cx->key_under = 1;
-			cx->current_cx->key = strdup(value->vu.str.value);
+			cx->current_cx->key.val = xstrdup(value->vu.str.value);
+			cx->current_cx->key.len = value->vu.str.length;
 			
 			break;  
 			
@@ -340,10 +393,12 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 					cx->current_cx->jval.vu.integer_value = 1;
 					break;
 				case JSON_T_STRING:
-					cx->current_cx->jval.vu.str.value = strdup(value->vu.str.value);				
+					cx->current_cx->jval.vu.str.value = xmalloc(sizeof(char) * (value->vu.str.length+1));
+					cx->current_cx->jval.vu.str.value = xstrdup(value->vu.str.value);
+					cx->current_cx->jval.vu.str.length = value->vu.str.length;			
 					break;
 			}
-					
+			cx->current_cx->type = type;
 			break;
 		default:
 
@@ -368,11 +423,11 @@ json_item *init_json_parser(const char *json_string)
 
 	init_JSON_config(&config);
 	
-	config.depth                  = 15;
-	config.callback               = &json_callback;
-	config.callback_ctx           = &jcx;
+	config.depth		= 15;
+	config.callback		= &json_callback;
+	config.callback_ctx	= &jcx;
 	
-	config.allow_comments         = 0;
+	config.allow_comments	= 0;
 	config.handle_floats_manually = 0;
 
 	jc = new_JSON_parser(&config);
@@ -389,6 +444,86 @@ json_item *init_json_parser(const char *json_string)
 		return NULL;
 	}
 
+	delete_JSON_parser(jc);
+	
 	return jcx.head;	
+}
+
+static void aff(json_item *cx, int depth)
+{
+
+	while (cx != NULL) {
+		if (cx->key.val != NULL) {
+			printf("Key %s\n", cx->key.val);
+		}
+		if (cx->jval.vu.str.value != NULL) {
+			printf("Value : %s\n", cx->jval.vu.str.value);
+		}
+		if (depth && cx->child != NULL) {
+			aff(cx->child, depth - 1);
+		}
+		cx = cx->next;
+	}
+}
+
+/* "val[32]" return 32, "val" return -1 */
+static int key_is_array(char *key, int i)
+{
+	int ret = 0, f = 1;
+	
+	if (i < 4 || key[i--] != ']' || *key == '[') {
+		return -1;
+	}
+	
+	while (i != 0 && key[i] != '[') {
+		if (f == 10000) {
+			return -1;
+		}
+		if (key[i] < 48 || key[i] > 57) {
+			return -1;
+		}
+		
+		ret += (key[i] - 48) * f;
+		f *= 10;
+		i--;
+	}
+	
+	return ret;
+}
+
+json_item *json_lookup(json_item *head, char *path)
+{
+	char *split[16];
+	char *base;
+	size_t nTok;
+	int i = 0;
+	
+	if (head == NULL || path == NULL) {
+		return NULL;
+	}
+	
+	base = xstrdup(path);
+
+	nTok = explode('.', base, split, 15);
+	
+	while (head != NULL && i <= nTok) {
+		if (head->key.val != NULL && strcasecmp(split[i], head->key.val) == 0) {
+			/*
+			printf("Array %s : %i\n", split[i], key_is_array(split[i], strlen(split[i])-1));
+			printf("Comparing : %s with %s\n", head->key.val, split[i]);
+			printf("Find !\n");
+			*/
+			if (i == nTok) {
+				return (head->child != NULL ? head->child : head);
+			}
+			i++;
+			head = head->child;
+			continue;
+		}
+
+		head = head->next;
+	}
+	free(base);
+	return NULL;
 }
 

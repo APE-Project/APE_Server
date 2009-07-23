@@ -94,6 +94,16 @@ extend *get_property(extend *entry, const char *key)
 	
 }
 
+void *get_property_val(extend *entry, const char *key)
+{
+	extend *find;
+	
+	if ((find = get_property(entry, key)) != NULL) {
+		return find->val;
+	}
+	return NULL;
+	
+}
 
 void del_property(extend **entry, const char *key)
 {

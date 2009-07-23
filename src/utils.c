@@ -143,3 +143,59 @@ char *xstrdup(const char *s)
 	return x;
 }
 
+char hex2int(unsigned char hex)
+{
+        hex = hex - '0';
+        if (hex > 9) {
+                hex = (hex + '0' - 1) | 0x20;
+                hex = hex - 'a' + 11;
+        }
+        if (hex > 15) {
+                hex = 0xFF;
+		}
+
+        return hex;
+}
+
+/* taken from lighttp */
+int urldecode(char *string)
+{
+        unsigned char high, low;
+        const char *src;
+        char *dst;
+
+        if (string == NULL || !string) return -1;
+
+        src = (const char *) string;
+        dst = (char *) string;
+
+        while ((*src) != '\0') {
+		if (*src == '%') {
+                        *dst = '%';
+
+                        high = hex2int(*(src + 1));
+                        if (high != 0xFF) {
+                                low = hex2int(*(src + 2));
+                                if (low != 0xFF) {
+                                        high = (high << 4) | low;
+
+                                        if (high < 32 || high == 127) high = '_';
+			
+                                        *dst = high;
+                                        src += 2;
+                                }
+                        }
+                } else {
+                        *dst = *src;
+                }
+
+                dst++;
+                src++;
+        }
+
+        *dst = '\0';
+
+        return 1;
+}
+
+

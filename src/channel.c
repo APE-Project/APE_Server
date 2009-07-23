@@ -338,7 +338,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 			json_attach(jlist, get_json_object_user(user_actif), JSON_OBJECT);
 		
 			set_json("level", itos(lvl, level), &jlist);
-			set_json("channel", NULL, &jlist);
+			set_json("pipe", NULL, &jlist);
 			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 		
 			newraw = forge_raw(RAW_SETLEVEL, jlist);
@@ -358,7 +358,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 			json_attach(jlist, get_json_object_user(NULL), JSON_OBJECT);
 		
 			set_json("level", itos(lvl, level), &jlist);
-			set_json("channel", NULL, &jlist);
+			set_json("pipe", NULL, &jlist);
 			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 		
 			newraw = forge_raw(RAW_SETLEVEL, jlist);
@@ -390,7 +390,7 @@ unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *
 		set_json("user", NULL, &jlist);
 		json_attach(jlist, get_json_object_user(user), JSON_OBJECT);
 		
-		set_json("channel", NULL, &jlist);
+		set_json("pipe", NULL, &jlist);
 		json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 		
 		newraw = forge_raw(RAW_SETTOPIC, jlist);
@@ -432,7 +432,7 @@ void ban(CHANNEL *chan, USERS *banner, const char *ip, char *reason, unsigned in
 				set_json("banner", NULL, &jlist);
 				json_attach(jlist, get_json_object_user(NULL), JSON_OBJECT);
 			}
-			set_json("channel", NULL, &jlist);
+			set_json("pipe", NULL, &jlist);
 			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 			
 			newraw = forge_raw(RAW_BAN, jlist);

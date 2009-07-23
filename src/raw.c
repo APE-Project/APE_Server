@@ -48,8 +48,10 @@ RAW *forge_raw(const char *raw, struct json *jlist)
 
 	new_raw = xmalloc(sizeof(*new_raw));
 	
-	new_raw->len = strlen(string->jstring);	
-	new_raw->data = xstrdup(string->jstring);
+        new_raw->len = string->len;
+
+        new_raw->data = xmalloc(sizeof(char) * (new_raw->len + 1));
+        memcpy(new_raw->data, string->jstring, new_raw->len + 1);
 
 	new_raw->next = NULL;
 	new_raw->priority = 0;
@@ -64,9 +66,12 @@ RAW *forge_raw(const char *raw, struct json *jlist)
 RAW *copy_raw(RAW *input)
 {
 	RAW *new_raw;
-
+	
 	new_raw = xmalloc(sizeof(*new_raw));
-	new_raw->data = xstrdup(input->data);
+	
+        new_raw->data = xmalloc(sizeof(char) * (input->len + 1));
+        memcpy(new_raw->data, input->data, input->len + 1);
+
 	new_raw->len = input->len;
 	
 	new_raw->next = input->next;
@@ -77,8 +82,6 @@ RAW *copy_raw(RAW *input)
 
 
 /************* Users related functions ****************/
-
-
 
 /* Post raw to a subuser */
 void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape)
@@ -285,7 +288,7 @@ int send_raws(subuser *user, acetables *g_ape)
 		if (raw->next != NULL) {
 			finish &= sendbin(user->fd, ",\n", 2, g_ape);
 		} else {
-			finish &= sendbin(user->fd, "\n]\n", 3, g_ape);	
+			finish &= sendbin(user->fd, "\n]\n\n", 3, g_ape);	
 		}
 		older = raw;
 		raw = raw->next;

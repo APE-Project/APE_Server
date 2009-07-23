@@ -124,6 +124,7 @@ static void clear_buffer(connection *co, int *tfd)
 	(*tfd)--;
 }
 
+#if 0
 static void check_idle(struct _socks_list *sl)
 {
 	int i = 0, x = 0;
@@ -139,6 +140,7 @@ static void check_idle(struct _socks_list *sl)
 		
 	}
 }
+#endif
 
 unsigned int sockroutine(int s_listen, acetables *g_ape)
 {
@@ -180,7 +182,9 @@ unsigned int sockroutine(int s_listen, acetables *g_ape)
 	ev.data.fd = s_listen;
 	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, s_listen, &ev);
 	
+	#if 0
 	add_periodical(5, 0, check_idle, &sl, g_ape);
+	#endif
 	
 	while (1) {
 		

@@ -35,6 +35,7 @@
 #define ERR_BAD_PARAM 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"001\",\"value\":\"BAD_PARAM\"}}\n]\n"
 #define ERR_BAD_CMD 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"002\",\"value\":\"BAD_CMD\"}}\n]\n"
 #define ERR_BAD_SESSID 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"004\",\"value\":\"BAD_SESSID\"}}\n]\n"
+#define ERR_BAD_JSON 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"005\",\"value\":\"BAD_JSON\"}}\n]\n"
 #define ERR_CONNECT		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"200\",\"value\":\"UNKNOWN_CONNECTION_ERROR\"}}\n]\n"
 
 
@@ -61,8 +62,9 @@ typedef struct _callbackp callbackp;
 
 struct _callbackp
 {
-	int nParam;
-	char **param;
+
+	json_item *param;
+	
 	unsigned int fdclient;
 	struct USERS *call_user;
 	char *host;
@@ -73,9 +75,8 @@ struct _callbackp
 
 typedef struct callback
 {
-	int nParam;
-	unsigned int need;
-	unsigned int (*func)(struct _callbackp *);
+	unsigned int need; /* Need SESSID ? */
+	unsigned int (*func)(struct _callbackp *); /* Callback func */
 } callback;
 
 
@@ -105,7 +106,7 @@ unsigned int cmd_pong(struct _callbackp *);
 unsigned int cmd_proxy_connect(struct _callbackp *);
 unsigned int cmd_proxy_write(struct _callbackp *);
 ///////////////////////////////////////////////////////////////////////////////////////////////
-void register_cmd(const char *cmd, int nParam, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape);
+void register_cmd(const char *cmd, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape);
 void unregister_cmd(const char *cmd, acetables *g_ape);
 
 #endif

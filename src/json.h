@@ -25,14 +25,24 @@
 
 #include "json_parser.h"
 
+
+typedef char* jpath;
+
 enum {
 	JSON_ARRAY = 0,
 	JSON_OBJECT
 };
 
 typedef struct json {
-	char *name;
-	char *value;
+	struct {
+		char *buf;
+		size_t len;
+	} name;
+	
+	struct {
+		char *buf;
+		size_t len;
+	} value;
 	
 	struct json_childs *jchilds;
 	
@@ -50,12 +60,16 @@ struct json_childs {
 
 struct jsontring {
 	char *jstring;
-	int jsize;
+	size_t jsize;
+	size_t len;
 };
 
 typedef struct _json_item {
-        char *key;
-	
+
+	struct {
+        	char *val;
+        	size_t len;
+	} key;
 	int type;
 	
         struct JSON_value_struct jval;
@@ -92,6 +106,19 @@ void json_concat(struct json *json_father, struct json *json_child);
 void json_free(struct json *jbase);
 struct jsontring *jsontr(struct json *jlist, struct jsontring *string);
 json_item *init_json_parser(const char *json_string);
+json_item *json_lookup(json_item *head, char *path);
+
+#define JSTR(key) \
+	(char *)(callbacki->param != NULL ? json_lookup(callbacki->param->child, #key)->jval.vu.str.value : NULL)
+
+#define JINT(key) \
+	(int)(callbacki->param != NULL ? json_lookup(callbacki->param->child, #key)->jval.vu.integer_value : 0)
+	
+#define JFLOAT(key) \
+	(callbacki->param != NULL ? json_lookup(callbacki->param->child, #key)->jval.vu.float_value : 0.)
+	
+#define JGET_STR(head, key) \
+	json_lookup(head, #key)->jval.vu.str.value
 
 #endif
 

@@ -34,5 +34,7 @@ char *itos(int input, char *output);
 char *trim(char *s);
 char *removelast(char *input, unsigned int n);
 size_t explode(const char split, char *input, char **tP, unsigned int limit);
+char hex2int(unsigned char hex);
+int urldecode(char *string);
 
 #endif
