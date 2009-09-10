@@ -22,9 +22,8 @@
 #ifndef _PIPE_H
 #define _PIPE_H
 
-#include "users.h"
 #include "main.h"
-#include "raw.h"
+#include "users.h"
 
 enum {
 	CHANNEL_PIPE = 0,

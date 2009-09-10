@@ -64,6 +64,13 @@ struct jsontring {
 	size_t len;
 };
 
+typedef enum {
+	JSON_C_T_OBJ,
+	JSON_C_T_ARR,
+	JSON_C_T_VAL,
+	JSON_C_T_NULL,
+} json_child_t;
+
 typedef struct _json_item {
 
 	struct {
@@ -72,21 +79,19 @@ typedef struct _json_item {
 	} key;
 	int type;
 	
-        struct JSON_value_struct jval;
-	
-	
-        struct _json_item *father;
-        struct _json_item *child;
+	struct JSON_value_struct jval;
 
-        struct _json_item *next;
+	struct _json_item *father;
+	
+	struct {
+		struct _json_item *child;
+		json_child_t type;
+	} jchild;
+	struct _json_item *next;
 	
 
 } json_item;
 
-enum {
-	JSON_ITEM_OBJ,
-	JSON_ITEM_VAL
-};
 
 typedef struct _json_context {
 	int key_under;
@@ -107,10 +112,28 @@ void json_free(struct json *jbase);
 struct jsontring *jsontr(struct json *jlist, struct jsontring *string);
 json_item *init_json_parser(const char *json_string);
 json_item *json_lookup(json_item *head, char *path);
+void free_json_item(json_item *cx);
+
 
 #define APE_PARAMS_INIT() \
+	int json_iterator; \
+	json_iterator = 0; \
 	json_item *json_params = NULL
 
+
+/* Iterate over a JSON array */
+#define JFOREACH(fkey, outvar) \
+	for (json_params = json_lookup(callbacki->param, #fkey), json_iterator = 0; json_params != NULL; json_params = json_params->next) \
+		if ((outvar = (char *)json_params->jval.vu.str.value) != NULL && ++json_iterator)
+
+/* Iterate over a JSON Object */
+#define JFOREACH_K(fkey, outkey, outvar) \
+		for (json_params = json_lookup(callbacki->param, #fkey), json_iterator = 0; json_params != NULL; json_params = json_params->next) \
+			if ((outvar = (char *)json_params->jval.vu.str.value) != NULL && (outkey = (char *)json_params->key.val) != NULL && ++json_iterator)		
+
+#define JFOREACH_ELSE \
+	if (json_iterator == 0)
+	
 #define JSTR(key) \
 	(char *)(callbacki->param != NULL && (json_params = json_lookup(callbacki->param, #key)) != NULL ? json_params->jval.vu.str.value : NULL)
 

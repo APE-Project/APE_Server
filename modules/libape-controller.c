@@ -18,25 +18,34 @@ static unsigned int cmd_control(callbackp *callbacki)
 {
 	CHANNEL *jchan;
 	
-	if (strcmp(callbacki->param[1], READ_CONF("password")) != 0) {
-		SENDH(callbacki->fdclient, "ERR BAD_PASSWORD", callbacki->g_ape);
+	char *password, *channel, *raw, *value;
+	
+	APE_PARAMS_INIT();
+	
+	if ((password = JSTR(password)) != NULL && (channel = JSTR(channel)) != NULL && (value = JSTR(value)) != NULL) {
+	
+		if (strcmp(password, READ_CONF("password")) != 0) {
+			SENDH(callbacki->fdclient, "ERR BAD_PASSWORD", callbacki->g_ape);
 		
-	} else if ((jchan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
-		SENDH(callbacki->fdclient, "ERR NOT_A_CHANNEL", callbacki->g_ape);
+		} else if ((jchan = getchan(channel, callbacki->g_ape)) == NULL) {
+			SENDH(callbacki->fdclient, "ERR NOT_A_CHANNEL", callbacki->g_ape);
 		
-	} else {
-		if (strcasecmp(callbacki->param[3], "POSTMSG") == 0) {
-			send_msg_channel(jchan, callbacki->param[5], callbacki->param[4], callbacki->g_ape);
+		} else {
+			
+			send_msg_channel(jchan, value, raw, callbacki->g_ape);
 			SENDH(callbacki->fdclient, "OK POSTED", callbacki->g_ape);
+			
 		}
+		
+		return (RETURN_NOTHING);
 	}
-	return (FOR_NOTHING);
+	return (RETURN_BAD_PARAMS);
 }
 
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
 
-	register_cmd("CONTROL", 5, cmd_control, NEED_NOTHING, g_ape);
+	register_cmd("CONTROL", cmd_control, NEED_NOTHING, g_ape);
 }
 
 

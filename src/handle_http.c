@@ -19,12 +19,12 @@
 
 /* handle_http.c */
 
+#include <string.h>
 
-#include "users.h"
 #include "handle_http.h"
-#include "cmd.h"
 #include "utils.h"
 #include "config.h"
+#include "cmd.h"
 
 static unsigned int fixpacket(char *pSock, int type)
 {

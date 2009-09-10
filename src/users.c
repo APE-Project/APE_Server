@@ -20,23 +20,24 @@
 /* users.c */
 
 
+#include <sys/time.h>
+#include <time.h>
+
+#include "users.h"
+
 #include "hash.h"
 #include "handle_http.h"
 #include "sock.h"
 #include "extend.h"
 
-#include "users.h"
 #include "config.h"
-#include "cmd.h"
 #include "json.h"
 #include "plugins.h"
 #include "pipe.h"
 #include "raw.h"
 
-#include <sys/time.h>
-#include <time.h>
 #include "utils.h"
-
+#include "transports.h"
 
 /* Checking whether the user is in a channel */
 unsigned int isonchannel(USERS *user, CHANNEL *chan)
@@ -213,14 +214,13 @@ void deluser(USERS *user, acetables *g_ape)
 	user = NULL;
 }
 
-void do_died(subuser *user)
+void do_died(subuser *sub)
 {
-
-	if (user->state == ALIVE && user->user->type == HUMAN && !(user->user->flags & FLG_PCONNECT)) {
-		user->state = ADIED;
-		user->headers_sent = 0;
+	if (sub->state == ALIVE) {
+		sub->state = ADIED;
+		sub->headers_sent = 0;
 		
-		shutdown(user->fd, 2);
+		shutdown(sub->fd, 2);
 	}
 }
 
@@ -245,12 +245,11 @@ void check_timeout(acetables *g_ape)
 					delsubuser(n);
 					continue;
 				}
-				if ((*n)->state == ALIVE && (*n)->nraw && !(*n)->need_update) {
+				if ((*n)->state == ALIVE && (*n)->raw_pools.nraw && !(*n)->need_update) {
 
 					/* Data completetly sent => closed */
 					if (send_raws(*n, g_ape)) {
-
-						do_died(*n);
+						transport_data_completly_sent(*n, (*n)->user->transport); // todo : hook
 					} else {
 
 						(*n)->burn_after_writing = 1;
@@ -319,7 +318,9 @@ void send_msg_sub(subuser *sub, const char *msg, const char *type, acetables *g_
 session *get_session(USERS *user, const char *key)
 {
 	session *current = user->sessions.data;
-	
+	if (strlen(key) > 32) {
+		return NULL;
+	}
 	while (current != NULL) {
 		if (strcmp(current->key, key) == 0) {
 			return current;
@@ -363,8 +364,9 @@ session *set_session(USERS *user, const char *key, const char *val, int update, 
 			sTmp->val = xrealloc(sTmp->val, sizeof(char) * (vlen+1)); // if new val is bigger than previous
 		}
 		user->sessions.length += (vlen - tvlen); // update size
-		strcpy(sTmp->key, key);
-		strcpy(sTmp->val, val);
+		//strcpy(sTmp->key, key);
+		memcpy(sTmp->val, val, vlen + 1);
+		
 		if (update) {
 			sendback_session(user, sTmp, g_ape);
 		}
@@ -403,8 +405,8 @@ void sendback_session(USERS *user, session *sess, acetables *g_ape)
 			set_json(sess->key, (sess != NULL ? sess->val : NULL), &jobj);
 			json_attach(jlist, jobj, JSON_OBJECT);
 			newraw = forge_raw("SESSIONS", jlist);
-			newraw->priority = 1;
-			post_raw_sub(newraw, current, g_ape);
+			newraw->priority = RAW_PRI_HI;
+			post_raw_sub(copy_raw_z(newraw), current, g_ape);
 		}
 		current = current->next;
 	}	
@@ -427,8 +429,6 @@ subuser *addsubuser(int fd, const char *channel, USERS *user, acetables *g_ape)
 	memcpy(sub->channel, channel, strlen(channel)+1);
 	sub->next = user->subuser;
 	
-	sub->rawhead = NULL;
-	sub->rawfoot = NULL;
 	sub->nraw = 0;
 	sub->wait_for_free = 0;
 	sub->headers_sent = 0;
@@ -437,7 +437,23 @@ subuser *addsubuser(int fd, const char *channel, USERS *user, acetables *g_ape)
 	
 	sub->idle = time(NULL);
 	sub->need_update = 0;
+	sub->current_chl = 0;
 
+	sub->raw_pools.nraw = 0;
+	
+	/* Pre-allocate a pool of raw to reduce the number of malloc calls */
+	
+	/* Low priority raws */
+	sub->raw_pools.low.nraw = 0;
+	sub->raw_pools.low.size = 32;
+	sub->raw_pools.low.rawhead = init_raw_pool(sub->raw_pools.low.size);
+	sub->raw_pools.low.rawfoot = sub->raw_pools.low.rawhead;
+	
+	/* High priority raws */
+	sub->raw_pools.high.nraw = 0;
+	sub->raw_pools.high.size = 8;
+	sub->raw_pools.high.rawhead = init_raw_pool(sub->raw_pools.high.size);
+	sub->raw_pools.high.rawfoot = sub->raw_pools.high.rawhead;
 	
 	(user->nsub)++;
 	
@@ -445,13 +461,10 @@ subuser *addsubuser(int fd, const char *channel, USERS *user, acetables *g_ape)
 	
 	/* if the previous subuser have some messages in queue, copy them to the new subuser */
 	if (sub->next != NULL && sub->next->nraw) {
-		RAW *rTmp;
+		struct _raw_pool *rTmp;
 		
-		for (rTmp = sub->next->rawhead; rTmp != NULL; rTmp = rTmp->next) {
-			if (rTmp->priority == 1) {
-				continue;
-			}
-			post_raw_sub(copy_raw(rTmp), sub, g_ape);
+		for (rTmp = sub->next->raw_pools.low.rawhead; rTmp != NULL; rTmp = rTmp->next) {
+			post_raw_sub(copy_raw_z(rTmp->raw), sub, g_ape);
 		}
 
 	}
@@ -505,7 +518,7 @@ void subuser_restor(subuser *sub, acetables *g_ape)
 		json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
 
 		newraw = forge_raw(RAW_CHANNEL, jlist);
-		newraw->priority = 1;
+		newraw->priority = RAW_PRI_HI;
 		post_raw_sub(newraw, sub, g_ape);
 		chanl = chanl->next;
 	}
@@ -517,7 +530,7 @@ void subuser_restor(subuser *sub, acetables *g_ape)
 	json_attach(jlist, get_json_object_user(user), JSON_OBJECT);	
 	
 	newraw = forge_raw("IDENT", jlist);
-	newraw->priority = 1;
+	newraw->priority = RAW_PRI_HI;
 	post_raw_sub(newraw, sub, g_ape);
 	
 }
@@ -545,14 +558,14 @@ void delsubuser(subuser **current)
 	((*current)->user->nsub)--;
 	
 	*current = (*current)->next;
-	clear_subuser_raws(del);
-
 	
+	destroy_raw_pool(del->raw_pools.low.rawhead);
+	destroy_raw_pool(del->raw_pools.high.rawhead);
+
 	if (del->state == ALIVE) {
 		del->wait_for_free = 1;
 		do_died(del);
 	} else {
-		do_died(del);
 		free(del);
 	}
 	
@@ -565,33 +578,18 @@ void clear_subusers(USERS *user)
 	}
 }
 
-void clear_subuser_raws(subuser *sub)
-{
-	RAW *raw, *older;
-	
-	raw = sub->rawhead;
-	while(raw != NULL) {
-		older = raw;
-		raw = raw->next;
-		free(older->data);
-		free(older);
-	}
-	sub->rawhead = NULL;
-	sub->rawfoot = NULL;
-	sub->nraw = 0;
-	sub = sub->next;	
-}
+#if 0
 void ping_request(USERS *user, acetables *g_ape)
 {
 
 	struct timeval t;
 	gettimeofday(&t, NULL);
 
-	sprintf(user->lastping, "%li%li", t.tv_sec, t.tv_usec);
+	sprintf(user->lastping, "%li%d", t.tv_sec, t.tv_usec);
 	
 	send_msg(user, user->lastping, "KING", g_ape);	
 }
-
+#endif
 struct _users_link *are_linked(USERS *a, USERS *b)
 {
 	USERS *aUser, *bUser;

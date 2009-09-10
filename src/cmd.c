@@ -20,18 +20,16 @@
 /* cmd.c */
 
 #include "cmd.h"
-#include "hash.h"
 #include "json.h"
-#include "plugins.h"
 #include "config.h"
 #include "utils.h"
 #include "proxy.h"
 #include "raw.h"
+#include "transports.h"
 
 void do_register(acetables *g_ape) // register_raw("CMD", Nparam (without IP and time, with sessid), callback_func, NEEDSOMETHING?, g_ape);
 {
 	register_cmd("CONNECT",		cmd_connect, 	NEED_NOTHING, g_ape);
-	register_cmd("PCONNECT",	cmd_pconnect, 	NEED_NOTHING, g_ape);
 	register_cmd("SCRIPT",        	cmd_script,		NEED_NOTHING, g_ape);
 	
 	register_cmd("CHECK", 		cmd_check, 		NEED_SESSID, g_ape);
@@ -44,7 +42,7 @@ void do_register(acetables *g_ape) // register_raw("CMD", Nparam (without IP and
 	register_cmd("LEFT", 		cmd_left, 		NEED_SESSID, g_ape);
 	//register_cmd("KICK", 		cmd_kick, 		NEED_SESSID, g_ape); // Module
 	//register_cmd("BAN",		cmd_ban,		NEED_SESSID, g_ape); // Module
-	//register_cmd("SESSION",        	cmd_session,		NEED_SESSID, g_ape);
+	register_cmd("SESSION",        	cmd_session,		NEED_SESSID, g_ape);
 	
 	//register_cmd("KONG", 		cmd_pong, 		NEED_SESSID, g_ape);
 	
@@ -77,131 +75,147 @@ void unregister_cmd(const char *cmd, acetables *g_ape)
 
 unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 {
-
+	
+	int attach = 1;
 	callback *cmdback;
-	json_item *ijson, *rjson;
+	json_item *ijson, *ojson, *rjson, *jchl;
 	
 	unsigned int flag;
 	
 	USERS *guser = NULL;
 	subuser *sub = NULL;
 
-	ijson = init_json_parser(cget->get);
+	ijson = ojson = init_json_parser(cget->get);
 
-	/*nTok = explode('&', cget->get, param, 64);
-	
-	if (nTok < 1) {
-		cmd = NULL;
-	} else {
-		cmd = param[0];
-
-	}*/
-
-	if (ijson == NULL || ijson->child == NULL) {
+	if (ijson == NULL || ijson->jchild.child == NULL) {
 		SENDH(cget->fdclient, ERR_BAD_JSON, g_ape);
-	} else if ((rjson = json_lookup(ijson->child, "cmd")) != NULL &&
-			rjson->jval.vu.str.value != NULL && 
-			(cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
-
-		int tmpfd = 0;
-		callbackp cp;
-		switch(cmdback->need) {
-			case NEED_SESSID:
-				{
-					json_item *jsid;
+	} else {
+		//else if ((rjson = json_lookup(ijson->child, "cmd")) != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
+		for (ijson = ijson->jchild.child; ijson != NULL; ijson = ijson->next) {
+			rjson = json_lookup(ijson->jchild.child, "cmd");
+			
+			if (rjson != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
+				callbackp cp;
+				cp.fdclient = 0;
+				cp.cmd = rjson->jval.vu.str.value;
+				switch(cmdback->need) {
+					case NEED_SESSID:
+						{
+							json_item *jsid;
 				
-					if ((jsid = json_lookup(ijson->child, "sessid")) != NULL && jsid->jval.vu.str.value != NULL) {
-						guser = seek_user_id(jsid->jval.vu.str.value, g_ape);
+							if (guser == NULL && (jsid = json_lookup(ijson->jchild.child, "sessid")) != NULL && jsid->jval.vu.str.value != NULL) {
+								guser = seek_user_id(jsid->jval.vu.str.value, g_ape);
+							}
+						}
+						break;
+					case NEED_NOTHING:
+						guser = NULL;
+						break;
+				}
+		
+				if (cmdback->need != NEED_NOTHING) {
+					//json_item *jchl;
+					
+					if (guser == NULL) {
+						SENDH(cget->fdclient, ERR_BAD_SESSID, g_ape);
+						free_json_item(ojson);
+						
+						return (CONNECT_SHUTDOWN);
+					} else if (sub == NULL) {
+						
+						sub = getsubuser(guser, cget->host);
+						if (sub != NULL && sub->fd != cget->fdclient && sub->state == ALIVE) {
+							/* The user open a new connection while he already has one openned */
+							struct _transport_open_same_host_p retval = transport_open_same_host(sub, cget->fdclient, guser->transport);				
+					
+							if (retval.fd_close) {
+								CLOSE(retval.fd_close, g_ape);
+								shutdown(retval.fd_close, 2);
+							}
+							sub->fd = cp.fdclient = retval.fd_listener;
+							sub->state = retval.substate;
+							attach = retval.attach;
+					
+						} else if (sub == NULL) {
+							sub = addsubuser(cget->fdclient, cget->host, guser, g_ape);
+							if (sub != NULL) {
+								subuser_restor(sub, g_ape);
+							}
+						} else if (sub != NULL) {
+							sub->fd = cget->fdclient;
+						}
+						guser->idle = (long int)time(NULL); // update user idle
+
+						sub->idle = guser->idle; // Update subuser idle
+						
+					}
+					
+					if (sub != NULL && (jchl = json_lookup(ijson->jchild.child, "chl")) != NULL && jchl->jval.vu.integer_value > sub->current_chl) {
+						sub->current_chl = jchl->jval.vu.integer_value;
+					} else if (sub != NULL) {
+						/* if a bad challenge is detected, we are stoping walking on cmds */
+						send_error(guser, "BAD_CHL", "250", g_ape);
+
+						free_json_item(ojson);
+						sub->state = ALIVE;
+						
+						return (CONNECT_KEEPALIVE);
 					}
 				}
-				break;
-			case NEED_NOTHING:
-				guser = NULL;
-				break;
-		}
 		
-		if (cmdback->need != NEED_NOTHING) {
-			if (guser == NULL) {
-				SENDH(cget->fdclient, ERR_BAD_SESSID, g_ape);
+				cp.param = json_lookup(ijson->jchild.child, "params");
+				cp.fdclient = (cp.fdclient ? cp.fdclient : cget->fdclient);
+				cp.call_user = guser;
+				cp.call_subuser = sub;
+				cp.g_ape = g_ape;
+				cp.host = cget->host;
+				cp.chl = (sub != NULL ? sub->current_chl : 0);
+				// Ajouter un string de la commande
 				
-				return (CONNECT_SHUTDOWN);
-			} else {
-				sub = getsubuser(guser, cget->host);
-				if (sub != NULL && sub->fd != cget->fdclient && sub->state == ALIVE) {
-					if (guser->transport == TRANSPORT_IFRAME) {
-						/* iframe is already open on "sub" */
-						tmpfd = sub->fd; /* Forward data directly to iframe */
-						CLOSE(cget->fdclient, g_ape);
-						shutdown(cget->fdclient, 2); /* Immediatly close controller */
-					} else {
-						/* Only one connection is allowed per user/host */
-						CLOSE(sub->fd, g_ape);
-						shutdown(sub->fd, 2);
-						sub->state = ADIED;
-						sub->fd = cget->fdclient;					
-					}
-				} else if (sub == NULL) {
-					sub = addsubuser(cget->fdclient, cget->host, guser, g_ape);
-					if (sub != NULL) {
-						subuser_restor(sub, g_ape);
-					}
-				} else if (sub != NULL) {
-					sub->fd = cget->fdclient;
+				flag = cmdback->func(&cp);
+		
+				if (flag & RETURN_NULL) {
+					guser = NULL;
+				} else if (flag & RETURN_LOGIN) {
+					guser = cp.call_user;
+				} else if (flag & RETURN_BAD_PARAMS) {
+					guser = NULL;
+					SENDH(cget->fdclient, ERR_BAD_PARAM, g_ape);
 				}
-				guser->idle = (long int)time(NULL); // update user idle
-
-				sub->idle = guser->idle; // Update subuser idle
-			}
-		}
-		cp.param = json_lookup(ijson->child, "params");
-		cp.fdclient = (tmpfd ? tmpfd : cget->fdclient);
-		cp.call_user = guser;
-		cp.g_ape = g_ape;
-		cp.host = cget->host;
 		
-		flag = cmdback->func(&cp);
-		
-		if (flag & RETURN_NULL) {
-			guser = NULL;
-		} else if (flag & RETURN_LOGIN) {
-			guser = cp.call_user;
-		} else if (flag & RETURN_BAD_PARAMS) {
-			guser = NULL;
-			SENDH(cget->fdclient, ERR_BAD_PARAM, g_ape);
-		}
-		
-		if (guser != NULL) {
-
-			if (sub == NULL && (sub = getsubuser(guser, cget->host)) == NULL) {
-				
-				if ((sub = addsubuser(cget->fdclient, cget->host, guser, g_ape)) == NULL) {
+				if (guser != NULL) {
+			
+					if (sub == NULL) {
+						sub = getsubuser(guser, cget->host);	
+					}
+			
+					*iuser = (attach ? sub : NULL);
+			
+					if (flag & RETURN_UPDATE_IP) {
+						strncpy(guser->ip, cget->ip_get, 16);
+					}
+			
+					/* If tmpfd is set, we do not have any reasons to change its state */
+					sub->state = ALIVE;
+					
+				} else {
+					free_json_item(ojson);
+					
 					return (CONNECT_SHUTDOWN);
 				}
-				subuser_restor(sub, g_ape);
-				
-				if (guser->transport == TRANSPORT_IFRAME) {
-					sendbin(sub->fd, HEADER, strlen(HEADER), g_ape);
-				}			
+			} else {
+				free_json_item(ojson);
+				SENDH(cget->fdclient, ERR_BAD_CMD, g_ape);
+				return (CONNECT_SHUTDOWN);
 			}
-
-			*iuser = (tmpfd ? NULL : sub);
-			
-			if (flag & RETURN_UPDATE_IP) {
-				strncpy(guser->ip, cget->ip_get, 16);
-			}
-			
-			/* If tmpfd is set, we do not have reasons to change this state */
-			if (!tmpfd) {
-				sub->state = ALIVE;
-			}
-			return (CONNECT_KEEPALIVE);
-			
 		}
-		return (CONNECT_SHUTDOWN);
+		free_json_item(ojson);
 
-	} else { // unregistered CMD
-		SENDH(cget->fdclient, ERR_BAD_CMD, g_ape);
-	}
+		return (CONNECT_KEEPALIVE);
+
+	} 
+
+	
 	return (CONNECT_SHUTDOWN);
 }
 
@@ -223,11 +237,20 @@ unsigned int cmd_connect(callbackp *callbacki)
 		return (RETURN_NOTHING);
 	}
 	
-	if (JINT(transport) == 2) {
-		nuser->transport = TRANSPORT_IFRAME;
-		nuser->flags |= FLG_PCONNECT;
-	} else {
-		nuser->transport = TRANSPORT_LONGPOLLING;
+	switch(JINT(transport)) {
+		case 1:
+			nuser->transport = TRANSPORT_XHRSTREAMING;
+			break;
+		case 2:
+			nuser->transport = TRANSPORT_JSONP;
+			break;
+		case 3:
+			nuser->transport = TRANSPORT_PERSISTANT;
+			break;
+		default:
+			nuser->transport = TRANSPORT_LONGPOLLING;
+			break;
+		
 	}
 	
 	subuser_restor(getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
@@ -235,7 +258,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	set_json("sessid", nuser->sessid, &jstr);
 	
 	newraw = forge_raw(RAW_LOGIN, jstr);
-	newraw->priority = 1;
+	newraw->priority = RAW_PRI_HI;
 	
 	post_raw(newraw, nuser, callbacki->g_ape);
 	
@@ -243,36 +266,25 @@ unsigned int cmd_connect(callbackp *callbacki)
 	return (RETURN_LOGIN | RETURN_UPDATE_IP);
 
 }
-/* Deprecated */
-unsigned int cmd_pconnect(callbackp *callbacki)
-{
-	USERS *nuser;
-
-	nuser = adduser(callbacki->fdclient, callbacki->host, callbacki->g_ape);
-	if (nuser == NULL) {
-		SENDH(callbacki->fdclient, ERR_CONNECT, callbacki->g_ape);
-		
-		return (RETURN_NOTHING);
-	}
-	nuser->flags |= FLG_PCONNECT;
-	
-	return (RETURN_LOGIN | RETURN_UPDATE_IP);
-
-}
 
 unsigned int cmd_script(callbackp *callbacki)
 {
-	/*char *domain = CONFIG_VAL(Server, domain, callbacki->g_ape->srv);
+	char *domain = CONFIG_VAL(Server, domain, callbacki->g_ape->srv);
+	char *script = NULL;
+	
+	APE_PARAMS_INIT();
+	
 	if (domain == NULL) {
 		send_error(callbacki->call_user, "NO_DOMAIN", "201", callbacki->g_ape);
 	} else {
-		int i;
 		sendf(callbacki->fdclient, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, domain);
-		for (i = 1; i <= callbacki->nParam; i++) {
-			sendf(callbacki->fdclient, callbacki->g_ape, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", callbacki->param[i]);
+
+		JFOREACH(scripts, script) {
+			sendf(callbacki->fdclient, callbacki->g_ape, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", script);
 		}
 		sendbin(callbacki->fdclient, "</head>\n<body>\n</body>\n</html>", 30, callbacki->g_ape);
-	}*/
+	}
+	
 	return (RETURN_NOTHING);
 }
 
@@ -282,12 +294,11 @@ unsigned int cmd_join(callbackp *callbacki)
 	RAW *newraw;
 	json *jlist;
 	BANNED *blist;
+	char *chan_name = NULL;
 	
 	APE_PARAMS_INIT();
 	
-	char *chan_name = JSTR(channel);
-	
-	if (chan_name != NULL) {
+	JFOREACH(channels, chan_name) {
 	
 		if ((jchan = getchan(chan_name, callbacki->g_ape)) == NULL) {
 			jchan = mkchan(chan_name, "Default%20Topic", callbacki->g_ape);
@@ -322,9 +333,10 @@ unsigned int cmd_join(callbackp *callbacki)
 				join(callbacki->call_user, jchan, callbacki->g_ape);
 			}
 		}
-		return (RETURN_NOTHING);
+	} JFOREACH_ELSE {
+		return (RETURN_BAD_PARAMS);
 	}
-	return (RETURN_BAD_PARAMS);
+	return (RETURN_NOTHING);
 }
 
 unsigned int cmd_check(callbackp *callbacki)
@@ -343,7 +355,7 @@ unsigned int cmd_send(callbackp *callbacki)
 	
 		set_json("msg", msg, &jlist);
 
-		post_to_pipe(jlist, RAW_DATA, pipe, getsubuser(callbacki->call_user, callbacki->host), NULL, callbacki->g_ape);
+		post_to_pipe(jlist, RAW_DATA, pipe, callbacki->call_subuser, callbacki->g_ape);
 		
 		return (RETURN_NOTHING);
 	}
@@ -399,194 +411,49 @@ unsigned int cmd_left(callbackp *callbacki)
 	return (RETURN_BAD_PARAMS);
 }
 
-#if 0
-unsigned int cmd_settopic(callbackp *callbacki)
-{
-	settopic(callbacki->call_user, getchan(callbacki->param[2], callbacki->g_ape), callbacki->param[3], callbacki->g_ape);
-	
-	return (RETURN_NOTHING);
-}
-
-unsigned int cmd_kick(callbackp *callbacki)
-{
-	CHANNEL *chan;
-	RAW *newraw;
-	json *jlist;
-	
-	USERS *victim;
-
-	if ((chan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_CHANNEL", "103", callbacki->g_ape);
-		
-	} else if (!isonchannel(callbacki->call_user, chan)) {
-		send_error(callbacki->call_user, "NOT_IN_CHANNEL", "104", callbacki->g_ape);
-		
-	} else if (getuchan(callbacki->call_user, chan)->level < 3) {
-		send_error(callbacki->call_user, "CANT_KICK", "105", callbacki->g_ape);
-		
-	} else {
-		victim = seek_user(callbacki->param[3], chan->pipe->pubid, callbacki->g_ape);
-		
-		if (victim == NULL) {
-
-			send_error(callbacki->call_user, "UNKNOWN_USER", "102", callbacki->g_ape);
-		} else if (victim->flags & FLG_NOKICK) {
-			
-			send_error(callbacki->call_user, "USER_PROTECTED", "106", callbacki->g_ape);
-			// haha ;-)
-			
-			jlist = NULL;
-			set_json("kicker", NULL, &jlist);
-			json_attach(jlist, get_json_object_user(callbacki->call_user), JSON_OBJECT);
-			
-			set_json("channel", NULL, &jlist);
-			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
-						
-			newraw = forge_raw("TRY_KICK", jlist);
-			
-			post_raw(newraw, victim, callbacki->g_ape);
-			
-		} else {
-			jlist = NULL;
-			
-			set_json("kicker", NULL, &jlist);
-			json_attach(jlist, get_json_object_user(callbacki->call_user), JSON_OBJECT);
-			
-			set_json("channel", NULL, &jlist);
-			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
-						
-			newraw = forge_raw(RAW_KICK, jlist);
-			
-			post_raw(newraw, victim, callbacki->g_ape);
-			
-			left(victim, chan, callbacki->g_ape); // chan may be removed
-			
-		}
-		
-	}
-	
-	return (RETURN_NOTHING);
-	
-}
-
-unsigned int cmd_ban(callbackp *callbacki)
-{
-	CHANNEL *chan;
-	RAW *newraw;
-	json *jlist;
-	
-	USERS *victim;
-
-	if ((chan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_CHANNEL", "103", callbacki->g_ape);
-		
-	
-	} else if (!isonchannel(callbacki->call_user, chan)) {
-
-		send_error(callbacki->call_user, "NOT_IN_CHANNEL", "104", callbacki->g_ape);
-	
-	} else if (getuchan(callbacki->call_user, chan)->level < 3) {
-
-		
-		send_error(callbacki->call_user, "CANT_BAN", "107", callbacki->g_ape);
-		
-	} else {
-		victim = seek_user(callbacki->param[3], chan->name, callbacki->g_ape);
-		
-		if (victim == NULL) {
-
-			send_error(callbacki->call_user, "UNKNOWN_USER", "102", callbacki->g_ape);
-			
-		} else if (victim->flags & FLG_NOKICK) {
-			send_error(callbacki->call_user, "USER_PROTECTED", "106", callbacki->g_ape);
-			
-			// Bad boy :-)
-			jlist = NULL;
-			set_json("banner", NULL, &jlist);
-			json_attach(jlist, get_json_object_user(callbacki->call_user), JSON_OBJECT);
-			
-			set_json("channel", NULL, &jlist);
-			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
-						
-			newraw = forge_raw("TRY_BAN", jlist);
-			
-			post_raw(newraw, victim, callbacki->g_ape);
-			
-		} else if (strlen(callbacki->param[4]) > 255 || atoi(callbacki->param[5]) > 44640) { // 31 days max
-
-			send_error(callbacki->call_user, "REASON_OR_TIME_TOO_LONG", "107", callbacki->g_ape);
-		} else {
-			ban(chan, callbacki->call_user, victim->ip, callbacki->param[4], atoi(callbacki->param[5]), callbacki->g_ape);
-		}
-		
-	}
-	
-	return (RETURN_NOTHING);
-}
-
-
-
 unsigned int cmd_session(callbackp *callbacki)
 {
-	if (strcmp(callbacki->param[2], "set") == 0 && (callbacki->nParam == 4 || callbacki->nParam == 5)) {
-		if (callbacki->nParam == 5) {
-			subuser *tmpSub = getsubuser(callbacki->call_user, callbacki->host);
-		
-			if (tmpSub != NULL) {
-				tmpSub->need_update = 0;
+	char *key, *val, *action;
+	APE_PARAMS_INIT();
+	
+	if ((action = JSTR(action)) != NULL) {
+		if (strcasecmp(action, "set") == 0) {
+			JFOREACH_K(values, key, val) {
+				if (set_session(callbacki->call_user, key, val, 0, callbacki->g_ape) == NULL) {
+					send_error(callbacki->call_user, "SESSION_ERROR", "203", callbacki->g_ape);
+				}
+			} JFOREACH_ELSE {
+				return (RETURN_BAD_PARAMS);
+			}		
+		} else if (strcasecmp(action, "get") == 0) {
+			json *jlist = NULL, *jobj = NULL;
+			RAW *newraw;
+			
+			set_json("sessions", NULL, &jlist);
+			
+			JFOREACH(values, val) {
+				session *sTmp = get_session(callbacki->call_user, val);
+				set_json(val, (sTmp != NULL ? sTmp->val : NULL), &jobj);
+			} JFOREACH_ELSE {
+				json_free(jlist);
+				return (RETURN_BAD_PARAMS);
 			}
+			json_attach(jlist, jobj, JSON_OBJECT);
+			newraw = forge_raw("SESSIONS", jlist);
+			newraw->priority = RAW_PRI_HI;
+			post_raw_sub(newraw, callbacki->call_subuser, callbacki->g_ape);
+			
+		} else {
+			return (RETURN_BAD_PARAMS);
 		}
-		if (set_session(callbacki->call_user, callbacki->param[3], callbacki->param[4], (callbacki->nParam == 4 ? 0 : 1), callbacki->g_ape) == NULL) {
-			send_error(callbacki->call_user, "SESSION_ERROR", "203", callbacki->g_ape);
-		}
-	} else if (strcmp(callbacki->param[2], "get") == 0 && callbacki->nParam >= 3) {
-		int i;
-		json *jlist = NULL, *jobj = NULL;
-		RAW *newraw;
-		
-		set_json("sessions", NULL, &jlist);
-		
-		for (i = 3; i <= callbacki->nParam; i++) {
-			if (strlen(callbacki->param[i]) > 32) {
-				continue;
-			}
-			session *sTmp = get_session(callbacki->call_user, callbacki->param[i]);
-
-			set_json(callbacki->param[i], (sTmp != NULL ? sTmp->val : NULL), &jobj);
-
-		}
-		json_attach(jlist, jobj, JSON_OBJECT);
-		newraw = forge_raw("SESSIONS", jlist);
-		newraw->priority = 1;
-		/* Only sending to current subuser */
-		post_raw_sub(newraw, getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
-
 	} else {
-		send_error(callbacki->call_user, "SESSION_ERROR_PARAMS", "108", callbacki->g_ape);
+		return (RETURN_BAD_PARAMS);
 	}
+	
 	return (RETURN_NOTHING);
 }
 
-/* This is usefull to ask all subuser to update their sessions */
-unsigned int cmd_pong(callbackp *callbacki)
-{
-	if (strcmp(callbacki->param[2], callbacki->call_user->lastping) == 0) {
-		RAW *newraw;
-				
-		callbacki->call_user->lastping[0] = '\0';
-
-		json *jlist = NULL;
-	
-		set_json("value", callbacki->param[2], &jlist);
-	
-		newraw = forge_raw("UPDATE", jlist);
-	
-		post_raw_sub(newraw, getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
-	}
-	return (RETURN_NOTHING);
-}
-
-
+#if 0
 unsigned int cmd_proxy_connect(callbackp *callbacki)
 {
 	ape_proxy *proxy;
@@ -624,4 +491,27 @@ unsigned int cmd_proxy_write(callbackp *callbacki)
 	
 	return (RETURN_NOTHING);
 }
+#endif
+#if 0
+/* This is usefull to ask all subuser to update their sessions */
+unsigned int cmd_pong(callbackp *callbacki)
+{
+	if (strcmp(callbacki->param[2], callbacki->call_user->lastping) == 0) {
+		RAW *newraw;
+				
+		callbacki->call_user->lastping[0] = '\0';
+
+		json *jlist = NULL;
+	
+		set_json("value", callbacki->param[2], &jlist);
+	
+		newraw = forge_raw("UPDATE", jlist);
+	
+		post_raw_sub(newraw, getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
+	}
+	return (RETURN_NOTHING);
+}
+
+
+
 #endif

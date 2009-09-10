@@ -22,56 +22,21 @@
 #ifndef _HTTP_H
 #define _HTTP_H
 
-#include "sock.h"
-#include "users.h"
+#include "main.h"
 
 #define MAX_CONTENT_LENGTH 51200 // 50kb
 
-typedef struct _http_state http_state;
 
-struct _http_state
-{
-	int step;
-	int type; /* HTTP_GET or HTTP_POST */
-	int pos;
-	int contentlength;
-	int read;
-	int error;
-	int ready;
-};
-
-typedef struct _connection connection;
-
-enum {
-	STREAM_IN,
-	STREAM_OUT	
-};
-
-struct _connection {
-	char ip_client[16];
-	
-	http_state http;
-	
-	int stream_type;
-	long int idle;
-	
-	struct {
-		char *data;	
-		unsigned int size;
-		unsigned int length;
-		
-	} buffer;
-	
-	void *attach;
-};
-
-enum {
+typedef enum {
 	HTTP_NULL = 0,
 	HTTP_GET,
 	HTTP_POST,
 	HTTP_OPTIONS
-};
-void process_http(struct _connection *co);
+} http_method;
+
+
+void process_http(struct _ape_buffer *buffer, struct _http_state *http);
+void ape_http_request(char *url, const char *post, acetables *g_ape);
 
 #endif
 

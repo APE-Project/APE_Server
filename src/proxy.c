@@ -19,7 +19,6 @@
 
 /* proxy.c */
 
-#include "main.h"
 #include "utils.h"
 #include "proxy.h"
 #include "handle_http.h"
@@ -30,8 +29,8 @@
 #include "base64.h"
 #include "pipe.h"
 #include "raw.h"
+#include "events.h"
 
-#include <sys/epoll.h>
 #include <netdb.h> 
 #include <sys/types.h>
 #include <netinet/in.h> 
@@ -269,12 +268,12 @@ ape_proxy *proxy_are_linked(char *pubid, char *pubid_proxy, acetables *g_ape)
 	return NULL;
 }
 
-void proxy_process_eol(connection *co, acetables *g_ape)
+void proxy_process_eol(ape_socket *co, acetables *g_ape)
 {
 	char *b64;
 	ape_proxy *proxy = co->attach;
-	char *data = co->buffer.data;
-	data[co->buffer.length] = '\0';
+	char *data = co->buffer_in.data;
+	data[co->buffer_in.length] = '\0';
 	
 	RAW *newraw;
 	json *jlist = NULL;
@@ -310,7 +309,7 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 {
 	int sock;
 	struct sockaddr_in addr;
-	struct epoll_event cev;
+
 	
 	if (proxy == NULL || proxy->state != PROXY_NOT_CONNECTED || !strlen(proxy->sock.host->ip)) {
 		return 0;
@@ -322,28 +321,23 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 		return 0;
 	}
 
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(proxy->sock.port);
-        addr.sin_addr.s_addr = inet_addr(proxy->sock.host->ip);
-        memset(&(addr.sin_zero), '\0', 8);
-        
-        setnonblocking(sock);
-        
-        if (connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == 0 || errno != EINPROGRESS) {
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(proxy->sock.port);
+	addr.sin_addr.s_addr = inet_addr(proxy->sock.host->ip);
+	memset(&(addr.sin_zero), '\0', 8);
 
-        	return 0;
-        }
+	setnonblocking(sock);
+
+	if (connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == 0 || errno != EINPROGRESS) {
+		return 0;
+	}
 	proxy->state = PROXY_IN_PROGRESS;
 	
-	cev.events = EPOLLIN | EPOLLET | EPOLLOUT | EPOLLPRI;
-	cev.data.fd = sock;
-
-	epoll_ctl(*(g_ape->epoll_fd), EPOLL_CTL_ADD, sock, &cev);
+	events_add(g_ape->events, sock, EVENT_READ|EVENT_WRITE);
 	
 	return sock;
 
 }
-
 
 void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape)
 {

@@ -22,7 +22,10 @@
 #ifndef _PROXY_H
 #define _PROXY_H
 
+#include "main.h"
 #include "http.h"
+#include "sock.h"
+#include "pipe.h"
 
 typedef struct _ape_proxy_pipe ape_proxy_pipe;
 struct _ape_proxy_pipe
@@ -32,7 +35,6 @@ struct _ape_proxy_pipe
 	
 	struct _ape_proxy_pipe *next;
 };
-
 
 
 typedef struct _ape_proxy ape_proxy;
@@ -88,7 +90,7 @@ void proxy_attach(ape_proxy *proxy, char *pipe, int allow_write, acetables *g_ap
 int proxy_connect(ape_proxy *proxy, acetables *g_ape);
 void proxy_connect_all(acetables *g_ape);
 void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape);
-void proxy_process_eol(connection *co, acetables *g_ape);
+void proxy_process_eol(ape_socket *co, acetables *g_ape);
 void proxy_init_from_conf(acetables *g_ape);
 ape_proxy *proxy_init_by_host_port(char *host, char *port, acetables *g_ape);
 struct json *get_json_object_proxy(ape_proxy *proxy);

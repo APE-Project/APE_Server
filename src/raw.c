@@ -26,18 +26,18 @@
 #include "utils.h"
 #include "plugins.h"
 #include "pipe.h"
+#include "transports.h"
 
 RAW *forge_raw(const char *raw, struct json *jlist)
 {
 	RAW *new_raw;
 	char unixtime[16];
-	
 	struct jsontring *string;
 	struct json *jstruct = NULL;
-	
+		
 	sprintf(unixtime, "%li", time(NULL));
 
-	set_json("datas", NULL, &jstruct);
+	set_json("data", NULL, &jstruct);
 	
 	json_attach(jstruct, jlist, JSON_OBJECT);
 	
@@ -47,14 +47,12 @@ RAW *forge_raw(const char *raw, struct json *jlist)
 	string = jsontr(jstruct, NULL);
 
 	new_raw = xmalloc(sizeof(*new_raw));
-	
-        new_raw->len = string->len;
-
-        new_raw->data = xmalloc(sizeof(char) * (new_raw->len + 1));
-        memcpy(new_raw->data, string->jstring, new_raw->len + 1);
-
+    new_raw->len = string->len;
 	new_raw->next = NULL;
-	new_raw->priority = 0;
+	new_raw->priority = RAW_PRI_LO;
+	new_raw->refcount = 0;
+    new_raw->data = xmalloc(sizeof(char) * (new_raw->len + 1));
+    memcpy(new_raw->data, string->jstring, new_raw->len + 1);	
 	
 	free(string->jstring);
 	free(string);
@@ -62,22 +60,36 @@ RAW *forge_raw(const char *raw, struct json *jlist)
 	return new_raw;
 }
 
+int free_raw(RAW *fraw)
+{
+	if (--(fraw->refcount) <= 0) {
+		free(fraw->data);
+		free(fraw);
+		return 0;
+	}
+	return fraw->refcount;
+}
 
 RAW *copy_raw(RAW *input)
 {
 	RAW *new_raw;
 	
 	new_raw = xmalloc(sizeof(*new_raw));
-	
-        new_raw->data = xmalloc(sizeof(char) * (input->len + 1));
-        memcpy(new_raw->data, input->data, input->len + 1);
-
 	new_raw->len = input->len;
-	
 	new_raw->next = input->next;
 	new_raw->priority = input->priority;
+	new_raw->refcount = 0;
+    new_raw->data = xmalloc(sizeof(char) * (new_raw->len + 1));
+    memcpy(new_raw->data, input->data, new_raw->len + 1);	
 	
 	return new_raw;	
+}
+
+RAW *copy_raw_z(RAW *input)
+{
+	(input->refcount)++;
+	
+	return input;
 }
 
 
@@ -86,26 +98,21 @@ RAW *copy_raw(RAW *input)
 /* Post raw to a subuser */
 void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape)
 {
-
+	
 	FIRE_EVENT_NULL(post_raw_sub, raw, sub, g_ape);
 	
-	if (raw->priority == 0) {
-		if (sub->rawhead == NULL) {
-			sub->rawhead = raw;
-		}
-		if (sub->rawfoot != NULL) {
-			sub->rawfoot->next = raw;
-		}
-		sub->rawfoot = raw;
-	} else {
-		
-		if (sub->rawfoot == NULL) {
-			sub->rawfoot = raw;
-		}		
-		raw->next = sub->rawhead;
-		sub->rawhead = raw;
+	int add_size = 16;
+	struct _raw_pool_user *pool = (raw->priority == RAW_PRI_LO ? &sub->raw_pools.low : &sub->raw_pools.high);
+
+	if (++pool->nraw == pool->size) {
+		pool->size += add_size;
+		expend_raw_pool(pool->rawfoot, add_size);
 	}
-	(sub->nraw)++;
+	
+	pool->rawfoot->raw = raw;
+	pool->rawfoot = pool->rawfoot->next;
+	
+	(sub->raw_pools.nraw)++;
 	
 }
 
@@ -115,11 +122,9 @@ void post_raw(RAW *raw, USERS *user, acetables *g_ape)
 	subuser *sub = user->subuser;
 	
 	while (sub != NULL) {
-		post_raw_sub(copy_raw(raw), sub, g_ape);
+		post_raw_sub(copy_raw_z(raw), sub, g_ape);
 		sub = sub->next;
 	}
-	free(raw->data);
-	free(raw);
 }
 
 /* Post raw to a user and propagate it to all of it's subuser with *sub exception */
@@ -132,12 +137,11 @@ void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape)
 	}
 	while (tSub != NULL) {
 		if (sub != tSub) {
-			post_raw_sub(copy_raw(raw), tSub, g_ape);
+			post_raw_sub(copy_raw_z(raw), tSub, g_ape);
 		}
 		tSub = tSub->next;
 	}
-	free(raw->data);
-	free(raw);	
+
 }
 
 /************* Channels related functions ****************/
@@ -152,11 +156,10 @@ void post_raw_channel(RAW *raw, struct CHANNEL *chan, acetables *g_ape)
 	}
 	list = chan->head;
 	while (list) {
-		post_raw(copy_raw(raw), list->userinfo, g_ape);
+		post_raw(raw, list->userinfo, g_ape);
 		list = list->next;
 	}
-	free(raw->data);
-	free(raw);
+
 }
 
 /* Post raw to a channel and propagate it to all of it's users with a *ruser exception */
@@ -171,13 +174,10 @@ void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser, a
 	
 	while (list) {
 		if (list->userinfo != ruser) {
-			post_raw(copy_raw(raw), list->userinfo, g_ape);
+			post_raw(raw, list->userinfo, g_ape);
 		}
 		list = list->next;
 	}
-	
-	free(raw->data);
-	free(raw);
 }
 
 
@@ -192,33 +192,33 @@ void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape)
 	while (to != NULL) {
 		pipe = get_pipe(to->pipe, g_ape);
 		if (pipe != NULL && pipe->type == USER_PIPE) {
-			post_raw(copy_raw(raw), pipe->pipe, g_ape);
+			post_raw(raw, pipe->pipe, g_ape);
 		} else {
 			;//
 		}
 		to = to->next;
 	}
-	free(raw->data);
-	free(raw);
+
 }
 
-
 /* to manage subuser use post_to_pipe() instead */
-void post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape)
+int post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape)
 {
 	transpipe *spipe;
 	
 	if ((spipe = get_pipe(pipe, g_ape)) != NULL) {
 		if (spipe->type == CHANNEL_PIPE) {
 			post_raw_channel(raw, spipe->pipe, g_ape);
+			return 1;
 		} else {
 			post_raw(raw, spipe->pipe, g_ape);
+			return 1;
 		}
 	}
+	return 0;
 }
 
-
-int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, void *restrict, acetables *g_ape)
+int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, acetables *g_ape)
 {
 	USERS *sender = from->user;
 	transpipe *recver = get_pipe_strict(pipe, sender, g_ape);
@@ -266,41 +266,112 @@ int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *fr
 */
 int send_raws(subuser *user, acetables *g_ape)
 {
-	RAW *raw, *older;
-	int finish = 1;
+	int finish = 1, state = 0;
+	struct _raw_pool *pool;
+	struct _transport_properties *properties;
 	
-	if (user->nraw == 0 || user->rawhead == NULL) {
+	if (user->raw_pools.nraw == 0) {
 		return 1;
 	}
-	raw = user->rawhead;
 	
-	if (!(user->user->flags & FLG_PCONNECT) || !user->headers_sent) {
+	properties = transport_get_properties(user->user->transport, g_ape);
+	
+	if (!user->headers_sent) {
 		user->headers_sent = 1;
-		sendbin(user->fd, HEADER, HEADER_LEN, g_ape);
-	}
-	if (raw != NULL) {
-		finish &= sendbin(user->fd, "[\n", 2, g_ape);
-	}
-	while(raw != NULL) {
-
-		finish &= sendbin(user->fd, raw->data, raw->len, g_ape);
-		
-		if (raw->next != NULL) {
-			finish &= sendbin(user->fd, ",\n", 2, g_ape);
-		} else {
-			finish &= sendbin(user->fd, "\n]\n\n", 3, g_ape);	
-		}
-		older = raw;
-		raw = raw->next;
-		
-		free(older->data);
-		free(older);
+		finish &= sendbin(user->fd, HEADER, HEADER_LEN, g_ape);
 	}
 	
-	user->rawhead = NULL;
-	user->rawfoot = NULL;
-	user->nraw = 0;
+	if (properties != NULL && properties->padding.left.val != NULL) {
+		finish &= sendbin(user->fd, properties->padding.left.val, properties->padding.left.len, g_ape);
+	}
+	
+	finish &= sendbin(user->fd, "[", 1, g_ape);
+	
+	if (user->raw_pools.high.nraw) {
+		pool = user->raw_pools.high.rawfoot->prev;
+	} else {
+		pool = user->raw_pools.low.rawhead;
+		state = 1;
+	}
+	
+	while (pool->raw != NULL) {
+		struct _raw_pool *pool_next = (state ? pool->next : pool->prev);
+		
+		finish &= sendbin(user->fd, pool->raw->data, pool->raw->len, g_ape);
+		
+		if ((pool_next != NULL && pool_next->raw != NULL) || (!state && user->raw_pools.low.nraw)) {
+			finish &= sendbin(user->fd, ",", 1, g_ape);
+		} else {
+			finish &= sendbin(user->fd, "]", 1, g_ape);
+			
+			if (properties != NULL && properties->padding.right.val != NULL) {
+				finish &= sendbin(user->fd, properties->padding.right.val, properties->padding.right.len, g_ape);
+			}
+		}
+		
+		free_raw(pool->raw);
+		pool->raw = NULL;
+		
+		pool = pool_next;
+		
+		if ((pool == NULL || pool->raw == NULL) && !state) {
+			pool = user->raw_pools.low.rawhead;
+			state = 1;
+		}
+	}
+	
+	user->raw_pools.high.nraw = 0;
+	user->raw_pools.low.nraw = 0;
+	user->raw_pools.nraw = 0;
+	
+	user->raw_pools.high.rawfoot = user->raw_pools.high.rawhead;
+	user->raw_pools.low.rawfoot = user->raw_pools.low.rawhead;
 	
 	return finish;
 }
 
+struct _raw_pool *init_raw_pool(int n)
+{
+	int i;
+	struct _raw_pool *pool = xmalloc(sizeof(*pool) * n);
+	
+	for (i = 0; i < n; i++) {
+		pool[i].raw = NULL;
+		pool[i].next = (i == n-1 ? NULL : &pool[i+1]);
+		pool[i].prev = (i == 0 ? NULL : &pool[i-1]);
+		pool[i].start = (i == 0);
+	}
+	
+	return pool;
+}
+
+struct _raw_pool *expend_raw_pool(struct _raw_pool *ptr, int n)
+{
+	struct _raw_pool *pool = init_raw_pool(n);
+	
+	ptr->next = pool;
+	pool->prev = ptr;
+	
+	return pool;
+}
+
+void destroy_raw_pool(struct _raw_pool *ptr)
+{
+	struct _raw_pool *pool = ptr, *tpool = NULL;
+	
+	while (pool != NULL) {
+		if (pool->raw != NULL) {
+			free_raw(pool->raw);
+		}
+		if (pool->start) {
+			if (tpool != NULL) {
+				free(tpool);
+			}
+			tpool = pool;
+		}
+		pool = pool->next;
+	}
+	if (tpool != NULL) {
+		free(tpool);
+	}
+}

@@ -109,6 +109,32 @@ int seof(char *buf)
 	return -1;
 }
 
+int sneof(char *buf, size_t len, size_t max)
+{
+	char *pBuf;
+	int pos = 0;
+	
+	for (pBuf = buf; pos < len && pos < max; pos++) {
+		if (pBuf[pos] == '\n') {
+			return pos+1;
+		}
+	}
+	return -1;
+}
+
+int rand_n(int n)
+{
+    int partSize   = 1 + (n == RAND_MAX ? 0 : (RAND_MAX - n) / (n + 1));
+    int maxUsefull = partSize * n + (partSize - 1);
+    int draw;
+    
+    do {
+        draw = rand();
+    } while (draw > maxUsefull);
+    
+    return draw / partSize;
+}
+
 size_t explode(const char split, char *input, char **tP, unsigned int limit) // Explode a string in an array.
 {
 	size_t i = 0;

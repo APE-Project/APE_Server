@@ -40,14 +40,15 @@
 #define MAX_HOST_LENGTH 256
 
 
-enum {
-	TRANSPORT_LONGPOLLING,
-	TRANSPORT_POLLING,
-	TRANSPORT_JSONP,
-	TRANSPORT_IFRAME
-};
-
 // Le 25/12/2006 à 02:15:19 Joyeux Noël
+
+
+struct _raw_pool {
+	struct RAW *raw;
+	int start;
+	struct _raw_pool *next;
+	struct _raw_pool *prev;
+};
 
 typedef struct USERS
 {
@@ -58,7 +59,6 @@ typedef struct USERS
 
 	char sessid[33];
 	
-
 	char ip[16]; // ipv4
 	
 	long int idle;
@@ -91,8 +91,15 @@ typedef struct USERS
 
 } USERS;
 
-typedef struct _subuser subuser;
 
+struct _raw_pool_user {
+	int nraw;
+	int size;
+	struct _raw_pool *rawhead;
+	struct _raw_pool *rawfoot;
+};
+
+typedef struct _subuser subuser;
 struct _subuser
 {
 	int fd;
@@ -111,12 +118,18 @@ struct _subuser
 	USERS *user;
 	
 	int nraw;
-	struct RAW *rawhead;
-	struct RAW *rawfoot;
 	
 	int burn_after_writing;
 	
+	struct {
+		int nraw;
+		struct _raw_pool_user low;
+		struct _raw_pool_user high;
+	} raw_pools;
+	
 	long int idle;
+	
+	int current_chl;
 };
 
 
@@ -219,9 +232,9 @@ void grant_aceop(USERS *user);
 void send_error(USERS *user, const char *msg, const char *code, acetables *g_ape);
 void send_msg(USERS *user, const char *msg, const char *type, acetables *g_ape);
 void send_msg_sub(subuser *sub, const char *msg, const char *type, acetables *g_ape);
-void send_msg_channel(CHANNEL *chan, const char *msg, const char *type, acetables *g_ape);
+void send_msg_channel(struct CHANNEL *chan, const char *msg, const char *type, acetables *g_ape);
 
-unsigned int isonchannel(USERS *user, CHANNEL *chan);
+unsigned int isonchannel(USERS *user, struct CHANNEL *chan);
 
 struct json *get_json_object_user(USERS *user);
 
@@ -236,7 +249,6 @@ void delsubuser(subuser **current);
 void subuser_restor(subuser *sub, acetables *g_ape);
 
 void clear_subusers(USERS *user);
-void clear_subuser_raws(subuser *sub);
 void ping_request(USERS *user, acetables *g_ape);
 
 void make_link(USERS *a, USERS *b);

@@ -19,16 +19,13 @@
 
 /* channel.c */
 
-#include "main.h"
-#include "sock.h"
-#include "cmd.h"
 #include "channel.h"
-#include "plugins.h"
-#include "handle_http.h"
+#include "hash.h"
 #include "utils.h"
-#include "proxy.h"
-#include "pipe.h"
+#include "extend.h"
+#include "json.h"
 #include "raw.h"
+#include "plugins.h"
 
 unsigned int isvalidchan(char *name) 
 {
@@ -124,19 +121,18 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 		return;
 	}
 	
-	list = (userslist *)xmalloc(sizeof(*list)); // is it free ?
+	list = xmalloc(sizeof(*list)); // is it free ?
 	list->userinfo = user;
 	list->level = 1;
 	list->next = chan->head;
 	
 	chan->head = list;
 	
-	chanl = (CHANLIST *)xmalloc(sizeof(*chanl)); // is it free ?
+	chanl = xmalloc(sizeof(*chanl)); // is it free ?
 	chanl->chaninfo = chan;
 	chanl->next = user->chan_foot;
 	
 	user->chan_foot = chanl;
-
 
 	if (chan->interactive) {
 		jlist = NULL;
@@ -442,8 +438,9 @@ void ban(CHANNEL *chan, USERS *banner, const char *ip, char *reason, unsigned in
 			if (isban == 0) {
 				blist = xmalloc(sizeof(*blist));
 				
+				memset(blist->reason, 0, 256);
 				strncpy(blist->ip, ip, 16);
-				strncpy(blist->reason, reason, 256);
+				strncpy(blist->reason, reason, 255);
 				blist->expire = nextime;
 				blist->next = bTmp;
 				chan->banned = blist;

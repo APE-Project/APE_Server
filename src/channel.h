@@ -23,10 +23,12 @@
 #define _CHANNEL_H
 
 #include "main.h"
-
+#include "pipe.h"
+#include "users.h"
+#include "extend.h"
 
 #define MAX_TOPIC_LEN 128
-#define DEFAULT_TOPIC "Chat%20powered%20by%20AJAX%20Chat%20Engine\0"
+#define DEFAULT_TOPIC "Chat%20powered%20by%20AJAX%20Push%20Engine\0"
 
 typedef struct CHANNEL
 {
@@ -34,12 +36,11 @@ typedef struct CHANNEL
 	char topic[MAX_TOPIC_LEN+1];
 
 	struct _transpipe *pipe;
-	
 	struct userslist *head;
 	
 	struct BANNED *banned;
 	
-	struct _extend *properties;
+	extend *properties;
 	
 	int interactive;
 

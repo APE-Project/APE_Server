@@ -138,6 +138,131 @@ void change_nick(USERS *user, char *nick, acetables *g_ape)
 	//TODO
 }
 
+
+unsigned int cmd_settopic(callbackp *callbacki)
+{
+	settopic(callbacki->call_user, getchan(callbacki->param[2], callbacki->g_ape), callbacki->param[3], callbacki->g_ape);
+	
+	return (RETURN_NOTHING);
+}
+
+unsigned int cmd_kick(callbackp *callbacki)
+{
+	CHANNEL *chan;
+	RAW *newraw;
+	json *jlist;
+	
+	USERS *victim;
+
+	if ((chan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
+		send_error(callbacki->call_user, "UNKNOWN_CHANNEL", "103", callbacki->g_ape);
+		
+	} else if (!isonchannel(callbacki->call_user, chan)) {
+		send_error(callbacki->call_user, "NOT_IN_CHANNEL", "104", callbacki->g_ape);
+		
+	} else if (getuchan(callbacki->call_user, chan)->level < 3) {
+		send_error(callbacki->call_user, "CANT_KICK", "105", callbacki->g_ape);
+		
+	} else {
+		victim = seek_user(callbacki->param[3], chan->pipe->pubid, callbacki->g_ape);
+		
+		if (victim == NULL) {
+
+			send_error(callbacki->call_user, "UNKNOWN_USER", "102", callbacki->g_ape);
+		} else if (victim->flags & FLG_NOKICK) {
+			
+			send_error(callbacki->call_user, "USER_PROTECTED", "106", callbacki->g_ape);
+			// haha ;-)
+			
+			jlist = NULL;
+			set_json("kicker", NULL, &jlist);
+			json_attach(jlist, get_json_object_user(callbacki->call_user), JSON_OBJECT);
+			
+			set_json("channel", NULL, &jlist);
+			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+						
+			newraw = forge_raw("TRY_KICK", jlist);
+			
+			post_raw(newraw, victim, callbacki->g_ape);
+			
+		} else {
+			jlist = NULL;
+			
+			set_json("kicker", NULL, &jlist);
+			json_attach(jlist, get_json_object_user(callbacki->call_user), JSON_OBJECT);
+			
+			set_json("channel", NULL, &jlist);
+			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+						
+			newraw = forge_raw(RAW_KICK, jlist);
+			
+			post_raw(newraw, victim, callbacki->g_ape);
+			
+			left(victim, chan, callbacki->g_ape); // chan may be removed
+			
+		}
+		
+	}
+	
+	return (RETURN_NOTHING);
+	
+}
+
+unsigned int cmd_ban(callbackp *callbacki)
+{
+	CHANNEL *chan;
+	RAW *newraw;
+	json *jlist;
+	
+	USERS *victim;
+
+	if ((chan = getchan(callbacki->param[2], callbacki->g_ape)) == NULL) {
+		send_error(callbacki->call_user, "UNKNOWN_CHANNEL", "103", callbacki->g_ape);
+		
+	
+	} else if (!isonchannel(callbacki->call_user, chan)) {
+
+		send_error(callbacki->call_user, "NOT_IN_CHANNEL", "104", callbacki->g_ape);
+	
+	} else if (getuchan(callbacki->call_user, chan)->level < 3) {
+
+		
+		send_error(callbacki->call_user, "CANT_BAN", "107", callbacki->g_ape);
+		
+	} else {
+		victim = seek_user(callbacki->param[3], chan->name, callbacki->g_ape);
+		
+		if (victim == NULL) {
+
+			send_error(callbacki->call_user, "UNKNOWN_USER", "102", callbacki->g_ape);
+			
+		} else if (victim->flags & FLG_NOKICK) {
+			send_error(callbacki->call_user, "USER_PROTECTED", "106", callbacki->g_ape);
+			
+			// Bad boy :-)
+			jlist = NULL;
+			set_json("banner", NULL, &jlist);
+			json_attach(jlist, get_json_object_user(callbacki->call_user), JSON_OBJECT);
+			
+			set_json("channel", NULL, &jlist);
+			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+						
+			newraw = forge_raw("TRY_BAN", jlist);
+			
+			post_raw(newraw, victim, callbacki->g_ape);
+			
+		} else if (strlen(callbacki->param[4]) > 255 || atoi(callbacki->param[5]) > 44640) { // 31 days max
+
+			send_error(callbacki->call_user, "REASON_OR_TIME_TOO_LONG", "107", callbacki->g_ape);
+		} else {
+			ban(chan, callbacki->call_user, victim->ip, callbacki->param[4], atoi(callbacki->param[5]), callbacki->g_ape);
+		}
+		
+	}
+	
+	return (RETURN_NOTHING);
+}
+
 static unsigned int chat_clist(callbackp *callbacki)
 {
 	CHANNEL *chan;

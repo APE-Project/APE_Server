@@ -28,9 +28,41 @@
 #include <sys/wait.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+
 #include "main.h"
 
 #define TCP_TIMEOUT 20 // ~Timeout if the socket is not identified to APE
+
+
+struct _socks_bufout
+{
+	int fd;
+	char *buf;
+	int buflen;
+	int allocsize;
+};
+
+struct _socks_list
+{
+	struct _ape_socket *co;
+	int *tfd;
+};
+
+struct _ape_sock_connect_async
+{
+	ape_socket *sock;
+	int port;
+};
+
+
+ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape);
+ape_socket *ape_connect(char *ip, int port, acetables *g_ape);
+void ape_connect_name(char *name, int port, ape_socket *pattern, acetables *g_ape);
+void setnonblocking(int fd);
+int sendf(int sock, acetables *g_ape, char *buf, ...);
+int sendbin(int sock, char *bin, int len, acetables *g_ape);
+unsigned int sockroutine(acetables *g_ape);
+
 
 #define SENDH(x, y, g_ape) \
 	sendbin(x, HEADER, HEADER_LEN, g_ape);\
@@ -44,25 +76,5 @@
 	sendbin(x, HEADER, HEADER_LEN, g_ape);\
 	sendbin(x, "QUIT", 4, g_ape)
 
-int newSockListen(unsigned int port, char *listen_ip);
-void setnonblocking(int fd);
-int sendf(int sock, acetables *g_ape, char *buf, ...);
-int sendbin(int sock, char *bin, int len, acetables *g_ape);
-unsigned int sockroutine(int s_listen, acetables *g_ape);
-
-struct _socks_bufout
-{
-	int fd;
-	char *buf;
-	int buflen;
-	int allocsize;
-};
-
-struct _socks_list
-{
-	struct _connection *co;
-	int *tfd;
-};
 
 #endif
-

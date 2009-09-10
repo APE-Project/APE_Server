@@ -19,7 +19,6 @@
 
 /* plugins.c */
 
-#include "main.h"
 #include "plugins.h"
 #include "../modules/plugins.h"
 #include <dlfcn.h>

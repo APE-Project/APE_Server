@@ -36,6 +36,7 @@
 #define ERR_BAD_CMD 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"002\",\"value\":\"BAD_CMD\"}}\n]\n"
 #define ERR_BAD_SESSID 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"004\",\"value\":\"BAD_SESSID\"}}\n]\n"
 #define ERR_BAD_JSON 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"005\",\"value\":\"BAD_JSON\"}}\n]\n"
+#define ERR_BAD_CHL 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"005\",\"value\":\"BAD_CHL\"}}\n]\n"
 #define ERR_CONNECT		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"200\",\"value\":\"UNKNOWN_CONNECTION_ERROR\"}}\n]\n"
 
 
@@ -55,7 +56,7 @@ void do_register(acetables *g_ape);
 
 #define RETURN_LOGIN 		0x01
 #define RETRUN_SESSID 		0x02
-#define RETURN_NULL		0x04
+#define RETURN_NULL			0x04
 #define RETURN_UPDATE_IP	0x08
 #define RETURN_NOTHING 		0x10
 #define RETURN_BAD_PARAMS 	0x20
@@ -70,6 +71,9 @@ struct _callbackp
 	unsigned int fdclient;
 	struct USERS *call_user;
 	char *host;
+	subuser *call_subuser;
+	int chl;
+	char *cmd;
 	
 	acetables *g_ape;
 };

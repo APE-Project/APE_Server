@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2007, 2008  Anthony Catel <a.catel@weelya.com>
+  Copyright (C) 2006, 2007, 2008, 2009  Anthony Catel <a.catel@weelya.com>
 
   This file is part of APE Server.
   APE is free software; you can redistribute it and/or modify
@@ -21,6 +21,7 @@
 
 #ifndef _CONFIG_H
 #define _CONFIG_H
+
 
 #define APE_CONFIG_FILE "ape.conf"
 

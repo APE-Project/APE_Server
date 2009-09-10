@@ -22,11 +22,8 @@
 #ifndef _HANDLE_HTTP_H
 #define _HANDLE_HTTP_H
 
-#include "users.h"
 #include "main.h"
-
-#include "sock.h"
-
+#include "users.h"
 
 subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client);
 

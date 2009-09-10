@@ -21,7 +21,6 @@
 
 
 #include "ticks.h"
-#include "main.h"
 #include "utils.h"
 
 #include <sys/time.h>

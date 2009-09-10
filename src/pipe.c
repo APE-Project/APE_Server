@@ -35,10 +35,10 @@ void gen_sessid_new(char *input, acetables *g_ape)
 	
 	do {
 		for (i = 0; i < 32; i++) {
-			input[i] = basic_chars[rand()%16];
+			input[i] = basic_chars[rand_n(15)];
 		}
 		input[32] = '\0';
-	} while(seek_user_id(input, g_ape) != NULL || seek_user_simple(input, g_ape) != NULL); // Colision verification
+	} while(seek_user_id(input, g_ape) != NULL || get_pipe(input, g_ape) != NULL); // Colision verification
 }
 
 /* Init a pipe (user, channel, proxy) */

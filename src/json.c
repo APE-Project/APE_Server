@@ -210,7 +210,6 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 	
 	if (jlist->prev == NULL) {
 		string->jstring[string->len++] = '{';
-		//sprintf(string->jstring, "%s{", string->jstring);
 	}
 	
 	string->jstring[string->len++] = '"';
@@ -221,9 +220,6 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 	
 	string->jstring[string->len++] = '"';
 	string->jstring[string->len++] = ':';
-	
-	//sprintf(string->jstring, "%s\"%s\":", string->jstring, jlist->name);
-
 	
 	free(jlist->name.buf);
 	if (pchild == NULL) {
@@ -279,12 +275,13 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 static json_item *init_json_item()
 {
 	
-	json_item *jval = malloc(sizeof(*jval));
+	json_item *jval = xmalloc(sizeof(*jval));
 
 	jval->father = NULL;
-	jval->child = NULL;
-	
+	jval->jchild.child = NULL;
+	jval->jchild.type = JSON_C_T_NULL;
 	jval->next = NULL;
+	
 	jval->key.val = NULL;
 	jval->key.len = 0;
 	
@@ -295,6 +292,26 @@ static json_item *init_json_item()
 	jval->type = -1;
 	
 	return jval;
+}
+
+void free_json_item(json_item *cx)
+{
+	while (cx != NULL) {
+		json_item *tcx;
+
+		if (cx->key.val != NULL) {
+			free(cx->key.val);
+		}
+		if (cx->jval.vu.str.value != NULL) {
+			free(cx->jval.vu.str.value);
+		}
+		if (cx->jchild.child != NULL) {
+			free_json_item(cx->jchild.child);
+		}
+		tcx = cx->next;
+		free(cx);
+		cx = tcx;
+	}
 }
 
 static int json_callback(void *ctx, int type, const JSON_value* value)
@@ -310,16 +327,19 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 				jval = init_json_item();
 				
 				if (cx->current_cx != NULL) {
-					if (cx->start_depth) {
-						cx->current_cx->child = jval;
+					if (cx->start_depth) {						
+						cx->current_cx->jchild.child = jval;
 						jval->father = cx->current_cx;
 					} else {
+						
 						jval->father = cx->current_cx->father;
 						cx->current_cx->next = jval;
 					}
 				}
 				cx->current_cx = jval;
 			}
+			
+			cx->current_cx->jchild.type = (type == JSON_T_OBJECT_BEGIN ? JSON_C_T_OBJ : JSON_C_T_ARR);
 			cx->start_depth = 1;
 			cx->key_under = 0;
 			break;
@@ -338,7 +358,7 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 			jval = init_json_item();
 
 			if (cx->start_depth) {
-				cx->current_cx->child = jval;
+				cx->current_cx->jchild.child = jval;
 				jval->father = cx->current_cx;
 				cx->start_depth = 0;
 			} else {
@@ -346,10 +366,12 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 				cx->current_cx->next = jval;
 			}				
 
-			
 			cx->current_cx = jval;
 			cx->key_under = 1;
-			cx->current_cx->key.val = xstrdup(value->vu.str.value);
+			
+			cx->current_cx->key.val = xmalloc(sizeof(char) * (value->vu.str.length+1));
+			memcpy(cx->current_cx->key.val, value->vu.str.value, value->vu.str.length+1);
+			
 			cx->current_cx->key.len = value->vu.str.length;
 			
 			break;  
@@ -366,7 +388,7 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 				jval = init_json_item();
 
 				if (cx->start_depth) {
-					cx->current_cx->child = jval;
+					cx->current_cx->jchild.child = jval;
 					jval->father = cx->current_cx;
 					cx->start_depth = 0;
 				} else {
@@ -394,7 +416,7 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 					break;
 				case JSON_T_STRING:
 					cx->current_cx->jval.vu.str.value = xmalloc(sizeof(char) * (value->vu.str.length+1));
-					cx->current_cx->jval.vu.str.value = xstrdup(value->vu.str.value);
+					memcpy(cx->current_cx->jval.vu.str.value, value->vu.str.value, value->vu.str.length+1);
 					cx->current_cx->jval.vu.str.length = value->vu.str.length;			
 					break;
 			}
@@ -405,10 +427,10 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 			break;
 	}
 	
-    	if (cx->head == NULL && cx->current_cx != NULL) {
-    		cx->head = cx->current_cx;
-    	}
-    	
+   	if (cx->head == NULL && cx->current_cx != NULL) {
+   		cx->head = cx->current_cx;
+   	}
+   	
 	return 1;
 }
 
@@ -434,12 +456,14 @@ json_item *init_json_parser(const char *json_string)
 
 	for (pRaw = json_string; *pRaw; pRaw++) {
 		if (!JSON_parser_char(jc, *pRaw)) {
+			free_json_item(jcx.head);
 		    delete_JSON_parser(jc);
 		    return NULL;
 		}
 	}
 	
 	if (!JSON_parser_done(jc)) {
+		free_json_item(jcx.head);
 		delete_JSON_parser(jc);
 		return NULL;
 	}
@@ -459,14 +483,15 @@ static void aff(json_item *cx, int depth)
 		if (cx->jval.vu.str.value != NULL) {
 			printf("Value : %s\n", cx->jval.vu.str.value);
 		}
-		if (depth && cx->child != NULL) {
-			aff(cx->child, depth - 1);
+		if (depth && cx->jchild.child != NULL) {
+			aff(cx->jchild.child, depth - 1);
 		}
 		cx = cx->next;
 	}
 }
 
 /* "val[32]" return 32, "val" return -1 */
+#if 0
 static int key_is_array(char *key, int i)
 {
 	int ret = 0, f = 1;
@@ -490,6 +515,7 @@ static int key_is_array(char *key, int i)
 	
 	return ret;
 }
+#endif
 
 json_item *json_lookup(json_item *head, char *path)
 {
@@ -514,10 +540,11 @@ json_item *json_lookup(json_item *head, char *path)
 			printf("Find !\n");
 			*/
 			if (i == nTok) {
-				return (head->child != NULL ? head->child : head);
+				free(base);
+				return (head->jchild.child != NULL ? head->jchild.child : head);
 			}
 			i++;
-			head = head->child;
+			head = head->jchild.child;
 			continue;
 		}
 

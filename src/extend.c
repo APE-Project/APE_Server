@@ -19,12 +19,11 @@
 
 /* extend.c */
 
+#include <string.h>
+
 #include "extend.h"
-#include "main.h"
 #include "utils.h"
 #include "json.h"
-
-
 
 /*
 	Add a property to an object (user, channel, proxy, acetables)

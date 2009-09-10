@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2007, 2008  Anthony Catel <a.catel@weelya.com>
+  Copyright (C) 2006, 2007, 2008, 2009  Anthony Catel <a.catel@weelya.com>
 
   This file is part of APE Server.
   APE is free software; you can redistribute it and/or modify
@@ -19,10 +19,12 @@
 
 /* config.c */
 
-#include "main.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "config.h"
 #include "utils.h"
-
 
 apeconfig *ape_config_get_section(apeconfig *conf, const char *section)
 {
@@ -98,7 +100,9 @@ apeconfig *ape_config_load(const char *filename)
 						
 						config = xmalloc(sizeof(*conf));
 						
-						strncpy(config->section, trim(lines), 33);
+						strncpy(config->section, trim(lines), 32);
+						
+						config->section[33] = '\0';
 						config->def = NULL;
 						config->next = conf;
 						conf = config;
@@ -131,6 +135,8 @@ apeconfig *ape_config_load(const char *filename)
 					def = xmalloc(sizeof(*def));
 					if (nTok == 1) {
 						strncpy(def->key, trim(tkn[0]), 33);
+						def->key[33] = '\0';
+						
 						def->val = xstrdup(trim(tkn[1]));
 					} else {
 						def->key[0] = '\0';

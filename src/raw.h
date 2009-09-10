@@ -22,20 +22,31 @@
 #ifndef _RAW_H
 #define _RAW_H
 
-
+#include "main.h"
+#include "users.h"
+#include "channel.h"
 #include "proxy.h"
 
+typedef enum {
+	RAW_PRI_LO,
+	RAW_PRI_HI
+} raw_priority_t;
 
 typedef struct RAW
 {
 	char *data;
 	int len;
 	struct RAW *next;
-	int priority;
+	raw_priority_t priority;
+	
+	int refcount;
 } RAW;
 
+
 RAW *forge_raw(const char *raw, struct json *jlist);
+int free_raw(RAW *fraw);
 RAW *copy_raw(RAW *input);
+RAW *copy_raw_z(RAW *input);
 
 void post_raw(RAW *raw, USERS *user, acetables *g_ape);
 void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape);
@@ -43,10 +54,13 @@ void post_raw_channel(RAW *raw, struct CHANNEL *chan, acetables *g_ape);
 void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape);
 void post_raw_channel_restricted(RAW *raw, struct CHANNEL *chan, USERS *ruser, acetables *g_ape);
 void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape);
-void post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape);
-int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, void *restrict, acetables *g_ape);
+int post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape);
+int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, acetables *g_ape);
 
 int send_raws(subuser *user, acetables *g_ape);
 
-#endif
+struct _raw_pool *init_raw_pool(int n);
+struct _raw_pool *expend_raw_pool(struct _raw_pool *ptr, int n);
+void destroy_raw_pool(struct _raw_pool *ptr);
 
+#endif

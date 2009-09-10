@@ -51,13 +51,13 @@ typedef enum
 } JSON_type;
 
 typedef struct JSON_value_struct {
-    union {
+    struct {
         JSON_int_t integer_value;
         
         long double float_value;
         
         struct {
-            const char* value;
+            char* value;
             size_t length;
         } str;
     } vu;

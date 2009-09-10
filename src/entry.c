@@ -31,15 +31,22 @@
 #include <signal.h>
 #include <syslog.h>
 #include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include "utils.h"
 #include "ticks.h"
 #include "proxy.h"
+#include "events.h"
+#include "transports.h"
+#include "servers.h"
+#include "dns.h"
 
 #include <grp.h>
 #include <pwd.h>
 
-#define _VERSION "1.0-PRE1"
+#include <errno.h>
 
+#define _VERSION "1.0-PRE2"
 
 static void signal_handler(int sign)
 {
@@ -74,13 +81,15 @@ static void ape_daemon()
 	printf("Starting daemon.... pid : %i\n\n", getpid());
 }
 
+
 int main(int argc, char **argv) 
 {
 	apeconfig *srv;
 	
-	int random, s_listen;
-	unsigned int getrandom;
-	int im_r00t = 0;
+	int random, im_r00t = 0;
+	unsigned int getrandom = 0;
+	
+	struct _fdevent fdev;
 	
 	char cfgfile[512] = APE_CONFIG_FILE;
 	
@@ -109,11 +118,9 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
-	
 	if (getuid() == 0) {
 		im_r00t = 1;
 	}
-
 	
 	printf("   _   ___ ___ \n");
 	printf("  /_\\ | _ \\ __|\n");
@@ -127,7 +134,6 @@ int main(int argc, char **argv)
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGPIPE, SIG_IGN);
-
 	
 	if (TICKS_RATE < 1) {
 		printf("[ERR] TICKS_RATE cant be less than 1\n");
@@ -143,17 +149,33 @@ int main(int argc, char **argv)
 	srand(getrandom);
 	close(random);
 	
+	g_ape = xmalloc(sizeof(*g_ape));
+	g_ape->basemem = 512;
 	
-	if ((s_listen = newSockListen(atoi(CONFIG_VAL(Server, port, srv)), CONFIG_VAL(Server, ip_listen, srv))) < 0) {
-		return 0;
-	}
+	#ifdef USE_EPOLL_HANDLER
+	fdev.handler = EVENT_EPOLL;
+	#endif
+	#ifdef USE_KQUEUE_HANDLER
+	fdev.handler = EVENT_KQUEUE;
+	#endif
+
+	g_ape->co = xmalloc(sizeof(*g_ape->co) * g_ape->basemem);
+	memset(g_ape->co, 0, sizeof(*g_ape->co) * g_ape->basemem);
+	
+	g_ape->srv = srv;
+	g_ape->events = &fdev;
+	events_init(g_ape, &g_ape->basemem);
+	
+	ape_dns_init(g_ape);
+	
+	servers_init(g_ape);
 	
 	if (im_r00t) {
 		struct group *grp = NULL;
 		struct passwd *pwd = NULL;
 		
 		if (inc_rlimit(atoi(CONFIG_VAL(Server, rlimit_nofile, srv))) == -1) {
-			printf("[WARN] Cannot set the max filedescriptos limit (setrlimit)\n");
+			printf("[WARN] Cannot set the max filedescriptos limit (setrlimit) %s\n", strerror(errno));
 		}
 		
 		/* Get the user information (uid section) */
@@ -190,8 +212,6 @@ int main(int argc, char **argv)
 		ape_daemon();
 	}
 	
-		
-	g_ape = xmalloc(sizeof(*g_ape));
 	
 	g_ape->hLogin = hashtbl_init();
 	g_ape->hSessid = hashtbl_init();
@@ -199,16 +219,12 @@ int main(int argc, char **argv)
 	g_ape->hLusers = hashtbl_init();
 	g_ape->hPubid = hashtbl_init();
 	
-
-	g_ape->srv = srv;
 	g_ape->proxy.list = NULL;
 	g_ape->proxy.hosts = NULL;
-	g_ape->epoll_fd = NULL;
 	
 	g_ape->hCallback = hashtbl_init();
 	
 	g_ape->bufout = NULL;
-
 	
 	g_ape->uHead = NULL;
 	
@@ -218,18 +234,19 @@ int main(int argc, char **argv)
 	g_ape->properties = NULL;
 	
 	g_ape->timers = NULL;
-
+	
 	add_ticked(check_timeout, g_ape);
 	
 	
 	do_register(g_ape);
 	
 	proxy_init_from_conf(g_ape);
-	
+	transport_start(g_ape);	
 	findandloadplugin(g_ape);
 	
+	
 	/* Starting Up */
-	sockroutine(s_listen, g_ape); /* loop */
+	sockroutine(g_ape); /* loop */
 	/* Shutdown */
 	
 	hashtbl_free(g_ape->hLogin);
