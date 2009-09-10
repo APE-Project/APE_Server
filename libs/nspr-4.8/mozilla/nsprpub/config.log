@@ -1,0 +1,27 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:635: checking host system type
+configure:656: checking target system type
+configure:674: checking build system type
+configure:1071: checking for whoami
+configure:1889: checking for gcc
+configure:2002: checking whether the C compiler (gcc  ) works
+configure:2018: gcc -o conftest    conftest.c  1>&5
+configure:2044: checking whether the C compiler (gcc  ) is a cross-compiler
+configure:2049: checking whether we are using GNU C
+configure:2077: checking whether gcc accepts -g
+configure:2258: checking how to run the C preprocessor
+configure:2340: checking for ranlib
+configure:2372: checking for as
+configure:2413: checking for ar
+configure:2454: checking for ld
+configure:2495: checking for strip
+configure:2536: checking for windres
+configure:2604: checking for gcc -pipe support
+configure:2653: checking for visibility(hidden) attribute
+configure:2730: checking for perl5
+configure:5247: checking whether gcc needs -traditional
+configure:5295: checking for lchown
+configure:5295: checking for strerror
+configure:5601: checking whether gcc accepts -pthread
