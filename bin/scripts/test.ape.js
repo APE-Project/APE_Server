@@ -1056,7 +1056,7 @@ Ape.addEvent("init", function() {
 			}*/
 			//var pipe = Ape.getPipe(user.getProperty('pubid'));
 			
-			user.pipe.sendRaw("Kikoo", {"foo":"bar",child:{"a":"b"},test:["sex","bite",{"caca":"prout"}]}, true);
+			user.pipe.sendRaw("Kikoo", {"foo":"bar",child:{"a":"b"},test:["el1","el2",{"key":"val"}]}, true);
 			
 	});
 });
