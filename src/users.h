@@ -226,7 +226,7 @@ void deluser(USERS *user, acetables *g_ape);
 
 void do_died(subuser *user);
 
-void check_timeout(acetables *g_ape);
+void check_timeout(acetables *g_ape, int last);
 void grant_aceop(USERS *user);
 
 void send_error(USERS *user, const char *msg, const char *code, acetables *g_ape);
@@ -236,7 +236,7 @@ void send_msg_channel(struct CHANNEL *chan, const char *msg, const char *type, a
 
 unsigned int isonchannel(USERS *user, struct CHANNEL *chan);
 
-struct json *get_json_object_user(USERS *user);
+json_item *get_json_object_user(USERS *user);
 
 session *get_session(USERS *user, const char *key);
 session *set_session(USERS *user, const char *key, const char *val, int update, acetables *g_ape);

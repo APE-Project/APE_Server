@@ -26,6 +26,7 @@
 #include "pipe.h"
 #include "users.h"
 #include "extend.h"
+#include "json.h"
 
 #define MAX_TOPIC_LEN 128
 #define DEFAULT_TOPIC "Chat%20powered%20by%20AJAX%20Push%20Engine\0"
@@ -80,7 +81,7 @@ unsigned int setlevel(struct USERS *user_actif, struct USERS *user_passif, CHANN
 unsigned int settopic(struct USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape);
 unsigned int isvalidchan(char *name);
 
-struct json *get_json_object_channel(CHANNEL *chan);
+json_item *get_json_object_channel(CHANNEL *chan);
 
 #endif
 

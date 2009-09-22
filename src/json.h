@@ -85,10 +85,11 @@ typedef struct _json_item {
 	
 	struct {
 		struct _json_item *child;
+		struct _json_item *head;
 		json_child_t type;
 	} jchild;
-	struct _json_item *next;
 	
+	struct _json_item *next;
 
 } json_item;
 
@@ -99,7 +100,6 @@ typedef struct _json_context {
 		
 	json_item *head;
 	json_item *current_cx;
-
 	
 } json_context;
 
@@ -114,6 +114,26 @@ json_item *init_json_parser(const char *json_string);
 json_item *json_lookup(json_item *head, char *path);
 void free_json_item(json_item *cx);
 
+json_item *json_new_object();
+json_item *json_new_array();
+
+void json_set_property_objN(json_item *obj, const char *key, int keylen, json_item *value);
+void json_set_property_objZ(json_item *obj, const char *key, json_item *value);
+
+void json_set_property_strN(json_item *obj, const char *key, int keylen, const char *value, int valuelen);
+void json_set_property_strZ(json_item *obj, const char *key, const char *value);
+
+void json_set_element_strN(json_item *obj, const char *value, int valuelen);
+void json_set_element_strZ(json_item *obj, const char *value);
+
+void json_set_element_obj(json_item *obj, json_item *value);
+
+void json_set_property_intN(json_item *obj, const char *key, int keylen, int value);
+void json_set_property_intZ(json_item *obj, const char *key, int value);
+struct jsontring *json_to_string(json_item *head, struct jsontring *string, int free_tree);
+json_item *json_item_copy(json_item *cx);
+
+void json_aff(json_item *cx, int depth);
 
 #define APE_PARAMS_INIT() \
 	int json_iterator; \

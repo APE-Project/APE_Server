@@ -48,6 +48,8 @@ struct _transpipe
 	int type;
 	
 	char pubid[33];
+	
+	void *data;
 };
 
 transpipe *init_pipe(void *pipe, int type, acetables *g_ape);

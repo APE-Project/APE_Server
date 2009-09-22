@@ -19,8 +19,6 @@
 
 /* sock.c */
 
-#define _GNU_SOURCE
-
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <time.h>
@@ -185,7 +183,6 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 
 static void ape_connect_name_cb(char *ip, void *data, acetables *g_ape)
 {
-	printf("Resolved\n");
 	struct _ape_sock_connect_async *asca = data;
 	ape_socket *sock;
 	

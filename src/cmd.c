@@ -169,6 +169,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				cp.call_subuser = sub;
 				cp.g_ape = g_ape;
 				cp.host = cget->host;
+				cp.ip = cget->ip_get;
 				cp.chl = (sub != NULL ? sub->current_chl : 0);
 				// Ajouter un string de la commande
 				
@@ -212,9 +213,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 		free_json_item(ojson);
 
 		return (CONNECT_KEEPALIVE);
-
-	} 
-
+	}
 	
 	return (CONNECT_SHUTDOWN);
 }
@@ -223,7 +222,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 {
 	USERS *nuser;
 	RAW *newraw;
-	struct json *jstr = NULL;
+	json_item *jstr = NULL;
 	
 	APE_PARAMS_INIT();
 	
@@ -252,10 +251,11 @@ unsigned int cmd_connect(callbackp *callbacki)
 			break;
 		
 	}
-	
+
 	subuser_restor(getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
 	
-	set_json("sessid", nuser->sessid, &jstr);
+	jstr = json_new_object();	
+	json_set_property_strN(jstr, "sessid", 6, nuser->sessid, 32);
 	
 	newraw = forge_raw(RAW_LOGIN, jstr);
 	newraw->priority = RAW_PRI_HI;
@@ -292,7 +292,7 @@ unsigned int cmd_join(callbackp *callbacki)
 {
 	CHANNEL *jchan;
 	RAW *newraw;
-	json *jlist;
+	json_item *jlist = NULL;
 	BANNED *blist;
 	char *chan_name = NULL;
 	
@@ -319,10 +319,12 @@ unsigned int cmd_join(callbackp *callbacki)
 		} else {
 			blist = getban(jchan, callbacki->call_user->ip);
 			if (blist != NULL) {
-				jlist = NULL;
-			
-				set_json("reason", blist->reason, &jlist);
-				set_json("error", "YOU_ARE_BANNED", &jlist);
+				
+				jlist = json_new_object();
+				
+				json_set_property_strZ(jlist, "reason", blist->reason);
+				json_set_property_strZ(jlist, "error", "YOU_ARE_BANNED");
+
 				/*
 					TODO: Add Until
 				*/
@@ -346,14 +348,15 @@ unsigned int cmd_check(callbackp *callbacki)
 
 unsigned int cmd_send(callbackp *callbacki)
 {
-	json *jlist = NULL;
+	json_item *jlist = NULL;
 	char *msg, *pipe;
 	
 	APE_PARAMS_INIT();
 	
 	if ((msg = JSTR(msg)) != NULL && (pipe = JSTR(pipe)) != NULL) {
-	
-		set_json("msg", msg, &jlist);
+		jlist = json_new_object();
+		
+		json_set_property_strZ(jlist, "msg", msg);
 
 		post_to_pipe(jlist, RAW_DATA, pipe, callbacki->call_subuser, callbacki->g_ape);
 		
@@ -426,19 +429,21 @@ unsigned int cmd_session(callbackp *callbacki)
 				return (RETURN_BAD_PARAMS);
 			}		
 		} else if (strcasecmp(action, "get") == 0) {
-			json *jlist = NULL, *jobj = NULL;
+			json_item *jlist = NULL, *jobj = json_new_object();
 			RAW *newraw;
 			
-			set_json("sessions", NULL, &jlist);
+			//set_json("sessions", NULL, &jlist);
 			
 			JFOREACH(values, val) {
 				session *sTmp = get_session(callbacki->call_user, val);
-				set_json(val, (sTmp != NULL ? sTmp->val : NULL), &jobj);
+				json_set_property_strZ(jobj, val, (sTmp != NULL ? sTmp->val : "null"));
 			} JFOREACH_ELSE {
-				json_free(jlist);
+				free_json_item(jlist);
 				return (RETURN_BAD_PARAMS);
 			}
-			json_attach(jlist, jobj, JSON_OBJECT);
+			jlist = json_new_object();
+			json_set_property_objN(jlist, "sessions", 8, jobj);
+
 			newraw = forge_raw("SESSIONS", jlist);
 			newraw->priority = RAW_PRI_HI;
 			post_raw_sub(newraw, callbacki->call_subuser, callbacki->g_ape);

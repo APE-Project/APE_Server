@@ -273,17 +273,16 @@ void proxy_process_eol(ape_socket *co, acetables *g_ape)
 	char *b64;
 	ape_proxy *proxy = co->attach;
 	char *data = co->buffer_in.data;
-	data[co->buffer_in.length] = '\0';
-	
+
 	RAW *newraw;
-	json *jlist = NULL;
+	json_item *jlist = json_new_object();
 	
+	data[co->buffer_in.length] = '\0';
 	b64 = base64_encode(data, strlen(data));
 	
-	set_json("data", b64, &jlist);
-	set_json("event", "READ", &jlist);
-	set_json("pipe", NULL, &jlist);
-	json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);	
+	json_set_property_strZ(jlist, "data", b64);
+	json_set_property_strN(jlist, "event", 5, "READ", 4);
+	json_set_property_objN(jlist, "pipe", 4, get_json_object_proxy(proxy));
 	
 	newraw = forge_raw("PROXY_EVENT", jlist);
 	
@@ -342,11 +341,10 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 void proxy_onevent(ape_proxy *proxy, char *event, acetables *g_ape)
 {
 	RAW *newraw;
-	json *jlist = NULL;
+	json_item *jlist = json_new_object();
 	
-	set_json("event", event, &jlist);
-	set_json("pipe", NULL, &jlist);
-	json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);	
+	json_set_property_strZ(jlist, "event", event);
+	json_set_property_objN(jlist, "pipe", 4, get_json_object_proxy(proxy));
 	
 	newraw = forge_raw("PROXY_EVENT", jlist);
 	
@@ -368,33 +366,26 @@ void proxy_write(ape_proxy *proxy, char *data, acetables *g_ape)
 	free(b64);
 }
 
-struct json *get_json_object_proxy(ape_proxy *proxy)
+json_item *get_json_object_proxy(ape_proxy *proxy)
 {
-	json *jstr = NULL;
-	json *jprop = NULL;
-	char port[8];
-
-	set_json("pubid", proxy->pipe->pubid, &jstr);
-	set_json("casttype", "proxy", &jstr);
-	
-	set_json("properties", NULL, &jstr);
-	
+	json_item *jstr = json_new_object();
+	json_item *jprop = json_new_object();
 	extend *eTmp = proxy->properties;
+
+	json_set_property_strN(jstr, "pubid", 5, proxy->pipe->pubid, 32);
+	json_set_property_strN(jstr, "casttype", 8, "proxy", 5);
 	
+	json_set_property_strZ(jprop, "host", proxy->sock.host->host);
+	json_set_property_strZ(jprop, "ip", proxy->sock.host->ip);
+	json_set_property_intZ(jprop, "port", proxy->sock.port);
+
 	while (eTmp != NULL) {
-		set_json(eTmp->key, eTmp->val, &jprop);
+		json_set_property_strZ(jprop, eTmp->key, eTmp->val);
 		eTmp = eTmp->next;
 	}
 	
-	sprintf(port, "%i", proxy->sock.port);
-	
-	set_json("host", proxy->sock.host->host, &jprop);
-	set_json("ip", proxy->sock.host->ip, &jprop);
-	set_json("port", port, &jprop);
-	
-	json_attach(jstr, jprop, JSON_OBJECT);
-	
-	
+	json_set_property_objN(jstr, "properties", 10, jprop);
+
 	return jstr;
 }
 

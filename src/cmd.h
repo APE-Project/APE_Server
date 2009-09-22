@@ -32,12 +32,12 @@
 	E.g. Bad sessid, bad param
 	Note : time is not defined in this case
 */
-#define ERR_BAD_PARAM 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"001\",\"value\":\"BAD_PARAM\"}}\n]\n"
-#define ERR_BAD_CMD 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"002\",\"value\":\"BAD_CMD\"}}\n]\n"
-#define ERR_BAD_SESSID 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"004\",\"value\":\"BAD_SESSID\"}}\n]\n"
-#define ERR_BAD_JSON 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"005\",\"value\":\"BAD_JSON\"}}\n]\n"
-#define ERR_BAD_CHL 		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"005\",\"value\":\"BAD_CHL\"}}\n]\n"
-#define ERR_CONNECT		"[\n{\"raw\":\"ERR\",\"time\":null,\"datas\":{\"code\":\"200\",\"value\":\"UNKNOWN_CONNECTION_ERROR\"}}\n]\n"
+#define ERR_BAD_PARAM 		"[\n{\"raw\":\"ERR\",\"time\":null,\"data\":{\"code\":\"001\",\"value\":\"BAD_PARAM\"}}\n]\n"
+#define ERR_BAD_CMD 		"[\n{\"raw\":\"ERR\",\"time\":null,\"data\":{\"code\":\"002\",\"value\":\"BAD_CMD\"}}\n]\n"
+#define ERR_BAD_SESSID 		"[\n{\"raw\":\"ERR\",\"time\":null,\"data\":{\"code\":\"004\",\"value\":\"BAD_SESSID\"}}\n]\n"
+#define ERR_BAD_JSON 		"[\n{\"raw\":\"ERR\",\"time\":null,\"data\":{\"code\":\"005\",\"value\":\"BAD_JSON\"}}\n]\n"
+#define ERR_BAD_CHL 		"[\n{\"raw\":\"ERR\",\"time\":null,\"data\":{\"code\":\"005\",\"value\":\"BAD_CHL\"}}\n]\n"
+#define ERR_CONNECT			"[\n{\"raw\":\"ERR\",\"time\":null,\"data\":{\"code\":\"200\",\"value\":\"UNKNOWN_CONNECTION_ERROR\"}}\n]\n"
 
 
 
@@ -70,6 +70,8 @@ struct _callbackp
 	
 	unsigned int fdclient;
 	struct USERS *call_user;
+	
+	char *ip;
 	char *host;
 	subuser *call_subuser;
 	int chl;

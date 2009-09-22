@@ -114,64 +114,54 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 	FIRE_EVENT_NULL(join, user, chan, g_ape);
 	
 	RAW *newraw;
-	json *jlist = NULL;
-	char level[8];
+	json_item *jlist = json_new_object();
 	
 	if (isonchannel(user, chan)) {
 		return;
 	}
 	
-	list = xmalloc(sizeof(*list)); // is it free ?
+	list = xmalloc(sizeof(*list)); // TODO is it free ?
 	list->userinfo = user;
 	list->level = 1;
 	list->next = chan->head;
 	
 	chan->head = list;
 	
-	chanl = xmalloc(sizeof(*chanl)); // is it free ?
+	chanl = xmalloc(sizeof(*chanl)); // TODO is it free ?
 	chanl->chaninfo = chan;
 	chanl->next = user->chan_foot;
 	
 	user->chan_foot = chanl;
 
 	if (chan->interactive) {
-		jlist = NULL;
+		json_item *user_list = json_new_array();
+		json_item *uinfo = json_new_object();
 		
-		set_json("user", NULL, &jlist);
-		json_attach(jlist, get_json_object_user(user), JSON_OBJECT);
-		
-		set_json("pipe", NULL, &jlist);
-		json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
-		
-		newraw = forge_raw(RAW_JOIN, jlist);
+		json_set_property_objN(uinfo, "user", 4, get_json_object_user(user));
+		json_set_property_objN(uinfo, "pipe", 4, get_json_object_channel(chan));
+
+		newraw = forge_raw(RAW_JOIN, uinfo);
 		post_raw_channel_restricted(newraw, chan, user, g_ape);
 		
-		jlist = NULL;
-		set_json("users", NULL, &jlist);
-
 		ulist = chan->head;
 		while (ulist != NULL) {
 		
-			struct json *juser = NULL;
+			json_item *juser = get_json_object_user(ulist->userinfo);
 			
 			if (ulist->userinfo != user) {
 				//make_link(user, ulist->userinfo);
 			}
 			
-			sprintf(level, "%i", ulist->level);
-			set_json("level", level, &juser);
-			
-			json_concat(juser, get_json_object_user(ulist->userinfo));
+			json_set_property_intN(juser, "level", 5, ulist->level);
 		
-			json_attach(jlist, juser, JSON_ARRAY);
+			json_set_element_obj(user_list, juser);
 
 			ulist = ulist->next;
 		}
+		json_set_property_objN(jlist, "users", 5, user_list);
 	}
-
 	
-	set_json("pipe", NULL, &jlist);
-	json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+	json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
 	
 	newraw = forge_raw(RAW_CHANNEL, jlist);
 	post_raw(newraw, user, g_ape);
@@ -209,13 +199,14 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 
 	CHANLIST *clist, *ctmp;
 	RAW *newraw;
-	json *jlist;
+	json_item *jlist;
 	
 	FIRE_EVENT_NULL(left, user, chan, g_ape);
 	
 	if (!isonchannel(user, chan)) {
 		return;
 	}
+	
 	list = chan->head;
 	prev = NULL;
 	
@@ -230,7 +221,6 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 				user->chan_foot = clist->next;
 			}
 			free(clist);
-			clist = NULL;
 			break;
 		}
 		ctmp = clist;
@@ -248,19 +238,15 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 			free(list);
 			list = NULL;
 			if (chan->head != NULL && chan->interactive) {
-				jlist = NULL;
+				jlist = json_new_object();
 				
-				set_json("user",  NULL, &jlist);
-				json_attach(jlist, get_json_object_user(user), JSON_OBJECT);
-
-				
-				set_json("pipe", NULL, &jlist);
-				json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+				json_set_property_objN(jlist, "user", 4, get_json_object_user(user));
+				json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
 				
 				newraw = forge_raw(RAW_LEFT, jlist);
 				post_raw_channel(newraw, chan, g_ape);
 			} else if (chan->head == NULL) {
-				rmchan(chan, g_ape); // A verifier
+				rmchan(chan, g_ape);
 			}
 			break;
 		}
@@ -307,10 +293,8 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 {
 	RAW *newraw;
 	userslist *user_passif_chan, *user_actif_chan;
-	json *jlist;
+	json_item *jlist;
 
-	char level[8];
-	
 	user_passif_chan = getuchan(user_passif, chan);
 	
 	if (user_actif != NULL) {
@@ -325,17 +309,12 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 		user_passif_chan->level = lvl;
 		
 		if (chan->interactive) {
-			jlist = NULL;
-
-			set_json("ope", NULL, &jlist);
-			json_attach(jlist, get_json_object_user(user_passif), JSON_OBJECT);
-		
-			set_json("opeur", NULL, &jlist);
-			json_attach(jlist, get_json_object_user(user_actif), JSON_OBJECT);
-		
-			set_json("level", itos(lvl, level), &jlist);
-			set_json("pipe", NULL, &jlist);
-			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+			jlist = json_new_object();
+			
+			json_set_property_objN(jlist, "ope", 3, get_json_object_user(user_passif));
+			json_set_property_objN(jlist, "oper", 4, get_json_object_user(user_actif));
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
+			json_set_property_intN(jlist, "level", 5, lvl);
 		
 			newraw = forge_raw(RAW_SETLEVEL, jlist);
 			post_raw_channel(newraw, chan, g_ape);
@@ -345,18 +324,13 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 		user_passif_chan->level = lvl;
 		
 		if (chan->interactive) {
-			jlist = NULL;
-		
-			set_json("ope", NULL, &jlist);
-			json_attach(jlist, get_json_object_user(user_passif), JSON_OBJECT);
-		
-			set_json("opeur", NULL, &jlist);
-			json_attach(jlist, get_json_object_user(NULL), JSON_OBJECT);
-		
-			set_json("level", itos(lvl, level), &jlist);
-			set_json("pipe", NULL, &jlist);
-			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
-		
+			jlist = json_new_object();
+
+			json_set_property_objN(jlist, "ope", 3, get_json_object_user(user_passif));
+			json_set_property_objN(jlist, "oper", 4, get_json_object_user(NULL));
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
+			json_set_property_intN(jlist, "level", 5, lvl);
+
 			newraw = forge_raw(RAW_SETLEVEL, jlist);
 			post_raw_channel(newraw, chan, g_ape);
 			
@@ -370,7 +344,7 @@ unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *
 {
 	RAW *newraw;
 	userslist *list;
-	json *jlist;
+	json_item *jlist;
 	
 	list = getuchan(user, chan);
 	
@@ -381,13 +355,9 @@ unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *
 	} else {
 		memcpy(chan->topic, topic, strlen(topic)+1);
 		
-		jlist = NULL;
-		
-		set_json("user", NULL, &jlist);
-		json_attach(jlist, get_json_object_user(user), JSON_OBJECT);
-		
-		set_json("pipe", NULL, &jlist);
-		json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+		jlist = json_new_object();
+		json_set_property_objN(jlist, "user", 4, get_json_object_user(user));
+		json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
 		
 		newraw = forge_raw(RAW_SETTOPIC, jlist);
 		post_raw_channel(newraw, chan, g_ape);
@@ -401,7 +371,7 @@ void ban(CHANNEL *chan, USERS *banner, const char *ip, char *reason, unsigned in
 {
 	userslist *uTmp, *tUtmp;
 	RAW *newraw;
-	json *jlist;
+	json_item *jlist;
 	BANNED *blist, *bTmp;
 	
 	unsigned int isban = 0;
@@ -418,18 +388,11 @@ void ban(CHANNEL *chan, USERS *banner, const char *ip, char *reason, unsigned in
 	while (uTmp != NULL) {
 
 		if (strcmp(ip, uTmp->userinfo->ip) == 0) { // We find somebody with the same IP
-			jlist = NULL;
+			jlist = json_new_object();
 			
-			set_json("reason", reason, &jlist);
-			if (banner != NULL) {
-				set_json("banner", NULL, &jlist);
-				json_attach(jlist, get_json_object_user(banner), JSON_OBJECT);
-			} else {
-				set_json("banner", NULL, &jlist);
-				json_attach(jlist, get_json_object_user(NULL), JSON_OBJECT);
-			}
-			set_json("pipe", NULL, &jlist);
-			json_attach(jlist, get_json_object_channel(chan), JSON_OBJECT);
+			json_set_property_strZ(jlist, "reason", reason);
+			json_set_property_objN(jlist, "banner", 6, get_json_object_user(banner));
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
 			
 			newraw = forge_raw(RAW_BAN, jlist);
 			
@@ -525,39 +488,34 @@ void rmallban(CHANNEL *chan)
 	chan->banned = NULL;
 }
 
-struct json *get_json_object_channel(CHANNEL *chan)
+json_item *get_json_object_channel(CHANNEL *chan)
 {
-	json *jstr = NULL;
-	
-	//set_json("topic", chan->topic, &jstr);
-	//set_json("name", chan->name, &jstr); // See below
-	set_json("pubid", chan->pipe->pubid, &jstr);
-	set_json("casttype", "multi", &jstr);
-	
-	//if (chan->properties != NULL) {
-	json *jprop = NULL;
-	set_json("properties", NULL, &jstr);
-	
+	json_item *jstr = json_new_object();
+	json_set_property_strN(jstr, "casttype", 8, "multi", 5);
+	json_set_property_strN(jstr, "pubid", 5, chan->pipe->pubid, 32);
+
+	json_item *jprop = json_new_object();
+	json_set_property_strZ(jprop, "name", chan->name);
+
 	extend *eTmp = chan->properties;
 	
 	while (eTmp != NULL) {
 		if (eTmp->visibility == EXTEND_ISPUBLIC) {
 			if (eTmp->type == EXTEND_JSON) {
-				json *jcopy = json_copy(eTmp->val);
+				/*json *jcopy = json_copy(eTmp->val);
 				
 				set_json(eTmp->key, NULL, &jprop);
 				
-				json_attach(jprop, jcopy, JSON_OBJECT);
+				json_attach(jprop, jcopy, JSON_OBJECT);*/
 			} else {
-				set_json(eTmp->key, eTmp->val, &jprop);
+				json_set_property_strZ(jprop, eTmp->key, eTmp->val);
 			}
 		}
 		
 		eTmp = eTmp->next;
 	}
-	/* a little hack to have the same behaviour than user */
-	set_json("name", chan->name, &jprop);
-	json_attach(jstr, jprop, JSON_OBJECT);
+	json_set_property_objN(jstr, "properties", 10, jprop);
+	
 	//}
 	
 	return jstr;

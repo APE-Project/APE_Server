@@ -24,6 +24,7 @@
 #define _UTILS_H
 
 #include <stdlib.h>
+#include <math.h>
 
 void *xmalloc(size_t size);
 void *xrealloc(void *ptr, size_t size);
@@ -38,5 +39,7 @@ size_t explode(const char split, char *input, char **tP, unsigned int limit);
 char hex2int(unsigned char hex);
 int urldecode(char *string);
 int rand_n(int n);
+
+#define LENGTH_N(num) ((num<10 && num >= 0)?1:(int)log10(fabs(num))+1);
 
 #endif

@@ -22,7 +22,7 @@
 #define XP_UNIX
 #define JS_THREADSAFE
 #include <jsapi.h>
-
+#include <jsstr.h>
 #include <stdio.h>
 #include <glob.h>
 #include "plugins.h"
@@ -33,8 +33,12 @@
 
 /* Return the global SpiderMonkey Runtime instance e.g. ASMR->runtime */
 #define ASMR ((ape_sm_runtime *)get_property(g_ape->properties, "sm_runtime")->val)
+#define ASMC ((JSContext *)get_property(g_ape->properties, "sm_context")->val)
 
-#define APE_JS_EVENT(cb) ape_fire_callback(cb, g_ape)
+#define APEUSER_TO_JSOBJ(apeuser) \
+		 (JSObject *)get_property(apeuser->properties, "jsobj")->val
+
+#define APE_JS_EVENT(cb, argc, argv) ape_fire_callback(cb, argc, argv, g_ape)
 static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetables *g_ape);
 
 /* JSNative macro prototype */
@@ -154,6 +158,20 @@ static JSClass raw_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+static JSClass user_class = {
+	"user", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
+static JSClass pipe_class = {
+	"pipe", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 static JSBool apesocket_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	ape_socket *client;
@@ -165,7 +183,7 @@ static JSBool apesocket_write(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 
 	client = ((struct _ape_sock_js_obj *)cb->private)->client;
 
-	if (!JS_ConvertArguments(cx, argc, argv, "s", &string)) {
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &string)) {
 		return JS_FALSE;
 	}
 	
@@ -187,6 +205,150 @@ static JSBool apesocket_close(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 	return JS_TRUE;
 }
 
+static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
+{
+	unsigned int i, length = 0, isarray = 0;
+	jsval propname;
+	JSIdArray *enumjson = NULL;
+	json_item *ape_json;
+	
+	/* TODO Fixme : If array has no contigus values, they cannot be retrived, use JS_NewPropertyIterator, JS_NextProperty */
+	
+	if (JS_IsArrayObject(cx, json_obj) == JS_TRUE) {
+		isarray = 1;
+		JS_GetArrayLength(cx, json_obj, &length);
+		ape_json = json_new_array();
+	} else {
+		enumjson = JS_Enumerate(cx, json_obj);
+		length = enumjson->length;
+		ape_json = json_new_object();
+	}
+	
+	for (i = 0; i < length; i++) {
+		jsval vp;
+		JSString *key = NULL;
+		JSString *value = NULL;
+		json_item *val_obj = NULL;
+		
+		if (!isarray) {
+			JS_IdToValue(cx, enumjson->vector[i], &propname);
+			key = JS_ValueToString(cx, propname);
+			JS_GetProperty(cx, json_obj, JS_GetStringBytes(key), &vp);
+		} else {
+			JS_GetElement(cx, json_obj, i, &vp);
+		}
+		
+		switch(JS_TypeOfValue(cx, vp)) {
+			case JSTYPE_VOID:
+				break;
+			case JSTYPE_OBJECT:
+				val_obj = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(vp));
+				if (!isarray) {
+					json_set_property_objN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), val_obj);
+				} else {
+					json_set_element_obj(ape_json, val_obj);
+				}
+				break;
+			case JSTYPE_FUNCTION:
+				break;
+			case JSTYPE_STRING:				
+				value = JSVAL_TO_STRING(vp);
+				
+				if (!isarray) {
+					json_set_property_strN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), JS_GetStringBytes(value), JS_GetStringLength(value));
+				} else {
+					json_set_element_strN(ape_json, JS_GetStringBytes(value), JS_GetStringLength(value));
+				}
+				
+				break;
+			case JSTYPE_NUMBER:
+				printf("Value is an int\n");
+				break;
+			case JSTYPE_BOOLEAN:
+				printf("Value is a bool\n");
+				break;
+			case JSTYPE_NULL:
+				printf("Value is a null\n");
+				break;
+			default:
+				break;
+		}
+	}
+	return ape_json;
+}
+
+APE_JS_NATIVE(apepipe_sm_send_raw)
+//{
+	RAW *newraw;
+	const char *raw;
+	JSObject *json_obj;
+	JSBool *dropsub;
+	json_item *jstr;
+
+	transpipe *spipe = JS_GetPrivate(cx, obj);
+	
+	if (!JS_ConvertArguments(cx, 3, argv, "so/b", &raw, &json_obj, &dropsub)) {
+		return JS_FALSE;
+	}
+	
+	jstr = jsobj_to_ape_json(cx, json_obj);
+	//s = json_to_string(i, NULL, 0);
+	
+	newraw = forge_raw(raw, jstr);
+	
+	if (spipe->type == CHANNEL_PIPE) {
+		post_raw_channel(newraw, spipe->pipe, g_ape);
+	} else {
+		post_raw(newraw, spipe->pipe, g_ape);
+	}	
+
+//	printf("First value : %s\n", JS_GetStringBytes(JSVAL_TO_STRING(propname)));
+	
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(apeuser_sm_get_property)
+//{
+	const char *property;
+	USERS *user = JS_GetPrivate(cx, obj);
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &property)) {
+		return JS_FALSE;
+	}
+	
+	if (strcmp(property, "sessid") == 0) {
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, user->sessid, 32));
+	} else if (strcmp(property, "pubid") == 0) {
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, user->pipe->pubid, 32));
+	} else if (strcmp(property, "ip") == 0) {
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, user->ip));
+	} else {
+		extend *getprop = get_property(user->properties, property);
+		if (getprop != NULL && getprop->type == EXTEND_STR) {
+			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+		}
+	}
+	
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(apeuser_sm_set_property)
+//{
+	char *key, *property;
+	USERS *user = JS_GetPrivate(cx, obj);
+	
+	if (argc != 2) {
+		return JS_FALSE;
+	}	
+	
+	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
+		return JS_FALSE;
+	}
+	
+	add_property(&user->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+	
+	return JS_TRUE;
+}
 
 
 static JSFunctionSpec apesocket_funcs[] = {
@@ -203,8 +365,13 @@ static JSFunctionSpec apesocket_client_funcs[] = {
 };
 
 static JSFunctionSpec apeuser_funcs[] = {
-	//JS_FS("getProperty", apeuser_sm_get_property, 1, 0, 0),
-	//JS_FS("setProperty", apeuser_sm_set_property, 1, 0, 0),
+	JS_FS("getProperty", apeuser_sm_get_property, 1, 0, 0),
+	JS_FS("setProperty", apeuser_sm_set_property, 2, 0, 0),
+	JS_FS_END
+};
+
+static JSFunctionSpec apepipe_funcs[] = {
+	JS_FS("sendRaw", apepipe_sm_send_raw, 3, 0, 0),
 	JS_FS_END
 };
 
@@ -228,8 +395,7 @@ static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
 		cbcopy->asc = cb->asc;
 		cbcopy->server_obj = cb->server_obj;
 		
-		client->attach = cbcopy;
-		
+		client->attach = cbcopy;	
 		
 		JS_SetContextThread(cb->asc->cx);
 		JS_BeginRequest(cb->asc->cx);
@@ -342,22 +508,22 @@ static void reportError(JSContext *cx, const char *message, JSErrorReport *repor
 static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 {
 	while (head != NULL) {
-
+		
 		if (head->jchild.child == NULL && head->key.val != NULL) {
 			jsval jval;
-			
+
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
 			JS_SetProperty(cx, root, head->key.val, &jval);
 
 		} else if (head->key.val == NULL && head->jval.vu.str.value != NULL) {
 			jsuint rval;
 			jsval jval;
-			
+
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
 			
 			if (JS_GetArrayLength(cx, root, &rval)) {
 				JS_SetElement(cx, root, rval, &jval);
-			}		
+			}
 		}
 		
 		if (head->jchild.child != NULL) {
@@ -430,26 +596,37 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	JS_SetContextThread(cx);
 	JS_BeginRequest(cx);
 		jsval jval;
-		
+
 		obj = JS_NewObject(cx, NULL, NULL, NULL);
 		JS_AddRoot(cx, &obj);
 		ape_json_to_jsobj(cx, head, obj);
 		
 		cb = JS_NewObject(cx, NULL, NULL, NULL);
 		JS_AddRoot(cx, &cb);
+		/* TODO : RemoveRoot */
 		
-		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->host));		
+		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->host));
+		/* infos.host */	
 		JS_SetProperty(cx, cb, "host", &jval);
 		
 		jval = INT_TO_JSVAL(callbacki->chl);
+		/* infos.chl */
 		JS_SetProperty(cx, cb, "chl", &jval);
+		
+		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->ip));
+		JS_SetProperty(cx, cb, "ip", &jval);
+		
+		if (callbacki->call_user != NULL) {
+			
+			jval = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(callbacki->call_user));	
+			/* infos.user */
+			JS_SetProperty(cx, cb, "user", &jval);
+		}
 		
 	JS_EndRequest(cx);
 	JS_ClearContextThread(cx);
-				
-	ape_fire_cmd(callbacki->cmd, obj, cb, callbacki->g_ape);
 	
-
+	ape_fire_cmd(callbacki->cmd, obj, cb, callbacki->g_ape);
 	
 	return (RETURN_NOTHING);
 }
@@ -467,7 +644,7 @@ APE_JS_NATIVE(ape_sm_register_cmd)
 		return JS_FALSE;
 	}
 	
-	if (!JS_ConvertArguments(cx, argc-1, argv, "sb", &cmd, &needsessid)) {
+	if (!JS_ConvertArguments(cx, 2, argv, "sb", &cmd, &needsessid)) {
 		return JS_FALSE;
 	}
 	
@@ -504,7 +681,7 @@ APE_JS_NATIVE(ape_sm_addEvent)
 		return JS_FALSE;
 	}
 	
-	if (!JS_ConvertArguments(cx, argc-1, argv, "s", &event)) {
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &event)) {
 		return JS_FALSE;
 	}
 
@@ -530,7 +707,7 @@ APE_JS_NATIVE(ape_sm_addEvent)
 APE_JS_NATIVE(ape_sm_http_request)
 //{
 	char *url, *post = NULL;
-	//ape_http_request("http://www.rabol.fr/bordel/post.php", "var=kikoo&para=roxxor", g_ape);
+	
 	if (!JS_ConvertArguments(cx, argc, argv, "s/s", &url, &post)) {
 		return JS_FALSE;
 	}
@@ -541,15 +718,177 @@ APE_JS_NATIVE(ape_sm_http_request)
 	
 }
 
+static JSObject *get_pipe_object(const char *pubid, transpipe *pipe, JSContext *cx, acetables *g_ape)
+{
+	JSObject *jspipe;
+		
+	if ((pipe != NULL) || ((pipe = get_pipe(pubid, g_ape)) != NULL)) {
+		if ((jspipe = pipe->data) == NULL) {
+			jspipe = JS_NewObject(cx, &pipe_class, NULL, NULL);
+			JS_DefineFunctions(cx, jspipe, apepipe_funcs);
+			JS_SetPrivate(cx, jspipe, pipe);
+			
+			pipe->data = jspipe;
+		}
+		
+		return jspipe;
+	}
+	
+	return NULL;	
+}
+
+APE_JS_NATIVE(ape_sm_get_pipe)
+//{
+	char *pubid;
+	JSObject *jspipe;
+	
+	*rval = JSVAL_NULL;
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &pubid)) {
+		return JS_FALSE;
+	}
+	
+	if ((jspipe = get_pipe_object(pubid, NULL, cx, g_ape)) != NULL) {
+		*rval = OBJECT_TO_JSVAL(jspipe);
+	}
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(ape_sm_config)
+//{
+	char *file, *key, *value;
+	*rval = JSVAL_NULL;
+	plug_config *config;
+	
+	if (!JS_ConvertArguments(cx, 2, argv, "ss", &file, &key)) {
+		return JS_FALSE;
+	}
+	
+	config = plugin_parse_conf(file);
+	value = plugin_get_conf(config, key);
+	
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, value));
+	
+	return JS_TRUE;
+}
+
+struct _ape_sm_timer
+{
+	JSContext *cx;
+	JSObject *global;
+	jsval func;
+	
+	uintN argc;
+	jsval *argv;
+	
+};
+
+static void ape_sm_timer_wrapper(struct _ape_sm_timer *params, int last)
+{
+	jsval rval;
+	
+	JS_SetContextThread(params->cx);
+	JS_BeginRequest(params->cx);
+		JS_CallFunctionValue(params->cx, params->global, params->func, params->argc, params->argv, &rval);
+		if (last) {
+			JS_RemoveRoot(params->cx, &params->func);
+			if (params->argv != NULL) {
+				free(params->argv);
+			}
+			free(params);
+		}
+	JS_EndRequest(params->cx);
+	JS_ClearContextThread(params->cx);
+}
+
+APE_JS_NATIVE(ape_sm_set_timeout)
+//{
+	struct _ape_sm_timer *params = xmalloc(sizeof(*params));
+	struct _ticks_callback *timer;
+	int ms, i;
+	
+	params->cx = cx;
+	params->global = asc->global;
+	params->argc = argc-2;
+	
+	params->argv = (argc-2 ? xmalloc(sizeof(*params->argv) * argc-2) : NULL);
+	
+	if (!JS_ConvertValue(cx, argv[0], JSTYPE_FUNCTION, &params->func)) {
+		return JS_FALSE;
+	}
+
+	if (!JS_ConvertArguments(cx, 1, &argv[1], "i/o", &ms)) {
+		return JS_FALSE;
+	}
+	
+	JS_AddRoot(cx, &params->func);
+	
+	for(i = 0; i < argc-2; i++) {
+		params->argv[i] = argv[i+2];
+	}
+	
+	timer = add_timeout(ms, ape_sm_timer_wrapper, params, g_ape);
+	
+	*rval = INT_TO_JSVAL(timer->identifier);
+	
+	return JS_TRUE;
+	
+}
+
+APE_JS_NATIVE(ape_sm_set_interval)
+//{
+	struct _ape_sm_timer *params = xmalloc(sizeof(*params));
+	struct _ticks_callback *timer;
+	int ms, i;
+	
+	params->cx = cx;
+	params->global = asc->global;
+	params->argc = argc-2;
+	
+	params->argv = (argc-2 ? xmalloc(sizeof(*params->argv) * argc-2) : NULL);
+	
+	if (!JS_ConvertValue(cx, argv[0], JSTYPE_FUNCTION, &params->func)) {
+		return JS_FALSE;
+	}
+
+	if (!JS_ConvertArguments(cx, 1, &argv[1], "i/o", &ms)) {
+		return JS_FALSE;
+	}
+	
+	JS_AddRoot(cx, &params->func);
+	
+	for(i = 0; i < argc-2; i++) {
+		params->argv[i] = argv[i+2];
+	}
+	
+	timer = add_periodical(ms, 0, ape_sm_timer_wrapper, params, g_ape);
+	
+	*rval = INT_TO_JSVAL(timer->identifier);
+	
+	return JS_TRUE;	
+}
+
+APE_JS_NATIVE(ape_sm_clear_timeout)
+//{
+	unsigned int identifier;
+	if (!JS_ConvertArguments(cx, 1, argv, "i", &identifier)) {
+		return JS_FALSE;
+	}
+	
+	del_timer_identifier(identifier, g_ape);
+	
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(ape_sm_echo)
 //{
 	const char *string;
 	*rval = JSVAL_NULL;
 
-	if (!JS_ConvertArguments(cx, argc, argv, "s", &string)) {
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &string)) {
 		return JS_FALSE;
 	}
-
+	
 	printf("%s\n", string);
 
 	return JS_TRUE;
@@ -559,7 +898,7 @@ APE_JS_NATIVE(ape_sm_raw_constructor)
 //{
 	char *rawname;
 	
-	if (!JS_ConvertArguments(cx, argc, argv, "s", &rawname)) {
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &rawname)) {
 		return JS_FALSE;
 	}
 	
@@ -567,6 +906,7 @@ APE_JS_NATIVE(ape_sm_raw_constructor)
 	
 	return JS_TRUE;
 }
+
 
 APE_JS_NATIVE(ape_sm_sockserver_constructor)
 //{
@@ -618,6 +958,11 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("registerCmd", ape_sm_register_cmd, 2, 0, 0),
     JS_FS("log",  		ape_sm_echo,  		1, 0, 0),/* Ape.echo('stdout\n'); */
 	JS_FS("HTTPRequest", ape_sm_http_request, 2, 0, 0),
+	JS_FS("getPipe", ape_sm_get_pipe, 1, 0, 0),
+	JS_FS("config", ape_sm_config, 2, 0, 0),
+	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0, 0),
+	JS_FS("setInterval", ape_sm_set_interval, 2, 0, 0),
+	JS_FS("clearTimeout", ape_sm_clear_timeout, 1, 0, 0),
     JS_FS_END
 };
 
@@ -668,7 +1013,7 @@ static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetable
 	
 }
 
-static void ape_fire_callback(const char *name, acetables *g_ape)
+static void ape_fire_callback(const char *name, uintN argc, jsval *argv, acetables *g_ape)
 {
 	ape_sm_compiled *asc = ASMR->scripts;
 	
@@ -686,7 +1031,7 @@ static void ape_fire_callback(const char *name, acetables *g_ape)
 				
 				JS_SetContextThread(asc->cx);
 				JS_BeginRequest(asc->cx);
-					JS_CallFunctionValue(asc->cx, asc->global, (cb->func), 0, NULL, &rval);
+					JS_CallFunctionValue(asc->cx, asc->global, (cb->func), argc, argv, &rval);
 				JS_EndRequest(asc->cx);
 				JS_ClearContextThread(asc->cx);
 			}
@@ -700,6 +1045,7 @@ static void ape_fire_callback(const char *name, acetables *g_ape)
 static void init_module(acetables *g_ape) // Called when module is loaded
 {
 	JSRuntime *rt;
+	JSContext *gcx;
 
 	ape_sm_runtime *asr;
 	jsval rval;
@@ -716,6 +1062,12 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	asr = xmalloc(sizeof(*asr));
 	asr->runtime = rt;
 	asr->scripts = NULL;
+	
+	/* Setup a global context to store shared object */
+	gcx = JS_NewContext(rt, 8192);
+	JS_SetOptions(gcx, JSOPTION_VAROBJFIX);
+	JS_SetVersion(gcx, JSVERSION_LATEST);	
+	add_property(&g_ape->properties, "sm_context", gcx, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	
 	add_property(&g_ape->properties, "sm_runtime", asr, EXTEND_POINTER, EXTEND_ISPRIVATE);
 
@@ -753,7 +1105,6 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 			asc->bytecode = JS_CompileFile(asc->cx, asc->global, asc->filename);
 			
 			if (asc->bytecode == NULL) {
-				printf("here\n");
 				JS_DestroyScript(asc->cx, asc->bytecode);
 						
 			} else {			
@@ -785,20 +1136,43 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	}
 	globfree(&globbuf);
 	
-	APE_JS_EVENT("init");
+	APE_JS_EVENT("init", 0, NULL);
 	
 }
 
 static USERS *ape_cb_add_user(unsigned int fdclient, char *host, acetables *g_ape)
 {
-
-	USERS *n = adduser(fdclient, host, g_ape);
+	JSObject *user;
+	extend *jsobj;
+	JSContext *gcx = ASMC;
+	jsval params[1], pipe;
 	
-	if (n != NULL) {
-		APE_JS_EVENT("adduser");
+	USERS *u = adduser(fdclient, host, g_ape);
+	
+	if (u != NULL) {
+		JS_SetContextThread(gcx);
+		JS_BeginRequest(gcx);
+	
+		user = JS_NewObject(gcx, &user_class, NULL, NULL);
+		JS_DefineFunctions(gcx, user, apeuser_funcs);
+		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, u->pipe, gcx, g_ape));
+		JS_SetProperty(gcx, user, "pipe", &pipe);
+		JS_SetPrivate(gcx, user, u);
+	
+		/* Store the JSObject into a private properties of the user */
+		jsobj = add_property(&u->properties, "jsobj", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
+		
+		/* TODO => deluser => RemoveRoot */
+		JS_AddRoot(gcx, &jsobj->val);
+	
+		JS_EndRequest(gcx);
+		JS_ClearContextThread(gcx);
+		
+		params[0] = OBJECT_TO_JSVAL(user);
+		APE_JS_EVENT("adduser", 1, params);
 	}
 
-	return n;	
+	return u;	
 }
 
 static ace_callbacks callbacks = {

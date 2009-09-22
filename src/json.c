@@ -31,13 +31,11 @@ void set_json(const char *name, const char *value, struct json **jprev)
 {
 	struct json *new_json, *old_json = *jprev;
 	
-	
 	new_json = xmalloc(sizeof(struct json));
 	
 	new_json->name.len = strlen(name);
 	new_json->name.buf = xmalloc(sizeof(char) * (new_json->name.len + 1));
 	memcpy(new_json->name.buf, name, new_json->name.len + 1);
-	
 	
 	new_json->value.len = (value != NULL ? strlen(value) : 0);
 	
@@ -112,7 +110,6 @@ struct json *json_copy(struct json *jbase)
 
 void json_free(struct json *jbase)
 {
-
 	struct json_childs *jchilds = jbase->jchilds;
 	
 	free(jbase->name.buf);
@@ -121,21 +118,17 @@ void json_free(struct json *jbase)
 		free(jbase->value.buf);
 	}
 
-	
 	if (jbase->next != NULL) {
 		json_free(jbase->next);
-
 	}
 		
 	while (jchilds != NULL) {
-
 		json_free(jchilds->child);
 		
 		jchilds = jchilds->next;
 	}
 	
 	free(jbase);
-
 }
 
 void json_attach(struct json *json_father, struct json *json_child, unsigned int type)
@@ -183,7 +176,6 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 	struct json_childs *pchild;
 	struct json *pjson;
 	size_t string_osize = 0;
-
 	
 	if (string == NULL) { // initial size
 		string = xmalloc(sizeof(struct jsontring));
@@ -272,6 +264,120 @@ struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
 	return string;
 }
 
+/* Determinate an heuristic final string size */
+/* TODO : Try to replace this by realloc in json_to_string and make some bench */
+static int json_evaluate_string_size(json_item *head)
+{
+	int evalsize = 2;
+	
+	while (head != NULL) {
+		if (head->key.val != NULL) {
+			evalsize += head->key.len + 3;
+		}
+		
+		if (head->jval.vu.str.value != NULL) {
+			evalsize += head->jval.vu.str.length + 3;
+		} else if (head->jval.vu.integer_value || head->jval.vu.float_value) {
+			evalsize += 16;
+		}
+		
+		if (head->jchild.child != NULL) {
+			evalsize += json_evaluate_string_size(head->jchild.child);
+		}
+		head = head->next;
+	}	
+	
+	return evalsize;
+}
+
+struct jsontring *json_to_string(json_item *head, struct jsontring *string, int free_tree)
+{
+	if (string == NULL) {
+		string = xmalloc(sizeof(struct jsontring));
+		
+		/* Ok, this can cost a lot (traversing the tree), but avoid realloc at each iteration */
+		string->jsize = json_evaluate_string_size(head);
+		
+		string->jstring = xmalloc(sizeof(char) * (string->jsize + 1));
+		string->len = 0;
+	}
+	 
+	while (head != NULL) {
+		
+		if (head->key.val != NULL) {			
+			string->jstring[string->len++] = '"';
+			memcpy(string->jstring + string->len, head->key.val, head->key.len);
+			string->len += head->key.len;
+			string->jstring[string->len++] = '"';
+			string->jstring[string->len++] = ':';
+			
+			if (free_tree) {
+				free(head->key.val);
+			}
+		}
+		
+		if (head->jval.vu.str.value != NULL) {
+
+			string->jstring[string->len++] = '"';
+			memcpy(string->jstring + string->len, head->jval.vu.str.value, head->jval.vu.str.length);
+			string->len += head->jval.vu.str.length;	
+			string->jstring[string->len++] = '"';
+			
+			if (free_tree) {
+				free(head->jval.vu.str.value);
+			}
+		} else if (head->jval.vu.integer_value) {
+			int l = LENGTH_N(head->jval.vu.integer_value);
+			char integer_str[l+1];
+			memcpy(string->jstring + string->len, itos(head->jval.vu.integer_value, integer_str), l);
+			
+			string->len += l;
+		}
+		
+		if (head->jchild.child != NULL) {
+			switch(head->jchild.type) {
+				case JSON_C_T_OBJ:
+					string->jstring[string->len++] = '{';
+					break;
+				case JSON_C_T_ARR:
+					string->jstring[string->len++] = '[';
+					break;
+				default:
+					break;
+			}
+			json_to_string(head->jchild.child, string, free_tree);
+
+		}
+		
+		if (head->father != NULL) {
+			if (head->next != NULL) {
+				string->jstring[string->len++] = ',';
+			} else {
+				switch(head->father->jchild.type) {
+					case JSON_C_T_OBJ:
+						string->jstring[string->len++] = '}';
+						break;
+					case JSON_C_T_ARR:
+						string->jstring[string->len++] = ']';
+						break;
+					default:
+						break;
+				}
+			}
+		}
+		if (free_tree) {
+			json_item *jtmp = head->next;
+			free(head);
+			head = jtmp;
+		} else {
+			head = head->next;
+		}
+	}
+	string->jstring[string->len] = '\0';
+	
+	return string;
+}
+
 static json_item *init_json_item()
 {
 	
@@ -279,6 +385,7 @@ static json_item *init_json_item()
 
 	jval->father = NULL;
 	jval->jchild.child = NULL;
+	jval->jchild.head = NULL;
 	jval->jchild.type = JSON_C_T_NULL;
 	jval->next = NULL;
 	
@@ -314,6 +421,181 @@ void free_json_item(json_item *cx)
 	}
 }
 
+json_item *json_item_copy(json_item *cx)
+{
+	json_item *new_item = NULL;
+	json_item *temp_item = NULL;
+	
+	while (cx != NULL) {	
+		new_item = init_json_item();
+		new_item->jchild.type = cx->jchild.type;
+		
+		if (temp_item != NULL) {
+			temp_item->next = new_item;
+		}
+		
+		if (cx->key.val != NULL) {
+			new_item->key.len = cx->key.len;
+			new_item->key.val = xmalloc(sizeof(char) * (cx->key.len + 1));
+			memcpy(new_item->key.val, cx->key.val, cx->key.len + 1);
+		}
+		
+		if (cx->jval.vu.str.value != NULL) {
+			new_item->jval.vu.str.length = cx->jval.vu.str.length;
+			new_item->jval.vu.str.value = xmalloc(sizeof(char) * (cx->jval.vu.str.length + 1));
+			memcpy(new_item->jval.vu.str.value, cx->jval.vu.str.value, cx->jval.vu.str.length + 1);
+		} else if (cx->jval.vu.integer_value) {
+			new_item->jval.vu.integer_value = cx->jval.vu.integer_value;
+		} else if (cx->jval.vu.float_value) {
+			new_item->jval.vu.float_value = cx->jval.vu.float_value;
+		}
+		
+		if (cx->jchild.child != NULL) {
+			new_item->jchild.child = json_item_copy(cx->jchild.child);
+			new_item->jchild.child->father = new_item;
+			new_item->jchild.head = new_item->jchild.child;
+		}
+		
+		temp_item = new_item;
+		
+		cx = cx->next;
+	}
+	
+	return new_item;
+}
+
+json_item *json_new_object()
+{
+	json_item *obj = init_json_item();
+	obj->jchild.type = JSON_C_T_OBJ;
+	
+	return obj;
+}
+
+json_item *json_new_array()
+{
+	json_item *obj = init_json_item();
+	obj->jchild.type = JSON_C_T_ARR;
+	
+	return obj;
+}
+
+void json_set_property_objN(json_item *obj, const char *key, int keylen, json_item *value)
+{
+	json_item *new_item = init_json_item();
+	
+	if (key != NULL) {
+		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
+		memcpy(new_item->key.val, key, keylen + 1);
+		new_item->key.len = keylen;
+	}
+	
+	new_item->father = obj;
+	new_item->jchild.child = value;
+	
+	value->father = new_item;
+	
+	if (obj->jchild.child == NULL) {
+		obj->jchild.child = new_item;
+	} else {
+		obj->jchild.head->next = new_item;
+	}
+	
+	obj->jchild.head = new_item;
+}
+
+void json_set_property_objZ(json_item *obj, const char *key, json_item *value)
+{
+	json_set_property_objN(obj, key, strlen(key), value);
+}
+
+void json_set_property_intN(json_item *obj, const char *key, int keylen, int value)
+{
+	json_item *new_item = init_json_item();
+	
+	if (key != NULL) {
+		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
+		memcpy(new_item->key.val, key, keylen + 1);
+		new_item->key.len = keylen;
+	}
+	new_item->father = obj;
+	new_item->jval.vu.integer_value = value;
+	
+	if (obj->jchild.child == NULL) {
+		obj->jchild.child = new_item;
+	} else {
+		obj->jchild.head->next = new_item;
+	}
+	
+	obj->jchild.head = new_item;	
+}
+
+void json_set_property_intZ(json_item *obj, const char *key, int value)
+{
+	int len = (key != NULL ? strlen(key) : 0);
+	
+	json_set_property_intN(obj, key, len, value);
+}
+
+
+void json_set_property_strN(json_item *obj, const char *key, int keylen, const char *value, int valuelen)
+{
+	
+	json_item *new_item = init_json_item();
+	
+	if (key != NULL) {
+		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
+		memcpy(new_item->key.val, key, keylen + 1);
+		new_item->key.len = keylen;
+	}
+	new_item->jval.vu.str.value = xmalloc(sizeof(char) * (valuelen + 1));
+	memcpy(new_item->jval.vu.str.value, value, valuelen + 1);
+	new_item->jval.vu.str.length = valuelen;
+	
+	new_item->father = obj;
+	
+	if (obj->jchild.child == NULL) {
+		obj->jchild.child = new_item;
+	} else {
+		obj->jchild.head->next = new_item;
+	}
+	
+	obj->jchild.head = new_item;
+}
+
+void json_set_property_strZ(json_item *obj, const char *key, const char *value)
+{
+	int len = (key != NULL ? strlen(key) : 0);
+	
+	json_set_property_strN(obj, key, len, value, strlen(value));
+}
+
+void json_set_element_strN(json_item *obj, const char *value, int valuelen)
+{
+	json_set_property_strN(obj, NULL, 0, value, valuelen);
+}
+
+void json_set_element_strZ(json_item *obj, const char *value)
+{
+	json_set_property_strZ(obj, NULL, value);
+}
+
+void json_set_element_obj(json_item *obj, json_item *value)
+{
+	json_set_property_objN(obj, NULL, 0, value);
+}
+
+void json_set_element_int(json_item *obj, int value)
+{
+	json_set_property_intN(obj, NULL, 0, value);
+}
+
+void json_merge(json_item *obj_out, json_item *obj_in)
+{
+	
+}
+
+
 static int json_callback(void *ctx, int type, const JSON_value* value)
 {
 	json_context *cx = (json_context *)ctx;
@@ -327,11 +609,10 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 				jval = init_json_item();
 				
 				if (cx->current_cx != NULL) {
-					if (cx->start_depth) {						
+					if (cx->start_depth) {					
 						cx->current_cx->jchild.child = jval;
 						jval->father = cx->current_cx;
 					} else {
-						
 						jval->father = cx->current_cx->father;
 						cx->current_cx->next = jval;
 					}
@@ -473,7 +754,7 @@ json_item *init_json_parser(const char *json_string)
 	return jcx.head;	
 }
 
-static void aff(json_item *cx, int depth)
+void json_aff(json_item *cx, int depth)
 {
 
 	while (cx != NULL) {
@@ -484,7 +765,7 @@ static void aff(json_item *cx, int depth)
 			printf("Value : %s\n", cx->jval.vu.str.value);
 		}
 		if (depth && cx->jchild.child != NULL) {
-			aff(cx->jchild.child, depth - 1);
+			json_aff(cx->jchild.child, depth - 1);
 		}
 		cx = cx->next;
 	}

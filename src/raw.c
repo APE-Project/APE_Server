@@ -28,33 +28,34 @@
 #include "pipe.h"
 #include "transports.h"
 
-RAW *forge_raw(const char *raw, struct json *jlist)
+RAW *forge_raw(const char *raw, json_item *jlist)
 {
 	RAW *new_raw;
 	char unixtime[16];
 	struct jsontring *string;
-	struct json *jstruct = NULL;
+	
+	json_item *jstruct = NULL;
 		
 	sprintf(unixtime, "%li", time(NULL));
-
-	set_json("data", NULL, &jstruct);
 	
-	json_attach(jstruct, jlist, JSON_OBJECT);
+	jstruct = json_new_object();
 	
-	set_json("time", unixtime, &jstruct);
-	set_json("raw", raw, &jstruct);
+	json_set_property_strN(jstruct, "time", 4, unixtime, strlen(unixtime));
+	json_set_property_strN(jstruct, "raw", 3, raw, strlen(raw));
+	json_set_property_objN(jstruct, "data", 4, jlist);
 
-	string = jsontr(jstruct, NULL);
+	string = json_to_string(jstruct, NULL, 1);
 
 	new_raw = xmalloc(sizeof(*new_raw));
     new_raw->len = string->len;
 	new_raw->next = NULL;
 	new_raw->priority = RAW_PRI_LO;
 	new_raw->refcount = 0;
-    new_raw->data = xmalloc(sizeof(char) * (new_raw->len + 1));
+    /*new_raw->data = xmalloc(sizeof(char) * (new_raw->len + 1));
     memcpy(new_raw->data, string->jstring, new_raw->len + 1);	
-	
-	free(string->jstring);
+	*/
+	new_raw->data = string->jstring;
+
 	free(string);
 	
 	return new_raw;
@@ -218,32 +219,26 @@ int post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape)
 	return 0;
 }
 
-int post_to_pipe(json *jlist, const char *rawname, const char *pipe, subuser *from, acetables *g_ape)
+int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuser *from, acetables *g_ape)
 {
 	USERS *sender = from->user;
 	transpipe *recver = get_pipe_strict(pipe, sender, g_ape);
-	json *jlist_copy = NULL;
+	json_item *jlist_copy = NULL;
 	RAW *newraw;
-	
 	
 	if (sender != NULL) {
 		if (recver == NULL) {
 			send_error(sender, "UNKNOWN_PIPE", "109", g_ape);
 			return 0;
 		}
-	
-		set_json("sender", NULL, &jlist);
-		json_attach(jlist, get_json_object_user(sender), JSON_OBJECT);
+		json_set_property_objN(jlist, "sender", 6, get_json_object_user(sender));
+
 	}
 
-	set_json("pipe", NULL, &jlist);
-
+	jlist_copy = json_item_copy(jlist);
 	
-	jlist_copy = json_copy(jlist);
-
-	
-	json_attach(jlist, (recver->type == USER_PIPE ? get_json_object_user(sender) : get_json_object_channel(recver->pipe)), JSON_OBJECT);
-	json_attach(jlist_copy, (recver->type == USER_PIPE ? get_json_object_user(recver->pipe) : get_json_object_channel(recver->pipe)), JSON_OBJECT);
+	json_set_property_objN(jlist, "pipe", 4, (recver->type == USER_PIPE ? get_json_object_user(sender) : get_json_object_channel(recver->pipe)));
+	json_set_property_objN(jlist_copy, "pipe", 4, (recver->type == USER_PIPE ? get_json_object_user(recver->pipe) : get_json_object_channel(recver->pipe)));
 	
 	newraw = forge_raw(rawname, jlist);
 	

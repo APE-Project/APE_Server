@@ -184,7 +184,7 @@ void ape_gethostbyname(char *name, void (*callback)(char *, void *, acetables *)
 	dns_timeouts(NULL, -1, 0);
 }
 
-static void ape_dns_timeout(void *params)
+static void ape_dns_timeout(void *params, int last)
 {
 	dns_timeouts(NULL, -1, 0);
 }
@@ -220,6 +220,6 @@ void ape_dns_init(acetables *g_ape)
 	
 	events_add(g_ape->events, dns_fd, EVENT_READ|EVENT_WRITE);
 
-	add_periodical(1, 0, ape_dns_timeout, NULL, g_ape);
+	add_periodical(50, 0, ape_dns_timeout, NULL, g_ape);
 
 }

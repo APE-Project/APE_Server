@@ -46,7 +46,7 @@
 
 #include <errno.h>
 
-#define _VERSION "1.0-PRE2"
+#define _VERSION "1.0-PRE3"
 
 static void signal_handler(int sign)
 {
@@ -233,10 +233,10 @@ int main(int argc, char **argv)
 	
 	g_ape->properties = NULL;
 	
-	g_ape->timers = NULL;
+	g_ape->timers.timers = NULL;
+	g_ape->timers.ntimers = 0;
 	
 	add_ticked(check_timeout, g_ape);
-	
 	
 	do_register(g_ape);
 	

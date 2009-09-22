@@ -115,33 +115,42 @@ void findandloadplugin(acetables *g_ape)
 
 }
 
+plug_config *plugin_parse_conf(const char *file)
+{
+	char lines[2048], *tkn[2];
+	FILE *fp = fopen(file, "r");
+	if (fp == NULL) {
+		return NULL;
+	}
+	plug_config *tmpconf = NULL, *new_conf;
+	
+	while(fgets(lines, 2048, fp)) {
+		int nTok = 0;
+	
+		if (*lines == '#' || *lines == '\r' || *lines == '\n' || *lines == '\0') {
+			continue;
+		}
+		
+		nTok = explode('=', lines, tkn, 2);
+		
+		if (nTok == 1) {
+			new_conf = xmalloc(sizeof(struct _plug_config));
+			new_conf->key = xstrdup(trim(tkn[0]));
+			new_conf->value = xstrdup(trim(tkn[1]));
+			new_conf->next = tmpconf;
+			tmpconf = new_conf;
+		}
+	}
+	
+	return new_conf;
+}
+
 void plugin_read_config(ace_plugins *plug)
 {
 	if (plug->infos->conf_file != NULL) {
-		char lines[2048], *tkn[2];
-		FILE *fp = fopen(plug->infos->conf_file, "r");
-		if (fp == NULL) {
+		if ((plug->infos->conf = plugin_parse_conf(plug->infos->conf_file)) == NULL) {
 			printf("[Module] [%s] [WARN] Cannot open configuration (%s)\n", plug->modulename, plug->infos->conf_file);
-			return;
-		}
-		plug->infos->conf = NULL;
-		
-		while(fgets(lines, 2048, fp)) {
-			int nTok = 0;
-		
-			if (*lines == '#' || *lines == '\r' || *lines == '\n' || *lines == '\0') {
-				continue;
-			}
-			
-			nTok = explode('=', lines, tkn, 2);
-			
-			if (nTok == 1) {
-				plug_config *new_conf = xmalloc(sizeof(struct _plug_config));
-				new_conf->key = xstrdup(trim(tkn[0]));
-				new_conf->value = xstrdup(trim(tkn[1]));
-				new_conf->next = plug->infos->conf;
-				plug->infos->conf = new_conf;
-			}
+			return;			
 		}
 	}
 }

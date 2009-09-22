@@ -120,7 +120,10 @@ typedef struct _acetables
 	
 	struct USERS *uHead;
 	
-	struct _ticks_callback *timers;
+	struct {
+		struct _ticks_callback *timers;
+		unsigned int ntimers;
+	} timers;
 	
 	struct _socks_bufout *bufout;
 

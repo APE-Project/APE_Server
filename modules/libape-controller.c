@@ -22,7 +22,7 @@ static unsigned int cmd_control(callbackp *callbacki)
 	
 	APE_PARAMS_INIT();
 	
-	if ((password = JSTR(password)) != NULL && (channel = JSTR(channel)) != NULL && (value = JSTR(value)) != NULL) {
+	if ((password = JSTR(password)) != NULL && (channel = JSTR(channel)) != NULL && (value = JSTR(value)) != NULL && (raw = JSTR(raw)) != NULL) {
 	
 		if (strcmp(password, READ_CONF("password")) != 0) {
 			SENDH(callbacki->fdclient, "ERR BAD_PASSWORD", callbacki->g_ape);
@@ -31,10 +31,8 @@ static unsigned int cmd_control(callbackp *callbacki)
 			SENDH(callbacki->fdclient, "ERR NOT_A_CHANNEL", callbacki->g_ape);
 		
 		} else {
-			
 			send_msg_channel(jchan, value, raw, callbacki->g_ape);
 			SENDH(callbacki->fdclient, "OK POSTED", callbacki->g_ape);
-			
 		}
 		
 		return (RETURN_NOTHING);
