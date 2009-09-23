@@ -1036,6 +1036,11 @@ Ape.addEvent("init", function() {
 	});
 	*/
 	
+	Ape.registerCmd("webhook", false, function(params, infos){
+		var data = {params:params, infos:infos};
+		Ape.HTTPRequest('http://www.rabol.fr/bordel/post.php', data);
+	});
+	
 	Ape.registerCmd("jstest", false, function(params, infos) {
 			var user = infos.user;
 			
@@ -1049,7 +1054,7 @@ Ape.addEvent("init", function() {
 
 			/*var pipe = Ape.getPipe(user.getProperty('pubid'));
 			if ($chk(pipe)) {
-				pipe.sendRaw("Kikoo", {"foo":"bar",child:{"a":"b"},test:["sex","bite",{"caca":"prout"}]}, true);
+				pipe.sendRaw("Kikoo", {"foo":"bar"}, true);
 				Ape.log("Send raw JS");
 			} else {
 				Ape.log("Not found " + pipe);

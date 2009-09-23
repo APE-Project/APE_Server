@@ -26,6 +26,22 @@
 
 #define MAX_CONTENT_LENGTH 51200 // 50kb
 
+struct _http_headers_fields
+{
+	char key[32];
+	char *val;
+	
+	struct _http_headers_fields *next;
+};
+
+typedef struct _http_headers_response http_headers_response;
+struct _http_headers_response
+{
+	char code[16];
+	int length;
+	
+	struct _http_headers_fields *fields;
+};
 
 typedef enum {
 	HTTP_NULL = 0,

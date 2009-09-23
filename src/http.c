@@ -200,7 +200,6 @@ static void ape_http_connect(ape_socket *client, acetables *g_ape)
 		sendf(client->fd, g_ape, "Content-Type: application/x-www-form-urlencoded\r\n");
 		sendf(client->fd, g_ape, "Content-Length: %i\r\n\r\n", plen);
 		sendbin(client->fd, (char *)ha->post, plen, g_ape);
-		printf("Send Post\r\n");
 	} else {
 		sendbin(client->fd, "\r\n", 2, g_ape);
 	}
