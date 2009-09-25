@@ -187,6 +187,119 @@ int parse_uri(char *url, char *host, u_short *port, char *file)
 	return 0;
 }
 
+http_headers_response *http_headers_init(int code, char *detail, int detail_len)
+{
+	http_headers_response *headers;
+	
+	if (detail_len > 63 || (code < 100 && code >= 600)) {
+		return NULL;
+	}
+	
+	headers = xmalloc(sizeof(*headers));
+	
+	headers->length = 2; /* \r\n */ 
+	headers->code = code;
+	headers->detail.len = detail_len;
+	memcpy(headers->detail.val, detail, detail_len + 1);
+	
+	headers->fields = NULL;
+	headers->last = NULL;
+	
+	return headers;
+}
+
+void http_headers_set_field(http_headers_response *headers, const char *key, int keylen, const char *value, int valuelen)
+{
+	struct _http_headers_fields *field;
+	int value_l, key_l;
+
+	value_l = (valuelen ? valuelen : strlen(value));
+	key_l = (keylen ? keylen : strlen(key));
+	
+	if (key_l >= 32) {
+		return;
+	}
+	
+	headers->length += keylen + 2 + value_l + 2; /* key: value\r\n */
+	
+	field = xmalloc(sizeof(*field));
+	field->next = NULL;
+	field->value.val = xmalloc(sizeof(char) * (value_l + 1));
+	
+	memcpy(field->key.val, key, key_l + 1);
+	memcpy(field->value.val, value, value_l + 1);
+	
+	field->value.len = value_l;
+	field->key.len = key_l;
+	
+	if (headers->fields == NULL) {
+		headers->fields = field;
+	} else {
+		headers->last->next = field;
+	}
+	headers->last = field;
+	
+}
+
+/*
+http_headers_response *headers = http_headers_init(200, "OK", 2);
+http_headers_set_field(headers, "Content-Length", 0, "100", 0);
+http_send_headers(headers, cget->client, g_ape);
+*/
+
+int http_send_headers(http_headers_response *headers, ape_socket *client, acetables *g_ape)
+{
+	char code[4];
+	int finish = 1;
+	struct _http_headers_fields *fields;
+	//HTTP/1.1 200 OK\r\n
+	
+	if (headers == NULL) {
+		finish &= sendbin(client->fd, HEADER, HEADER_LEN, g_ape);
+	}
+
+	/* We have a lot of write syscall here. TODO : use of writev */
+	
+	finish &= sendbin(client->fd, "HTTP/1.1 ", 9, g_ape);
+	finish &= sendbin(client->fd, itos(headers->code, code), 3, g_ape);
+	finish &= sendbin(client->fd, " ", 1, g_ape);
+	finish &= sendbin(client->fd, headers->detail.val, headers->detail.len, g_ape);
+	finish &= sendbin(client->fd, "\r\n", 2, g_ape);
+	
+	for(fields = headers->fields; fields != NULL; fields = fields->next) {
+		finish &= sendbin(client->fd, fields->key.val, fields->key.len, g_ape);
+		finish &= sendbin(client->fd, ": ", 2, g_ape);
+		finish &= sendbin(client->fd, fields->value.val, fields->value.len, g_ape);
+		finish &= sendbin(client->fd, "\r\n", 2, g_ape);
+		
+		fields = fields->next;
+	}
+	
+	finish &= sendbin(client->fd, "\r\n", 2, g_ape);
+	
+	return finish;
+}
+
+void http_headers_free(http_headers_response *headers)
+{
+	struct _http_headers_fields *fields;
+	
+	if (headers == NULL) {
+		return;
+	}
+	
+	fields = headers->fields;
+	
+	while(fields != NULL) {
+		struct _http_headers_fields *tmpfields = fields->next;
+		
+		free(fields->value.val);
+		
+		free(fields);
+		fields = tmpfields;
+	}
+	free(headers);
+}
 
 static void ape_http_connect(ape_socket *client, acetables *g_ape)
 {

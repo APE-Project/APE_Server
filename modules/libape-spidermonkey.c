@@ -1176,7 +1176,7 @@ static USERS *ape_cb_add_user(unsigned int fdclient, char *host, acetables *g_ap
 }
 
 static ace_callbacks callbacks = {
-	ape_cb_add_user,				/* Called when new user is added */
+	ape_cb_add_user,	/* Called when new user is added */
 	NULL,				/* Called when a user is disconnected */
 	NULL,				/* Called when new chan is created */
 	NULL,				/* Called when a user join a channel */

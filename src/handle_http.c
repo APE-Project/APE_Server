@@ -130,10 +130,12 @@ static char *getfirstparam(char *input, char sep)
 	}	
 }
 
-subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
+subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_client)
 {
 
 	unsigned int op;
+	unsigned int isget = 0;
+	
 	subuser *user = NULL;
 	int local = (strcmp(ip_client, CONFIG_VAL(Server, ip_local, g_ape->srv)) == 0);
 	
@@ -141,14 +143,14 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 
 	if (strlen(pSock) < 3 || (local && getqueryip(pSock, cget->ip_get) == 0)) {  // get query IP (from htaccess)
 		free(cget);
-		shutdown(fdclient, 2);
+		shutdown(client->fd, 2);
 		return NULL;		
 	}
 	if (!local) {
 		strncpy(cget->ip_get, ip_client, 16); // get real IP (from socket)
 	}
 	
-	cget->fdclient = fdclient;
+	cget->client = client;
 	
 	gethost(pSock, cget->host);
 	
@@ -156,31 +158,35 @@ subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client)
 		if (!fixpacket(pSock, 0) || (cget->get = getfirstparam(pSock, (local ? '&' : '?'))) == NULL) {
 			free(cget);
 			
-			shutdown(fdclient, 2);
+			shutdown(client->fd, 2);
 			return NULL;			
 		} else {
-			urldecode(cget->get);
+			isget = 1;
 		}
 	} else if (strncasecmp(pSock, "POST", 4) == 0) {
 		if ((cget->get = getpost(pSock)) == NULL) {
 			free(cget);
 			
-			shutdown(fdclient, 2);
+			shutdown(client->fd, 2);
 			return NULL;			
 		}
 	} else {
 		free(cget);
 
-		shutdown(fdclient, 2);
+		shutdown(client->fd, 2);
 		return NULL;		
 	}
 	fixpacket(cget->get, 1);
-
+	
+	if (isget) {
+		urldecode(cget->get);
+	}
+	
 	op = checkcmd(cget, &user, g_ape);
 
 	switch (op) {
 		case CONNECT_SHUTDOWN:
-			shutdown(fdclient, 2);			
+			shutdown(client->fd, 2);			
 			break;
 		case CONNECT_KEEPALIVE:
 			break;

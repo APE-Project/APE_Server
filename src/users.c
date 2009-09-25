@@ -147,16 +147,16 @@ USERS *init_user(acetables *g_ape)
 	return nuser;
 }
 
-USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
+USERS *adduser(ape_socket *client, char *host, acetables *g_ape)
 {
 	USERS *nuser = NULL;
 
 	/* Calling module */
-	FIRE_EVENT(adduser, nuser, fdclient, host, g_ape);
+	FIRE_EVENT(adduser, nuser, client, host, g_ape);
 
 	nuser = init_user(g_ape);
 	
-	nuser->type = (fdclient ? HUMAN : BOT);
+	nuser->type = (client != NULL ? HUMAN : BOT);
 		
 	g_ape->uHead = nuser;
 	
@@ -166,7 +166,7 @@ USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape)
 	
 	g_ape->nConnected++;
 	
-	addsubuser(fdclient, host, nuser, g_ape);
+	addsubuser(client, host, nuser, g_ape);
 
 	return nuser;
 	
@@ -216,9 +216,11 @@ void do_died(subuser *sub)
 {
 	if (sub->state == ALIVE) {
 		sub->state = ADIED;
-		sub->headers_sent = 0;
+		sub->headers.sent = 0;
+		http_headers_free(sub->headers.content);
+		sub->headers.content = NULL;
 		
-		shutdown(sub->fd, 2);
+		shutdown(sub->client->fd, 2);
 	}
 }
 
@@ -413,7 +415,7 @@ void sendback_session(USERS *user, session *sess, acetables *g_ape)
 	
 }
 
-subuser *addsubuser(int fd, const char *channel, USERS *user, acetables *g_ape)
+subuser *addsubuser(ape_socket *client, const char *channel, USERS *user, acetables *g_ape)
 {
 	subuser *sub;
 		
@@ -422,7 +424,7 @@ subuser *addsubuser(int fd, const char *channel, USERS *user, acetables *g_ape)
 	}
 
 	sub = xmalloc(sizeof(*sub));
-	sub->fd = fd;
+	sub->client = client;
 	sub->state = ADIED;
 	sub->user = user;
 	
@@ -431,7 +433,9 @@ subuser *addsubuser(int fd, const char *channel, USERS *user, acetables *g_ape)
 	
 	sub->nraw = 0;
 	sub->wait_for_free = 0;
-	sub->headers_sent = 0;
+	
+	sub->headers.sent = 0;
+	sub->headers.content = NULL;
 	
 	sub->burn_after_writing = 0;
 	

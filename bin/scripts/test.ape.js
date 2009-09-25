@@ -1028,45 +1028,112 @@ Ape.HTTPRequest = function(url, data) {
 	ape_http_request(url, data);
 };
 
+
+var clients = new Hash();
+var totalc = 0;
+
+function create_js_server(port)
+{
+	var socket = new Ape.sockServer(port, "127.0.0.1", {
+		flushlf: true /* onRead event is fired only when a \n is received (and splitted around it) e.g. foo\nbar\n  will call onRead two times with "foo" and "bar" */
+	});
+	
+	/* fired when a client is connecting */
+	socket.onAccept = function(client) {
+		client.number = ++totalc;
+		clients.set(client.number, client);
+		client.write("You are connected as number "+client.number+"\n");
+		Ape.log("New client !");
+	};
+	
+	/* fired when a client send data */
+	socket.onRead = function(client, data) {
+		Ape.log("Data from client "+client.number+" : " + data);
+		
+		/* You can imagine to push data to an APE channel */
+		/* Ape.getPipe('pubid').sendRaw("dataFromClient", {data:base64encode(data)}) */
+	};
+	
+	/* fired when a client has disconnected */
+	socket.onDisconnect = function(client) {
+		Ape.log("A client has disconnected");
+		clients.erase(client.number);
+	};
+	
+	Ape.log("Listen on port " + port + '...');
+	
+	return socket;
+}
+
 Ape.addEvent("init", function() {
 	
-	/*Ape.addEvent("adduser", function(user) {
+	Ape.addEvent("adduser", function(user) {
 		user.setProperty("nickname", "paraboul");
-		user.xxx = "kikoo";
+		user.foo = "bar";
 	});
-	*/
 	
+	/* Create a non-blocking socket that listen on port 7779 */
+	var sockets = create_js_server(7779);
+	
+	/* Register a CMD that not require user to be loged */
 	Ape.registerCmd("webhook", false, function(params, infos){
 		var data = {params:params, infos:infos};
+		
+		/* make a post request */
 		Ape.HTTPRequest('http://www.rabol.fr/bordel/post.php', data);
+		
+		/* Broadcast params to clients connected to the js server */
+		clients.each(function(client) {
+			Ape.log("Sending to client...");
+			client.write(Hash.toQueryString(params));
+		});
 	});
 	
-	Ape.registerCmd("jstest", false, function(params, infos) {
+	/* Register a CMD that require user to be loged */
+	Ape.registerCmd("foocmd", true, function(params, infos) {
 			var user = infos.user;
 			
-		/*	Ape.log("Challenge : " + infos.chl);
-			Ape.log("Host : " + infos.host);
+			Ape.log("foo property : " + user.foo);
 			
-			Ape.log("User sessid : " + user.getProperty('sessid'));
-			Ape.log("User pubid : " + user.getProperty('pubid'));
-			Ape.log("User nickname : " + user.getProperty('nickname'));
-			Ape.log("User xxx : " + user.xxx);*/
-
-			/*var pipe = Ape.getPipe(user.getProperty('pubid'));
-			if ($chk(pipe)) {
-				pipe.sendRaw("Kikoo", {"foo":"bar"}, true);
-				Ape.log("Send raw JS");
-			} else {
-				Ape.log("Not found " + pipe);
-			}*/
-			//var pipe = Ape.getPipe(user.getProperty('pubid'));
-			
-			user.pipe.sendRaw("Kikoo", {"foo":"bar",child:{"a":"b"},test:["el1","el2",{"key":"val"}]}, true);
+			/* push that raw to the loged user */
+			user.pipe.sendRaw("Bar", {"foo":"bar",child:{"a":"b"},test:["el1","el2",{"key":"val"}]}, true);
 			
 	});
+
 });
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			/*	Ape.log("Challenge : " + infos.chl);
+				Ape.log("Host : " + infos.host);
+
+				Ape.log("User sessid : " + user.getProperty('sessid'));
+				Ape.log("User pubid : " + user.getProperty('pubid'));
+				Ape.log("User nickname : " + user.getProperty('nickname'));
+				Ape.log("User xxx : " + user.xxx);*/
+
+				/*var pipe = Ape.getPipe(user.getProperty('pubid'));
+				if ($chk(pipe)) {
+					pipe.sendRaw("Kikoo", {"foo":"bar"}, true);
+					Ape.log("Send raw JS");
+				} else {
+					Ape.log("Not found " + pipe);
+				}*/
+				//var pipe = Ape.getPipe(user.getProperty('pubid'));
 /*
 	cb.callUser
 	cb.callSubUser

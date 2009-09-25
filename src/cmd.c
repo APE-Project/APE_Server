@@ -84,11 +84,11 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 	
 	USERS *guser = NULL;
 	subuser *sub = NULL;
-
+	
 	ijson = ojson = init_json_parser(cget->get);
 
 	if (ijson == NULL || ijson->jchild.child == NULL) {
-		SENDH(cget->fdclient, ERR_BAD_JSON, g_ape);
+		SENDH(cget->client->fd, ERR_BAD_JSON, g_ape);
 	} else {
 		//else if ((rjson = json_lookup(ijson->child, "cmd")) != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
 		for (ijson = ijson->jchild.child; ijson != NULL; ijson = ijson->next) {
@@ -96,7 +96,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 			
 			if (rjson != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
 				callbackp cp;
-				cp.fdclient = 0;
+				cp.client = NULL;
 				cp.cmd = rjson->jval.vu.str.value;
 				switch(cmdback->need) {
 					case NEED_SESSID:
@@ -117,32 +117,32 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 					//json_item *jchl;
 					
 					if (guser == NULL) {
-						SENDH(cget->fdclient, ERR_BAD_SESSID, g_ape);
+						SENDH(cget->client->fd, ERR_BAD_SESSID, g_ape);
 						free_json_item(ojson);
 						
 						return (CONNECT_SHUTDOWN);
 					} else if (sub == NULL) {
 						
 						sub = getsubuser(guser, cget->host);
-						if (sub != NULL && sub->fd != cget->fdclient && sub->state == ALIVE) {
+						if (sub != NULL && sub->client->fd != cget->client->fd && sub->state == ALIVE) {
 							/* The user open a new connection while he already has one openned */
-							struct _transport_open_same_host_p retval = transport_open_same_host(sub, cget->fdclient, guser->transport);				
+							struct _transport_open_same_host_p retval = transport_open_same_host(sub, cget->client, guser->transport);				
 					
-							if (retval.fd_close) {
-								CLOSE(retval.fd_close, g_ape);
-								shutdown(retval.fd_close, 2);
+							if (retval.client_close != NULL) {
+								CLOSE(retval.client_close->fd, g_ape);
+								shutdown(retval.client_close->fd, 2);
 							}
-							sub->fd = cp.fdclient = retval.fd_listener;
+							sub->client = cp.client = retval.client_listener;
 							sub->state = retval.substate;
 							attach = retval.attach;
 					
 						} else if (sub == NULL) {
-							sub = addsubuser(cget->fdclient, cget->host, guser, g_ape);
+							sub = addsubuser(cget->client, cget->host, guser, g_ape);
 							if (sub != NULL) {
 								subuser_restor(sub, g_ape);
 							}
 						} else if (sub != NULL) {
-							sub->fd = cget->fdclient;
+							sub->client = cget->client;
 						}
 						guser->idle = (long int)time(NULL); // update user idle
 
@@ -164,7 +164,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				}
 		
 				cp.param = json_lookup(ijson->jchild.child, "params");
-				cp.fdclient = (cp.fdclient ? cp.fdclient : cget->fdclient);
+				cp.client = (cp.client != NULL ? cp.client : cget->client);
 				cp.call_user = guser;
 				cp.call_subuser = sub;
 				cp.g_ape = g_ape;
@@ -181,7 +181,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 					guser = cp.call_user;
 				} else if (flag & RETURN_BAD_PARAMS) {
 					guser = NULL;
-					SENDH(cget->fdclient, ERR_BAD_PARAM, g_ape);
+					SENDH(cget->client->fd, ERR_BAD_PARAM, g_ape);
 				}
 		
 				if (guser != NULL) {
@@ -206,7 +206,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				}
 			} else {
 				free_json_item(ojson);
-				SENDH(cget->fdclient, ERR_BAD_CMD, g_ape);
+				SENDH(cget->client->fd, ERR_BAD_CMD, g_ape);
 				return (CONNECT_SHUTDOWN);
 			}
 		}
@@ -226,12 +226,12 @@ unsigned int cmd_connect(callbackp *callbacki)
 	
 	APE_PARAMS_INIT();
 	
-	nuser = adduser(callbacki->fdclient, callbacki->host, callbacki->g_ape);
+	nuser = adduser(callbacki->client, callbacki->host, callbacki->g_ape);
 	
 	callbacki->call_user = nuser;
 	
 	if (nuser == NULL) {
-		SENDH(callbacki->fdclient, ERR_CONNECT, callbacki->g_ape);
+		SENDH(callbacki->client->fd, ERR_CONNECT, callbacki->g_ape);
 		
 		return (RETURN_NOTHING);
 	}
@@ -277,12 +277,12 @@ unsigned int cmd_script(callbackp *callbacki)
 	if (domain == NULL) {
 		send_error(callbacki->call_user, "NO_DOMAIN", "201", callbacki->g_ape);
 	} else {
-		sendf(callbacki->fdclient, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, domain);
+		sendf(callbacki->client->fd, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, domain);
 
 		JFOREACH(scripts, script) {
-			sendf(callbacki->fdclient, callbacki->g_ape, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", script);
+			sendf(callbacki->client->fd, callbacki->g_ape, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", script);
 		}
-		sendbin(callbacki->fdclient, "</head>\n<body>\n</body>\n</html>", 30, callbacki->g_ape);
+		sendbin(callbacki->client->fd, "</head>\n<body>\n</body>\n</html>", 30, callbacki->g_ape);
 	}
 	
 	return (RETURN_NOTHING);
@@ -368,7 +368,7 @@ unsigned int cmd_send(callbackp *callbacki)
 }
 unsigned int cmd_quit(callbackp *callbacki)
 {
-	QUIT(callbacki->fdclient, callbacki->g_ape);
+	QUIT(callbacki->client->fd, callbacki->g_ape);
 	deluser(callbacki->call_user, callbacki->g_ape); // After that callbacki->call_user is free'd
 	
 	return (RETURN_NULL);

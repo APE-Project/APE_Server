@@ -28,8 +28,15 @@
 
 struct _http_headers_fields
 {
-	char key[32];
-	char *val;
+	struct {
+		char val[32];
+		int len;
+	} key;
+	
+	struct {
+		char *val;
+		int len;
+	} value;
 	
 	struct _http_headers_fields *next;
 };
@@ -37,10 +44,15 @@ struct _http_headers_fields
 typedef struct _http_headers_response http_headers_response;
 struct _http_headers_response
 {
-	char code[16];
+	int code;
+	struct {
+		char val[64];
+		int len;
+	} detail;
 	int length;
 	
 	struct _http_headers_fields *fields;
+	struct _http_headers_fields *last;
 };
 
 typedef enum {
@@ -53,6 +65,10 @@ typedef enum {
 
 void process_http(struct _ape_buffer *buffer, struct _http_state *http);
 void ape_http_request(char *url, const char *post, acetables *g_ape);
+http_headers_response *http_headers_init(int code, char *detail, int detail_len);
+void http_headers_set_field(http_headers_response *headers, const char *key, int keylen, const char *value, int valuelen);
+int http_send_headers(http_headers_response *headers, ape_socket *client, acetables *g_ape);
+void http_headers_free(http_headers_response *headers);
 
 #endif
 

@@ -271,16 +271,16 @@ int send_raws(subuser *user, acetables *g_ape)
 	
 	properties = transport_get_properties(user->user->transport, g_ape);
 	
-	if (!user->headers_sent) {
-		user->headers_sent = 1;
-		finish &= sendbin(user->fd, HEADER, HEADER_LEN, g_ape);
+	if (!user->headers.sent) {
+		user->headers.sent = 1;
+		finish &= http_send_headers(user->headers.content, user->client, g_ape);
 	}
 	
 	if (properties != NULL && properties->padding.left.val != NULL) {
-		finish &= sendbin(user->fd, properties->padding.left.val, properties->padding.left.len, g_ape);
+		finish &= sendbin(user->client->fd, properties->padding.left.val, properties->padding.left.len, g_ape);
 	}
 	
-	finish &= sendbin(user->fd, "[", 1, g_ape);
+	finish &= sendbin(user->client->fd, "[", 1, g_ape);
 	
 	if (user->raw_pools.high.nraw) {
 		pool = user->raw_pools.high.rawfoot->prev;
@@ -292,15 +292,15 @@ int send_raws(subuser *user, acetables *g_ape)
 	while (pool->raw != NULL) {
 		struct _raw_pool *pool_next = (state ? pool->next : pool->prev);
 		
-		finish &= sendbin(user->fd, pool->raw->data, pool->raw->len, g_ape);
+		finish &= sendbin(user->client->fd, pool->raw->data, pool->raw->len, g_ape);
 		
 		if ((pool_next != NULL && pool_next->raw != NULL) || (!state && user->raw_pools.low.nraw)) {
-			finish &= sendbin(user->fd, ",", 1, g_ape);
+			finish &= sendbin(user->client->fd, ",", 1, g_ape);
 		} else {
-			finish &= sendbin(user->fd, "]", 1, g_ape);
+			finish &= sendbin(user->client->fd, "]", 1, g_ape);
 			
 			if (properties != NULL && properties->padding.right.val != NULL) {
-				finish &= sendbin(user->fd, properties->padding.right.val, properties->padding.right.len, g_ape);
+				finish &= sendbin(user->client->fd, properties->padding.right.val, properties->padding.right.len, g_ape);
 			}
 		}
 		

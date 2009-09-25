@@ -65,10 +65,9 @@ typedef struct _callbackp callbackp;
 
 struct _callbackp
 {
-
+	ape_socket *client;
 	json_item *param;
-	
-	unsigned int fdclient;
+
 	struct USERS *call_user;
 	
 	char *ip;
@@ -86,8 +85,6 @@ typedef struct callback
 	unsigned int need; /* Need SESSID ? */
 	unsigned int (*func)(struct _callbackp *); /* Callback func */
 } callback;
-
-
 
 
 enum {

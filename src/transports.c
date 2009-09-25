@@ -23,7 +23,7 @@
 #include "config.h"
 #include "utils.h"
 
-struct _transport_open_same_host_p transport_open_same_host(subuser *sub, int fdclient, transport_t transport)
+struct _transport_open_same_host_p transport_open_same_host(subuser *sub, ape_socket *client, transport_t transport)
 {
 	struct _transport_open_same_host_p ret;
 	
@@ -31,15 +31,15 @@ struct _transport_open_same_host_p transport_open_same_host(subuser *sub, int fd
 		case TRANSPORT_LONGPOLLING:
 		case TRANSPORT_JSONP:
 		default:
-			ret.fd_close = sub->fd;
-			ret.fd_listener = fdclient;
+			ret.client_close = sub->client;
+			ret.client_listener = client;
 			ret.substate = ADIED;
 			ret.attach = 1;
 			break;
 		case TRANSPORT_PERSISTANT:
 		case TRANSPORT_XHRSTREAMING:
-			ret.fd_close = fdclient;
-			ret.fd_listener = sub->fd;
+			ret.client_close = client;
+			ret.client_listener = sub->client;
 			ret.substate = ALIVE;
 			ret.attach = 0;
 			break;

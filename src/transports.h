@@ -27,8 +27,8 @@
 
 struct _transport_open_same_host_p
 {
-	int fd_close;
-	int fd_listener;
+	ape_socket *client_close;
+	ape_socket *client_listener;
 	int attach;
 	int substate;
 };
@@ -41,7 +41,7 @@ typedef enum {
 } transport_t;
 
 
-struct _transport_open_same_host_p transport_open_same_host(subuser *sub, int fdclient, transport_t transport);
+struct _transport_open_same_host_p transport_open_same_host(subuser *sub, ape_socket *client, transport_t transport);
 void transport_data_completly_sent(subuser *sub, transport_t transport);
 void transport_start(acetables *g_ape);
 struct _transport_properties *transport_get_properties(transport_t transport, acetables *g_ape);

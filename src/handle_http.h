@@ -25,12 +25,12 @@
 #include "main.h"
 #include "users.h"
 
-subuser *checkrecv(char *pSock, int fdclient, acetables *g_ape, char *ip_client);
+subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_client);
 
 
 typedef struct clientget
 {
-	int fdclient;
+	ape_socket *client;
 	char *get;
 	char ip_get[16];
 	char host[MAX_HOST_LENGTH];

@@ -33,7 +33,7 @@ static void ape_read(ape_socket *co, ape_buffer *buffer, size_t offset, acetable
 	process_http(&co->buffer_in, &co->http);
 
 	if (co->http.ready == 1) {
-		co->attach = checkrecv(buffer->data, co->fd, g_ape, co->ip_client);
+		co->attach = checkrecv(buffer->data, co, g_ape, co->ip_client);
 
 		co->buffer_in.length = 0;
 		co->http.ready = -1;
@@ -54,9 +54,12 @@ static void ape_sent(ape_socket *co, acetables *g_ape)
 static void ape_disconnect(ape_socket *co, acetables *g_ape)
 {
 	if (co->attach != NULL) {
-		if (co->fd == ((subuser *)(co->attach))->fd) {
-			((subuser *)(co->attach))->headers_sent = 0;
+		if (co->fd == ((subuser *)(co->attach))->client->fd) {
+			((subuser *)(co->attach))->headers.sent = 0;
 			((subuser *)(co->attach))->state = ADIED;
+			
+			http_headers_free(((subuser *)(co->attach))->headers.content);
+			((subuser *)(co->attach))->headers.content = NULL;			
 		}
 		if (((subuser *)(co->attach))->wait_for_free == 1) {
 			free(co->attach);

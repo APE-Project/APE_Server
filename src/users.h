@@ -102,10 +102,14 @@ struct _raw_pool_user {
 typedef struct _subuser subuser;
 struct _subuser
 {
-	int fd;
+	ape_socket *client;
 	int state;
-	int headers_sent;
 	
+	struct {
+		int sent;
+		struct _http_headers_response *content;
+	} headers;
+		
 	int need_update;
 	
 	/* In case of subuser socket is still marked as ALIVE and timed out */
@@ -216,7 +220,7 @@ enum {
 
 USERS *seek_user(const char *nick, const char *linkid, acetables *g_ape);
 USERS *init_user(acetables *g_ape);
-USERS *adduser(unsigned int fdclient, char *host, acetables *g_ape);
+USERS *adduser(ape_socket *client, char *host, acetables *g_ape);
 USERS *seek_user_id(const char *sessid, acetables *g_ape);
 USERS *seek_user_simple(const char *nick, acetables *g_ape);
 
@@ -243,7 +247,7 @@ session *set_session(USERS *user, const char *key, const char *val, int update, 
 void clear_sessions(USERS *user);
 void sendback_session(USERS *user, session *sess, acetables *g_ape);
 
-subuser *addsubuser(int fd, const char *channel, USERS *user, acetables *g_ape);
+subuser *addsubuser(ape_socket *client, const char *channel, USERS *user, acetables *g_ape);
 subuser *getsubuser(USERS *user, const char *channel);
 void delsubuser(subuser **current);
 void subuser_restor(subuser *sub, acetables *g_ape);
