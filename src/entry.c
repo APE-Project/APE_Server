@@ -212,6 +212,7 @@ int main(int argc, char **argv)
 		ape_daemon();
 	}
 	
+	g_ape->cmd_hook = NULL;
 	
 	g_ape->hLogin = hashtbl_init();
 	g_ape->hSessid = hashtbl_init();

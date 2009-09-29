@@ -75,7 +75,7 @@ struct _callbackp
 	subuser *call_subuser;
 	int chl;
 	char *cmd;
-	
+	void *data;
 	acetables *g_ape;
 };
 
@@ -86,6 +86,13 @@ typedef struct callback
 	unsigned int (*func)(struct _callbackp *); /* Callback func */
 } callback;
 
+typedef struct _callback_hook
+{
+	const char *cmd;
+	void *data;
+	unsigned int (*func)(struct _callbackp *);
+	struct _callback_hook *next;
+} callback_hook;
 
 enum {
 	NEED_NICK = 0,
@@ -114,5 +121,7 @@ unsigned int cmd_proxy_write(struct _callbackp *);
 void register_cmd(const char *cmd, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape);
 void unregister_cmd(const char *cmd, acetables *g_ape);
 
+int register_hook_cmd(const char *cmd, unsigned int (*func)(callbackp *), void *data, acetables *g_ape);
+int call_cmd_hook(const char *cmd, callbackp *cp, acetables *g_ape);
 #endif
 

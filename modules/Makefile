@@ -13,7 +13,7 @@ modules: libape-chat.c libape-mysql.c libape-setcord.c libape-helloworld.c
 	#$(CC) -Wall -bundle -undefined suppress -flat_namespace -o lib/libmod_control.so libape-control.c
 	#$(CC) $(CFLAGS) -Wl,-soname,libmod_chat.so -o lib/libmod_chat.so libape-chat.c
 	#$(CC) $(CFLAGS) -Wl,-soname,libmod_spidermonkey.so -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../../js1.7/js/src/ -I../../js1.7/js//src/Linux_All_DBG.OBJ -L../../js1.7/js/src/Linux_All_DBG.OBJ/ -ljs
-	$(CC) -Wall -bundle -undefined suppress -flat_namespace -o lib/libmod_controller.so libape-controller.c
+	#$(CC) -Wall -bundle -undefined suppress -flat_namespace -o lib/libmod_controller.so libape-controller.c
 	$(CC) -Wall -bundle -undefined suppress -flat_namespace -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../libs/js/src/ -I../libs/js/src/Darwin_DBG.OBJ -L../libs/js/src/Darwin_DBG.OBJ/ -ljs
 	
 	#$(CC) $(CFLAGS) -Wl,-soname,libmod_mysql.so -L/usr/local/mysql/lib -lmysqlclient -lz -o lib/libmod_mysql.so libape-mysql.c

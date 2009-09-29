@@ -246,6 +246,7 @@ static void clear_buffer(ape_socket *co, int *tfd)
 	co->http.ready = 0;
 	co->http.read = 0;
 	co->attach = NULL;
+	co->data = NULL;
 	
 	(*tfd)--;
 }
@@ -335,6 +336,7 @@ unsigned int sockroutine(acetables *g_ape)
 						
 						co[new_fd].http = http;
 						co[new_fd].attach = NULL;
+						co[new_fd].data = NULL;
 						co[new_fd].idle = time(NULL);
 						co[new_fd].fd = new_fd;
 						

@@ -68,6 +68,39 @@ void register_cmd(const char *cmd, unsigned int (*func)(callbackp *), unsigned i
 	
 }
 
+
+int register_hook_cmd(const char *cmd, unsigned int (*func)(callbackp *), void *data, acetables *g_ape)
+{
+	callback_hook *hook;
+	if (hashtbl_seek(g_ape->hCallback, cmd) == NULL) {
+		return 0;
+	}
+	
+	hook = xmalloc(sizeof(*hook));
+	hook->cmd = xstrdup(cmd);
+	hook->next = g_ape->cmd_hook;
+	hook->func = func;
+	hook->data = data;
+	g_ape->cmd_hook = hook;
+	
+	return 1;
+}
+
+int call_cmd_hook(const char *cmd, callbackp *cp, acetables *g_ape)
+{
+	callback_hook *hook;
+	
+	for (hook = g_ape->cmd_hook; hook != NULL; hook = hook->next) {
+		cp->data = hook->data;
+		unsigned int ret;
+		if (strcasecmp(hook->cmd, cmd) == 0 && (ret = hook->func(cp)) != RETURN_NOTHING) {
+			return ret;
+		}
+	}
+	cp->data = NULL;
+	return RETURN_NOTHING;
+}
+
 void unregister_cmd(const char *cmd, acetables *g_ape)
 {
 	hashtbl_erase(g_ape->hCallback, cmd);
@@ -98,6 +131,8 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				callbackp cp;
 				cp.client = NULL;
 				cp.cmd = rjson->jval.vu.str.value;
+				cp.data = NULL;
+
 				switch(cmdback->need) {
 					case NEED_SESSID:
 						{
@@ -173,7 +208,9 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				cp.chl = (sub != NULL ? sub->current_chl : 0);
 				// Ajouter un string de la commande
 				
-				flag = cmdback->func(&cp);
+				if ((flag = call_cmd_hook(cp.cmd, &cp, g_ape)) == RETURN_NOTHING) {
+					flag = cmdback->func(&cp);
+				}
 		
 				if (flag & RETURN_NULL) {
 					guser = NULL;
@@ -200,6 +237,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 					sub->state = ALIVE;
 					
 				} else {
+					/* Doesn't need sessid */
 					free_json_item(ojson);
 					
 					return (CONNECT_SHUTDOWN);

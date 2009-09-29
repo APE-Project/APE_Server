@@ -196,8 +196,7 @@ http_headers_response *http_headers_init(int code, char *detail, int detail_len)
 	}
 	
 	headers = xmalloc(sizeof(*headers));
-	
-	headers->length = 2; /* \r\n */ 
+
 	headers->code = code;
 	headers->detail.len = detail_len;
 	memcpy(headers->detail.val, detail, detail_len + 1);
@@ -210,7 +209,7 @@ http_headers_response *http_headers_init(int code, char *detail, int detail_len)
 
 void http_headers_set_field(http_headers_response *headers, const char *key, int keylen, const char *value, int valuelen)
 {
-	struct _http_headers_fields *field;
+	struct _http_headers_fields *field = NULL, *look_field;
 	int value_l, key_l;
 
 	value_l = (valuelen ? valuelen : strlen(value));
@@ -220,10 +219,27 @@ void http_headers_set_field(http_headers_response *headers, const char *key, int
 		return;
 	}
 	
-	headers->length += keylen + 2 + value_l + 2; /* key: value\r\n */
+	for(look_field = headers->fields; look_field != NULL; look_field = look_field->next) {
+		if (strncasecmp(look_field->key.val, key, key_l) == 0) {
+			field = look_field;
+			break;
+		}
+	}
 	
-	field = xmalloc(sizeof(*field));
-	field->next = NULL;
+	if (field == NULL) {
+		field = xmalloc(sizeof(*field));
+		field->next = NULL;
+	
+		if (headers->fields == NULL) {
+			headers->fields = field;
+		} else {
+			headers->last->next = field;
+		}
+		headers->last = field;
+	} else {
+		free(field->value.val);
+	}
+	
 	field->value.val = xmalloc(sizeof(char) * (value_l + 1));
 	
 	memcpy(field->key.val, key, key_l + 1);
@@ -231,14 +247,7 @@ void http_headers_set_field(http_headers_response *headers, const char *key, int
 	
 	field->value.len = value_l;
 	field->key.len = key_l;
-	
-	if (headers->fields == NULL) {
-		headers->fields = field;
-	} else {
-		headers->last->next = field;
-	}
-	headers->last = field;
-	
+
 }
 
 /*
@@ -256,26 +265,26 @@ int http_send_headers(http_headers_response *headers, ape_socket *client, acetab
 	
 	if (headers == NULL) {
 		finish &= sendbin(client->fd, HEADER, HEADER_LEN, g_ape);
-	}
-
-	/* We have a lot of write syscall here. TODO : use of writev */
+	} else {
+		/* We have a lot of write syscall here. TODO : use of writev */
 	
-	finish &= sendbin(client->fd, "HTTP/1.1 ", 9, g_ape);
-	finish &= sendbin(client->fd, itos(headers->code, code), 3, g_ape);
-	finish &= sendbin(client->fd, " ", 1, g_ape);
-	finish &= sendbin(client->fd, headers->detail.val, headers->detail.len, g_ape);
-	finish &= sendbin(client->fd, "\r\n", 2, g_ape);
-	
-	for(fields = headers->fields; fields != NULL; fields = fields->next) {
-		finish &= sendbin(client->fd, fields->key.val, fields->key.len, g_ape);
-		finish &= sendbin(client->fd, ": ", 2, g_ape);
-		finish &= sendbin(client->fd, fields->value.val, fields->value.len, g_ape);
+		finish &= sendbin(client->fd, "HTTP/1.1 ", 9, g_ape);
+		finish &= sendbin(client->fd, itos(headers->code, code), 3, g_ape);
+		finish &= sendbin(client->fd, " ", 1, g_ape);
+		finish &= sendbin(client->fd, headers->detail.val, headers->detail.len, g_ape);
 		finish &= sendbin(client->fd, "\r\n", 2, g_ape);
-		
-		fields = fields->next;
-	}
 	
-	finish &= sendbin(client->fd, "\r\n", 2, g_ape);
+		for (fields = headers->fields; fields != NULL; fields = fields->next) {
+			finish &= sendbin(client->fd, fields->key.val, fields->key.len, g_ape);
+			finish &= sendbin(client->fd, ": ", 2, g_ape);
+			finish &= sendbin(client->fd, fields->value.val, fields->value.len, g_ape);
+			finish &= sendbin(client->fd, "\r\n", 2, g_ape);
+		
+			fields = fields->next;
+		}
+	
+		finish &= sendbin(client->fd, "\r\n", 2, g_ape);
+	}
 	
 	return finish;
 }
@@ -331,17 +340,17 @@ static void ape_http_disconnect(ape_socket *client, acetables *g_ape)
 
 void ape_http_request(char *url, const char *post, acetables *g_ape)
 {
-	ape_socket *pattern = xmalloc(sizeof(*pattern));
+	ape_socket *pattern;
 	
 	struct _http_attach *ha = xmalloc(sizeof(*ha));
 	
 	if (parse_uri(url, ha->host, &ha->port, ha->file) == -1) {
-		free(pattern);
 		free(ha);
 		return;
 	}
 	ha->post = post;
 	
+	pattern = xmalloc(sizeof(*pattern));
 	pattern->callbacks.on_accept = NULL;
 	pattern->callbacks.on_connect = ape_http_connect;
 	pattern->callbacks.on_disconnect = ape_http_disconnect;

@@ -49,7 +49,6 @@ struct _http_headers_response
 		char val[64];
 		int len;
 	} detail;
-	int length;
 	
 	struct _http_headers_fields *fields;
 	struct _http_headers_fields *last;

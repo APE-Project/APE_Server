@@ -116,6 +116,8 @@ typedef struct _acetables
 
 	struct apeconfig *srv;
 	
+	struct _callback_hook *cmd_hook;
+	
 	struct _ape_transports transports;
 	
 	struct USERS *uHead;
@@ -171,6 +173,8 @@ struct _ape_socket {
 	} callbacks;
 
 	void *attach;
+	
+	void *data;
 };
 
 #define HEADER "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: text/html\r\n\r\n"

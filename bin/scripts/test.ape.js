@@ -1044,7 +1044,7 @@ function create_js_server(port)
 		clients.set(client.number, client);
 		client.write("You are connected as number "+client.number+"\n");
 		Ape.log("New client !");
-	};
+	}
 	
 	/* fired when a client send data */
 	socket.onRead = function(client, data) {
@@ -1052,13 +1052,13 @@ function create_js_server(port)
 		
 		/* You can imagine to push data to an APE channel */
 		/* Ape.getPipe('pubid').sendRaw("dataFromClient", {data:base64encode(data)}) */
-	};
+	}
 	
 	/* fired when a client has disconnected */
 	socket.onDisconnect = function(client) {
 		Ape.log("A client has disconnected");
 		clients.erase(client.number);
-	};
+	}
 	
 	Ape.log("Listen on port " + port + '...');
 	
@@ -1075,6 +1075,25 @@ Ape.addEvent("init", function() {
 	/* Create a non-blocking socket that listen on port 7779 */
 	var sockets = create_js_server(7779);
 	
+	var ca = new Ape.sockClient(6667, "irc.freenode.org", {
+		flushlf: true
+	});
+	ca.onConnect = function() {
+		Ape.log("Socket connected");
+		this.write("USER a a a a\n");
+		this.write("NICK APE_BoT\n");
+		this.write("JOIN #ape-project\n");
+		this.write("PRIVMSG #ape-project :test\n");
+	}
+	
+	ca.onRead = function(data) {
+		Ape.log(data);
+	}
+
+	ca.onDisconnect = function() {
+		Ape.log("Disconnected");
+	}
+	
 	/* Register a CMD that not require user to be loged */
 	Ape.registerCmd("webhook", false, function(params, infos){
 		var data = {params:params, infos:infos};
@@ -1087,34 +1106,35 @@ Ape.addEvent("init", function() {
 			Ape.log("Sending to client...");
 			client.write(Hash.toQueryString(params));
 		});
+		
+		ca.write("PRIVMSG #ape-project :" + Hash.toQueryString(params) + "\n");
 	});
+
 	
 	/* Register a CMD that require user to be loged */
 	Ape.registerCmd("foocmd", true, function(params, infos) {
 			var user = infos.user;
-			
 			Ape.log("foo property : " + user.foo);
 			
 			/* push that raw to the loged user */
 			user.pipe.sendRaw("Bar", {"foo":"bar",child:{"a":"b"},test:["el1","el2",{"key":"val"}]}, true);
 			
 	});
+	
+	Ape.registerCmd("puh", false, function(params, infos) {
+		infos.client.write("hey\n");
+	});
+
+	Ape.registerHookCmd("join", function(params, infos) {
+		if (!["robert","john"].contains(params.channels[0])) {
+			return 0;
+		}
+		return 1;
+	});
+	
+	
 
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

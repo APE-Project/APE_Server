@@ -41,6 +41,7 @@
 #define APE_JS_EVENT(cb, argc, argv) ape_fire_callback(cb, argc, argv, g_ape)
 static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetables *g_ape);
 
+
 /* JSNative macro prototype */
 #define APE_JS_NATIVE(func_name) \
 	static JSBool func_name(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval) \
@@ -58,7 +59,8 @@ static JSBool ape_sm_stub(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 
 typedef enum {
 	APE_EVENT,
-	APE_CMD
+	APE_CMD,
+	APE_HOOK
 } ape_sm_callback_t;
 
 typedef struct _ape_sm_callback ape_sm_callback;
@@ -70,6 +72,7 @@ struct _ape_sm_callback
 	JSContext *cx;
 	struct _ape_sm_callback *next;
 };
+static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, acetables *g_ape);
 
 typedef struct _ape_sm_compiled ape_sm_compiled;
 struct _ape_sm_compiled {
@@ -94,10 +97,7 @@ struct _ape_sm_runtime {
 };
 
 struct _ape_sock_callbacks {
-	jsval on_accept;
-	jsval on_read;
-	jsval on_read_lf;
-	jsval on_disconnect;
+
 	JSObject *server_obj;
 	
 	ape_sm_compiled  *asc;
@@ -151,6 +151,13 @@ static JSClass socketserver_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+static JSClass socketclient_class = {
+	"sockClient", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 static JSClass raw_class = {
 	"raw", JSCLASS_HAS_PRIVATE,
 	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
@@ -172,16 +179,11 @@ static JSClass pipe_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-static JSBool apesocket_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	ape_socket *client;
+APE_JS_NATIVE(apesocket_write)
+//{
 	char *string;
-
 	struct _ape_sock_callbacks *cb = JS_GetPrivate(cx, obj);
-	ape_sm_compiled *asc = cb->asc;
-	acetables *g_ape = asc->g_ape;
-
-	client = ((struct _ape_sock_js_obj *)cb->private)->client;
+	ape_socket *client = ((struct _ape_sock_js_obj *)cb->private)->client;
 
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &string)) {
 		return JS_FALSE;
@@ -190,10 +192,30 @@ static JSBool apesocket_write(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 	sendbin(client->fd, string, strlen(string), g_ape);
 	
 	return JS_TRUE;
-	
 }
 
+APE_JS_NATIVE(apesocketclient_write)
+//{
+	char *string;
+	ape_socket *client = JS_GetPrivate(cx, obj);
 
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &string)) {
+		return JS_FALSE;
+	}
+
+	sendbin(client->fd, string, strlen(string), g_ape);
+	
+	return JS_TRUE;
+}
+
+static JSBool apesocketclient_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	ape_socket *client = JS_GetPrivate(cx, obj);
+
+	shutdown(client->fd, 2);
+
+	return JS_TRUE;
+}
 static JSBool apesocket_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	ape_socket *client;
@@ -357,10 +379,17 @@ static JSFunctionSpec apesocket_funcs[] = {
     JS_FS_END
 };
 
+static JSFunctionSpec apesocketclient_funcs[] = {
+    JS_FS("write",   apesocketclient_write,	1, 0, 0),
+	JS_FS("close",   apesocketclient_close,	0, 0, 0),
+    JS_FS_END
+};
+
 static JSFunctionSpec apesocket_client_funcs[] = {
 	JS_FS("onAccept", ape_sm_stub, 0, 0, 0),
 	JS_FS("onRead", ape_sm_stub, 0, 0, 0),
 	JS_FS("onDisconnect", ape_sm_stub, 0, 0, 0),
+	JS_FS("onConnect", ape_sm_stub, 0, 0, 0),
 	JS_FS_END
 };
 
@@ -375,12 +404,29 @@ static JSFunctionSpec apepipe_funcs[] = {
 	JS_FS_END
 };
 
+
+static JSObject *sm_ape_socket_to_jsobj(JSContext *cx, ape_socket *client)
+{
+	if (client->data != NULL) {
+		return (JSObject *)client->data;
+	} else {
+
+		JSObject *obj = JS_NewObject(cx, &apesocket_class, NULL, NULL);
+		JS_DefineFunctions(cx, obj, apesocketclient_funcs);
+		JS_SetPrivate(cx, obj, client);
+		client->data = obj;
+
+		return obj;
+	}
+}
+
+
+
 static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
 {
 	jsval rval;
 	if (client->attach != NULL) {
 		struct _ape_sock_callbacks *cb = ((struct _ape_sock_callbacks *)client->attach);
-		
 
 		struct _ape_sock_callbacks *cbcopy;
 		struct _ape_sock_js_obj *sock_obj = xmalloc(sizeof(*sock_obj));
@@ -429,14 +475,17 @@ static void sm_sock_ondisconnect(ape_socket *client, acetables *g_ape)
 		struct _ape_sock_callbacks *cb = ((struct _ape_sock_callbacks *)client->attach);
 		JSObject *client_obj = ((struct _ape_sock_js_obj *)cb->private)->client_obj;
 
-		jsval params[1];
-		
 		JS_SetContextThread(cb->asc->cx);
 		JS_BeginRequest(cb->asc->cx);
-			params[0] = OBJECT_TO_JSVAL(client_obj);
-			JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 1, params, &rval);
-			
-			JS_RemoveRoot(cb->asc->cx, &((struct _ape_sock_js_obj *)cb->private)->client_obj);
+
+			if (client_obj != NULL) {
+				jsval params[1];
+				params[0] = OBJECT_TO_JSVAL(client_obj);
+				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 1, params, &rval);
+				JS_RemoveRoot(cb->asc->cx, &((struct _ape_sock_js_obj *)cb->private)->client_obj);
+			} else {
+				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 0, NULL, &rval);
+			}
 			
 			free(cb->private);
 			free(cb);
@@ -457,18 +506,44 @@ static void sm_sock_onread_lf(ape_socket *client, char *data, acetables *g_ape)
 		
 		JS_SetContextThread(cb->asc->cx);
 		JS_BeginRequest(cb->asc->cx);
-			jsval params[2];
-			params[0] = OBJECT_TO_JSVAL(client_obj);
-			params[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(cb->asc->cx, data));
 			
-			JS_AddRoot(cb->asc->cx, &params[1]);
-			JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 2, params, &rval);
-			JS_RemoveRoot(cb->asc->cx, &params[1]);
+			if (client_obj != NULL) {
+				jsval params[2];
+				params[0] = OBJECT_TO_JSVAL(client_obj);
+				params[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(cb->asc->cx, data));
+			
+				JS_AddRoot(cb->asc->cx, &params[1]);
+				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 2, params, &rval);
+				JS_RemoveRoot(cb->asc->cx, &params[1]);
+			} else {
+				jsval params[1];
+				params[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(cb->asc->cx, data));
+			
+				JS_AddRoot(cb->asc->cx, &params[0]);
+				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 1, params, &rval);
+				JS_RemoveRoot(cb->asc->cx, &params[0]);				
+			}
 			
 		JS_EndRequest(cb->asc->cx);
 		JS_ClearContextThread(cb->asc->cx);						
 		
 	}
+}
+
+static void sm_sock_onconnect(ape_socket *client, acetables *g_ape)
+{
+	jsval rval;
+	
+	if (client->attach != NULL) {
+		struct _ape_sock_callbacks *cb = ((struct _ape_sock_callbacks *)client->attach);
+		((struct _ape_sock_js_obj *)cb->private)->client = client;
+		JS_SetContextThread(cb->asc->cx);
+		JS_BeginRequest(cb->asc->cx);
+			JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onConnect", 0, NULL, &rval);
+		JS_EndRequest(cb->asc->cx);
+		JS_ClearContextThread(cb->asc->cx);						
+
+	}	
 }
 
 static void sm_sock_onread(ape_socket *client, ape_buffer *buf, size_t offset, acetables *g_ape)
@@ -481,14 +556,22 @@ static void sm_sock_onread(ape_socket *client, ape_buffer *buf, size_t offset, a
 		JS_SetContextThread(cb->asc->cx);
 		JS_BeginRequest(cb->asc->cx);
 			
-			jsval params[2];
-			params[0] = OBJECT_TO_JSVAL(client_obj);
-			params[1] = STRING_TO_JSVAL(JS_NewStringCopyN(cb->asc->cx, buf->data, buf->length));
+			if (client_obj != NULL) {
+				jsval params[2];
+				params[0] = OBJECT_TO_JSVAL(client_obj);
+				params[1] = STRING_TO_JSVAL(JS_NewStringCopyN(cb->asc->cx, buf->data, buf->length));
 			
-			JS_AddRoot(cb->asc->cx, &params[1]);
-			JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 2, params, &rval);
-			JS_RemoveRoot(cb->asc->cx, &params[1]);
-
+				JS_AddRoot(cb->asc->cx, &params[1]);
+				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 2, params, &rval);
+				JS_RemoveRoot(cb->asc->cx, &params[1]);
+			} else {
+				jsval params[1];
+				params[0] = STRING_TO_JSVAL(JS_NewStringCopyN(cb->asc->cx, buf->data, buf->length));
+			
+				JS_AddRoot(cb->asc->cx, &params[0]);
+				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 1, params, &rval);
+				JS_RemoveRoot(cb->asc->cx, &params[0]);				
+			}
 		
 		JS_EndRequest(cb->asc->cx);
 		JS_ClearContextThread(cb->asc->cx);						
@@ -577,12 +660,12 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	/* Retrieve the CX */
 	/* TODO : Add a private data to the callbacki struct (pass it to register_cmd) */
 	while (asc != NULL) {
-		ape_sm_callback *cb;
+		ape_sm_callback *cbk;
 		
-		for (cb = asc->callbacks; cb != NULL; cb = cb->next) {
+		for (cbk = asc->callbacks; cbk != NULL; cbk = cbk->next) {
 			
-			if (cb->type == APE_CMD && strcasecmp(callbacki->cmd, cb->callbackname) == 0) {
-				cx = cb->cx;
+			if ((cbk->type == APE_CMD || cbk->type == APE_HOOK) && (strcasecmp(callbacki->cmd, cbk->callbackname) == 0)) {
+				cx = cbk->cx;
 				break;
 			}
 		}
@@ -592,7 +675,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	if (cx == NULL) {
 		return (RETURN_NOTHING);
 	}
-	
+
 	JS_SetContextThread(cx);
 	JS_BeginRequest(cx);
 		jsval jval;
@@ -608,6 +691,9 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->host));
 		/* infos.host */	
 		JS_SetProperty(cx, cb, "host", &jval);
+		
+		jval = OBJECT_TO_JSVAL(sm_ape_socket_to_jsobj(cx, callbacki->client));
+		JS_SetProperty(cx, cb, "client", &jval);
 		
 		jval = INT_TO_JSVAL(callbacki->chl);
 		/* infos.chl */
@@ -626,7 +712,11 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	JS_EndRequest(cx);
 	JS_ClearContextThread(cx);
 	
-	ape_fire_cmd(callbacki->cmd, obj, cb, callbacki->g_ape);
+	if (callbacki->data == NULL) {
+		ape_fire_cmd(callbacki->cmd, obj, cb, callbacki->g_ape);
+	} else {
+		return ape_fire_hook(callbacki->data, obj, cb, callbacki->g_ape);
+	}
 	
 	return (RETURN_NOTHING);
 }
@@ -667,6 +757,46 @@ APE_JS_NATIVE(ape_sm_register_cmd)
 	register_cmd(cmd, ape_sm_cmd_wrapper, (needsessid == JS_TRUE ? NEED_SESSID : NEED_NOTHING), g_ape);
 	
 	return JS_TRUE;
+}
+
+APE_JS_NATIVE(ape_sm_hook_cmd)
+//{
+	const char *cmd;
+
+	ape_sm_callback *ascb;
+
+	*rval = JSVAL_NULL;
+	
+	if (argc != 2) {
+		return JS_FALSE;
+	}
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &cmd)) {
+		return JS_FALSE;
+	}
+
+	ascb = xmalloc(sizeof(*ascb));
+
+	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, &ascb->func)) {
+		free(ascb);
+		return JS_FALSE;
+	}
+
+	if (!register_hook_cmd(cmd, ape_sm_cmd_wrapper, ascb, g_ape)) {
+		free(ascb);
+		return JS_FALSE;
+	}
+	JS_AddRoot(cx, &ascb->func);
+	
+	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
+	ascb->next = asc->callbacks;
+	ascb->type = APE_HOOK;
+	ascb->cx = cx;
+	ascb->callbackname = xstrdup(cmd);
+	
+	asc->callbacks = ascb;
+		
+	return JS_TRUE;	
 }
 
 APE_JS_NATIVE(ape_sm_addEvent)
@@ -908,6 +1038,49 @@ APE_JS_NATIVE(ape_sm_raw_constructor)
 }
 
 
+APE_JS_NATIVE(ape_sm_sockclient_constructor)
+//{
+	int port;
+	char *ip;
+	JSObject *options = NULL;
+	ape_socket *pattern;
+	jsval vp;
+	struct _ape_sock_callbacks *cbcopy;
+	struct _ape_sock_js_obj *sock_obj;
+	if (!JS_ConvertArguments(cx, argc, argv, "is/o", &port, &ip, &options)) {
+		return JS_FALSE;
+	}
+	
+	sock_obj = xmalloc(sizeof(*sock_obj));
+	sock_obj->client_obj = NULL;
+	
+	cbcopy = xmalloc(sizeof(struct _ape_sock_callbacks));
+	
+	cbcopy->private = sock_obj;
+	cbcopy->asc = asc;
+	cbcopy->server_obj = obj;
+	
+	pattern = xmalloc(sizeof(*pattern));
+	pattern->callbacks.on_connect = sm_sock_onconnect;
+	pattern->callbacks.on_disconnect = sm_sock_ondisconnect;
+	if (options != NULL && JS_GetProperty(cx, options, "flushlf", &vp) && JSVAL_IS_BOOLEAN(vp) && vp == JSVAL_TRUE) {
+		pattern->callbacks.on_read_lf = sm_sock_onread_lf;
+	} else {
+		/* use the classic read callback */
+		pattern->callbacks.on_read = sm_sock_onread;
+	}	
+	pattern->attach = cbcopy;
+	JS_SetPrivate(cx, obj, cbcopy);
+	ape_connect_name(ip, port, pattern, g_ape);
+	
+	JS_DefineFunctions(cx, obj, apesocket_client_funcs);
+	JS_DefineFunctions(cx, obj, apesocket_funcs);
+	
+	return JS_TRUE;
+}
+
+
+
 APE_JS_NATIVE(ape_sm_sockserver_constructor)
 //{
 	int port;
@@ -923,15 +1096,11 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	server = ape_listen(port, ip, g_ape);
 	server->attach = xmalloc(sizeof(struct _ape_sock_callbacks));
 
-	((struct _ape_sock_callbacks *)server->attach)->on_accept 		= JSVAL_NULL;
-	((struct _ape_sock_callbacks *)server->attach)->on_read_lf 		= JSVAL_NULL;
-	((struct _ape_sock_callbacks *)server->attach)->on_disconnect 	= JSVAL_NULL;
 	((struct _ape_sock_callbacks *)server->attach)->asc 			= asc;
 	((struct _ape_sock_callbacks *)server->attach)->private 		= NULL;
-	// TODO : Other clalback
 	((struct _ape_sock_callbacks *)server->attach)->server_obj 		= obj;
 
-	JS_AddRoot(cx, &((struct _ape_sock_callbacks *)server->attach)->server_obj);
+	//JS_AddRoot(cx, &((struct _ape_sock_callbacks *)server->attach)->server_obj);
 
 	/* check if flushlf is set to true in the optional object */
 	if (options != NULL && JS_GetProperty(cx, options, "flushlf", &vp) && JSVAL_IS_BOOLEAN(vp) && vp == JSVAL_TRUE) {
@@ -955,7 +1124,8 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 
 static JSFunctionSpec ape_funcs[] = {
     JS_FS("addEvent",   ape_sm_addEvent,	2, 0, 0), /* Ape.addEvent('name', function() { }); */
-	JS_FS("registerCmd", ape_sm_register_cmd, 2, 0, 0),
+	JS_FS("registerCmd", ape_sm_register_cmd, 3, 0, 0),
+	JS_FS("registerHookCmd", ape_sm_hook_cmd, 2, 0, 0),
     JS_FS("log",  		ape_sm_echo,  		1, 0, 0),/* Ape.echo('stdout\n'); */
 	JS_FS("HTTPRequest", ape_sm_http_request, 2, 0, 0),
 	JS_FS("getPipe", ape_sm_get_pipe, 1, 0, 0),
@@ -975,6 +1145,7 @@ static void ape_sm_define_ape(ape_sm_compiled *asc)
 	JS_DefineFunctions(asc->cx, obj, ape_funcs);
 	
 	JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
+	JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
 	JS_InitClass(asc->cx, obj, NULL, &raw_class, ape_sm_raw_constructor, 1, NULL, NULL, NULL, NULL);
 	
 	JS_SetContextPrivate(asc->cx, asc);
@@ -984,33 +1155,56 @@ static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetable
 {
 	ape_sm_compiled *asc = ASMR->scripts;
 	jsval params[2];
-	params[0] = OBJECT_TO_JSVAL(obj);
-	params[1] = OBJECT_TO_JSVAL(cb);
-		
+
 	if (asc == NULL) {
 		return;
 	}
 	
+	params[0] = OBJECT_TO_JSVAL(obj);
+	params[1] = OBJECT_TO_JSVAL(cb);
+
 	while (asc != NULL) {
-		ape_sm_callback *cb;
+		ape_sm_callback *cbk;
 		
-		for (cb = asc->callbacks; cb != NULL; cb = cb->next) {
-			
-			if (cb->type == APE_CMD && strcasecmp(name, cb->callbackname) == 0) {
+		for (cbk = asc->callbacks; cbk != NULL; cbk = cbk->next) {
+			if (cbk->type == APE_CMD && strcasecmp(name, cbk->callbackname) == 0) {
 				jsval rval;
-				
-				JS_SetContextThread(asc->cx);
-				JS_BeginRequest(asc->cx);
-					JS_CallFunctionValue(asc->cx, asc->global, (cb->func), 2, params, &rval);
-				JS_EndRequest(asc->cx);
-				JS_ClearContextThread(asc->cx);
-				break;
+				JS_SetContextThread(cbk->cx);
+				JS_BeginRequest(cbk->cx);
+					JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), 2, params, &rval);
+				JS_EndRequest(cbk->cx);
+				JS_ClearContextThread(cbk->cx);
+				return;
 			}
 		}
-		
 		asc = asc->next;
 	}
 	
+}
+
+static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, acetables *g_ape)
+{
+	ape_sm_compiled *asc = ASMR->scripts;
+	jsval params[2];
+	jsval rval;
+	if (asc == NULL) {
+		return 0;
+	}
+	
+	params[0] = OBJECT_TO_JSVAL(obj);
+	params[1] = OBJECT_TO_JSVAL(cb);
+	
+	JS_SetContextThread(cbk->cx);
+	JS_BeginRequest(cbk->cx);
+		JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), 2, params, &rval);
+	JS_EndRequest(cbk->cx);
+	JS_ClearContextThread(cbk->cx);
+	
+	if (JSVAL_IS_INT(rval) && JSVAL_TO_INT(rval) == 0) {
+		return RETURN_BAD_PARAMS;
+	}
+	
+	return RETURN_NOTHING;
 }
 
 static void ape_fire_callback(const char *name, uintN argc, jsval *argv, acetables *g_ape)
@@ -1140,14 +1334,14 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 }
 
-static USERS *ape_cb_add_user(unsigned int fdclient, char *host, acetables *g_ape)
+static USERS *ape_cb_add_user(ape_socket *client, char *host, acetables *g_ape)
 {
 	JSObject *user;
 	extend *jsobj;
 	JSContext *gcx = ASMC;
 	jsval params[1], pipe;
 	
-	USERS *u = adduser(fdclient, host, g_ape);
+	USERS *u = adduser(client, host, g_ape);
 	
 	if (u != NULL) {
 		JS_SetContextThread(gcx);
