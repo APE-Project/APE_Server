@@ -1028,28 +1028,21 @@ Ape.HTTPRequest = function(url, data) {
 	ape_http_request(url, data);
 };
 
-
-var clients = new Hash();
-var totalc = 0;
-
-function create_js_server(port)
+function create_js_server(port, forward)
 {
-	var socket = new Ape.sockServer(port, "127.0.0.1", {
+	var socket = new Ape.sockServer(port, "0.0.0.0", {
 		flushlf: true /* onRead event is fired only when a \n is received (and splitted around it) e.g. foo\nbar\n  will call onRead two times with "foo" and "bar" */
 	});
 	
 	/* fired when a client is connecting */
 	socket.onAccept = function(client) {
-		client.number = ++totalc;
-		clients.set(client.number, client);
-		client.write("You are connected as number "+client.number+"\n");
-		Ape.log("New client !");
+
 	}
 	
 	/* fired when a client send data */
 	socket.onRead = function(client, data) {
-		Ape.log("Data from client "+client.number+" : " + data);
-		
+
+		forward.write("PRIVMSG #ape-project :"+data+"\n");
 		/* You can imagine to push data to an APE channel */
 		/* Ape.getPipe('pubid').sendRaw("dataFromClient", {data:base64encode(data)}) */
 	}
@@ -1057,7 +1050,7 @@ function create_js_server(port)
 	/* fired when a client has disconnected */
 	socket.onDisconnect = function(client) {
 		Ape.log("A client has disconnected");
-		clients.erase(client.number);
+
 	}
 	
 	Ape.log("Listen on port " + port + '...');
@@ -1066,6 +1059,7 @@ function create_js_server(port)
 }
 
 Ape.addEvent("init", function() {
+
 	
 	Ape.addEvent("adduser", function(user) {
 		user.setProperty("nickname", "paraboul");
@@ -1073,56 +1067,75 @@ Ape.addEvent("init", function() {
 	});
 	
 	/* Create a non-blocking socket that listen on port 7779 */
-	var sockets = create_js_server(7779);
 	
-	var ca = new Ape.sockClient(6667, "irc.freenode.org", {
+	
+	/*var ca = new Ape.sockClient(6667, "irc.freenode.org", {
 		flushlf: true
 	});
+	
+	var sockets = create_js_server(7779, ca);
+	
 	ca.onConnect = function() {
 		Ape.log("Socket connected");
 		this.write("USER a a a a\n");
 		this.write("NICK APE_BoT\n");
 		this.write("JOIN #ape-project\n");
-		this.write("PRIVMSG #ape-project :test\n");
+
 	}
 	
 	ca.onRead = function(data) {
-		Ape.log(data);
+		//Ape.log(data);
 	}
 
 	ca.onDisconnect = function() {
 		Ape.log("Disconnected");
-	}
+	}*/
 	
 	/* Register a CMD that not require user to be loged */
-	Ape.registerCmd("webhook", false, function(params, infos){
-		var data = {params:params, infos:infos};
+	
+	if (0) {
+		Ape.registerCmd("webhook", false, function(params, infos){
+			var data = {params:params, infos:infos};
 		
-		/* make a post request */
-		Ape.HTTPRequest('http://www.rabol.fr/bordel/post.php', data);
+			/* make a post request */
+			Ape.HTTPRequest('http://www.rabol.fr/bordel/post.php', data);
 		
-		/* Broadcast params to clients connected to the js server */
-		clients.each(function(client) {
-			Ape.log("Sending to client...");
-			client.write(Hash.toQueryString(params));
+			/* Broadcast params to clients connected to the js server */
+			clients.each(function(client) {
+				Ape.log("Sending to client...");
+				client.write(Hash.toQueryString(params));
+			});
+		
+			ca.write("PRIVMSG #ape-project :" + Hash.toQueryString(params) + "\n");
 		});
-		
-		ca.write("PRIVMSG #ape-project :" + Hash.toQueryString(params) + "\n");
-	});
 
+	}
+
+	/*Ape.registerHookCmd("connect", function(params, infos) {
+		Ape.log("woot");
+	//	Ape.log("Yoh");
+	//	ca.write("PRIVMSG #ape-project :New user connected to APE (ip : "+infos.ip+")\n");
+	});*/
 	
 	/* Register a CMD that require user to be loged */
 	Ape.registerCmd("foocmd", true, function(params, infos) {
-			var user = infos.user;
-			Ape.log("foo property : " + user.foo);
+
 			
-			/* push that raw to the loged user */
-			user.pipe.sendRaw("Bar", {"foo":"bar",child:{"a":"b"},test:["el1","el2",{"key":"val"}]}, true);
+			Ape.log("Info : " + Hash.toQueryString(infos.user.pipe.toObject()));
+			
+			
+			
+		//	user.pipe.sendRaw("Bar", params, {from: user});
+			
 			
 	});
 	
 	Ape.registerCmd("puh", false, function(params, infos) {
-		infos.client.write("hey\n");
+		var ax = new Array();
+		var olol = {a:"b","c":"d"};
+
+		for (var x = 0; x < 100; x++)
+			ax[x] = new Array();
 	});
 
 	Ape.registerHookCmd("join", function(params, infos) {

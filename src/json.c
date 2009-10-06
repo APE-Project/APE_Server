@@ -626,11 +626,12 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 			break;
 		case JSON_T_OBJECT_END:
 		case JSON_T_ARRAY_END:
-			
+
 			/* If the father node exists, back to it */
-			if (cx->current_cx->father != NULL) {
+			if (cx->current_cx->father != NULL && !cx->start_depth) {
 				cx->current_cx = cx->current_cx->father;
 			}
+			
 			cx->start_depth = 0;
 			cx->key_under = 0;
 			break;
@@ -756,7 +757,6 @@ json_item *init_json_parser(const char *json_string)
 
 void json_aff(json_item *cx, int depth)
 {
-
 	while (cx != NULL) {
 		if (cx->key.val != NULL) {
 			printf("Key %s\n", cx->key.val);
@@ -814,6 +814,7 @@ json_item *json_lookup(json_item *head, char *path)
 	nTok = explode('.', base, split, 15);
 	
 	while (head != NULL && i <= nTok) {
+
 		if (head->key.val != NULL && strcasecmp(split[i], head->key.val) == 0) {
 			/*
 			printf("Array %s : %i\n", split[i], key_is_array(split[i], strlen(split[i])-1));

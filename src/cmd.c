@@ -119,14 +119,15 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 	subuser *sub = NULL;
 	
 	ijson = ojson = init_json_parser(cget->get);
-
+	
 	if (ijson == NULL || ijson->jchild.child == NULL) {
 		SENDH(cget->client->fd, ERR_BAD_JSON, g_ape);
 	} else {
 		//else if ((rjson = json_lookup(ijson->child, "cmd")) != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
 		for (ijson = ijson->jchild.child; ijson != NULL; ijson = ijson->next) {
+
 			rjson = json_lookup(ijson->jchild.child, "cmd");
-			
+			//printf("valval %s\n", rjson->jval.vu.str.value);
 			if (rjson != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
 				callbackp cp;
 				cp.client = NULL;
@@ -140,6 +141,8 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				
 							if (guser == NULL && (jsid = json_lookup(ijson->jchild.child, "sessid")) != NULL && jsid->jval.vu.str.value != NULL) {
 								guser = seek_user_id(jsid->jval.vu.str.value, g_ape);
+							} else {
+								printf("Failed to request sessid\n");
 							}
 						}
 						break;
@@ -243,6 +246,8 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 					return (CONNECT_SHUTDOWN);
 				}
 			} else {
+				printf("Bad cmd\n");
+				//printf("Cant find %s\n", rjson->jval.vu.str.value);
 				free_json_item(ojson);
 				SENDH(cget->client->fd, ERR_BAD_CMD, g_ape);
 				return (CONNECT_SHUTDOWN);

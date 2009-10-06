@@ -126,3 +126,18 @@ transpipe *get_pipe_strict(const char *pubid, USERS *user, acetables *g_ape)
 	
 }
 
+json_item *get_json_object_pipe(transpipe *pipe)
+{
+	switch(pipe->type) {
+		case USER_PIPE:
+			return get_json_object_user(pipe->pipe);
+			break;
+		case CHANNEL_PIPE:
+			return get_json_object_channel(pipe->pipe);
+			break;
+		case PROXY_PIPE:
+		default:
+			return NULL;
+	}
+}
+

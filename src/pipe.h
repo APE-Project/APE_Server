@@ -24,6 +24,7 @@
 
 #include "main.h"
 #include "users.h"
+#include "json.h"
 
 enum {
 	CHANNEL_PIPE = 0,
@@ -60,6 +61,6 @@ transpipe *get_pipe(const char *pubid, acetables *g_ape);
 transpipe *get_pipe_strict(const char *pubid, struct USERS *user, acetables *g_ape);
 void gen_sessid_new(char *input, acetables *g_ape);
 void unlink_all_pipe(transpipe *origin, acetables *g_ape);
-
+json_item *get_json_object_pipe(transpipe *pipe);
 #endif
 

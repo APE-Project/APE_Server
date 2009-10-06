@@ -26,7 +26,7 @@
 
 /* Ticks/secondes */
 #define TICKS_RATE 1000 // ~1ms
-#define VTICKS_RATE 20 // 50 ms
+#define VTICKS_RATE 100 // 50 ms
 
 struct _ticks_callback
 {
