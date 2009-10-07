@@ -1,0 +1,8 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:718: checking host system type
+configure:739: checking target system type
+configure:757: checking build system type
+configure:817: checking for mawk
+configure:817: checking for gawk

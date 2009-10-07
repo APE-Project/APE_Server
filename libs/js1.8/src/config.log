@@ -1,0 +1,210 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:718: checking host system type
+configure:739: checking target system type
+configure:757: checking build system type
+configure:817: checking for mawk
+configure:1874: checking for gcc
+configure:1987: checking whether the C compiler (gcc  ) works
+configure:2003: gcc -o conftest    conftest.c  1>&5
+configure:2029: checking whether the C compiler (gcc  ) is a cross-compiler
+configure:2034: checking whether we are using GNU C
+configure:2062: checking whether gcc accepts -g
+configure:2098: checking for c++
+configure:2130: checking whether the C++ compiler (c++  ) works
+configure:2146: c++ -o conftest    conftest.C  1>&5
+configure:2172: checking whether the C++ compiler (c++  ) is a cross-compiler
+configure:2177: checking whether we are using GNU C++
+configure:2205: checking whether c++ accepts -g
+configure:2239: checking for ranlib
+configure:2271: checking for as
+configure:2325: checking for ar
+configure:2360: checking for ld
+configure:2395: checking for strip
+configure:2430: checking for windres
+configure:2769: checking whether gcc and cc understand -c and -o together
+configure:2829: checking how to run the C preprocessor
+configure:2909: checking how to run the C++ preprocessor
+configure:3027: checking for a BSD compatible install
+configure:3080: checking whether ln -s works
+configure:3105: checking for perl5
+configure:3159: checking for minimum required perl version >= 5.006
+configure:3170: checking for full perl installation
+configure:3185: checking for python
+configure:3245: checking for doxygen
+configure:3294: checking for whoami
+configure:3343: checking for autoconf
+configure:3392: checking for unzip
+configure:3443: checking for zip
+configure:3497: checking for makedepend
+configure:3545: checking for xargs
+configure:3619: checking for pbbuild
+configure:3682: checking for sdp
+configure:3902: checking for gmake
+configure:3961: checking for X
+configure:5221: checking whether the compiler supports -Wno-invalid-offsetof
+configure:5244: c++ -c  -fno-strict-aliasing -Wno-invalid-offsetof  conftest.C 1>&5
+configure:5271: checking whether the compiler supports -Wno-variadic-macros
+configure:5294: c++ -c  -fno-strict-aliasing -Wno-variadic-macros  conftest.C 1>&5
+configure:5329: checking whether ld has archive extraction flags
+configure:5386: checking that static assertion macros used in autoconf tests work
+configure:5498: checking for 64-bit OS
+configure:5507: gcc -c  -fno-strict-aliasing  conftest.c 1>&5
+configure:5888: checking for -dead_strip option to ld
+configure:5899: gcc -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common   -framework Cocoa -Wl,-dead_strip conftest.c  1>&5
+configure:7177: checking for ANSI C header files
+configure:7281: checking for working const
+configure:7356: checking for mode_t
+configure:7389: checking for off_t
+configure:7422: checking for pid_t
+configure:7455: checking for size_t
+configure:7488: checking for st_blksize in struct stat
+configure:7522: checking for siginfo_t
+configure:7560: checking for stdint.h
+configure:7806: checking for the size of void*
+configure:7861: checking for the alignment of void*
+configure:7905: checking for the size of double
+configure:7946: checking for int16_t
+configure:7981: checking for int32_t
+configure:8016: checking for int64_t
+configure:8051: checking for int64
+configure:8086: checking for uint
+configure:8121: checking for uint_t
+configure:8156: checking for uint16_t
+configure:8200: checking for uname.domainname
+configure:8237: checking for uname.__domainname
+configure:8283: checking for visibility(hidden) attribute
+configure:8308: checking for visibility(default) attribute
+configure:8333: checking for visibility pragma support
+configure:8358: checking For gcc visibility bug with class-level attributes (GCC bug 26905)
+configure:8386: checking For x86_64 gcc visibility bug with builtins (GCC bug 20297)
+configure:8439: checking for dirent.h that defines DIR
+configure:8477: checking for opendir in -ldir
+configure:8569: checking for sys/byteorder.h
+configure:8569: checking for compat.h
+configure:8569: checking for getopt.h
+configure:8609: checking for sys/bitypes.h
+configure:8609: checking for memory.h
+configure:8609: checking for unistd.h
+configure:8649: checking for gnu/libc-version.h
+configure:8649: checking for nl_types.h
+configure:8689: checking for malloc.h
+configure:8729: checking for X11/XKBlib.h
+configure:8770: checking for sys/statvfs.h
+configure:8770: checking for sys/statfs.h
+configure:8770: checking for sys/vfs.h
+configure:8770: checking for sys/mount.h
+configure:8811: checking for mmintrin.h
+configure:8858: checking for new
+configure:8960: checking for sys/cdefs.h
+configure:9004: checking for gethostbyname_r in -lc_r
+configure:9192: checking for dladdr
+configure:9355: checking for socket in -lsocket
+configure:9538: checking whether gcc accepts -pthread
+configure:9656: checking whether mmap() sees write()s
+configure:9699: gcc -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
+configure:9724: checking whether gcc needs -traditional
+configure:9770: checking for 8-bit clean memcmp
+configure:9811: checking for fchmod
+configure:9811: checking for flockfile
+configure:9811: checking for getc_unlocked
+configure:9811: checking for _getc_nolock
+configure:9811: checking for getpagesize
+configure:9811: checking for lchown
+configure:9811: checking for localtime_r
+configure:9811: checking for lstat64
+configure:9811: checking for memmove
+configure:9811: checking for random
+configure:9811: checking for rint
+configure:9811: checking for sbrk
+configure:9811: checking for snprintf
+configure:9811: checking for stat64
+configure:9811: checking for statvfs
+configure:9811: checking for statvfs64
+configure:9811: checking for strerror
+configure:9811: checking for strtok_r
+configure:9811: checking for truncate64
+configure:9872: gcc -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
+configure:9866:21: error: windows.h: No such file or directory
+configure: In function 'main':
+configure:9868: error: 'SYSTEMTIME' undeclared (first use in this function)
+configure:9868: error: (Each undeclared identifier is reported only once
+configure:9868: error: for each function it appears in.)
+configure:9868: error: expected ';' before 'st'
+configure:9868: error: 'FILETIME' undeclared (first use in this function)
+configure:9868: error: expected ';' before 'ft'
+configure:9868: error: 'st' undeclared (first use in this function)
+configure:9868: error: 'ft' undeclared (first use in this function)
+configure: failed program was:
+#line 9865 "configure"
+#include "confdefs.h"
+#include <windows.h>
+int main() {
+SYSTEMTIME st;FILETIME ft;SystemTimeToFileTime(&st,&ft);
+; return 0; }
+configure:9896: gcc -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
+configure:9890:21: error: windows.h: No such file or directory
+configure: In function 'main':
+configure:9892: error: 'FILETIME' undeclared (first use in this function)
+configure:9892: error: (Each undeclared identifier is reported only once
+configure:9892: error: for each function it appears in.)
+configure:9892: error: expected ';' before 'ft'
+configure:9892: error: 'ft' undeclared (first use in this function)
+configure: failed program was:
+#line 9889 "configure"
+#include "confdefs.h"
+#include <windows.h>
+int main() {
+FILETIME ft;GetSystemTimeAsFileTime(&ft);
+; return 0; }
+configure:9923: checking for wcrtomb
+configure:9955: checking for mbrtowc
+configure:9996: checking for res_ninit()
+configure:10043: checking for gnu_get_libc_version()
+configure:10318: checking for an implementation of va_copy()
+configure:10359: checking for an implementation of __va_copy()
+configure:10400: checking whether va_lists can be copied by value
+configure:10523: checking for C++ exceptions flag
+configure:10558: checking for gcc 3.0 ABI
+configure:10600: checking for C++ "explicit" keyword
+configure:10636: checking for C++ "typename" keyword
+configure:10681: checking for modern C++ template specialization syntax support
+configure:10718: checking whether partial template specialization works
+configure:10752: checking whether operators must be re-defined for templates derived from templates
+configure:10791: checking whether we need to cast a derived template to pass as its base class
+configure:10826: checking whether the compiler can resolve const ambiguities for templates
+configure:10874: checking whether the C++ "using" keyword can change access
+configure:10926: checking whether the C++ "using" keyword resolves ambiguity
+configure:10968: checking for "std::" namespace
+configure:11001: checking whether standard template operator!=() is ambiguous
+configure:11038: checking for C++ reinterpret_cast
+configure:11072: checking for C++ dynamic_cast to void*
+configure:11123: checking whether C++ requires implementation of unused virtual methods
+configure:11158: checking for trouble comparing to zero near std::operator!=()
+configure:11206: checking for LC_MESSAGES
+configure:11551: checking for valid debug flags
+configure:11562: gcc -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -g  conftest.c 1>&5
+configure:12181: checking for __cxa_demangle
+configure:12260: checking for unwind.h
+configure:12289: checking for _Unwind_Backtrace
+configure:12366: checking for gcc -pipe support
+dummy-hello.c:2:21: warning: missing terminating " character
+dummy-hello.c: In function 'main':
+dummy-hello.c:2: error: missing terminating " character
+dummy-hello.c:3:1: warning: missing terminating " character
+dummy-hello.c:3: error: missing terminating " character
+dummy-hello.c:3: error: expected expression at end of input
+dummy-hello.c:3: warning: format not a string literal and no format arguments
+dummy-hello.c:3: error: expected declaration or statement at end of input
+configure:12388: gcc -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -pipe  conftest.c 1>&5
+configure:12430: checking whether compiler supports -Wno-long-long
+configure:12439: gcc -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -pipe -Wno-long-long  conftest.c 1>&5
+configure:12475: checking whether C compiler supports -fprofile-generate
+configure:12484: gcc -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -pipe -fprofile-generate  conftest.c 1>&5
+configure:12617: checking for correct temporary object destruction order
+configure:12645: c++ -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -pipe    -framework Cocoa conftest.C  1>&5
+configure:12666: checking for correct overload resolution with const and templates
+configure:12701: c++ -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -pipe  -Wall -Wpointer-arith -Woverloaded-virtual -Wsynth -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor -Wcast-align -Wno-invalid-offsetof -Wno-variadic-macros -Wno-long-long  conftest.C 1>&5
+configure:12724: checking for tm_zone tm_gmtoff in struct tm
+configure:13297: checking for setlocale
