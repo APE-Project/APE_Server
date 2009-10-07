@@ -36,6 +36,8 @@
 
 #define APEUSER_TO_JSOBJ(apeuser) \
 		 (JSObject *)get_property(apeuser->properties, "jsobj")->val
+#define APECHAN_TO_JSOBJ(apechan) \
+		 (JSObject *)get_property(apechan->properties, "jsobj")->val
 
 #define APE_JS_EVENT(cb, argc, argv) ape_fire_callback(cb, argc, argv, g_ape)
 static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetables *g_ape);
@@ -171,6 +173,13 @@ static JSClass user_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+static JSClass channel_class = {
+	"channel", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 static JSClass pipe_class = {
 	"pipe", JSCLASS_HAS_PRIVATE,
 	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
@@ -247,9 +256,7 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 			ape_json = json_new_object();
 		}
 	}
-	if (length == 0) {
-		printf("Length is null\n");
-	}
+
 	for (i = 0; i < length; i++) {
 		jsval vp;
 		JSString *key = NULL;
@@ -269,7 +276,6 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				printf("Value is void\n");
 				break;
 			case JSTYPE_OBJECT:
-				printf("Value is an object\n");
 				if ((val_obj = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(vp))) != NULL) {
 					if (!isarray) {
 						json_set_property_objN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), val_obj);
@@ -299,13 +305,13 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				}
 				break;
 			case JSTYPE_BOOLEAN:
-				printf("Value is a bool\n");
+				//printf("Value is a bool\n");
 				break;
 			case JSTYPE_NULL:
-				printf("Value is a null\n");
+				//printf("Value is a null\n");
 				break;
 			default:
-				printf("Wtf is a value\n");
+				//printf("Wtf is a value\n");
 				break;
 		}
 	}
@@ -326,7 +332,7 @@ APE_JS_NATIVE(apepipe_sm_to_object)
 	pipe_object = get_json_object_pipe(spipe);
 	
 	js_pipe_object = JS_NewObject(cx, NULL, NULL, NULL);
-	ape_json_to_jsobj(cx, pipe_object, js_pipe_object);
+	ape_json_to_jsobj(cx, pipe_object->jchild.child, js_pipe_object);
 	
 	*rval = OBJECT_TO_JSVAL(js_pipe_object);
 	
@@ -342,29 +348,65 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 	json_item *jstr;
 	jsval vp;
 
-	transpipe *spipe = JS_GetPrivate(cx, obj);
+	transpipe *to_pipe = JS_GetPrivate(cx, obj);
 	
 	if (!JS_ConvertArguments(cx, 3, argv, "so/o", &raw, &json_obj, &options)) {
 		return JS_FALSE;
 	}
 	
 	jstr = jsobj_to_ape_json(cx, json_obj);
-	//s = json_to_string(i, NULL, 0);
+
 	if (options != NULL && JS_GetProperty(cx, options, "from", &vp) && JSVAL_IS_OBJECT(vp) && JS_InstanceOf(cx, JSVAL_TO_OBJECT(vp), &pipe_class, 0) == JS_TRUE) {
+		JSObject *js_pipe = JSVAL_TO_OBJECT(vp);
+		transpipe *from_pipe = JS_GetPrivate(cx, js_pipe);
 		
+		if (from_pipe->type == USER_PIPE) {
+			json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
+			
+			if (to_pipe->type == CHANNEL_PIPE) {
+				newraw = forge_raw(raw, jstr);
+				post_raw_channel_restricted(newraw, to_pipe->pipe, from_pipe->pipe, g_ape);
+				
+				return JS_TRUE;
+			}
+		}
 	}
+	newraw = forge_raw(raw, jstr);
 	
-	//post_to_pipe(jstr, raw, spipe->pubid, from, g_ape);
-	/*if (spipe->type == CHANNEL_PIPE) {
-		post_raw_channel(newraw, spipe->pipe, g_ape);
+	if (to_pipe->type == CHANNEL_PIPE) {
+		post_raw_channel(newraw, to_pipe->pipe, g_ape);
 	} else {
-		post_raw(newraw, spipe->pipe, g_ape);
-	}*/	
+		post_raw(newraw, to_pipe->pipe, g_ape);
+	}
 
 //	printf("First value : %s\n", JS_GetStringBytes(JSVAL_TO_STRING(propname)));
 	
 	return JS_TRUE;
 }
+
+APE_JS_NATIVE(apechannel_sm_get_property)
+//{
+	const char *property;
+	CHANNEL *chan = JS_GetPrivate(cx, obj);
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &property)) {
+		return JS_FALSE;
+	}
+	
+	if (strcmp(property, "pubid") == 0) {
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, chan->pipe->pubid, 32));
+	} else if (strcmp(property, "name") == 0) {
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, chan->name));
+	} else {
+		extend *getprop = get_property(chan->properties, property);
+		if (getprop != NULL && getprop->type == EXTEND_STR) {
+			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+		}
+	}
+	
+	return JS_TRUE;
+}
+
 
 APE_JS_NATIVE(apeuser_sm_get_property)
 //{
@@ -432,6 +474,12 @@ static JSFunctionSpec apesocket_client_funcs[] = {
 
 static JSFunctionSpec apeuser_funcs[] = {
 	JS_FS("getProperty", apeuser_sm_get_property, 1, 0, 0),
+	JS_FS("setProperty", apeuser_sm_set_property, 2, 0, 0),
+	JS_FS_END
+};
+
+static JSFunctionSpec apechannel_funcs[] = {
+	JS_FS("getProperty", apechannel_sm_get_property, 1, 0, 0),
 	JS_FS("setProperty", apeuser_sm_set_property, 2, 0, 0),
 	JS_FS_END
 };
@@ -631,23 +679,18 @@ static void reportError(JSContext *cx, const char *message, JSErrorReport *repor
 static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 {
 	while (head != NULL) {
-		printf("Here\n");
 		if (head->jchild.child == NULL && head->key.val != NULL) {
 			jsval jval;
-			printf("error\n");
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
 			JS_SetProperty(cx, root, head->key.val, &jval);
-			printf("Fail\n");
 		} else if (head->key.val == NULL && head->jval.vu.str.value != NULL) {
 			jsuint rval;
 			jsval jval;
-			printf("La\n");
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
-			
 			if (JS_GetArrayLength(cx, root, &rval)) {
 				JS_SetElement(cx, root, rval, &jval);
 			}
-			printf("Plus la\n");
+
 		}
 		
 		if (head->jchild.child != NULL) {
@@ -658,9 +701,11 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 					cobj = JS_NewObject(cx, NULL, NULL, root);
 					break;
 				case JSON_C_T_ARR:
+					printf("New array\n");
 					cobj = JS_NewArrayObject(cx, 0, NULL);
 					break;
 				default:
+					printf("No type\n");
 					break;
 			}
 			if (cobj != NULL) {
@@ -1418,7 +1463,6 @@ static USERS *ape_cb_add_user(ape_socket *client, char *host, acetables *g_ape)
 		JS_SetProperty(gcx, user, "pipe", &pipe);
 		JS_SetPrivate(gcx, user, u);
 
-	
 		JS_EndRequest(gcx);
 		JS_ClearContextThread(gcx);
 		
@@ -1429,11 +1473,64 @@ static USERS *ape_cb_add_user(ape_socket *client, char *host, acetables *g_ape)
 	return u;	
 }
 
+static void ape_cb_del_user(USERS *user, acetables *g_ape)
+{
+	jsval params[1];
+	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
+	
+	APE_JS_EVENT("deluser", 1, params);
+	
+	deluser(user, g_ape);
+}
+
+static CHANNEL *ape_cb_mkchan(char *name, acetables *g_ape)
+{
+	JSObject *js_channel;
+	extend *jsobj;
+	jsval params[1], pipe;
+	JSContext *gcx = ASMC;
+	CHANNEL *chan = mkchan(name, g_ape);
+	
+	JS_SetContextThread(gcx);
+	JS_BeginRequest(gcx);
+
+		js_channel = JS_NewObject(gcx, &channel_class, NULL, NULL);
+
+		jsobj = add_property(&chan->properties, "jsobj", js_channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
+		JS_AddRoot(gcx, &jsobj->val);
+		
+		JS_DefineFunctions(gcx, js_channel, apechannel_funcs);
+		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, chan->pipe, gcx, g_ape));
+		JS_SetProperty(gcx, js_channel, "pipe", &pipe);
+		JS_SetPrivate(gcx, js_channel, chan);
+
+	JS_EndRequest(gcx);
+	JS_ClearContextThread(gcx);
+	
+	params[0] = OBJECT_TO_JSVAL(js_channel);
+	APE_JS_EVENT("mkchan", 1, params);
+	
+	return chan;
+}
+
+
+static void ape_cb_join(USERS *user, CHANNEL *chan, acetables *g_ape)
+{
+	jsval params[2];
+	join(user, chan, g_ape);
+	
+	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
+	params[1] = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(chan));
+	
+	
+	APE_JS_EVENT("join", 2, params);
+}
+
 static ace_callbacks callbacks = {
 	ape_cb_add_user,	/* Called when new user is added */
-	NULL,				/* Called when a user is disconnected */
-	NULL,				/* Called when new chan is created */
-	NULL,				/* Called when a user join a channel */
+	ape_cb_del_user,	/* Called when a user is disconnected */
+	ape_cb_mkchan,		/* Called when new chan is created */
+	ape_cb_join,		/* Called when a user join a channel */
 	NULL				/* Called when a user leave a channel */
 };
 

@@ -1066,6 +1066,20 @@ Ape.addEvent("init", function() {
 		user.foo = "bar";
 	});
 	
+	Ape.addEvent("deluser", function(user) {
+		Ape.log("Del user : " + user.getProperty('nickname'));
+	});
+	
+	Ape.addEvent("join", function(user, channel) {
+		Ape.log("JOIN !" + channel.getProperty('name'));
+	});
+	
+	Ape.addEvent("mkchan", function(channel) {
+		Ape.log("new channel " + channel.getProperty('name'));
+	});
+	
+	
+	
 	/* Create a non-blocking socket that listen on port 7779 */
 	
 	
@@ -1119,33 +1133,10 @@ Ape.addEvent("init", function() {
 	
 	/* Register a CMD that require user to be loged */
 	Ape.registerCmd("foocmd", true, function(params, infos) {
-
-			
-			Ape.log("Info : " + Hash.toQueryString(infos.user.pipe.toObject()));
-			
-			
-			
-		//	user.pipe.sendRaw("Bar", params, {from: user});
-			
-			
+		infos.user.pipe.sendRaw("foo", {"key":"val"}, {
+			from: infos.user.pipe
+		});
 	});
-	
-	Ape.registerCmd("puh", false, function(params, infos) {
-		var ax = new Array();
-		var olol = {a:"b","c":"d"};
-
-		for (var x = 0; x < 100; x++)
-			ax[x] = new Array();
-	});
-
-	Ape.registerHookCmd("join", function(params, infos) {
-		if (!["robert","john"].contains(params.channels[0])) {
-			return 0;
-		}
-		return 1;
-	});
-	
-	
 
 });
 

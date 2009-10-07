@@ -344,7 +344,7 @@ unsigned int cmd_join(callbackp *callbacki)
 	JFOREACH(channels, chan_name) {
 	
 		if ((jchan = getchan(chan_name, callbacki->g_ape)) == NULL) {
-			jchan = mkchan(chan_name, "Default%20Topic", callbacki->g_ape);
+			jchan = mkchan(chan_name, callbacki->g_ape);
 		
 			if (jchan == NULL) {
 			

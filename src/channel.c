@@ -43,12 +43,12 @@ unsigned int isvalidchan(char *name)
 	return 1;
 }
 
-CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
+CHANNEL *mkchan(char *chan, acetables *g_ape)
 {
 	CHANNEL *new_chan = NULL;
 
 
-	FIRE_EVENT(mkchan, new_chan, chan, topic, g_ape);
+	FIRE_EVENT(mkchan, new_chan, chan, g_ape);
 
 	
 	if (!isvalidchan(chan)) {
@@ -65,7 +65,7 @@ CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape)
 	
 	new_chan->interactive = (*new_chan->name == '*' ? 0 : 1);
 
-	memcpy(new_chan->topic, topic, strlen(topic)+1);
+	//memcpy(new_chan->topic, topic, strlen(topic)+1);
 
 	new_chan->pipe = init_pipe(new_chan, CHANNEL_PIPE, g_ape);
 	
@@ -340,7 +340,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 	return 0;
 }
 
-unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape)
+/*unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape)
 {
 	RAW *newraw;
 	userslist *list;
@@ -365,7 +365,7 @@ unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *
 		return 1;
 	}
 	return 0;
-}
+}*/
 
 void ban(CHANNEL *chan, USERS *banner, const char *ip, char *reason, unsigned int expire, acetables *g_ape) // Ban IP
 {

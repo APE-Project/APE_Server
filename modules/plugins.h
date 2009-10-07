@@ -48,11 +48,12 @@ struct _ace_callbacks
 {		
 	USERS *(*c_adduser)(ape_socket *, char *, acetables *);
 	void (*c_deluser)(USERS *, acetables *);
-	CHANNEL *(*c_mkchan)(char *, char *, acetables *);
+	CHANNEL *(*c_mkchan)(char *, acetables *);
 	void (*c_join)(USERS *, CHANNEL *, acetables *);
 	void (*c_left)(USERS *, CHANNEL *, acetables *);
 	void (*c_tickuser)(subuser *, acetables *);
 	void (*c_post_raw_sub)(RAW *, subuser *, acetables *);
+	// TODO : delchan
 };
 
 typedef struct _plug_config plug_config;

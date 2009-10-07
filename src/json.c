@@ -491,9 +491,11 @@ void json_set_property_objN(json_item *obj, const char *key, int keylen, json_it
 	}
 	
 	new_item->father = obj;
-	new_item->jchild.child = value;
+	new_item->jchild.child = value->jchild.child;
+	new_item->jchild.type = (key == NULL ? JSON_C_T_ARR : JSON_C_T_OBJ);
 	
-	value->father = new_item;
+	value->jchild.child->father = new_item;
+	free(value);
 	
 	if (obj->jchild.child == NULL) {
 		obj->jchild.child = new_item;
@@ -609,7 +611,7 @@ static int json_callback(void *ctx, int type, const JSON_value* value)
 				jval = init_json_item();
 				
 				if (cx->current_cx != NULL) {
-					if (cx->start_depth) {					
+					if (cx->start_depth) {			
 						cx->current_cx->jchild.child = jval;
 						jval->father = cx->current_cx;
 					} else {

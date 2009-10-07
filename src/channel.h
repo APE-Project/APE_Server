@@ -34,7 +34,7 @@
 typedef struct CHANNEL
 {
 	char name[MAX_CHAN_LEN+1];
-	char topic[MAX_TOPIC_LEN+1];
+	//char topic[MAX_TOPIC_LEN+1];
 
 	struct _transpipe *pipe;
 	struct userslist *head;
@@ -57,7 +57,7 @@ typedef struct BANNED
 	struct BANNED *next;
 } BANNED;
 
-CHANNEL *mkchan(char *chan, char *topic, acetables *g_ape);
+CHANNEL *mkchan(char *chan, acetables *g_ape);
 CHANNEL *getchan(const char *chan, acetables *g_ape);
 
 BANNED *getban(CHANNEL *chan, const char *ip);
@@ -78,7 +78,7 @@ struct userslist *getlist(const char *chan, acetables *g_ape);
 struct userslist *getuchan(struct USERS *user, CHANNEL *chan);
 	
 unsigned int setlevel(struct USERS *user_actif, struct USERS *user_passif, CHANNEL *chan, unsigned int lvl, acetables *g_ape);
-unsigned int settopic(struct USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape);
+//unsigned int settopic(struct USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape);
 unsigned int isvalidchan(char *name);
 
 json_item *get_json_object_channel(CHANNEL *chan);
