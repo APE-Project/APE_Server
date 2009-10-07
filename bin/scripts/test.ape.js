@@ -1071,7 +1071,8 @@ Ape.addEvent("init", function() {
 	});
 	
 	Ape.addEvent("join", function(user, channel) {
-		Ape.log("JOIN !" + channel.getProperty('name'));
+		//Ape.log("JOIN !" + channel.getProperty('name'));
+		Ape.log(Hash.toQueryString(user.pipe.toObject()));
 	});
 	
 	Ape.addEvent("mkchan", function(channel) {

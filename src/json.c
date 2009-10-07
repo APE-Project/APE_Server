@@ -482,7 +482,7 @@ json_item *json_new_array()
 
 void json_set_property_objN(json_item *obj, const char *key, int keylen, json_item *value)
 {
-	json_item *new_item = init_json_item();
+	json_item *new_item = value;
 	
 	if (key != NULL) {
 		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
@@ -491,12 +491,7 @@ void json_set_property_objN(json_item *obj, const char *key, int keylen, json_it
 	}
 	
 	new_item->father = obj;
-	new_item->jchild.child = value->jchild.child;
-	new_item->jchild.type = (key == NULL ? JSON_C_T_ARR : JSON_C_T_OBJ);
-	
-	value->jchild.child->father = new_item;
-	free(value);
-	
+
 	if (obj->jchild.child == NULL) {
 		obj->jchild.child = new_item;
 	} else {
