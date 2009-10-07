@@ -1517,13 +1517,16 @@ static CHANNEL *ape_cb_mkchan(char *name, acetables *g_ape)
 static void ape_cb_join(USERS *user, CHANNEL *chan, acetables *g_ape)
 {
 	jsval params[2];
-	join(user, chan, g_ape);
+	
 	
 	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
 	params[1] = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(chan));
 	
+	APE_JS_EVENT("beforeJoin", 2, params);
 	
-	APE_JS_EVENT("join", 2, params);
+	join(user, chan, g_ape);
+	
+	APE_JS_EVENT("afterJoin", 2, params);
 }
 
 static ace_callbacks callbacks = {
