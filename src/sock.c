@@ -291,11 +291,10 @@ unsigned int sockroutine(acetables *g_ape)
 	#endif
 	
 	while (1) {
-		int timeout_to_hang = (1000/TICKS_RATE)-ticks;
+		int timeout_to_hang = MAX((1000/TICKS_RATE)-ticks, 1);
 		/* Linux 2.6.25 provides a fd-driven timer system. It could be usefull to implement */
 		gettimeofday(&t_start, NULL);
-		
-		
+
 		nfds = events_poll(g_ape->events, timeout_to_hang);
 		
 		if (nfds < 0) {
@@ -561,14 +560,12 @@ unsigned int sockroutine(acetables *g_ape)
 		gettimeofday(&t_end, NULL);
 
 		ticks += (1000*(t_end.tv_sec - t_start.tv_sec))+((t_end.tv_usec - t_start.tv_usec)/1000);
-		
 		/* Tic tac, tic tac :-) */
 		if (ticks >= 1000/TICKS_RATE) {
+			int nticks;
 			ape_proxy *proxy = g_ape->proxy.list;
 			int psock;
-			
-			ticks = 0;
-			
+
 			while (proxy != NULL) {
 
 				if (proxy->state == PROXY_NOT_CONNECTED && ((psock = proxy_connect(proxy, g_ape)) != 0)) {
@@ -596,7 +593,10 @@ unsigned int sockroutine(acetables *g_ape)
 				proxy = proxy->next;
 			}
 			
-			process_tick(g_ape);
+			for (nticks = 0; nticks < ticks; nticks++) {
+				process_tick(g_ape);
+			}
+			ticks = 0;
 		}                
 
 	}

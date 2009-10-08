@@ -64,7 +64,6 @@ void process_tick(acetables *g_ape)
 		
 		if (timers->ticks_left <= 0) {
 			int lastcall = (timers->times > 0 && --timers->times == 0);
-			
 			void (*func_timer)(void *param, int) = timers->func;
 			func_timer(timers->params, lastcall);
 			

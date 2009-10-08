@@ -1061,6 +1061,10 @@ function create_js_server(port, forward)
 Ape.addEvent("init", function() {
 
 	
+	Ape.setInterval(function() {
+		Ape.log("timeout");
+	}, 100);
+	
 	Ape.addEvent("adduser", function(user) {
 		user.setProperty("nickname", "paraboul");
 		user.foo = "bar";

@@ -41,5 +41,11 @@ int urldecode(char *string);
 int rand_n(int n);
 
 #define LENGTH_N(num) ((num<10 && num >= 0)?1:(int)log10(fabs(num))+1);
+#ifndef MAX
+  #define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#endif
+#ifndef MIN
+  #define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#endif
 
 #endif
