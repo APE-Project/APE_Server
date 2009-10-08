@@ -113,17 +113,17 @@ ac_cv_path_ZIP=${ac_cv_path_ZIP=/usr/bin/zip}
 ac_cv_path_install=${ac_cv_path_install='/usr/bin/install -c'}
 ac_cv_prog_AR=${ac_cv_prog_AR=ar}
 ac_cv_prog_AWK=${ac_cv_prog_AWK=gawk}
-ac_cv_prog_CC=${ac_cv_prog_CC=gcc}
-ac_cv_prog_CPP=${ac_cv_prog_CPP='gcc -E'}
-ac_cv_prog_CXX=${ac_cv_prog_CXX=c++}
-ac_cv_prog_CXXCPP=${ac_cv_prog_CXXCPP='c++ -E'}
+ac_cv_prog_CC=${ac_cv_prog_CC=gcc-4.2}
+ac_cv_prog_CPP=${ac_cv_prog_CPP='gcc-4.2 -E'}
+ac_cv_prog_CXX=${ac_cv_prog_CXX=g++-4.2}
+ac_cv_prog_CXXCPP=${ac_cv_prog_CXXCPP='g++-4.2 -E'}
 ac_cv_prog_LD=${ac_cv_prog_LD=ld}
 ac_cv_prog_LN_S=${ac_cv_prog_LN_S='ln -s'}
 ac_cv_prog_RANLIB=${ac_cv_prog_RANLIB=ranlib}
 ac_cv_prog_STRIP=${ac_cv_prog_STRIP=strip}
 ac_cv_prog_cc_cross=${ac_cv_prog_cc_cross=no}
 ac_cv_prog_cc_g=${ac_cv_prog_cc_g=yes}
-ac_cv_prog_cc_gcc_c_o=${ac_cv_prog_cc_gcc_c_o=yes}
+ac_cv_prog_cc_gcc_4_2_c_o=${ac_cv_prog_cc_gcc_4_2_c_o=yes}
 ac_cv_prog_cc_works=${ac_cv_prog_cc_works=yes}
 ac_cv_prog_cxx_cross=${ac_cv_prog_cxx_cross=no}
 ac_cv_prog_cxx_g=${ac_cv_prog_cxx_g=yes}

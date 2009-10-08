@@ -47,6 +47,7 @@
 #include "jstypes.h"
 #include "jsbuiltins.h"
 #include "jscntxt.h"
+#include "jsdhash.h"
 #include "jsinterp.h"
 #include "jslock.h"
 #include "jsnum.h"
@@ -279,7 +280,9 @@ public:
     JS_REQUIRES_STACK void markGlobalSlotUndemotable(JSContext* cx, unsigned slot);
     JS_REQUIRES_STACK bool isGlobalSlotUndemotable(JSContext* cx, unsigned slot) const;
     JS_REQUIRES_STACK void markStackSlotUndemotable(JSContext* cx, unsigned slot);
+    JS_REQUIRES_STACK void markStackSlotUndemotable(JSContext* cx, unsigned slot, const void* pc);
     JS_REQUIRES_STACK bool isStackSlotUndemotable(JSContext* cx, unsigned slot) const;
+    JS_REQUIRES_STACK bool isStackSlotUndemotable(JSContext* cx, unsigned slot, const void* pc) const;
     void markInstructionUndemotable(jsbytecode* pc);
     bool isInstructionUndemotable(jsbytecode* pc) const;
 
@@ -384,7 +387,19 @@ public:
     _(UNSTABLE_LOOP)                                                            \
     _(TIMEOUT)                                                                  \
     _(DEEP_BAIL)                                                                \
-    _(STATUS)
+    _(STATUS)                                                                   \
+    /* Exit is almost recursive and wants a peer at recursive_pc */             \
+    _(RECURSIVE_UNLINKED)                                                       \
+    /* Exit is recursive, and there are no more frames */                       \
+    _(RECURSIVE_LOOP)                                                           \
+    /* Exit is recursive, but type-mismatched guarding on a down frame */       \
+    _(RECURSIVE_MISMATCH)                                                       \
+    /* Exit is recursive, and the JIT wants to try slurping interp frames */    \
+    _(RECURSIVE_EMPTY_RP)                                                       \
+    /* Slurping interp frames in up-recursion failed */                         \
+    _(RECURSIVE_SLURP_FAIL)                                                     \
+    /* Tried to slurp an interp frame, but the pc or argc mismatched */         \
+    _(RECURSIVE_SLURP_MISMATCH)
 
 enum ExitType {
     #define MAKE_EXIT_CODE(x) x##_EXIT,
@@ -392,6 +407,8 @@ enum ExitType {
     #undef MAKE_EXIT_CODE
     TOTAL_EXIT_TYPES
 };
+
+struct FrameInfo;
 
 struct VMSideExit : public nanojit::SideExit
 {
@@ -406,6 +423,11 @@ struct VMSideExit : public nanojit::SideExit
     uint32 numStackSlotsBelowCurrentFrame;
     ExitType exitType;
     uintN lookupFlags;
+    void* recursive_pc;
+    FrameInfo* recursive_down;
+    unsigned hitcount;
+    unsigned slurpFailSlot;
+    JSTraceType slurpType;
 
     /*
      * Ordinarily 0.  If a slow native function is atop the stack, the 1 bit is
@@ -427,6 +449,11 @@ struct VMSideExit : public nanojit::SideExit
 
     inline JSTraceType* stackTypeMap() {
         return (JSTraceType*)(this + 1);
+    }
+
+    inline JSTraceType& stackType(unsigned i) {
+        JS_ASSERT(i < numStackSlots);
+        return stackTypeMap()[i];
     }
 
     inline JSTraceType* globalTypeMap() {
@@ -539,6 +566,8 @@ struct REHashFn {
     }
 };
 
+class TreeInfo;
+
 struct FrameInfo {
     JSObject*       block;      // caller block chain head
     jsbytecode*     pc;         // caller fp->regs->pc
@@ -574,6 +603,7 @@ struct FrameInfo {
 
     // The typemap just before the callee is called.
     JSTraceType* get_typemap() { return (JSTraceType*) (this+1); }
+    const JSTraceType* get_typemap() const { return (JSTraceType*) (this+1); }
 };
 
 struct UnstableExit
@@ -581,6 +611,21 @@ struct UnstableExit
     nanojit::Fragment* fragment;
     VMSideExit* exit;
     UnstableExit* next;
+};
+
+enum MonitorReason
+{
+    Monitor_Branch,
+    Monitor_EnterFrame,
+    Monitor_LeaveFrame
+};
+
+enum RecursionStatus
+{
+    Recursion_None,             /* No recursion has been compiled yet. */
+    Recursion_Disallowed,       /* This tree cannot be recursive. */
+    Recursion_Unwinds,          /* Tree is up-recursive only. */
+    Recursion_Detected          /* Tree has down recursion and maybe up recursion. */
 };
 
 class TreeInfo {
@@ -608,6 +653,7 @@ public:
     uintN                   treeLineNumber;
     uintN                   treePCOffset;
 #endif
+    RecursionStatus         recursion;
 
     TreeInfo(nanojit::Allocator* alloc,
              nanojit::Fragment* _fragment,
@@ -626,7 +672,8 @@ public:
           sideExits(alloc),
           unstableExits(NULL),
           gcthings(alloc),
-          sprops(alloc)
+          sprops(alloc),
+          recursion(Recursion_None)
     {}
 
     inline unsigned nGlobalTypes() {
@@ -642,7 +689,7 @@ public:
     UnstableExit* removeUnstableExit(VMSideExit* exit);
 };
 
-#if defined(JS_JIT_SPEW) && (defined(NANOJIT_IA32) || (defined(NANOJIT_AMD64) && defined(__GNUC__)))
+#if defined(JS_JIT_SPEW) && (defined(NANOJIT_IA32) || defined(NANOJIT_X64))
 # define EXECUTE_TREE_TIMER
 #endif
 
@@ -658,10 +705,12 @@ struct InterpState
     JSContext     *cx;                  // current VM context handle
     double        *eos;                 // first unusable word after the native stack
     void          *eor;                 // first unusable word after the call stack
+    void          *sor;                 // start of rp stack
     VMSideExit*    lastTreeExitGuard;   // guard we exited on during a tree call
     VMSideExit*    lastTreeCallGuard;   // guard we want to grow from if the tree
                                         // call exit guard mismatched
     void*          rpAtLastTreeCall;    // value of rp at innermost tree call guard
+    VMSideExit*    outermostTreeExitGuard; // the last side exit returned by js_CallTree
     TreeInfo*      outermostTree;       // the outermost tree we initially invoked
     double*        stackBase;           // native stack base
     FrameInfo**    callstackBase;       // call stack base
@@ -683,7 +732,7 @@ struct InterpState
     double*        deepBailSp;
 
 
-    // Used when calling natives from trace to root the vp vector. */
+    // Used when calling natives from trace to root the vp vector.
     uintN          nativeVpLen;
     jsval         *nativeVp;
 };
@@ -824,6 +873,7 @@ StatusAbortsRecording(AbortableRecordingStatus ars)
 #endif
 
 class SlotMap;
+class SlurpInfo;
 
 /* Results of trying to compare two typemaps together */
 enum TypeConsensus
@@ -878,6 +928,7 @@ class TraceRecorder {
     uint32                  outerArgc; /* outer trace deepest frame argc */
     bool                    loop;
     nanojit::LIns*          loopLabel;
+    MonitorReason           monitorReason;
 
     nanojit::LIns* insImmObj(JSObject* obj);
     nanojit::LIns* insImmFun(JSFunction* fun);
@@ -899,6 +950,24 @@ class TraceRecorder {
 
     JS_REQUIRES_STACK void guard(bool expected, nanojit::LIns* cond, ExitType exitType);
     JS_REQUIRES_STACK void guard(bool expected, nanojit::LIns* cond, VMSideExit* exit);
+    JS_REQUIRES_STACK nanojit::LIns* slurpInt32Slot(nanojit::LIns* val_ins, jsval* vp,
+                                                    VMSideExit* exit);
+    JS_REQUIRES_STACK nanojit::LIns* slurpDoubleSlot(nanojit::LIns* val_ins, jsval* vp,
+                                                     VMSideExit* exit);
+    JS_REQUIRES_STACK nanojit::LIns* slurpStringSlot(nanojit::LIns* val_ins, jsval* vp,
+                                                     VMSideExit* exit);
+    JS_REQUIRES_STACK nanojit::LIns* slurpObjectSlot(nanojit::LIns* val_ins, jsval* vp,
+                                                     VMSideExit* exit);
+    JS_REQUIRES_STACK nanojit::LIns* slurpFunctionSlot(nanojit::LIns* val_ins, jsval* vp,
+                                                       VMSideExit* exit);
+    JS_REQUIRES_STACK nanojit::LIns* slurpNullSlot(nanojit::LIns* val_ins, jsval* vp,
+                                                   VMSideExit* exit);
+    JS_REQUIRES_STACK nanojit::LIns* slurpBoolSlot(nanojit::LIns* val_ins, jsval* vp,
+                                                   VMSideExit* exit);
+    JS_REQUIRES_STACK nanojit::LIns* slurpSlot(nanojit::LIns* val_ins, jsval* vp,
+                                               VMSideExit* exit);
+    JS_REQUIRES_STACK void slurpSlot(nanojit::LIns* val_ins, jsval* vp, SlurpInfo* info);
+    JS_REQUIRES_STACK AbortableRecordingStatus slurpDownFrames(jsbytecode* return_pc);
 
     nanojit::LIns* addName(nanojit::LIns* ins, const char* name);
 
@@ -913,7 +982,8 @@ class TraceRecorder {
     JS_REQUIRES_STACK void checkForGlobalObjectReallocation();
 
     JS_REQUIRES_STACK TypeConsensus selfTypeStability(SlotMap& smap);
-    JS_REQUIRES_STACK TypeConsensus peerTypeStability(SlotMap& smap, VMFragment** peer);
+    JS_REQUIRES_STACK TypeConsensus peerTypeStability(SlotMap& smap, const void* ip,
+                                                      VMFragment** peer);
 
     JS_REQUIRES_STACK jsval& argval(unsigned n) const;
     JS_REQUIRES_STACK jsval& varval(unsigned n) const;
@@ -980,9 +1050,17 @@ class TraceRecorder {
     JS_REQUIRES_STACK RecordingStatus unary(nanojit::LOpcode op);
     JS_REQUIRES_STACK RecordingStatus binary(nanojit::LOpcode op);
 
-    JS_REQUIRES_STACK void guardShape(nanojit::LIns* obj_ins, JSObject* obj,
-                                      uint32 shape, const char* guardName,
-                                      nanojit::LIns* map_ins, VMSideExit* exit);
+    JS_REQUIRES_STACK RecordingStatus guardShape(nanojit::LIns* obj_ins, JSObject* obj,
+                                                 uint32 shape, const char* name,
+                                                 nanojit::LIns* map_ins, VMSideExit* exit);
+
+    JSDHashTable guardedShapeTable;
+
+#if defined DEBUG_notme && defined XP_UNIX
+    void dumpGuardedShapes(const char* prefix);
+#endif
+
+    void forgetGuardedShapes();
 
     inline nanojit::LIns* map(nanojit::LIns *obj_ins);
     JS_REQUIRES_STACK bool map_is_native(JSObjectMap* map, nanojit::LIns* map_ins,
@@ -1139,13 +1217,13 @@ public:
     TraceRecorder(JSContext* cx, VMSideExit*, nanojit::Fragment*, TreeInfo*,
                   unsigned stackSlots, unsigned ngslots, JSTraceType* typeMap,
                   VMSideExit* expectedInnerExit, jsbytecode* outerTree,
-                  uint32 outerArgc);
+                  uint32 outerArgc, MonitorReason monitorReason);
     ~TraceRecorder();
 
     bool outOfMemory();
 
     static JS_REQUIRES_STACK AbortableRecordingStatus monitorRecording(JSContext* cx, TraceRecorder* tr,
-                                                                         JSOp op);
+                                                                       JSOp op);
 
     JS_REQUIRES_STACK JSTraceType determineSlotType(jsval* vp);
 
@@ -1172,38 +1250,53 @@ public:
     nanojit::Fragment* getFragment() const { return fragment; }
     TreeInfo* getTreeInfo() const { return treeInfo; }
     JS_REQUIRES_STACK AbortableRecordingStatus compile(JSTraceMonitor* tm);
-    JS_REQUIRES_STACK AbortableRecordingStatus closeLoop(TypeConsensus &consensus);
-    JS_REQUIRES_STACK AbortableRecordingStatus closeLoop(SlotMap& slotMap, VMSideExit* exit, TypeConsensus &consensus);
+    JS_REQUIRES_STACK AbortableRecordingStatus closeLoop();
+    JS_REQUIRES_STACK AbortableRecordingStatus closeLoop(VMSideExit* exit);
+    JS_REQUIRES_STACK AbortableRecordingStatus closeLoop(SlotMap& slotMap, VMSideExit* exit);
     JS_REQUIRES_STACK AbortableRecordingStatus endLoop();
     JS_REQUIRES_STACK AbortableRecordingStatus endLoop(VMSideExit* exit);
     JS_REQUIRES_STACK void joinEdgesToEntry(VMFragment* peer_root);
     JS_REQUIRES_STACK void adjustCallerTypes(nanojit::Fragment* f);
-    JS_REQUIRES_STACK VMFragment* findNestedCompatiblePeer(VMFragment* f);
     JS_REQUIRES_STACK void prepareTreeCall(VMFragment* inner);
     JS_REQUIRES_STACK void emitTreeCall(VMFragment* inner, VMSideExit* exit);
+    JS_REQUIRES_STACK VMFragment* findNestedCompatiblePeer(VMFragment* f);
+    JS_REQUIRES_STACK AbortableRecordingStatus attemptTreeCall(VMFragment* inner,
+                                                               uintN& inlineCallCount);
     unsigned getCallDepth() const;
 
-    JS_REQUIRES_STACK AbortableRecordingStatus record_EnterFrame();
+    JS_REQUIRES_STACK void determineGlobalTypes(JSTraceType* typeMap);
+    nanojit::LIns* demoteIns(nanojit::LIns* ins);
+
+    JS_REQUIRES_STACK VMSideExit* downSnapshot(FrameInfo* downFrame);
+    JS_REQUIRES_STACK AbortableRecordingStatus upRecursion();
+    JS_REQUIRES_STACK AbortableRecordingStatus downRecursion();
+    JS_REQUIRES_STACK AbortableRecordingStatus record_EnterFrame(uintN& inlineCallCount);
     JS_REQUIRES_STACK AbortableRecordingStatus record_LeaveFrame();
     JS_REQUIRES_STACK AbortableRecordingStatus record_SetPropHit(JSPropCacheEntry* entry,
                                                                   JSScopeProperty* sprop);
     JS_REQUIRES_STACK AbortableRecordingStatus record_DefLocalFunSetSlot(uint32 slot, JSObject* obj);
     JS_REQUIRES_STACK AbortableRecordingStatus record_NativeCallComplete();
 
-    TreeInfo* getTreeInfo() { return treeInfo; }
+    void forgetGuardedShapesForObject(JSObject* obj);
 
 #ifdef DEBUG
-    void tprint(const char *format, int count, nanojit::LIns *insa[]);
-    void tprint(const char *format);
-    void tprint(const char *format, nanojit::LIns *ins);
-    void tprint(const char *format, nanojit::LIns *ins1, nanojit::LIns *ins2);
-    void tprint(const char *format, nanojit::LIns *ins1, nanojit::LIns *ins2, nanojit::LIns *ins3);
-    void tprint(const char *format, nanojit::LIns *ins1, nanojit::LIns *ins2, nanojit::LIns *ins3,
-                nanojit::LIns *ins4);
-    void tprint(const char *format, nanojit::LIns *ins1, nanojit::LIns *ins2, nanojit::LIns *ins3,
-                nanojit::LIns *ins4, nanojit::LIns *ins5);
-    void tprint(const char *format, nanojit::LIns *ins1, nanojit::LIns *ins2, nanojit::LIns *ins3,
-                nanojit::LIns *ins4, nanojit::LIns *ins5, nanojit::LIns *ins6);
+    JS_REQUIRES_STACK void tprint(const char *format, int count, nanojit::LIns *insa[]);
+    JS_REQUIRES_STACK void tprint(const char *format);
+    JS_REQUIRES_STACK void tprint(const char *format, nanojit::LIns *ins);
+    JS_REQUIRES_STACK void tprint(const char *format, nanojit::LIns *ins1,
+                                  nanojit::LIns *ins2);
+    JS_REQUIRES_STACK void tprint(const char *format, nanojit::LIns *ins1,
+                                  nanojit::LIns *ins2, nanojit::LIns *ins3);
+    JS_REQUIRES_STACK void tprint(const char *format, nanojit::LIns *ins1,
+                                  nanojit::LIns *ins2, nanojit::LIns *ins3,
+                                  nanojit::LIns *ins4);
+    JS_REQUIRES_STACK void tprint(const char *format, nanojit::LIns *ins1,
+                                  nanojit::LIns *ins2, nanojit::LIns *ins3,
+                                  nanojit::LIns *ins4, nanojit::LIns *ins5);
+    JS_REQUIRES_STACK void tprint(const char *format, nanojit::LIns *ins1,
+                                  nanojit::LIns *ins2, nanojit::LIns *ins3,
+                                  nanojit::LIns *ins4, nanojit::LIns *ins5,
+                                  nanojit::LIns *ins6);
 #endif
 
 #define OPDEF(op,val,name,token,length,nuses,ndefs,prec,format)               \
@@ -1219,6 +1312,7 @@ public:
     friend class TypeCompatibilityVisitor;
     friend class SlotMap;
     friend class DefaultSlotMap;
+    friend class RecursiveSlotMap;
     friend jsval *js_ConcatPostImacroStackCleanup(uint32 argc, JSFrameRegs &regs,
                                                   TraceRecorder *recorder);
 };
@@ -1251,7 +1345,7 @@ public:
 #define TRACE_2(x,a,b)          TRACE_ARGS(x, (a, b))
 
 extern JS_REQUIRES_STACK bool
-js_MonitorLoopEdge(JSContext* cx, uintN& inlineCallCount);
+js_MonitorLoopEdge(JSContext* cx, uintN& inlineCallCount, MonitorReason reason);
 
 #ifdef DEBUG
 # define js_AbortRecording(cx, reason) js_AbortRecordingImpl(cx, reason)

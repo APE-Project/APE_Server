@@ -72,13 +72,9 @@
 #define JS_BITS_PER_WORD_LOG2 6
 #define JS_BYTES_PER_DOUBLE 8
 #define JS_BYTES_PER_WORD 8
-#define JS_GC_ZEAL 1
 #define JS_HAVE_STDINT_H 1
 #define JS_TRACER 1
-#define MOZ_DEMANGLE_SYMBOLS 1
 #define MOZ_DLL_SUFFIX ".dylib"
-#define MOZ_REFLOW_PERF 1
-#define MOZ_REFLOW_PERF_DSP 1
 #define NEED_CPP_UNUSED_IMPLEMENTATIONS 1
 #define NEW_H <new>
 #define STDC_HEADERS 1

@@ -126,6 +126,7 @@ struct VMFragment;
 #ifdef __cplusplus
 struct REHashKey;
 struct REHashFn;
+class FrameInfoCache;
 typedef nanojit::HashMap<REHashKey, nanojit::Fragment*, REHashFn> REHashMap;
 #endif
 
@@ -177,6 +178,7 @@ struct JSTraceMonitor {
     CLS(nanojit::Assembler) assembler;
     CLS(nanojit::LirBuffer) lirbuf;
     CLS(nanojit::LirBuffer) reLirBuf;
+    CLS(FrameInfoCache)     frameCache;
 #ifdef DEBUG
     CLS(nanojit::LabelMap)  labels;
 #endif
@@ -361,7 +363,7 @@ struct JSThread {
     /* Indicates that the thread is waiting in ClaimTitle from jslock.cpp. */
     JSTitle             *titleToShare;
 
-    JSGCThing           *gcFreeLists[GC_NUM_FREELISTS];
+    JSGCThing           *gcFreeLists[FINALIZE_LIMIT];
 
     /* Factored out of JSThread for !JS_THREADSAFE embedding in JSRuntime. */
     JSThreadData        data;
@@ -448,7 +450,7 @@ struct JSRuntime {
 
     /* Garbage collector state, used by jsgc.c. */
     JSGCChunkInfo       *gcChunkList;
-    JSGCArenaList       gcArenaList[GC_NUM_FREELISTS];
+    JSGCArenaList       gcArenaList[FINALIZE_LIMIT];
     JSGCDoubleArenaList gcDoubleArenaList;
     JSDHashTable        gcRootsHash;
     JSDHashTable        *gcLocksHash;
