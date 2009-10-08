@@ -121,7 +121,15 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 	ijson = ojson = init_json_parser(cget->get);
 	
 	if (ijson == NULL || ijson->jchild.child == NULL) {
-		SENDH(cget->client->fd, ERR_BAD_JSON, g_ape);
+		RAW *newraw;
+		json_item *jlist = json_new_object();
+
+		json_set_property_strZ(jlist, "code", "005");
+		json_set_property_strZ(jlist, "value", "BAD_JSON");
+
+		newraw = forge_raw(RAW_ERR, jlist);
+		
+		send_raw_inline(cget->client, transport, newraw, g_ape);
 	} else {
 		//else if ((rjson = json_lookup(ijson->child, "cmd")) != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
 		for (ijson = ijson->jchild.child; ijson != NULL; ijson = ijson->next) {
@@ -153,7 +161,17 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 					//json_item *jchl;
 					
 					if (guser == NULL) {
-						SENDH(cget->client->fd, ERR_BAD_SESSID, g_ape);
+						
+						RAW *newraw;
+						json_item *jlist = json_new_object();
+
+						json_set_property_strZ(jlist, "code", "004");
+						json_set_property_strZ(jlist, "value", "BAD_SESSID");
+
+						newraw = forge_raw(RAW_ERR, jlist);
+						
+						send_raw_inline(cget->client, transport, newraw, g_ape);
+						
 						free_json_item(ojson);
 						
 						return (CONNECT_SHUTDOWN);
@@ -289,6 +307,12 @@ unsigned int cmd_connect(callbackp *callbacki)
 			break;
 		case 3:
 			nuser->transport = TRANSPORT_PERSISTANT;
+			break;
+		case 4:
+			nuser->transport = TRANSPORT_SSE_LONGPOLLING;
+			break;
+		case 5:
+			nuser->transport = TRANSPORT_SSE_JSONP;
 			break;
 		default:
 			nuser->transport = TRANSPORT_LONGPOLLING;

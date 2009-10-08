@@ -38,6 +38,7 @@ struct _transport_open_same_host_p transport_open_same_host(subuser *sub, ape_so
 			break;
 		case TRANSPORT_PERSISTANT:
 		case TRANSPORT_XHRSTREAMING:
+		case TRANSPORT_SSE_LONGPOLLING:
 			ret.client_close = client;
 			ret.client_listener = sub->client;
 			ret.substate = ALIVE;
@@ -53,10 +54,12 @@ void transport_data_completly_sent(subuser *sub, transport_t transport)
 	switch(transport) {
 		case TRANSPORT_LONGPOLLING:
 		case TRANSPORT_JSONP:
+		default:
 			do_died(sub);
 			break;
 		case TRANSPORT_PERSISTANT:
 		case TRANSPORT_XHRSTREAMING:
+		case TRANSPORT_SSE_LONGPOLLING:
 			break;
 	}	
 }
@@ -66,6 +69,7 @@ struct _transport_properties *transport_get_properties(transport_t transport, ac
 	switch(transport) {
 		case TRANSPORT_LONGPOLLING:
 		case TRANSPORT_PERSISTANT:
+		default:
 			break;
 		case TRANSPORT_XHRSTREAMING:
 			return &(g_ape->transports.xhrstreaming.properties);
@@ -73,6 +77,9 @@ struct _transport_properties *transport_get_properties(transport_t transport, ac
 		case TRANSPORT_JSONP:
 			return &(g_ape->transports.jsonp.properties);
 			break;
+		case TRANSPORT_SSE_LONGPOLLING:
+			return &(g_ape->transports.sse.properties);
+			break;			
 	}	
 	return NULL;
 }
@@ -100,4 +107,10 @@ void transport_start(acetables *g_ape)
 
 	g_ape->transports.xhrstreaming.properties.padding.right.val = xstrdup("\n\n");
 	g_ape->transports.xhrstreaming.properties.padding.right.len = 2;
+	
+	g_ape->transports.sse.properties.padding.left.val = xstrdup("Event: ape-event\nData: ");
+	g_ape->transports.sse.properties.padding.left.len = 24;
+
+	g_ape->transports.sse.properties.padding.right.val = xstrdup("\n\n");
+	g_ape->transports.sse.properties.padding.right.len = 2;
 }

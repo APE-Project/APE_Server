@@ -26,6 +26,8 @@
 #include "users.h"
 #include "channel.h"
 #include "proxy.h"
+#include "transports.h"
+#include "sock.h"
 
 typedef enum {
 	RAW_PRI_LO,
@@ -57,6 +59,7 @@ void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape);
 int post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape);
 int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuser *from, acetables *g_ape);
 
+int send_raw_inline(ape_socket *client, transport_t transport, RAW *raw, acetables *g_ape);
 int send_raws(subuser *user, acetables *g_ape);
 
 struct _raw_pool *init_raw_pool(int n);

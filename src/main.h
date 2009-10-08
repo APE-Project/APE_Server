@@ -67,6 +67,10 @@ struct _ape_transports {
 	struct {
 		struct _transport_properties properties;
 	} xhrstreaming;
+	
+	struct {
+		struct _transport_properties properties;
+	} sse;
 };
 
 typedef struct _http_state http_state;
@@ -180,8 +184,13 @@ struct _ape_socket {
 #define HEADER_DEFAULT "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: text/html\r\n\r\n"
 #define HEADER_DEFAULT_LEN 144
 
+#define HEADER_SSE "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: application/x-dom-event-stream\r\n\r\n"
+#define HEADER_SSE_LEN 165
+
 #define HEADER_XHR "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: application/x-ape-event-stream\r\n\r\n                                                                                                                                                                                                                                                                "
 #define HEADER_XHR_LEN 421
+
+
 
 #define FIRE_EVENT(event, ret, arg...) \
 	if (g_ape->plugins != NULL) { \

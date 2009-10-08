@@ -134,7 +134,7 @@ static int gettransport(char *input)
 {
 	char *start = strchr(input, '/');
 
-	if (start != NULL && start[1] >= 48 && start[1] <= 51 && start[2] == '/') {
+	if (start != NULL && start[1] >= 48 && start[1] <= 53 && start[2] == '/') {
 		return start[1]-48;
 	}
 	

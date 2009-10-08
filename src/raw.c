@@ -256,13 +256,40 @@ int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuse
 }
 
 
-int send_raw_data(int fd, USERS *user, const char *data, acetables *g_ape)
+int send_raw_inline(ape_socket *client, transport_t transport, RAW *raw, acetables *g_ape)
 {
 	struct _transport_properties *properties;
+	int finish = 1;
 	
-	properties = transport_get_properties(user->transport, g_ape);
+	properties = transport_get_properties(transport, g_ape);
 	
+	switch(transport) {
+		case TRANSPORT_XHRSTREAMING:
+			finish &= http_send_headers(NULL, HEADER_XHR, HEADER_XHR_LEN, client, g_ape);
+			break;
+		case TRANSPORT_SSE_LONGPOLLING:
+			finish &= http_send_headers(NULL, HEADER_SSE, HEADER_SSE_LEN, client, g_ape);
+			break;	
+		default:
+			finish &= http_send_headers(NULL, HEADER_DEFAULT, HEADER_DEFAULT_LEN, client, g_ape);
+			break;
+	}
 	
+	if (properties != NULL && properties->padding.left.val != NULL) {
+		finish &= sendbin(client->fd, properties->padding.left.val, properties->padding.left.len, g_ape);
+	}	
+	
+	finish &= sendbin(client->fd, "[", 1, g_ape);
+	
+	finish &= sendbin(client->fd, raw->data, raw->len, g_ape);
+	
+	finish &= sendbin(client->fd, "]", 1, g_ape);
+	
+	if (properties != NULL && properties->padding.right.val != NULL) {
+		finish &= sendbin(client->fd, properties->padding.right.val, properties->padding.right.len, g_ape);
+	}	
+	
+	return finish;
 }
 
 /*
@@ -282,11 +309,19 @@ int send_raws(subuser *user, acetables *g_ape)
 	
 	if (!user->headers.sent) {
 		user->headers.sent = 1;
-		if (user->user->transport == TRANSPORT_XHRSTREAMING) {
-			finish &= http_send_headers(user->headers.content, HEADER_XHR, HEADER_XHR_LEN, user->client, g_ape);
-		} else {
-			finish &= http_send_headers(user->headers.content, HEADER_DEFAULT, HEADER_DEFAULT_LEN, user->client, g_ape);
-		}		
+		
+		switch(user->user->transport) {
+			case TRANSPORT_XHRSTREAMING:
+				finish &= http_send_headers(user->headers.content, HEADER_XHR, HEADER_XHR_LEN, user->client, g_ape);
+				break;
+			case TRANSPORT_SSE_LONGPOLLING:
+				finish &= http_send_headers(user->headers.content, HEADER_SSE, HEADER_SSE_LEN, user->client, g_ape);
+				break;	
+			default:
+				finish &= http_send_headers(user->headers.content, HEADER_DEFAULT, HEADER_DEFAULT_LEN, user->client, g_ape);
+				break;
+		}
+		
 	}
 	
 	if (properties != NULL && properties->padding.left.val != NULL) {
