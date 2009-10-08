@@ -1166,9 +1166,11 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	pattern->callbacks.on_disconnect = sm_sock_ondisconnect;
 	if (options != NULL && JS_GetProperty(cx, options, "flushlf", &vp) && JSVAL_IS_BOOLEAN(vp) && vp == JSVAL_TRUE) {
 		pattern->callbacks.on_read_lf = sm_sock_onread_lf;
+		pattern->callbacks.on_read = NULL;
 	} else {
 		/* use the classic read callback */
 		pattern->callbacks.on_read = sm_sock_onread;
+		pattern->callbacks.on_read_lf = NULL;
 	}	
 	pattern->attach = cbcopy;
 	JS_SetPrivate(cx, obj, cbcopy);
