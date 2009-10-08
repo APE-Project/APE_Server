@@ -26,6 +26,7 @@
 #include "handle_http.h"
 #include "sock.h"
 #include "main.h"
+#include "transports.h"
 
 /*
 	Non identifiable user's error.
@@ -46,7 +47,7 @@
 
 #define MOTD_FILE "MOTD"
 
-unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape);
+unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, acetables *g_ape);
 
 
 void do_register(acetables *g_ape);
@@ -70,6 +71,7 @@ struct _callbackp
 
 	struct USERS *call_user;
 	
+	transport_t transport;
 	char *ip;
 	char *host;
 	subuser *call_subuser;

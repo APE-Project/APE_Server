@@ -130,6 +130,17 @@ static char *getfirstparam(char *input, char sep)
 	}	
 }
 
+static int gettransport(char *input)
+{
+	char *start = strchr(input, '/');
+
+	if (start != NULL && start[1] >= 48 && start[1] <= 51 && start[2] == '/') {
+		return start[1]-48;
+	}
+	
+	return 0;
+}
+
 subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_client)
 {
 
@@ -140,6 +151,7 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 	int local = (strcmp(ip_client, CONFIG_VAL(Server, ip_local, g_ape->srv)) == 0);
 	
 	clientget *cget = xmalloc(sizeof(*cget));
+
 
 	if (strlen(pSock) < 3 || (local && getqueryip(pSock, cget->ip_get) == 0)) {  // get query IP (from htaccess)
 		free(cget);
@@ -176,13 +188,14 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 		shutdown(client->fd, 2);
 		return NULL;		
 	}
-	fixpacket(cget->get, 1);
 	
+	fixpacket(cget->get, 1);
+
 	if (isget) {
 		urldecode(cget->get);
 	}
 	
-	op = checkcmd(cget, &user, g_ape);
+	op = checkcmd(cget, gettransport(pSock), &user, g_ape);
 
 	switch (op) {
 		case CONNECT_SHUTDOWN:

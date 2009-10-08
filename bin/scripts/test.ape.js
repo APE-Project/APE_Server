@@ -1067,7 +1067,7 @@ Ape.addEvent("init", function() {
 		Ape.log("timeout " + parseInt(new Date().getTime() - parseInt(last)));
 		last = new Date().getTime();
 		
-	}, 100);
+	}, 10000);
 	
 	Ape.addEvent("adduser", function(user) {
 		user.setProperty("nickname", "paraboul");

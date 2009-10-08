@@ -106,7 +106,7 @@ void unregister_cmd(const char *cmd, acetables *g_ape)
 	hashtbl_erase(g_ape->hCallback, cmd);
 }
 
-unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
+unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, acetables *g_ape)
 {
 	
 	int attach = 1;
@@ -207,6 +207,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				cp.host = cget->host;
 				cp.ip = cget->ip_get;
 				cp.chl = (sub != NULL ? sub->current_chl : 0);
+				cp.transport = transport;
 				// Ajouter un string de la commande
 				
 				if ((flag = call_cmd_hook(cp.cmd, &cp, g_ape)) == RETURN_NOTHING) {
@@ -267,8 +268,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	USERS *nuser;
 	RAW *newraw;
 	json_item *jstr = NULL;
-	
-	APE_PARAMS_INIT();
+
 	
 	nuser = adduser(callbacki->client, callbacki->host, callbacki->g_ape);
 	
@@ -280,7 +280,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 		return (RETURN_NOTHING);
 	}
 	
-	switch(JINT(transport)) {
+	switch(callbacki->transport) {
 		case 1:
 			nuser->transport = TRANSPORT_XHRSTREAMING;
 			break;
