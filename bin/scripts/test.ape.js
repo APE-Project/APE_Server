@@ -1060,10 +1060,14 @@ function create_js_server(port, forward)
 
 Ape.addEvent("init", function() {
 
+	var timeout;
+	var last = new Date().getTime();
 	
 	Ape.setInterval(function() {
-		Ape.log("timeout");
-	}, 100);
+		Ape.log("timeout " + parseInt(new Date().getTime() - parseInt(last)));
+		last = new Date().getTime();
+		
+	}, 1000);
 	
 	Ape.addEvent("adduser", function(user) {
 		user.setProperty("nickname", "paraboul");
@@ -1087,7 +1091,11 @@ Ape.addEvent("init", function() {
 		Ape.log("new channel " + channel.getProperty('name'));
 	});
 	
+	var test = new Ape.sockClient(80, 'google.fr', {flushlf: true});
 	
+	test.onConnect = function() {
+		Ape.log('a');
+	}
 	
 	/* Create a non-blocking socket that listen on port 7779 */
 	

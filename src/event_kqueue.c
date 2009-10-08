@@ -70,7 +70,7 @@ static int event_kqueue_poll(struct _fdevent *ev, int timeout_ms)
 	
 	ts.tv_sec = timeout_ms / 1000;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000;
-	
+
 	if ((nfds = kevent(ev->kq_fd, NULL, 0, ev->events, *ev->basemem * 2, &ts)) == -1) {
 		return -1;
 	}

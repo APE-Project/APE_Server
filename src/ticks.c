@@ -86,9 +86,9 @@ struct _ticks_callback *add_timeout(unsigned int msec, void *callback, void *par
 	
 	new_timer = xmalloc(sizeof(*new_timer));
 	
-	new_timer->ticks_need = (TICKS_RATE/1000)*msec;
+	new_timer->ticks_need = msec;
 	new_timer->ticks_left = new_timer->ticks_need;
-	
+
 	new_timer->prev = NULL;
 	new_timer->times = 1;
 	

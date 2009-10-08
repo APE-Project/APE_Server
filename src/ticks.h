@@ -25,8 +25,8 @@
 #include "main.h"
 
 /* Ticks/secondes */
-#define TICKS_RATE 1000 // ~1ms
-#define VTICKS_RATE 100 // 50 ms
+#define TICKS_RATE 100 // ~1ms
+#define VTICKS_RATE 50 // 50 ms
 
 struct _ticks_callback
 {
@@ -48,7 +48,7 @@ struct _ticks_callback *add_periodical(unsigned int msec, int times, void *callb
 void del_timer(struct _ticks_callback *timer, acetables *g_ape);
 void del_timer_identifier(unsigned int identifier, acetables *g_ape);
 
-#define add_ticked(x, y) add_periodical(TICKS_RATE / VTICKS_RATE, 0, x, y, g_ape)
+#define add_ticked(x, y) add_periodical(VTICKS_RATE, 0, x, y, g_ape)
 
 #endif
 
