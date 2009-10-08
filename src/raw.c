@@ -282,7 +282,11 @@ int send_raws(subuser *user, acetables *g_ape)
 	
 	if (!user->headers.sent) {
 		user->headers.sent = 1;
-		finish &= http_send_headers(user->headers.content, user->client, g_ape);
+		if (user->user->transport == TRANSPORT_XHRSTREAMING) {
+			finish &= http_send_headers(user->headers.content, HEADER_XHR, HEADER_XHR_LEN, user->client, g_ape);
+		} else {
+			finish &= http_send_headers(user->headers.content, HEADER_DEFAULT, HEADER_DEFAULT_LEN, user->client, g_ape);
+		}		
 	}
 	
 	if (properties != NULL && properties->padding.left.val != NULL) {

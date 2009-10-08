@@ -165,7 +165,7 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 							struct _transport_open_same_host_p retval = transport_open_same_host(sub, cget->client, guser->transport);				
 					
 							if (retval.client_close != NULL) {
-								CLOSE(retval.client_close->fd, g_ape);
+								//CLOSE(retval.client_close->fd, g_ape);
 								shutdown(retval.client_close->fd, 2);
 							}
 							sub->client = cp.client = retval.client_listener;
@@ -321,7 +321,7 @@ unsigned int cmd_script(callbackp *callbacki)
 	if (domain == NULL) {
 		send_error(callbacki->call_user, "NO_DOMAIN", "201", callbacki->g_ape);
 	} else {
-		sendf(callbacki->client->fd, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER, domain);
+		sendf(callbacki->client->fd, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER_DEFAULT, domain);
 
 		JFOREACH(scripts, script) {
 			sendf(callbacki->client->fd, callbacki->g_ape, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", script);

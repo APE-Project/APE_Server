@@ -65,15 +65,12 @@ unsigned int sockroutine(acetables *g_ape);
 
 
 #define SENDH(x, y, g_ape) \
-	sendbin(x, HEADER, HEADER_LEN, g_ape);\
+	sendbin(x, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);\
 	sendbin(x, y, strlen(y), g_ape)
-	
-#define CLOSE(x, g_ape) \
-	sendbin(x, HEADER, HEADER_LEN, g_ape);\
-	sendbin(x, "CLOSE", 5, g_ape)
+
 
 #define QUIT(x, g_ape) \
-	sendbin(x, HEADER, HEADER_LEN, g_ape);\
+	sendbin(x, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);\
 	sendbin(x, "QUIT", 4, g_ape)
 
 

@@ -256,7 +256,7 @@ http_headers_set_field(headers, "Content-Length", 0, "100", 0);
 http_send_headers(headers, cget->client, g_ape);
 */
 
-int http_send_headers(http_headers_response *headers, ape_socket *client, acetables *g_ape)
+int http_send_headers(http_headers_response *headers, const char *default_h, unsigned int default_len, ape_socket *client, acetables *g_ape)
 {
 	char code[4];
 	int finish = 1;
@@ -264,7 +264,7 @@ int http_send_headers(http_headers_response *headers, ape_socket *client, acetab
 	//HTTP/1.1 200 OK\r\n
 	
 	if (headers == NULL) {
-		finish &= sendbin(client->fd, HEADER, HEADER_LEN, g_ape);
+		finish &= sendbin(client->fd, (char *)default_h, default_len, g_ape);
 	} else {
 		/* We have a lot of write syscall here. TODO : use of writev */
 	

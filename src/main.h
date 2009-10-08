@@ -177,8 +177,11 @@ struct _ape_socket {
 	void *data;
 };
 
-#define HEADER "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: text/html\r\n\r\n"
-#define HEADER_LEN 144
+#define HEADER_DEFAULT "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: text/html\r\n\r\n"
+#define HEADER_DEFAULT_LEN 144
+
+#define HEADER_XHR "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: application/x-ape-event-stream\r\n\r\n                                                                                                                                                                                                                                                                "
+#define HEADER_XHR_LEN 421
 
 #define FIRE_EVENT(event, ret, arg...) \
 	if (g_ape->plugins != NULL) { \
