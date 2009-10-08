@@ -256,6 +256,15 @@ int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuse
 }
 
 
+int send_raw_data(int fd, USERS *user, const char *data, acetables *g_ape)
+{
+	struct _transport_properties *properties;
+	
+	properties = transport_get_properties(user->transport, g_ape);
+	
+	
+}
+
 /*
 	Send queue to socket
 */

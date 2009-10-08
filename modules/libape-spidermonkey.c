@@ -248,13 +248,15 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 		isarray = 1;
 		JS_GetArrayLength(cx, json_obj, &length);
 		if (length) {
-			ape_json = json_new_array();
+			//ape_json = json_new_array();
 		}
+		ape_json = json_new_array();
 	} else {
 		enumjson = JS_Enumerate(cx, json_obj);
 		if ((length = enumjson->length)) {
-			ape_json = json_new_object();
+			//ape_json = json_new_object();
 		}
+		ape_json = json_new_object();
 	}
 
 	for (i = 0; i < length; i++) {
@@ -361,9 +363,14 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 		transpipe *from_pipe = JS_GetPrivate(cx, js_pipe);
 		
 		if (from_pipe->type == USER_PIPE) {
-			json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
 			
-			if (to_pipe->type == CHANNEL_PIPE) {
+			json_set_property_objN(jstr, "from", 4, get_json_object_pipe(from_pipe));
+			
+			if (to_pipe->type == USER_PIPE) {
+				json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
+			} else if (to_pipe->type == CHANNEL_PIPE) {
+				json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(to_pipe));
+				
 				newraw = forge_raw(raw, jstr);
 				post_raw_channel_restricted(newraw, to_pipe->pipe, from_pipe->pipe, g_ape);
 				

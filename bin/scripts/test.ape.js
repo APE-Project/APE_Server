@@ -1070,10 +1070,14 @@ Ape.addEvent("init", function() {
 		Ape.log("Del user : " + user.getProperty('nickname'));
 	});
 	
-	Ape.addEvent("join", function(user, channel) {
+	Ape.addEvent("afterJoin", function(user, channel) {
 		//Ape.log("JOIN !" + channel.getProperty('name'));
 		Ape.log(Hash.toQueryString(user.pipe.toObject()));
 	});
+	
+	Ape.addEvent("beforeJoin", function(user, channel) {
+		Ape.log("Before...");
+	})
 	
 	Ape.addEvent("mkchan", function(channel) {
 		Ape.log("new channel " + channel.getProperty('name'));

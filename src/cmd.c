@@ -141,8 +141,6 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				
 							if (guser == NULL && (jsid = json_lookup(ijson->jchild.child, "sessid")) != NULL && jsid->jval.vu.str.value != NULL) {
 								guser = seek_user_id(jsid->jval.vu.str.value, g_ape);
-							} else {
-								printf("Failed to request sessid\n");
 							}
 						}
 						break;
@@ -220,8 +218,12 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 				} else if (flag & RETURN_LOGIN) {
 					guser = cp.call_user;
 				} else if (flag & RETURN_BAD_PARAMS) {
-					guser = NULL;
-					SENDH(cget->client->fd, ERR_BAD_PARAM, g_ape);
+					if (guser != NULL) {
+						send_error(guser, "BAD_PARAM", "001", g_ape);
+						guser = NULL;
+					} else {
+						SENDH(cget->client->fd, ERR_BAD_PARAM, g_ape);
+					}
 				}
 		
 				if (guser != NULL) {
@@ -246,7 +248,6 @@ unsigned int checkcmd(clientget *cget, subuser **iuser, acetables *g_ape)
 					return (CONNECT_SHUTDOWN);
 				}
 			} else {
-				printf("Bad cmd\n");
 				//printf("Cant find %s\n", rjson->jval.vu.str.value);
 				free_json_item(ojson);
 				SENDH(cget->client->fd, ERR_BAD_CMD, g_ape);
