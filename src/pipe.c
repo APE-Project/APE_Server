@@ -51,6 +51,8 @@ transpipe *init_pipe(void *pipe, int type, acetables *g_ape)
 	npipe->type = type;
 	npipe->link = NULL;
 	npipe->data = NULL;
+	npipe->on_send = NULL;
+	npipe->properties = NULL;
 	
 	gen_sessid_new(npipe->pubid, g_ape);
 	hashtbl_append(g_ape->hPubid, npipe->pubid, (void *)npipe);
@@ -126,15 +128,69 @@ transpipe *get_pipe_strict(const char *pubid, USERS *user, acetables *g_ape)
 	
 }
 
+void post_json_custom(json_item *jstr, transpipe *pipe, acetables *g_ape)
+{
+	if (pipe->on_send == NULL) {
+		free_json_item(jstr);
+		return;
+	}
+	
+	pipe->on_send(pipe, jstr, g_ape);
+}
+
+json_item *get_json_object_pipe_custom(transpipe *pipe)
+{
+	json_item *jstr = NULL;
+	
+	if (pipe != NULL) {
+		jstr = json_new_object();
+		json_set_property_strN(jstr, "casttype", 8, "custom", 6);
+		json_set_property_strN(jstr, "pubid", 5, pipe->pubid, 32);
+		
+		if (pipe->properties != NULL) {
+			int has_prop = 0;
+			
+			json_item *jprop = NULL;
+						
+			extend *eTmp = pipe->properties;
+			
+			while (eTmp != NULL) {
+				if (eTmp->visibility == EXTEND_ISPUBLIC) {
+					if (!has_prop) {
+						has_prop = 1;
+						jprop = json_new_object();
+					}
+					if (eTmp->type == EXTEND_JSON) {
+					/*	json *jcopy = json_copy(eTmp->val);
+						
+						set_json(eTmp->key, NULL, &jprop);
+						
+						json_attach(jprop, jcopy, JSON_OBJECT);*/
+					} else {
+						json_set_property_strZ(jprop, eTmp->key, eTmp->val);
+
+					}			
+				}
+				eTmp = eTmp->next;
+			}
+			if (has_prop) {
+				json_set_property_objN(jstr, "properties", 10, jprop);
+			}
+		}
+
+	}
+	return jstr;
+}
+
 json_item *get_json_object_pipe(transpipe *pipe)
 {
 	switch(pipe->type) {
 		case USER_PIPE:
 			return get_json_object_user(pipe->pipe);
-			break;
 		case CHANNEL_PIPE:
 			return get_json_object_channel(pipe->pipe);
-			break;
+		case CUSTOM_PIPE:
+			return get_json_object_pipe_custom(pipe);
 		case PROXY_PIPE:
 		default:
 			return NULL;

@@ -29,7 +29,8 @@
 enum {
 	CHANNEL_PIPE = 0,
 	USER_PIPE,
-	PROXY_PIPE
+	PROXY_PIPE,
+	CUSTOM_PIPE
 };
 
 typedef struct _pipe_link pipe_link;
@@ -51,6 +52,10 @@ struct _transpipe
 	char pubid[33];
 	
 	void *data;
+	
+	struct _extend *properties;
+	
+	void (*on_send)(struct _transpipe *, json_item *, acetables *);
 };
 
 transpipe *init_pipe(void *pipe, int type, acetables *g_ape);
@@ -59,8 +64,10 @@ void destroy_pipe(transpipe *pipe, acetables *g_ape);
 void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(struct _transpipe *, struct _transpipe *, acetables *));
 transpipe *get_pipe(const char *pubid, acetables *g_ape);
 transpipe *get_pipe_strict(const char *pubid, struct USERS *user, acetables *g_ape);
+void post_json_custom(json_item *jstr, transpipe *pipe, acetables *g_ape);
 void gen_sessid_new(char *input, acetables *g_ape);
 void unlink_all_pipe(transpipe *origin, acetables *g_ape);
 json_item *get_json_object_pipe(transpipe *pipe);
+json_item *get_json_object_pipe_custom(transpipe *pipe);
 #endif
 

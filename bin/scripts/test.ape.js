@@ -12,6 +12,39 @@ Ape.HTTPRequest = function(url, data) {
 	ape_http_request(url, data);
 };
 
+
+Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
+	if (!$defined(params.host) || !$defined(params.port)) {
+		return 0;
+	}
+	var socket = new Ape.sockClient(params.port, params.host);
+	
+	/* add socket to the user */
+	
+	socket.onConnect = function() {
+		var pipe = new Ape.pipe();
+		pipe.link = socket;
+		
+		pipe.onSend = function(users, params) {
+			this.link.write(Ape.base64(params.data));
+		}
+		
+		infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "connect", "pipe": pipe.getProperty('pubid')});
+	}
+	
+	socket.onRead = function(data) {
+		infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "read", "data": Ape.base64.encode(data)});
+	}
+	
+	socket.onDisconnect = function(data) {
+		infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "disconnect"});
+	}
+	
+	return 1;
+});
+
+
+
 function create_js_server(port, forward)
 {
 	var socket = new Ape.sockServer(port, "0.0.0.0", {
@@ -43,6 +76,14 @@ function create_js_server(port, forward)
 }
 
 Ape.addEvent("init", function() {
+
+	var npipe = new Ape.pipe(Ape);
+	
+	Ape.log(npipe.getProperty('pubid'));
+	
+	npipe.onSend = function(user, params) {
+		
+	};
 
 	Ape.addEvent("adduser", function(user) {
 		user.setProperty("nickname", "paraboul");

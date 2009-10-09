@@ -208,6 +208,7 @@ int post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape)
 	transpipe *spipe;
 	
 	if ((spipe = get_pipe(pipe, g_ape)) != NULL) {
+		
 		if (spipe->type == CHANNEL_PIPE) {
 			post_raw_channel(raw, spipe->pipe, g_ape);
 			return 1;
@@ -237,16 +238,27 @@ int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuse
 
 	jlist_copy = json_item_copy(jlist);
 	
-	json_set_property_objN(jlist, "pipe", 4, (recver->type == USER_PIPE ? get_json_object_user(sender) : get_json_object_channel(recver->pipe)));
-	json_set_property_objN(jlist_copy, "pipe", 4, (recver->type == USER_PIPE ? get_json_object_user(recver->pipe) : get_json_object_channel(recver->pipe)));
-	
-	newraw = forge_raw(rawname, jlist);
-	
-	if (recver->type == USER_PIPE) {
-		post_raw(newraw, recver->pipe, g_ape);
-	} else {
-		post_raw_channel_restricted(newraw, recver->pipe, sender, g_ape);
+	switch(recver->type) {
+		case USER_PIPE:
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_user(sender));
+			newraw = forge_raw(rawname, jlist);
+			post_raw(newraw, recver->pipe, g_ape);
+			break;
+		case CHANNEL_PIPE:
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(recver->pipe));
+			newraw = forge_raw(rawname, jlist);
+			post_raw_channel_restricted(newraw, recver->pipe, sender, g_ape);
+			break;
+		case CUSTOM_PIPE:
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_user(sender));
+			post_json_custom(jlist, recver, g_ape);
+			break;
+		default:
+			break;
 	}
+	
+	
+	json_set_property_objN(jlist_copy, "pipe", 4, get_json_object_pipe(recver));
 
 	newraw = forge_raw(rawname, jlist_copy);
 	

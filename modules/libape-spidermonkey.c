@@ -328,6 +328,45 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 }
 
 
+APE_JS_NATIVE(apepipe_sm_get_property)
+//{
+	const char *property;
+	transpipe *pipe = JS_GetPrivate(cx, obj);
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &property)) {
+		return JS_FALSE;
+	}
+	if (strcmp(property, "pubid") == 0) {
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, pipe->pubid, 32));
+	} else {
+		extend *getprop = get_property(pipe->properties, property);
+		if (getprop != NULL && getprop->type == EXTEND_STR) {
+			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+		}
+	}	
+	
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(apepipe_sm_set_property)
+//{
+	char *key, *property;
+	transpipe *pipe = JS_GetPrivate(cx, obj);
+	
+	if (argc != 2) {
+		return JS_FALSE;
+	}	
+	
+	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
+		return JS_FALSE;
+	}
+	
+	add_property(&pipe->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+	
+	return JS_TRUE;
+}
+
+
 APE_JS_NATIVE(apepipe_sm_to_object)
 //{
 	transpipe *spipe;
@@ -347,6 +386,15 @@ APE_JS_NATIVE(apepipe_sm_to_object)
 	
 	return JS_TRUE;
 	
+}
+
+APE_JS_NATIVE(apepipe_sm_destroy)
+//{
+	transpipe *pipe = JS_GetPrivate(cx, obj);
+	
+	destroy_pipe(pipe, g_ape);
+	
+	return JS_TRUE;
 }
 
 APE_JS_NATIVE(apepipe_sm_send_raw)
@@ -417,6 +465,24 @@ APE_JS_NATIVE(apechannel_sm_get_property)
 			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
 		}
 	}
+	
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(apechannel_sm_set_property)
+//{
+	char *key, *property;
+	CHANNEL *chan = JS_GetPrivate(cx, obj);
+	
+	if (argc != 2) {
+		return JS_FALSE;
+	}	
+	
+	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
+		return JS_FALSE;
+	}
+	
+	add_property(&chan->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
 	
 	return JS_TRUE;
 }
@@ -494,13 +560,21 @@ static JSFunctionSpec apeuser_funcs[] = {
 
 static JSFunctionSpec apechannel_funcs[] = {
 	JS_FS("getProperty", apechannel_sm_get_property, 1, 0, 0),
-	JS_FS("setProperty", apeuser_sm_set_property, 2, 0, 0),
+	JS_FS("setProperty", apechannel_sm_set_property, 2, 0, 0),
 	JS_FS_END
 };
 
 static JSFunctionSpec apepipe_funcs[] = {
 	JS_FS("sendRaw", apepipe_sm_send_raw, 3, 0, 0),
 	JS_FS("toObject", apepipe_sm_to_object, 0, 0, 0),
+	JS_FS("getProperty", apepipe_sm_get_property, 1, 0, 0),
+	JS_FS("setProperty", apepipe_sm_set_property, 2, 0, 0),
+	JS_FS("onSend", ape_sm_stub, 0, 0, 0),
+	JS_FS_END
+};
+
+static JSFunctionSpec apepipecustom_funcs[] = {
+	JS_FS("destroy", apepipe_sm_destroy, 0, 0, 0),
 	JS_FS_END
 };
 
@@ -743,6 +817,21 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 	//	printf("Next\n");
 		head = head->next;
 	}	
+}
+
+static void ape_sm_pipe_on_send_wrapper(transpipe *pipe, json_item *jstr, acetables *g_ape)
+{
+	/*
+	jsval params[2];
+	params[0] = OBJECT_TO_JSVAL(client_obj);
+	params[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(cb->asc->cx, data));
+
+	JS_AddRoot(cb->asc->cx, &params[1]);
+	JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 2, params, &rval);
+	JS_RemoveRoot(cb->asc->cx, &params[1]);
+	*/
+	printf("Wrapper !\n");
+	
 }
 
 /* Dispatch CMD to the corresponding javascript callback */
@@ -1270,7 +1359,23 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(ape_sm_pipe_constructor)
+//{
+	transpipe *pipe;
+	JSObject *link;
 
+	/* Add link to a Root ? */
+	pipe = init_pipe(link, CUSTOM_PIPE, g_ape);
+	pipe->on_send = ape_sm_pipe_on_send_wrapper;
+	pipe->data = obj;
+
+	JS_SetPrivate(cx, obj, pipe);
+	
+	JS_DefineFunctions(cx, obj, apepipe_funcs);
+	JS_DefineFunctions(cx, obj, apepipecustom_funcs);
+	
+	return JS_TRUE;
+}
 
 APE_JS_NATIVE(ape_sm_sockserver_constructor)
 //{
@@ -1350,7 +1455,7 @@ static void ape_sm_define_ape(ape_sm_compiled *asc)
 	JS_DefineFunctions(asc->cx, asc->global, global_funcs);
 	JS_DefineFunctions(asc->cx, b64, b64_funcs);
 	
-	
+	JS_InitClass(asc->cx, obj, NULL, &pipe_class, ape_sm_pipe_constructor, 0, NULL, NULL, NULL, NULL);
 	JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
 	JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
 	JS_InitClass(asc->cx, obj, NULL, &raw_class, ape_sm_raw_constructor, 1, NULL, NULL, NULL, NULL);

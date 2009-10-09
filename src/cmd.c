@@ -237,12 +237,17 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 				} else if (flag & RETURN_LOGIN) {
 					guser = cp.call_user;
 				} else if (flag & RETURN_BAD_PARAMS) {
-					if (guser != NULL) {
-						send_error(guser, "BAD_PARAM", "001", g_ape);
-						guser = NULL;
-					} else {
-						SENDH(cget->client->fd, ERR_BAD_PARAM, g_ape);
-					}
+					RAW *newraw;
+					json_item *jlist = json_new_object();
+
+					json_set_property_strZ(jlist, "code", "001");
+					json_set_property_strZ(jlist, "value", "BAD_PARAMS");
+
+					newraw = forge_raw(RAW_ERR, jlist);
+
+					send_raw_inline(cget->client, transport, newraw, g_ape);
+					
+					guser = NULL;
 				}
 		
 				if (guser != NULL) {
