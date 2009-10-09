@@ -20,6 +20,7 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 		/* Called when an user send a "SEND" command on this pipe */
 		pipe.onSend = function(user, params) {
 			/* "this" refer to the pipe object */
+			Ape.log("Envoi : " + Hash.toQueryString(params));
 			this.link.write(Ape.base64.decode(params.msg));
 		}
 		
@@ -54,5 +55,6 @@ Ape.addEvent("deluser", function(user) {
 });
 
 Ape.addEvent("adduser", function(user) {
+	Ape.log(Hash.toQueryString(user.pipe.toObject()));
 	user.proxys = new $H;
 })

@@ -830,7 +830,7 @@ static void ape_sm_pipe_on_send_wrapper(transpipe *pipe, USERS *user, json_item 
 	
 	obj = JS_NewObject(cx, NULL, NULL, NULL);
 	JS_AddRoot(cx, &obj);
-	ape_json_to_jsobj(cx, jstr, obj);
+	ape_json_to_jsobj(cx, jstr->jchild.child, obj);
 	
 	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
 	params[1] = OBJECT_TO_JSVAL(obj);

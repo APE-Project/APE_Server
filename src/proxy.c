@@ -19,6 +19,8 @@
 
 /* proxy.c */
 
+/* /!\ Not used anymore : see proxy.js */
+
 #include "utils.h"
 #include "proxy.h"
 #include "handle_http.h"
