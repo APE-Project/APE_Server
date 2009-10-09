@@ -55,7 +55,7 @@ struct _transpipe
 	
 	struct _extend *properties;
 	
-	void (*on_send)(struct _transpipe *, json_item *, acetables *);
+	void (*on_send)(struct _transpipe *, struct USERS *, json_item *, acetables *);
 };
 
 transpipe *init_pipe(void *pipe, int type, acetables *g_ape);
@@ -64,7 +64,7 @@ void destroy_pipe(transpipe *pipe, acetables *g_ape);
 void link_pipe(transpipe *pipe_origin, transpipe *pipe_to, void (*on_unlink)(struct _transpipe *, struct _transpipe *, acetables *));
 transpipe *get_pipe(const char *pubid, acetables *g_ape);
 transpipe *get_pipe_strict(const char *pubid, struct USERS *user, acetables *g_ape);
-void post_json_custom(json_item *jstr, transpipe *pipe, acetables *g_ape);
+void post_json_custom(json_item *jstr, struct USERS *user, struct _transpipe *pipe, acetables *g_ape);
 void gen_sessid_new(char *input, acetables *g_ape);
 void unlink_all_pipe(transpipe *origin, acetables *g_ape);
 json_item *get_json_object_pipe(transpipe *pipe);

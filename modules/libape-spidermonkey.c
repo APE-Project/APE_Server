@@ -418,7 +418,6 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 		transpipe *from_pipe = JS_GetPrivate(cx, js_pipe);
 		
 		if (from_pipe->type == USER_PIPE) {
-			
 			json_set_property_objN(jstr, "from", 4, get_json_object_pipe(from_pipe));
 			
 			if (to_pipe->type == USER_PIPE) {
@@ -431,6 +430,8 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 				
 				return JS_TRUE;
 			}
+		} else if (from_pipe->type == CUSTOM_PIPE) {
+			json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
 		}
 	}
 	newraw = forge_raw(raw, jstr);
@@ -819,19 +820,24 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 	}	
 }
 
-static void ape_sm_pipe_on_send_wrapper(transpipe *pipe, json_item *jstr, acetables *g_ape)
+static void ape_sm_pipe_on_send_wrapper(transpipe *pipe, USERS *user, json_item *jstr, acetables *g_ape)
 {
-	/*
-	jsval params[2];
-	params[0] = OBJECT_TO_JSVAL(client_obj);
-	params[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(cb->asc->cx, data));
-
-	JS_AddRoot(cb->asc->cx, &params[1]);
-	JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 2, params, &rval);
-	JS_RemoveRoot(cb->asc->cx, &params[1]);
-	*/
-	printf("Wrapper !\n");
+	JSObject *obj;
+	jsval params[2], rval;
+	JSContext *cx = get_property(pipe->properties, "cx")->val;
 	
+	json_aff(jstr, 10);
+	
+	obj = JS_NewObject(cx, NULL, NULL, NULL);
+	JS_AddRoot(cx, &obj);
+	ape_json_to_jsobj(cx, jstr, obj);
+	
+	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
+	params[1] = OBJECT_TO_JSVAL(obj);
+	
+	JS_CallFunctionName(cx, pipe->data, "onSend", 2, params, &rval);
+	
+	JS_RemoveRoot(cx, &obj);
 }
 
 /* Dispatch CMD to the corresponding javascript callback */
@@ -1368,7 +1374,9 @@ APE_JS_NATIVE(ape_sm_pipe_constructor)
 	pipe = init_pipe(link, CUSTOM_PIPE, g_ape);
 	pipe->on_send = ape_sm_pipe_on_send_wrapper;
 	pipe->data = obj;
-
+	
+	add_property(&pipe->properties, "cx", cx, EXTEND_POINTER, EXTEND_ISPRIVATE);
+	
 	JS_SetPrivate(cx, obj, pipe);
 	
 	JS_DefineFunctions(cx, obj, apepipe_funcs);

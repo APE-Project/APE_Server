@@ -128,14 +128,14 @@ transpipe *get_pipe_strict(const char *pubid, USERS *user, acetables *g_ape)
 	
 }
 
-void post_json_custom(json_item *jstr, transpipe *pipe, acetables *g_ape)
+void post_json_custom(json_item *jstr, USERS *user, transpipe *pipe, acetables *g_ape)
 {
 	if (pipe->on_send == NULL) {
 		free_json_item(jstr);
 		return;
 	}
 	
-	pipe->on_send(pipe, jstr, g_ape);
+	pipe->on_send(pipe, user, jstr, g_ape);
 }
 
 json_item *get_json_object_pipe_custom(transpipe *pipe)

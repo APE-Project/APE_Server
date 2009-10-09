@@ -251,7 +251,7 @@ int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuse
 			break;
 		case CUSTOM_PIPE:
 			json_set_property_objN(jlist, "pipe", 4, get_json_object_user(sender));
-			post_json_custom(jlist, recver, g_ape);
+			post_json_custom(jlist, sender, recver, g_ape);
 			break;
 		default:
 			break;

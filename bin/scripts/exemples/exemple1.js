@@ -1,92 +1,11 @@
-include("./scripts/mootools.js");
+if (0) {
 
 
 
-var ape_http_request = Ape.HTTPRequest;
-
-Ape.HTTPRequest = function(url, data) {
-	switch ($type(data)){
-		case 'object': case 'hash': data = Hash.toQueryString(data);
-	}
-
-	ape_http_request(url, data);
-};
-
-
-Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
-	if (!$defined(params.host) || !$defined(params.port)) {
-		return 0;
-	}
-	var socket = new Ape.sockClient(params.port, params.host);
-	
-	/* add socket to the user */
-	
-	socket.onConnect = function() {
-		var pipe = new Ape.pipe();
-		pipe.link = socket;
-		
-		pipe.onSend = function(users, params) {
-			this.link.write(Ape.base64(params.data));
-		}
-		
-		infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "connect", "pipe": pipe.getProperty('pubid')});
-	}
-	
-	socket.onRead = function(data) {
-		infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "read", "data": Ape.base64.encode(data)});
-	}
-	
-	socket.onDisconnect = function(data) {
-		infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "disconnect"});
-	}
-	
-	return 1;
-});
-
-
-
-function create_js_server(port, forward)
-{
-	var socket = new Ape.sockServer(port, "0.0.0.0", {
-		flushlf: true /* onRead event is fired only when a \n is received (and splitted around it) e.g. foo\nbar\n  will call onRead two times with "foo" and "bar" */
-	});
-	
-	/* fired when a client is connecting */
-	socket.onAccept = function(client) {
-		
-	}
-	
-	/* fired when a client send data */
-	socket.onRead = function(client, data) {
-
-		forward.write("PRIVMSG #ape-project :"+data+"\n");
-		/* You can imagine to push data to an APE channel */
-		/* Ape.getPipe('pubid').sendRaw("dataFromClient", {data:base64encode(data)}) */
-	}
-	
-	/* fired when a client has disconnected */
-	socket.onDisconnect = function(client) {
-		Ape.log("A client has disconnected");
-
-	}
-	
-	Ape.log("Listen on port " + port + '...');
-	
-	return socket;
-}
 
 Ape.addEvent("init", function() {
 
-	var npipe = new Ape.pipe(Ape);
-	
-	Ape.log(npipe.getProperty('pubid'));
-	
-	npipe.onSend = function(user, params) {
-		
-	};
-
 	Ape.addEvent("adduser", function(user) {
-		user.setProperty("nickname", "paraboul");
 		user.foo = "bar";
 	});
 	
@@ -167,7 +86,7 @@ Ape.addEvent("init", function() {
 	});
 
 });
-
+}
 
 
 			/*	Ape.log("Challenge : " + infos.chl);
@@ -193,6 +112,3 @@ Ape.addEvent("init", function() {
 	cb.host
 	cb.chl
 */
-
-
-
