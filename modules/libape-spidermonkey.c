@@ -898,6 +898,38 @@ APE_JS_NATIVE(ape_sm_hook_cmd)
 	return JS_TRUE;	
 }
 
+APE_JS_NATIVE(ape_sm_include)
+//{
+	const char *file;
+	JSScript *bytecode;
+	JSObject *scriptObj;
+	jsval frval;
+	
+	if (argc != 1) {
+		return JS_FALSE;
+	}
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &file)) {
+		return JS_FALSE;
+	}
+	
+	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), file);
+	
+	if (bytecode == NULL) {
+
+		return JS_FALSE;
+	}
+	
+	scriptObj = JS_NewScriptObject(cx, bytecode);
+
+	/* Adding to the root (prevent the script to be GC collected) */
+	JS_AddNamedRoot(cx, scriptObj, file);
+	
+	JS_ExecuteScript(cx, JS_GetGlobalObject(cx), bytecode, &frval);	
+	
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(ape_sm_addEvent)
 //{
 	const char *event;
@@ -1239,14 +1271,19 @@ static JSFunctionSpec ape_funcs[] = {
     JS_FS_END
 };
 
+static JSFunctionSpec global_funcs[] = {
+	JS_FS("include",   ape_sm_include,	1, 0, 0)
+};
+
 
 static void ape_sm_define_ape(ape_sm_compiled *asc)
 {
 	JSObject *obj;
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
-
+	
 	JS_DefineFunctions(asc->cx, obj, ape_funcs);
+	JS_DefineFunctions(asc->cx, asc->global, global_funcs);
 	
 	JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
 	JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
@@ -1406,13 +1443,11 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 			
 			/* define the Ape Object */
 			ape_sm_define_ape(asc);
-			
+
 			asc->bytecode = JS_CompileFile(asc->cx, asc->global, asc->filename);
 			
-			if (asc->bytecode == NULL) {
-				JS_DestroyScript(asc->cx, asc->bytecode);
-						
-			} else {			
+			if (asc->bytecode != NULL) {
+			
 				asc->scriptObj = JS_NewScriptObject(asc->cx, asc->bytecode);
 
 				/* Adding to the root (prevent the script to be GC collected) */
