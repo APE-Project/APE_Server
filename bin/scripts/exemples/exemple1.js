@@ -1,114 +1,59 @@
-if (0) {
-
-
-
 
 Ape.addEvent("init", function() {
-
+	
+	/* Fired when a new user is connecting */
 	Ape.addEvent("adduser", function(user) {
-		user.foo = "bar";
+		user.foo = "bar"; // Private property
+		user.setProperty('foo', 'bar'); // Public property (send to ther users)
 	});
 	
+	/* Fired when a user is disconnecting */
 	Ape.addEvent("deluser", function(user) {
-		Ape.log("Del user : " + user.getProperty('nickname'));
+		Ape.log("Del user ("+ user.foo +") : " + user.getProperty('foo'));
 	});
 	
+	/* Fired just after the user join a channel */
 	Ape.addEvent("afterJoin", function(user, channel) {
-		//Ape.log("JOIN !" + channel.getProperty('name'));
-		Ape.log(Hash.toQueryString(user.pipe.toObject()));
+		Ape.log("JOIN !" + channel.getProperty('name'));
 	});
 	
+	/* Fired just before the user join a channel */
 	Ape.addEvent("beforeJoin", function(user, channel) {
 		Ape.log("Before...");
 	})
 	
+	/* Fired when a channel is created */
 	Ape.addEvent("mkchan", function(channel) {
 		Ape.log("new channel " + channel.getProperty('name'));
 	});
 
 	
-	/* Create a non-blocking socket that listen on port 7779 */
+	/* Register a new command  (false : sessid not needed) */
+	Ape.registerCmd("webhook", false, function(params, infos) {
+		var data = {params:params, infos:infos};
 	
-	
-	/*var ca = new Ape.sockClient(6667, "irc.freenode.org", {
-		flushlf: true
+		/* make a post request */
+		Ape.HTTPRequest('http://www.rabol.fr/bordel/post.php', data);
+
 	});
 	
-	var sockets = create_js_server(7779, ca);
-	
-	ca.onConnect = function() {
-		Ape.log("Socket connected");
-		this.write("USER a a a a\n");
-		this.write("NICK APE_BoT\n");
-		this.write("JOIN #ape-project\n");
-
-	}
-	
-	ca.onRead = function(data) {
-		//Ape.log(data);
-	}
-
-	ca.onDisconnect = function() {
-		Ape.log("Disconnected");
-	}*/
-	
-	/* Register a CMD that not require user to be loged */
-	
-	if (0) {
-		Ape.registerCmd("webhook", false, function(params, infos){
-			var data = {params:params, infos:infos};
-		
-			/* make a post request */
-			Ape.HTTPRequest('http://www.rabol.fr/bordel/post.php', data);
-		
-			/* Broadcast params to clients connected to the js server */
-			clients.each(function(client) {
-				Ape.log("Sending to client...");
-				client.write(Hash.toQueryString(params));
-			});
-		
-			ca.write("PRIVMSG #ape-project :" + Hash.toQueryString(params) + "\n");
-		});
-
-	}
-
-	/*Ape.registerHookCmd("connect", function(params, infos) {
-		Ape.log("woot");
-	//	Ape.log("Yoh");
-	//	ca.write("PRIVMSG #ape-project :New user connected to APE (ip : "+infos.ip+")\n");
-	});*/
-	
-	/* Register a CMD that require user to be loged */
+	/* Register a CMD that require user to be loged (sessid needed) */
 	Ape.registerCmd("foocmd", true, function(params, infos) {
-		infos.user.pipe.sendRaw("foo", {"key":"val"}, {
-			from: infos.user.pipe
+		/* Send a row to the given pipe (pubid) */
+		Ape.getPipe(params.pipe).sendRaw("foo", {"key":"val"}, {
+			from: infos.user.pipe /* (optional) User is attached to the raw */
 		});
 	});
-
+	
+	/* Hook an existing command (for instance to add params and fire a BAD_PARAMS) */
+	Ape.registerHookCmd("foocmd", function(params, infos) {
+		if (!$defined(params.pipe)) {
+			return 0; // BAD_PARAMS
+		} else {
+			return 1;
+		}
+	});
+	
 });
-}
 
 
-			/*	Ape.log("Challenge : " + infos.chl);
-				Ape.log("Host : " + infos.host);
-
-				Ape.log("User sessid : " + user.getProperty('sessid'));
-				Ape.log("User pubid : " + user.getProperty('pubid'));
-				Ape.log("User nickname : " + user.getProperty('nickname'));
-				Ape.log("User xxx : " + user.xxx);*/
-
-				/*var pipe = Ape.getPipe(user.getProperty('pubid'));
-				if ($chk(pipe)) {
-					pipe.sendRaw("Kikoo", {"foo":"bar"}, true);
-					Ape.log("Send raw JS");
-				} else {
-					Ape.log("Not found " + pipe);
-				}*/
-				//var pipe = Ape.getPipe(user.getProperty('pubid'));
-/*
-	cb.callUser
-	cb.callSubUser
-	cb.fdClient
-	cb.host
-	cb.chl
-*/
