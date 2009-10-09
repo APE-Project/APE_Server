@@ -770,16 +770,26 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 	while (head != NULL) {
 		if (head->jchild.child == NULL && head->key.val != NULL) {
 			jsval jval;
-			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
+			if (head->jval.vu.str.value != NULL) {
+				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
+			} else {
+				jval = INT_TO_JSVAL(head->jval.vu.integer_value);
+			}
 			JS_SetProperty(cx, root, head->key.val, &jval);
-		} else if (head->key.val == NULL && head->jval.vu.str.value != NULL) {
+		} else if (head->key.val == NULL) {
 			jsuint rval;
 			jsval jval;
-			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
+			
+			if (head->jval.vu.str.value != NULL) {
+		
+				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
+			} else {
+				jval = INT_TO_JSVAL(head->jval.vu.integer_value);
+			}
 			if (JS_GetArrayLength(cx, root, &rval)) {
 				JS_SetElement(cx, root, rval, &jval);
 			}
-
+			
 		}
 		
 		if (head->jchild.child != NULL) {
@@ -790,11 +800,9 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 					cobj = JS_NewObject(cx, NULL, NULL, root);
 					break;
 				case JSON_C_T_ARR:
-					printf("New array\n");
 					cobj = JS_NewArrayObject(cx, 0, NULL);
 					break;
 				default:
-					printf("No type\n");
 					break;
 			}
 			if (cobj != NULL) {
