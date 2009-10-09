@@ -519,6 +519,7 @@ unsigned int cmd_session(callbackp *callbacki)
 
 			newraw = forge_raw("SESSIONS", jlist);
 			newraw->priority = RAW_PRI_HI;
+			
 			post_raw_sub(newraw, callbacki->call_subuser, callbacki->g_ape);
 			
 		} else {

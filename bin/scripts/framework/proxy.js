@@ -15,6 +15,7 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 		
 		/* Set some private properties */
 		pipe.link = socket;
+		pipe.nouser = false;
 		this.pipe = pipe;
 		
 		/* Called when an user send a "SEND" command on this pipe */
@@ -37,8 +38,10 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 	
 	socket.onDisconnect = function(data) {
 		if ($defined(this.pipe)) {
-			infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "disconnect"}, {from: this.pipe});
-			infos.user.proxys.erase(this.pipe.getProperty('pubid'));
+			if (!this.pipe.nouser) { /* User is not available anymore */
+				infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "disconnect"}, {from: this.pipe});
+				infos.user.proxys.erase(this.pipe.getProperty('pubid'));
+			}
 			/* Destroy the pipe */
 			this.pipe.destroy();
 		}
@@ -49,11 +52,11 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 
 Ape.addEvent("deluser", function(user) {
 	user.proxys.each(function(val) {
+		val.nouser = true;
 		val.onDettach();
 	});
 });
 
 Ape.addEvent("adduser", function(user) {
-	Ape.log(Hash.toQueryString(user.pipe.toObject()));
 	user.proxys = new $H;
 })
