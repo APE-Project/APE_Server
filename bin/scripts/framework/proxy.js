@@ -3,7 +3,7 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 		return 0;
 	}
 	var socket = new Ape.sockClient(params.port, params.host);
-	socket.chl = params.chl;
+	socket.chl = infos.chl;
 	/* TODO : Add socket to the user */
 	
 	socket.onConnect = function() {
@@ -20,7 +20,7 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 		/* Called when an user send a "SEND" command on this pipe */
 		pipe.onSend = function(user, params) {
 			/* "this" refer to the pipe object */
-			this.link.write(Ape.base64.encode(params.msg));
+			this.link.write(Ape.base64.decode(params.msg));
 		}
 		
 		pipe.onDettach = function() {
