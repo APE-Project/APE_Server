@@ -20,7 +20,6 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 		/* Called when an user send a "SEND" command on this pipe */
 		pipe.onSend = function(user, params) {
 			/* "this" refer to the pipe object */
-			Ape.log("Envoi : " + Hash.toQueryString(params));
 			this.link.write(Ape.base64.decode(params.msg));
 		}
 		
