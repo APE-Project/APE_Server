@@ -36,6 +36,7 @@
 #include "../src/ticks.h"
 #include "../src/pipe.h"
 #include "../src/raw.h"
+#include "../src/base64.h"
 
 #include <stdarg.h>
 

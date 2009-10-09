@@ -145,6 +145,13 @@ static JSClass ape_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+static JSClass b64_class = {
+	"base64", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 static JSClass socketserver_class = {
 	"sockServer", JSCLASS_HAS_PRIVATE,
 	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
@@ -930,6 +937,55 @@ APE_JS_NATIVE(ape_sm_include)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(ape_sm_b64_encode)
+//{
+	JSString *string;
+	char *b64;
+	
+	if (argc != 1) {
+        return JS_FALSE;
+	}
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
+		return JS_FALSE;
+	}	
+	
+	b64 = base64_encode(JS_GetStringBytes(string), JS_GetStringLength(string));
+	
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, b64));
+	
+	free(b64);
+	
+	return JS_TRUE;
+	
+}
+
+APE_JS_NATIVE(ape_sm_b64_decode)
+//{
+	JSString *string;
+	char *b64;
+	int length, len;
+	
+	if (argc != 1) {
+        return JS_FALSE;
+	}
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
+		return JS_FALSE;
+	}	
+	
+	length = JS_GetStringLength(string);
+	
+	b64 = xmalloc(length+1);
+	len = base64_decode(b64, JS_GetStringBytes(string), length+1);
+	
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, b64, len));
+	
+	free(b64);
+	
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(ape_sm_addEvent)
 //{
 	const char *event;
@@ -1272,18 +1328,28 @@ static JSFunctionSpec ape_funcs[] = {
 };
 
 static JSFunctionSpec global_funcs[] = {
-	JS_FS("include",   ape_sm_include,	1, 0, 0)
+	JS_FS("include",   ape_sm_include,	1, 0, 0),
+	JS_FS_END
+};
+
+static JSFunctionSpec b64_funcs[] = {
+	JS_FS("encode",   ape_sm_b64_encode,	1, 0, 0),
+	JS_FS("decode",   ape_sm_b64_decode,	1, 0, 0),
+	JS_FS_END
 };
 
 
 static void ape_sm_define_ape(ape_sm_compiled *asc)
 {
-	JSObject *obj;
+	JSObject *obj, *b64;
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
+	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
 	
 	JS_DefineFunctions(asc->cx, obj, ape_funcs);
 	JS_DefineFunctions(asc->cx, asc->global, global_funcs);
+	JS_DefineFunctions(asc->cx, b64, b64_funcs);
+	
 	
 	JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
 	JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);

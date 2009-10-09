@@ -1,6 +1,7 @@
 include("./scripts/mootools.js");
 
 
+
 var ape_http_request = Ape.HTTPRequest;
 
 Ape.HTTPRequest = function(url, data) {
@@ -19,7 +20,7 @@ function create_js_server(port, forward)
 	
 	/* fired when a client is connecting */
 	socket.onAccept = function(client) {
-
+		
 	}
 	
 	/* fired when a client send data */
@@ -43,15 +44,6 @@ function create_js_server(port, forward)
 
 Ape.addEvent("init", function() {
 
-	var timeout;
-	var last = new Date().getTime();
-	
-	Ape.setInterval(function() {
-		Ape.log("timeout " + parseInt(new Date().getTime() - parseInt(last)));
-		last = new Date().getTime();
-		
-	}, 10000);
-	
 	Ape.addEvent("adduser", function(user) {
 		user.setProperty("nickname", "paraboul");
 		user.foo = "bar";
@@ -73,12 +65,7 @@ Ape.addEvent("init", function() {
 	Ape.addEvent("mkchan", function(channel) {
 		Ape.log("new channel " + channel.getProperty('name'));
 	});
-	
-	var test = new Ape.sockClient(80, 'google.fr', {flushlf: true});
-	
-	test.onConnect = function() {
-		Ape.log('a');
-	}
+
 	
 	/* Create a non-blocking socket that listen on port 7779 */
 	
