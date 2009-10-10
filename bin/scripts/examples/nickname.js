@@ -1,11 +1,11 @@
 var userlist = new $H;
 
 Ape.registerHookCmd("connect", function(params, infos) {
-	if (!$defined(params.nickname) || userlist.has(params.nickname.toLowerCase()) || params.nickname.length > 16 || params.nickname.test('[^a-z]', 'i')) {
+	if (!$defined(params.name) || userlist.has(params.name.toLowerCase()) || params.name.length > 16 || params.name.test('[^a-z]', 'i')) {
 		return 0;
 	}
-	userlist.set(params.nickname.toLowerCase(), true);
-	return {"name": params.nickname};
+	userlist.set(params.name.toLowerCase(), true);
+	return {"name": params.name};
 });
 
 Ape.addEvent('deluser', function(user) {

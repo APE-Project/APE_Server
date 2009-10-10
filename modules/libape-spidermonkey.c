@@ -1531,33 +1531,41 @@ static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, call
 	JS_SetContextThread(cbk->cx);
 	JS_BeginRequest(cbk->cx);
 	
-		JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), 2, params, &rval);
-		
-	JS_EndRequest(cbk->cx);
-	JS_ClearContextThread(cbk->cx);
-	
-	if (JSVAL_IS_INT(rval) && JSVAL_TO_INT(rval) == 0) {
-		return RETURN_BAD_PARAMS;
-	} else if (JSVAL_IS_OBJECT(rval)) {
-		JSIdArray *enumjson = NULL;
-		int i;
-		ret_opt = JSVAL_TO_OBJECT(rval);
-		if (JS_IsArrayObject(cbk->cx, ret_opt) == JS_FALSE) {
-			enumjson = JS_Enumerate(cbk->cx, ret_opt);
-			JSString *key = NULL, *value = NULL;
-			jsval vp, propname;
-			for (i = 0; i < enumjson->length; i++) {
-				JS_IdToValue(cbk->cx, enumjson->vector[i], &propname);
-				key = JS_ValueToString(cbk->cx, propname);
-				JS_GetProperty(cbk->cx, ret_opt, JS_GetStringBytes(key), &vp);
-				if (JS_TypeOfValue(cbk->cx, vp) == JSTYPE_STRING) {
-					value = JSVAL_TO_STRING(vp);
-					add_property(&callbacki->properties, JS_GetStringBytes(key), JS_GetStringBytes(value), EXTEND_STR, EXTEND_ISPUBLIC);
+		if (JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), 2, params, &rval) == JS_TRUE) {
+
+			if (JSVAL_IS_INT(rval) && JSVAL_TO_INT(rval) == 0) {
+				JS_EndRequest(cbk->cx);
+				JS_ClearContextThread(cbk->cx);
+				
+				return RETURN_BAD_PARAMS;
+			} else if (JSVAL_IS_OBJECT(rval)) {
+				JSIdArray *enumjson = NULL;
+				int i;
+				ret_opt = JSVAL_TO_OBJECT(rval);
+				if (JS_IsArrayObject(cbk->cx, ret_opt) == JS_FALSE) {
+					enumjson = JS_Enumerate(cbk->cx, ret_opt);
+					JSString *key = NULL, *value = NULL;
+					jsval vp, propname;
+					for (i = 0; i < enumjson->length; i++) {
+						JS_IdToValue(cbk->cx, enumjson->vector[i], &propname);
+						key = JS_ValueToString(cbk->cx, propname);
+						JS_GetProperty(cbk->cx, ret_opt, JS_GetStringBytes(key), &vp);
+						if (JS_TypeOfValue(cbk->cx, vp) == JSTYPE_STRING) {
+							value = JSVAL_TO_STRING(vp);
+							add_property(&callbacki->properties, JS_GetStringBytes(key), JS_GetStringBytes(value), EXTEND_STR, EXTEND_ISPUBLIC);
+						}
+							
+					}
 				}
-								
 			}
+		} else {
+			JS_EndRequest(cbk->cx);
+			JS_ClearContextThread(cbk->cx);
+			
+			return RETURN_BAD_PARAMS;			
 		}
-	}
+		JS_EndRequest(cbk->cx);
+		JS_ClearContextThread(cbk->cx);
 	
 	return RETURN_NOTHING;
 }
