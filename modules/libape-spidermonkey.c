@@ -73,7 +73,7 @@ struct _ape_sm_callback
 	JSContext *cx;
 	struct _ape_sm_callback *next;
 };
-static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, acetables *g_ape);
+static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, callbackp *callbacki, acetables *g_ape);
 
 typedef struct _ape_sm_compiled ape_sm_compiled;
 struct _ape_sm_compiled {
@@ -923,7 +923,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	if (callbacki->data == NULL) {
 		ape_fire_cmd(callbacki->cmd, obj, cb, callbacki->g_ape);
 	} else {
-		return ape_fire_hook(callbacki->data, obj, cb, callbacki->g_ape);
+		return ape_fire_hook(callbacki->data, obj, cb, callbacki, callbacki->g_ape);
 	}
 	
 	return (RETURN_NOTHING);
@@ -1387,6 +1387,8 @@ APE_JS_NATIVE(ape_sm_pipe_constructor)
 	
 	JS_SetPrivate(cx, obj, pipe);
 	
+	/* TODO : This private data must be removed is the pipe is destroyed */
+	
 	JS_DefineFunctions(cx, obj, apepipe_funcs);
 	JS_DefineFunctions(cx, obj, apepipecustom_funcs);
 	
@@ -1512,11 +1514,12 @@ static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetable
 	
 }
 
-static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, acetables *g_ape)
+static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, callbackp *callbacki, acetables *g_ape)
 {
 	ape_sm_compiled *asc = ASMR->scripts;
 	jsval params[2];
 	jsval rval;
+	JSObject *ret_opt = NULL;
 	
 	if (asc == NULL) {
 		return 0;
@@ -1535,6 +1538,25 @@ static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, acet
 	
 	if (JSVAL_IS_INT(rval) && JSVAL_TO_INT(rval) == 0) {
 		return RETURN_BAD_PARAMS;
+	} else if (JSVAL_IS_OBJECT(rval)) {
+		JSIdArray *enumjson = NULL;
+		int i;
+		ret_opt = JSVAL_TO_OBJECT(rval);
+		if (JS_IsArrayObject(cbk->cx, ret_opt) == JS_FALSE) {
+			enumjson = JS_Enumerate(cbk->cx, ret_opt);
+			JSString *key = NULL, *value = NULL;
+			jsval vp, propname;
+			for (i = 0; i < enumjson->length; i++) {
+				JS_IdToValue(cbk->cx, enumjson->vector[i], &propname);
+				key = JS_ValueToString(cbk->cx, propname);
+				JS_GetProperty(cbk->cx, ret_opt, JS_GetStringBytes(key), &vp);
+				if (JS_TypeOfValue(cbk->cx, vp) == JSTYPE_STRING) {
+					value = JSVAL_TO_STRING(vp);
+					add_property(&callbacki->properties, JS_GetStringBytes(key), JS_GetStringBytes(value), EXTEND_STR, EXTEND_ISPUBLIC);
+				}
+								
+			}
+		}
 	}
 	
 	return RETURN_NOTHING;
@@ -1685,7 +1707,6 @@ static USERS *ape_cb_add_user(ape_socket *client, char *host, acetables *g_ape)
 		/* Store the JSObject into a private properties of the user */
 	
 		/* TODO => deluser => RemoveRoot */
-
 		jsobj = add_property(&u->properties, "jsobj", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
 		JS_AddRoot(gcx, &jsobj->val);
 		

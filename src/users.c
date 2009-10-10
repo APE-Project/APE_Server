@@ -207,6 +207,8 @@ void deluser(USERS *user, acetables *g_ape)
 	clear_properties(&user->properties);
 	destroy_pipe(user->pipe, g_ape);
 	
+	user->pipe = NULL;
+	
 	free(user);
 
 	user = NULL;

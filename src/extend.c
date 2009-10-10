@@ -20,7 +20,7 @@
 /* extend.c */
 
 #include <string.h>
-
+#include <stdio.h>
 #include "extend.h"
 #include "utils.h"
 #include "json.h"

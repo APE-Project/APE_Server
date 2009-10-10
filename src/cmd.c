@@ -141,7 +141,8 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 				cp.client = NULL;
 				cp.cmd = rjson->jval.vu.str.value;
 				cp.data = NULL;
-
+				cp.properties = NULL;
+				
 				switch(cmdback->need) {
 					case NEED_SESSID:
 						{
@@ -183,7 +184,15 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 							struct _transport_open_same_host_p retval = transport_open_same_host(sub, cget->client, guser->transport);				
 					
 							if (retval.client_close != NULL) {
-								//CLOSE(retval.client_close->fd, g_ape);
+								RAW *newraw;
+								json_item *jlist = json_new_object();
+
+								json_set_property_strZ(jlist, "value", "null");
+
+								newraw = forge_raw("CLOSE", jlist);
+
+								send_raw_inline((retval.client_close->fd == cget->client->fd ? cget->client : sub->client), transport, newraw, g_ape);
+								
 								shutdown(retval.client_close->fd, 2);
 							}
 							sub->client = cp.client = retval.client_listener;
@@ -291,9 +300,17 @@ unsigned int cmd_connect(callbackp *callbacki)
 	USERS *nuser;
 	RAW *newraw;
 	json_item *jstr = NULL;
-
+	extend *e;
 	
 	nuser = adduser(callbacki->client, callbacki->host, callbacki->g_ape);
+	
+	for (e = callbacki->properties; e != NULL; e = e->next) {
+		if (e->next == NULL) {
+			e->next = nuser->properties;
+			nuser->properties = e;
+			break;
+		}
+	}
 	
 	callbacki->call_user = nuser;
 	

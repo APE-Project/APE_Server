@@ -60,3 +60,5 @@ Ape.addEvent("deluser", function(user) {
 Ape.addEvent("adduser", function(user) {
 	user.proxys = new $H;
 })
+
+
