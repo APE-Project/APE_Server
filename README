@@ -1,12 +1,1 @@
-To compile APE you need : 
-- GCC
-- libc6-dev
-- 5 second'
-
-# make
-# cd modules/
-# make
-# cd ../bin/
-# ./aped
-
-For further details : http://www.ape-project.org/
+run install.sh
