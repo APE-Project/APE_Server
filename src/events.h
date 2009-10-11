@@ -25,7 +25,7 @@
 #include "utils.h"
 #include "main.h"
 
-#define USE_EPOLL_HANDLER
+#include "configure.h"
 
 #ifdef USE_KQUEUE_HANDLER
 #include <sys/event.h>

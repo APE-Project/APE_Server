@@ -1,1 +1,2 @@
-run install.sh
+run build.sh
+-> sh build.sh
