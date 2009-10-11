@@ -1805,12 +1805,27 @@ static void ape_cb_join(USERS *user, CHANNEL *chan, acetables *g_ape)
 	APE_JS_EVENT("afterJoin", 2, params);
 }
 
+static void ape_cb_left(USERS *user, CHANNEL *chan, acetables *g_ape)
+{
+	jsval params[2];
+	
+	
+	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
+	params[1] = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(chan));
+	
+	APE_JS_EVENT("left", 2, params);
+	
+	left(user, chan, g_ape);
+
+}
+
+
 static ace_callbacks callbacks = {
 	ape_cb_add_user,	/* Called when new user is added */
 	ape_cb_del_user,	/* Called when a user is disconnected */
 	ape_cb_mkchan,		/* Called when new chan is created */
 	ape_cb_join,		/* Called when a user join a channel */
-	NULL				/* Called when a user leave a channel */
+	ape_cb_left				/* Called when a user leave a channel */
 };
 
 APE_INIT_PLUGIN(MODULE_NAME, init_module, callbacks)
