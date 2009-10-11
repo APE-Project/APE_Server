@@ -854,7 +854,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	acetables *g_ape = callbacki->g_ape;
 	ape_sm_compiled *asc = ASMR->scripts;
 	json_item *head = callbacki->param;
-	JSContext *cx = NULL;
+	JSContext *cx = ASMC;
 	JSObject *obj; // param obj
 	JSObject *cb;
 	
@@ -864,6 +864,8 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	
 	/* Retrieve the CX */
 	/* TODO : Add a private data to the callbacki struct (pass it to register_cmd) */
+	
+	#if 0
 	while (asc != NULL) {
 		ape_sm_callback *cbk;
 		
@@ -876,10 +878,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		}
 		asc = asc->next;
 	}
-	
-	if (cx == NULL) {
-		return (RETURN_NOTHING);
-	}
+	#endif
 
 	JS_SetContextThread(cx);
 	JS_BeginRequest(cx);
@@ -1012,7 +1011,6 @@ APE_JS_NATIVE(ape_sm_include)
 //{
 	const char *file;
 	JSScript *bytecode;
-	JSObject *scriptObj;
 	jsval frval;
 	
 	if (argc != 1) {
@@ -1029,11 +1027,9 @@ APE_JS_NATIVE(ape_sm_include)
 
 		return JS_FALSE;
 	}
-	
-	scriptObj = JS_NewScriptObject(cx, bytecode);
 
 	/* Adding to the root (prevent the script to be GC collected) */
-	JS_AddNamedRoot(cx, scriptObj, file);
+//	JS_AddNamedRoot(cx, &scriptObj, file);
 	
 	JS_ExecuteScript(cx, JS_GetGlobalObject(cx), bytecode, &frval);	
 	
@@ -1173,6 +1169,25 @@ APE_JS_NATIVE(ape_sm_get_pipe)
 	if ((jspipe = get_pipe_object(pubid, NULL, cx, g_ape)) != NULL) {
 		*rval = OBJECT_TO_JSVAL(jspipe);
 	}
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(ape_sm_get_channel_by_name)
+//{
+	char *name;
+	CHANNEL *chan;
+	
+	*rval = JSVAL_NULL;
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &name)) {
+		return JS_FALSE;
+	}
+	if ((chan = getchan(name, g_ape)) != NULL) {
+		*rval = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(chan));
+		
+		return JS_TRUE;
+	}
+	
 	return JS_TRUE;
 }
 
@@ -1443,6 +1458,7 @@ static JSFunctionSpec ape_funcs[] = {
     JS_FS("log",  		ape_sm_echo,  		1, 0, 0),/* Ape.echo('stdout\n'); */
 	JS_FS("HTTPRequest", ape_sm_http_request, 2, 0, 0),
 	JS_FS("getPipe", ape_sm_get_pipe, 1, 0, 0),
+	JS_FS("getChannelByName", ape_sm_get_channel_by_name, 1, 0, 0),
 	JS_FS("config", ape_sm_config, 2, 0, 0),
 	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0, 0),
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0, 0),
