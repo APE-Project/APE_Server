@@ -1028,6 +1028,8 @@ APE_JS_NATIVE(ape_sm_include)
 	strncpy(rpath, READ_CONF("scripts_path"), 255);
 	strncat(rpath, file, 255);
 	
+	printf("[JS] Loading script %s\n", rpath);
+	
 	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), rpath);
 	
 	if (bytecode == NULL) {

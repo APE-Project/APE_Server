@@ -12,7 +12,5 @@ Ape.addEvent("left", function(user, channel) {
 });
 
 Ape.registerCmd("list", false, function(params, infos) {
-	Ape.getChannelByName("a").userslist.each(function(val) {
-		Ape.log(val.getProperty('name'));
-	})
+	
 });
