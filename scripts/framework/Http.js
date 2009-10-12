@@ -32,41 +32,50 @@ var Http = new Class({
 	version:		0.1,
 	action:  		null,
 	host:    		null,
-	port:	 		null,
+	port:	 		80,
 	query:	 		null,
 	headers: 		null,
 	data:			null,
 	authKey: 		null,
 	returnHeaders:	false,
-	lastResponse: 	new Array(),
+	redirected:		false,
+	headersDetails: [],
+	receiveHeaders: [],
+	lastResponse: 	[],
 	currentCall:  	0,
 
-	initialize: function(url) {
+	initialize: function (url) {
 		this.url 	= url;
-		var result	= url.match("^.*?://(.*?):(.*?)(/.*)$");
-		this.host	= result[1];
-		this.port	= result[2];
-		this.query	= result[3];
+		this.parseURL();
 	},
 
-	initHeaders: function() {
+	parseURL: function() {
+		var result	= this.url.match("^.*?://(.*?)(:(.*?)|)(/.*)$");
+		this.host	= result[1];
+		this.query	= result[4];
+		if (result[3]) {
+			this.port	= result[3];
+		}
+	},
+
+	initHeaders: function () {
 		if (this.data) {
 			this.data = "?" + this.data;
 		} else {
 			this.data = '';
 		}
 
-		this.headers =	this.action + " " + this.query + this.data + " HTTP/1.1\r\nHost: " + this.host + "\r\n";
+		this.headers =	this.action + " " + this.query + this.data + " HTTP/1.0\r\nHost: " + this.host + "\r\n";
 	},
 
-	setHeaders: function(key, value) {
+	setHeaders: function (key, value) {
 		this.headers += key + ": " + value + "\r\n";
 	},
 
 	/* Options: 
 		You need to set options in this order: action/data/auth/returnHeaders.
 	*/
-	options: function(key, value) {
+	options: function (key, value) {
 		if (key == 'auth') {
 			this.auth	= 'Basic ' +  Ape.base64.encode(value);
 			this.setHeaders('Authorization', this.auth);
@@ -87,8 +96,12 @@ var Http = new Class({
 		}
 	},
 
-	doCall: function(callback) {
+	doCall: function (callback) {
 		this.currentCall++;
+		
+		if (!this.action) {
+			this.actions('action', 'GET');
+		}
 
 		var socket = new Ape.sockClient(this.port, this.host, { flushlf: false });
 
@@ -96,15 +109,26 @@ var Http = new Class({
 		this.setHeaders('Accept', '*/*');
 
 		socket.onConnect = function() {
-			socket.write(this.headers);
-			socket.write("\r\n");
+			socket.write(this.headers+"\r\n");
 			if (this.data && this.action == 'POST') {
 				socket.write(this.data);
 			}
+			this.lastResponse[this.currentCall] = '';
 		}.bind(this);
 
 		socket.onRead = function(data) { 
 			this.lastResponse[this.currentCall] += data;
+			Ape.log(data);
+			if (data.contains("\r\n\r\n")) {
+				this.parseHeaders(this.currentCall);
+				if (this.headersDetails[this.currentCall].get('Content-Length') != null && data.length > this.headersDetails[this.currentCall].get('Content-Length')) {
+					socket.close();
+				}
+				if (this.headersDetails[this.currentCall].get('Location') != null) {
+					socket.close();
+					this.redirect = this.headersDetails[this.currentCall].get('Location');
+				}
+			}
 		}.bind(this);
 
 		socket.onDisconnect = function(callback) {
@@ -112,18 +136,42 @@ var Http = new Class({
 			delete this.lastResponse[this.currentCall];
 		}.bind(this, callback);
 	},
+	
+	parseHeaders: function (data) {
+		var tmp		= this.lastResponse[this.currentCall].split("\r\n\r\n");
+		tmp 		= tmp[0].split("\r\n");
 
-	parseResult: function(result, callback) {
-		if (this.returnHeaders == true) {
-			if (callback) {
-				callback.run(result);
+		if (!this.headersDetails[this.currentCall]) {
+			this.headersDetails[this.currentCall] = new Hash();
+			for (var i = 1; i < tmp.length; i++) {
+				var tmpHeaders = tmp[i].split(": ");
+				this.headersDetails[this.currentCall].set(tmpHeaders[0], tmpHeaders[1]);
+			}
+		}
+	},
+
+	parseResult: function (result, callback) {
+		if (!this.redirect) {
+			var parseResult = result.split("\r\n\r\n");
+
+			if (this.returnHeaders == true) {
+				if (callback) {
+					callback.run(result);
+				}
+			} else {
+				if (callback) {
+					var returnResult = '';
+					for (var i = 1; i < parseResult.length; i++) {
+						returnResult += parseResult[i];
+					}
+					callback.run(returnResult, this);
+				}
 			}
 		} else {
-			var result = result.split("\r\n\r\n");
-			if (callback) {
-				callback.run(result[1], this);
-			}
+			newRequest = new Http(this.redirect);
+			newRequest.options('action', this.action);
+			newRequest.options('data', this.data);
+			newRequest.doCall(callback);
 		}
 	}
 });
-
