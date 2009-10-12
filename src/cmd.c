@@ -304,6 +304,14 @@ unsigned int cmd_connect(callbackp *callbacki)
 	
 	nuser = adduser(callbacki->client, callbacki->host, callbacki->g_ape);
 	
+	if (nuser == NULL) {
+		SENDH(callbacki->client->fd, ERR_CONNECT, callbacki->g_ape);
+		
+		clear_properties(&callbacki->properties);
+		
+		return (RETURN_NOTHING);
+	}
+	
 	for (e = callbacki->properties; e != NULL; e = e->next) {
 		if (e->next == NULL) {
 			e->next = nuser->properties;
@@ -313,13 +321,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	}
 	
 	callbacki->call_user = nuser;
-	
-	if (nuser == NULL) {
-		SENDH(callbacki->client->fd, ERR_CONNECT, callbacki->g_ape);
 		
-		return (RETURN_NOTHING);
-	}
-	
 	switch(callbacki->transport) {
 		case 1:
 			nuser->transport = TRANSPORT_XHRSTREAMING;
