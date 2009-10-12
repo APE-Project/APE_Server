@@ -116,7 +116,7 @@ static ace_plugin_infos infos_module = {
 	"Javascript embeded", 	// Module Name
 	"0.01",			// Module Version
 	"Anthony Catel",	// Module Author
-	NULL			// Config file
+	"javascript.conf"			// Config file
 };
 
 
@@ -1014,6 +1014,7 @@ APE_JS_NATIVE(ape_sm_include)
 	const char *file;
 	JSScript *bytecode;
 	jsval frval;
+	char rpath[512];
 	
 	if (argc != 1) {
 		return JS_FALSE;
@@ -1023,7 +1024,11 @@ APE_JS_NATIVE(ape_sm_include)
 		return JS_FALSE;
 	}
 	
-	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), file);
+	memset(rpath, '\0', sizeof(rpath));
+	strncpy(rpath, READ_CONF("scripts_path"), 255);
+	strncat(rpath, file, 255);
+	
+	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), rpath);
 	
 	if (bytecode == NULL) {
 
@@ -1627,6 +1632,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	ape_sm_runtime *asr;
 	jsval rval;
 	int i;
+	char rpath[512];
 	
 	glob_t globbuf;
 
@@ -1647,8 +1653,12 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	add_property(&g_ape->properties, "sm_context", gcx, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	
 	add_property(&g_ape->properties, "sm_runtime", asr, EXTEND_POINTER, EXTEND_ISPRIVATE);
-
-	glob("./scripts/*.ape.js", 0, NULL, &globbuf);
+	
+	memset(rpath, '\0', sizeof(rpath));
+	strncpy(rpath, READ_CONF("scripts_path"), 256);
+	strcat(rpath, "/*.ape.js");
+	
+	glob(rpath, 0, NULL, &globbuf);
 	
 
 	for (i = 0; i < globbuf.gl_pathc; i++) {
