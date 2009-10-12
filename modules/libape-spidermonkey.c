@@ -401,17 +401,19 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 //{
 	RAW *newraw;
 	const char *raw;
-	JSObject *json_obj, *options = NULL;
+	JSObject *json_obj = NULL, *options = NULL;
 	json_item *jstr;
 	jsval vp;
 
 	transpipe *to_pipe = JS_GetPrivate(cx, obj);
 	
-	if (!JS_ConvertArguments(cx, 3, argv, "so/o", &raw, &json_obj, &options)) {
+	/* Don't know why, but JS_ConvertArguments success even if json_obj is not an Object and leaves json_obj unchanged */
+	if (!JS_ConvertArguments(cx, 3, argv, "so/o", &raw, &json_obj, &options) || json_obj == NULL) {
 		return JS_FALSE;
 	}
-	
+
 	jstr = jsobj_to_ape_json(cx, json_obj);
+
 
 	if (options != NULL && JS_GetProperty(cx, options, "from", &vp) && JSVAL_IS_OBJECT(vp) && JS_InstanceOf(cx, JSVAL_TO_OBJECT(vp), &pipe_class, 0) == JS_TRUE) {
 		JSObject *js_pipe = JSVAL_TO_OBJECT(vp);
@@ -1254,7 +1256,7 @@ APE_JS_NATIVE(ape_sm_set_timeout)
 		return JS_FALSE;
 	}
 
-	if (!JS_ConvertArguments(cx, 1, &argv[1], "i/o", &ms)) {
+	if (!JS_ConvertArguments(cx, 1, &argv[1], "i", &ms)) {
 		return JS_FALSE;
 	}
 	
@@ -1288,7 +1290,7 @@ APE_JS_NATIVE(ape_sm_set_interval)
 		return JS_FALSE;
 	}
 
-	if (!JS_ConvertArguments(cx, 1, &argv[1], "i/o", &ms)) {
+	if (!JS_ConvertArguments(cx, 1, &argv[1], "i", &ms)) {
 		return JS_FALSE;
 	}
 	
