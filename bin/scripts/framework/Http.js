@@ -1,33 +1,38 @@
 /* Copyright (C) 2009 Weelya & Gasquez Florian <f.gasquez@weelya.com> */
 
-/* APE http (MonkURL)
+/* APE Http (MonkURL)
 
 	Exemple 2:
-		var request = new http('http://www.google.fr:80/');
+		// URL to call
+		var request = new Http('http://www.google.fr:80/');
+		
+		// Action GET or POST
 		request.options('action', 'GET');
+		
 		request.doCall(function(result) {
 			Ape.log(result);
 		});
 
 	Example 1:
-		// URL to call
-		request = new http('http://twitter.com:80/statuses/update.json');
-		// Action GET or POST
+		request = new Http('http://twitter.com:80/statuses/update.json');
 		request.options('action', 'POST');
+		
 		// GET or POST data
 		request.options('data', {"status":"Hello!"});
+		
 		// http authentification (option)
 		request.options('auth', 'user:password');
+		
 		request.doCall(function (result) {
 			Ape.log(result);
 		});
 */
 
-var http = new Class({
+var Http = new Class({
 	version:		0.1,
 	action:  		null,
 	host:    		null,
-	port:	 		80,
+	port:	 		null,
 	query:	 		null,
 	headers: 		null,
 	data:			null,
