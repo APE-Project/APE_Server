@@ -118,7 +118,7 @@ var Http = new Class({
 
 		socket.onRead = function(data) { 
 			this.lastResponse[this.currentCall] += data;
-			Ape.log(data);
+
 			if (data.contains("\r\n\r\n")) {
 				this.parseHeaders(this.currentCall);
 				if (this.headersDetails[this.currentCall].get('Content-Length') != null && data.length > this.headersDetails[this.currentCall].get('Content-Length')) {
