@@ -7,12 +7,7 @@ Ape.registerHookCmd("connect", function(params, infos) {
 	
 	userlist.set(params.name.toLowerCase(), true);
 
-	return {
-		'raw': {
-			'name': params.name,
-			'data':{'foo':'bar'}
-		}
-	};
+	return 1;
 });
 
 Ape.addEvent('deluser', function(user) {
