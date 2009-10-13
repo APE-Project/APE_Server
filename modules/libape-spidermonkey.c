@@ -1328,15 +1328,15 @@ APE_JS_NATIVE(ape_sm_clear_timeout)
 
 APE_JS_NATIVE(ape_sm_echo)
 //{
-	const char *string;
+	JSString *string;
 	*rval = JSVAL_NULL;
-
-	if (!JS_ConvertArguments(cx, 1, argv, "s", &string)) {
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
 		return JS_FALSE;
 	}
 	
-	printf("%s\n", string);
-
+	fwrite(JS_GetStringBytes(string), 1, JS_GetStringLength(string), stdout);
+	fwrite("\n", 1, 1, stdout);
 	return JS_TRUE;
 }
 

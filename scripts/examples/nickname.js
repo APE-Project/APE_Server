@@ -13,3 +13,7 @@ Ape.registerHookCmd("connect", function(params, infos) {
 Ape.addEvent('deluser', function(user) {
 	userlist.erase(user.getProperty('name').toLowerCase());
 });
+
+Ape.setInterval(function(a, b){
+	Ape.log(a + b);
+}, 1000, 1, 2);
