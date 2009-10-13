@@ -1565,21 +1565,82 @@ static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, call
 				return RETURN_BAD_PARAMS;
 			} else if (JSVAL_IS_OBJECT(rval)) {
 				JSIdArray *enumjson = NULL;
+				jsval vp[2];
 				int i;
 				ret_opt = JSVAL_TO_OBJECT(rval);
 				if (JS_IsArrayObject(cbk->cx, ret_opt) == JS_FALSE) {
-					enumjson = JS_Enumerate(cbk->cx, ret_opt);
+					jsval propname;
+					JSObject *op;
 					JSString *key = NULL, *value = NULL;
-					jsval vp, propname;
-					for (i = 0; i < enumjson->length; i++) {
-						JS_IdToValue(cbk->cx, enumjson->vector[i], &propname);
-						key = JS_ValueToString(cbk->cx, propname);
-						JS_GetProperty(cbk->cx, ret_opt, JS_GetStringBytes(key), &vp);
-						if (JS_TypeOfValue(cbk->cx, vp) == JSTYPE_STRING) {
-							value = JSVAL_TO_STRING(vp);
-							add_property(&callbacki->properties, JS_GetStringBytes(key), JS_GetStringBytes(value), EXTEND_STR, EXTEND_ISPUBLIC);
-						}
+					
+					JS_GetProperty(cbk->cx, ret_opt, "raw", &vp[0]);
+					JS_GetProperty(cbk->cx, ret_opt, "properties", &vp[1]);
+					
+					if ((vp[0] == JSVAL_VOID || !JSVAL_IS_OBJECT(vp[0]))
+					 		&& (vp[1] == JSVAL_VOID || !JSVAL_IS_OBJECT(vp[1]))) {
+						JS_EndRequest(cbk->cx);
+						JS_ClearContextThread(cbk->cx);
+
+						return RETURN_NOTHING;						
+					}
+					
+					op = (vp[0] != JSVAL_VOID ? JSVAL_TO_OBJECT(vp[0]) : JSVAL_TO_OBJECT(vp[1]));
+					
+					if (vp[1] != JSVAL_VOID) { 
+						enumjson = JS_Enumerate(cbk->cx, op);
+					
+						for (i = 0; i < enumjson->length; i++) {
+							JS_IdToValue(cbk->cx, enumjson->vector[i], &propname);
+							key = JS_ValueToString(cbk->cx, propname);
+							if (JS_GetProperty(cbk->cx, op, JS_GetStringBytes(key), &vp[0]) == JS_FALSE) {
+								continue;
+							}
+							if (JS_TypeOfValue(cbk->cx, vp[0]) == JSTYPE_STRING) {
+								value = JSVAL_TO_STRING(vp[0]);
+								add_property(&callbacki->properties, JS_GetStringBytes(key), JS_GetStringBytes(value), EXTEND_STR, EXTEND_ISPUBLIC);
+							}
 							
+						}
+					} else {
+						jsval rawname, data;
+						
+						JS_GetProperty(cbk->cx, op, "name", &rawname);
+						JS_GetProperty(cbk->cx, op, "data", &data);						
+						
+						if (rawname != JSVAL_VOID && JSVAL_IS_STRING(rawname) && data != JSVAL_VOID && JSVAL_IS_OBJECT(data)) {
+							json_item *rawdata = NULL;
+							
+							if ((rawdata = jsobj_to_ape_json(cbk->cx, JSVAL_TO_OBJECT(data))) != NULL) {
+								RAW *newraw = forge_raw(JS_GetStringBytes(JSVAL_TO_STRING(rawname)), rawdata);
+
+								send_raw_inline(callbacki->client, callbacki->transport, newraw, g_ape);
+								
+								JS_EndRequest(cbk->cx);
+								JS_ClearContextThread(cbk->cx);
+
+								return RETURN_NULL;
+							}
+						}
+						
+					}
+				} else {
+					unsigned int length = 0;
+					JS_GetArrayLength(cbk->cx, ret_opt, &length);
+					if (length == 2 && JS_GetElement(cbk->cx, ret_opt, 0, &vp[0]) && JS_GetElement(cbk->cx, ret_opt, 1, &vp[1]) && vp[0] != JSVAL_VOID && vp[1] != JSVAL_VOID) {
+						if (JSVAL_IS_STRING(vp[1])) {
+							RAW *newraw;
+							JSString *code = JS_ValueToString(cbk->cx, vp[0]);
+							json_item *jlist = json_new_object();
+
+							json_set_property_strZ(jlist, "code", JS_GetStringBytes(code));
+							json_set_property_strZ(jlist, "value", JS_GetStringBytes(JSVAL_TO_STRING(vp[1])));
+
+							newraw = forge_raw(RAW_ERR, jlist);
+
+							send_raw_inline(callbacki->client, callbacki->transport, newraw, g_ape);							
+							
+							return RETURN_NULL;
+						}
 					}
 				}
 			}

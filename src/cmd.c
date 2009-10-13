@@ -281,9 +281,17 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 					return (CONNECT_SHUTDOWN);
 				}
 			} else {
+				RAW *newraw;
+				json_item *jlist = json_new_object();
+
+				json_set_property_strZ(jlist, "code", "002");
+				json_set_property_strZ(jlist, "value", "BAD_CMD");
+
+				newraw = forge_raw(RAW_ERR, jlist);
+
+				send_raw_inline(cget->client, transport, newraw, g_ape);
 				//printf("Cant find %s\n", rjson->jval.vu.str.value);
 				free_json_item(ojson);
-				SENDH(cget->client->fd, ERR_BAD_CMD, g_ape);
 				return (CONNECT_SHUTDOWN);
 			}
 		}
@@ -305,7 +313,15 @@ unsigned int cmd_connect(callbackp *callbacki)
 	nuser = adduser(callbacki->client, callbacki->host, callbacki->g_ape);
 	
 	if (nuser == NULL) {
-		SENDH(callbacki->client->fd, ERR_CONNECT, callbacki->g_ape);
+		RAW *newraw;
+		json_item *jlist = json_new_object();
+
+		json_set_property_strZ(jlist, "code", "200");
+		json_set_property_strZ(jlist, "value", "UNKNOWN_CONNECTION_ERROR");
+
+		newraw = forge_raw(RAW_ERR, jlist);
+
+		send_raw_inline(callbacki->client, callbacki->transport, newraw, callbacki->g_ape);
 		
 		clear_properties(&callbacki->properties);
 		

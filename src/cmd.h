@@ -72,6 +72,7 @@ struct _callbackp
 	struct USERS *call_user;
 	
 	transport_t transport;
+
 	char *ip;
 	char *host;
 	subuser *call_subuser;
