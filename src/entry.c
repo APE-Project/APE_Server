@@ -162,6 +162,9 @@ int main(int argc, char **argv)
 	g_ape->co = xmalloc(sizeof(*g_ape->co) * g_ape->basemem);
 	memset(g_ape->co, 0, sizeof(*g_ape->co) * g_ape->basemem);
 	
+	g_ape->timers.timers = NULL;
+	g_ape->timers.ntimers = 0;
+	
 	g_ape->srv = srv;
 	g_ape->events = &fdev;
 	events_init(g_ape, &g_ape->basemem);
@@ -233,10 +236,7 @@ int main(int argc, char **argv)
 	g_ape->plugins = NULL;
 	
 	g_ape->properties = NULL;
-	
-	g_ape->timers.timers = NULL;
-	g_ape->timers.ntimers = 0;
-	
+
 	add_ticked(check_timeout, g_ape);
 	
 	do_register(g_ape);

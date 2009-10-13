@@ -8,8 +8,9 @@ Ape.registerHookCmd("connect", function(params, infos) {
 	userlist.set(params.name.toLowerCase(), true);
 
 	return {
-		'properties': {
-			'name': params.name
+		'raw': {
+			'name': params.name,
+			'data':{'foo':'bar'}
 		}
 	};
 });
