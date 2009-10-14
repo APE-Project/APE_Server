@@ -194,31 +194,41 @@ static JSClass pipe_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+/* TODO : Add binary capabilities (remove strlen and use native JSString) */
 APE_JS_NATIVE(apesocket_write)
 //{
-	char *string;
+	JSString *string;
 	struct _ape_sock_callbacks *cb = JS_GetPrivate(cx, obj);
-	ape_socket *client = ((struct _ape_sock_js_obj *)cb->private)->client;
-
-	if (!JS_ConvertArguments(cx, 1, argv, "s", &string)) {
-		return JS_FALSE;
+	
+	if (cb == NULL) {
+		return JS_TRUE;
 	}
 	
-	sendbin(client->fd, string, strlen(string), g_ape);
+	ape_socket *client = ((struct _ape_sock_js_obj *)cb->private)->client;
+
+	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
+		return JS_TRUE;
+	}
+	
+	sendbin(client->fd, JS_GetStringBytes(string), JS_GetStringLength(string), g_ape);
 	
 	return JS_TRUE;
 }
 
 APE_JS_NATIVE(apesocketclient_write)
 //{
-	char *string;
+	JSString *string;
 	ape_socket *client = JS_GetPrivate(cx, obj);
-
-	if (!JS_ConvertArguments(cx, 1, argv, "s", &string)) {
-		return JS_FALSE;
+	
+	if (client == NULL) {
+		return JS_TRUE;
 	}
 
-	sendbin(client->fd, string, strlen(string), g_ape);
+	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
+		return JS_TRUE;
+	}
+
+	sendbin(client->fd, JS_GetStringBytes(string), JS_GetStringLength(string), g_ape);
 	
 	return JS_TRUE;
 }
@@ -226,6 +236,10 @@ APE_JS_NATIVE(apesocketclient_write)
 static JSBool apesocketclient_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	ape_socket *client = JS_GetPrivate(cx, obj);
+	
+	if (client == NULL) {
+		return JS_TRUE;
+	}
 
 	shutdown(client->fd, 2);
 
@@ -235,6 +249,10 @@ static JSBool apesocket_close(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 {
 	ape_socket *client;
 	struct _ape_sock_callbacks *cb = JS_GetPrivate(cx, obj);
+	
+	if (cb == NULL) {
+		return JS_TRUE;
+	}
 	
 	client = ((struct _ape_sock_js_obj *)cb->private)->client;
 	shutdown(client->fd, 2);
@@ -333,8 +351,12 @@ APE_JS_NATIVE(apepipe_sm_get_property)
 	const char *property;
 	transpipe *pipe = JS_GetPrivate(cx, obj);
 	
+	if (pipe == NULL) {
+		return JS_TRUE;
+	}
+	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &property)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	if (strcmp(property, "pubid") == 0) {
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, pipe->pubid, 32));
@@ -353,12 +375,16 @@ APE_JS_NATIVE(apepipe_sm_set_property)
 	char *key, *property;
 	transpipe *pipe = JS_GetPrivate(cx, obj);
 	
+	if (pipe == NULL) {
+		return JS_TRUE;
+	}
+	
 	if (argc != 2) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}	
 	
 	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	add_property(&pipe->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
@@ -374,7 +400,7 @@ APE_JS_NATIVE(apepipe_sm_to_object)
 	JSObject *js_pipe_object;
 	
 	if ((spipe = JS_GetPrivate(cx, obj)) == NULL) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	pipe_object = get_json_object_pipe(spipe);
@@ -392,6 +418,10 @@ APE_JS_NATIVE(apepipe_sm_destroy)
 //{
 	transpipe *pipe = JS_GetPrivate(cx, obj);
 	
+	if (pipe == NULL) {
+		return JS_TRUE;
+	}
+	
 	destroy_pipe(pipe, g_ape);
 	
 	return JS_TRUE;
@@ -407,9 +437,13 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 
 	transpipe *to_pipe = JS_GetPrivate(cx, obj);
 	
+	if (to_pipe == NULL) {
+		return JS_TRUE;
+	}
+	
 	/* Don't know why, but JS_ConvertArguments success even if json_obj is not an Object and leaves json_obj unchanged */
 	if (!JS_ConvertArguments(cx, 3, argv, "so/o", &raw, &json_obj, &options) || json_obj == NULL) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 
 	jstr = jsobj_to_ape_json(cx, json_obj);
@@ -454,8 +488,12 @@ APE_JS_NATIVE(apechannel_sm_get_property)
 	const char *property;
 	CHANNEL *chan = JS_GetPrivate(cx, obj);
 	
+	if (chan == NULL) {
+		return JS_TRUE;
+	}
+	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &property)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	if (strcmp(property, "pubid") == 0) {
@@ -477,12 +515,16 @@ APE_JS_NATIVE(apechannel_sm_set_property)
 	char *key, *property;
 	CHANNEL *chan = JS_GetPrivate(cx, obj);
 	
+	if (chan == NULL) {
+		return JS_TRUE;
+	}
+	
 	if (argc != 2) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}	
 	
 	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	add_property(&chan->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
@@ -496,8 +538,12 @@ APE_JS_NATIVE(apeuser_sm_get_property)
 	const char *property;
 	USERS *user = JS_GetPrivate(cx, obj);
 	
+	if (user == NULL) {
+		return JS_TRUE;
+	}
+	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &property)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	if (strcmp(property, "sessid") == 0) {
@@ -521,12 +567,16 @@ APE_JS_NATIVE(apeuser_sm_set_property)
 	char *key, *property;
 	USERS *user = JS_GetPrivate(cx, obj);
 	
+	if (user == NULL) {
+		return JS_TRUE;
+	}
+	
 	if (argc != 2) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}	
 	
 	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	add_property(&user->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
@@ -662,9 +712,11 @@ static void sm_sock_ondisconnect(ape_socket *client, acetables *g_ape)
 				jsval params[1];
 				params[0] = OBJECT_TO_JSVAL(client_obj);
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 1, params, &rval);
+				JS_SetPrivate(cb->asc->cx, client_obj, (void *)NULL);
 				JS_RemoveRoot(cb->asc->cx, &((struct _ape_sock_js_obj *)cb->private)->client_obj);
 			} else {
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 0, NULL, &rval);
+				JS_SetPrivate(cb->asc->cx, cb->server_obj, (void *)NULL);
 			}
 			
 			free(cb->private);
@@ -940,18 +992,18 @@ APE_JS_NATIVE(ape_sm_register_cmd)
 	*rval = JSVAL_NULL;
 	
 	if (argc != 3) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	if (!JS_ConvertArguments(cx, 2, argv, "sb", &cmd, &needsessid)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	ascb = xmalloc(sizeof(*ascb));
 
 	if (!JS_ConvertValue(cx, argv[2], JSTYPE_FUNCTION, &ascb->func)) {
 		free(ascb);
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
 	
@@ -978,23 +1030,23 @@ APE_JS_NATIVE(ape_sm_hook_cmd)
 	*rval = JSVAL_NULL;
 	
 	if (argc != 2) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &cmd)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 
 	ascb = xmalloc(sizeof(*ascb));
 
 	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, &ascb->func)) {
 		free(ascb);
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 
 	if (!register_hook_cmd(cmd, ape_sm_cmd_wrapper, ascb, g_ape)) {
 		free(ascb);
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
 	
@@ -1017,11 +1069,11 @@ APE_JS_NATIVE(ape_sm_include)
 	char rpath[512];
 	
 	if (argc != 1) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &file)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	memset(rpath, '\0', sizeof(rpath));
@@ -1034,7 +1086,7 @@ APE_JS_NATIVE(ape_sm_include)
 	
 	if (bytecode == NULL) {
 
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 
 	/* Adding to the root (prevent the script to be GC collected) */
@@ -1051,11 +1103,11 @@ APE_JS_NATIVE(ape_sm_b64_encode)
 	char *b64;
 	
 	if (argc != 1) {
-        return JS_FALSE;
+        return JS_TRUE;
 	}
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}	
 	
 	b64 = base64_encode(JS_GetStringBytes(string), JS_GetStringLength(string));
@@ -1075,11 +1127,11 @@ APE_JS_NATIVE(ape_sm_b64_decode)
 	int length, len;
 	
 	if (argc != 1) {
-        return JS_FALSE;
+        return JS_TRUE;
 	}
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}	
 	
 	length = JS_GetStringLength(string);
@@ -1103,18 +1155,18 @@ APE_JS_NATIVE(ape_sm_addEvent)
 	*rval = JSVAL_NULL;
 	
 	if (argc != 2) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &event)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 
 	ascb = xmalloc(sizeof(*ascb));
 
 	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, &ascb->func)) {
 		free(ascb);
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
 		
@@ -1134,7 +1186,7 @@ APE_JS_NATIVE(ape_sm_http_request)
 	char *url, *post = NULL;
 	
 	if (!JS_ConvertArguments(cx, argc, argv, "s/s", &url, &post)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	ape_http_request(url, post, g_ape);
@@ -1172,7 +1224,7 @@ APE_JS_NATIVE(ape_sm_get_pipe)
 	*rval = JSVAL_NULL;
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &pubid)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	if ((jspipe = get_pipe_object(pubid, NULL, cx, g_ape)) != NULL) {
@@ -1189,7 +1241,7 @@ APE_JS_NATIVE(ape_sm_get_channel_by_name)
 	*rval = JSVAL_NULL;
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &name)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	if ((chan = getchan(name, g_ape)) != NULL) {
 		*rval = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(chan));
@@ -1207,7 +1259,7 @@ APE_JS_NATIVE(ape_sm_config)
 	plug_config *config;
 	
 	if (!JS_ConvertArguments(cx, 2, argv, "ss", &file, &key)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	config = plugin_parse_conf(file);
@@ -1260,11 +1312,11 @@ APE_JS_NATIVE(ape_sm_set_timeout)
 	params->argv = (argc-2 ? xmalloc(sizeof(*params->argv) * argc-2) : NULL);
 	
 	if (!JS_ConvertValue(cx, argv[0], JSTYPE_FUNCTION, &params->func)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 
 	if (!JS_ConvertArguments(cx, 1, &argv[1], "i", &ms)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	JS_AddRoot(cx, &params->func);
@@ -1294,11 +1346,11 @@ APE_JS_NATIVE(ape_sm_set_interval)
 	params->argv = (argc-2 ? xmalloc(sizeof(*params->argv) * argc-2) : NULL);
 	
 	if (!JS_ConvertValue(cx, argv[0], JSTYPE_FUNCTION, &params->func)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 
 	if (!JS_ConvertArguments(cx, 1, &argv[1], "i", &ms)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	JS_AddRoot(cx, &params->func);
@@ -1317,12 +1369,26 @@ APE_JS_NATIVE(ape_sm_set_interval)
 APE_JS_NATIVE(ape_sm_clear_timeout)
 //{
 	unsigned int identifier;
+	struct _ape_sm_timer *params;
+	struct _ticks_callback *timer;
+	
 	if (!JS_ConvertArguments(cx, 1, argv, "i", &identifier)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
-	del_timer_identifier(identifier, g_ape);
-	
+	if ((timer = get_timer_identifier(identifier, g_ape)) != NULL) {
+		params = timer->params;
+
+		JS_RemoveRoot(params->cx, &params->func);
+		if (params->argv != NULL) {
+			free(params->argv);
+		}
+		free(params);
+		
+		del_timer(timer, g_ape);
+
+	}
+
 	return JS_TRUE;
 }
 
@@ -1332,7 +1398,7 @@ APE_JS_NATIVE(ape_sm_echo)
 	*rval = JSVAL_NULL;
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	fwrite(JS_GetStringBytes(string), 1, JS_GetStringLength(string), stdout);
@@ -1345,7 +1411,7 @@ APE_JS_NATIVE(ape_sm_raw_constructor)
 	char *rawname;
 	
 	if (!JS_ConvertArguments(cx, 1, argv, "s", &rawname)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	JS_SetPrivate(cx, obj, rawname);
@@ -1364,7 +1430,7 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	struct _ape_sock_callbacks *cbcopy;
 	struct _ape_sock_js_obj *sock_obj;
 	if (!JS_ConvertArguments(cx, argc, argv, "is/o", &port, &ip, &options)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 	
 	sock_obj = xmalloc(sizeof(*sock_obj));
@@ -1428,7 +1494,7 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	jsval vp;
 
 	if (!JS_ConvertArguments(cx, argc, argv, "is/o", &port, &ip, &options)) {
-		return JS_FALSE;
+		return JS_TRUE;
 	}
 
 	server = ape_listen(port, ip, g_ape);
@@ -1827,10 +1893,23 @@ static USERS *ape_cb_add_user(ape_socket *client, char *host, acetables *g_ape)
 static void ape_cb_del_user(USERS *user, acetables *g_ape)
 {
 	jsval params[1];
+	extend *jsobj;
+	JSObject *pipe;
+	JSContext *gcx = ASMC;
+	
 	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
 	
 	APE_JS_EVENT("deluser", 1, params);
 	
+	jsobj = get_property(user->properties, "jsobj");
+	
+	JS_SetPrivate(gcx, jsobj->val, (void *)NULL);
+	JS_RemoveRoot(gcx, &jsobj->val);
+	
+	pipe = user->pipe->data;
+	
+	JS_SetPrivate(gcx, pipe, (void *)NULL);
+
 	deluser(user, g_ape);
 }
 

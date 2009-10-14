@@ -136,6 +136,20 @@ void del_timer(struct _ticks_callback *timer, acetables *g_ape)
 	free(timer);
 }
 
+struct _ticks_callback *get_timer_identifier(unsigned int identifier, acetables *g_ape)
+{
+	struct _ticks_callback *timers = g_ape->timers.timers;
+	
+	while (timers != NULL) {
+		if (timers->identifier == identifier) {
+			return timers;
+		}
+		timers = timers->next;
+	}
+	
+	return NULL;
+}
+
 void del_timer_identifier(unsigned int identifier, acetables *g_ape)
 {
 	struct _ticks_callback *timers = g_ape->timers.timers;

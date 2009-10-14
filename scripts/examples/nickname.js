@@ -7,13 +7,13 @@ Ape.registerHookCmd("connect", function(params, infos) {
 	
 	userlist.set(params.name.toLowerCase(), true);
 
-	return 1;
+	return {
+		'properties': {
+			'name':params.name
+		}
+	};
 });
 
 Ape.addEvent('deluser', function(user) {
 	userlist.erase(user.getProperty('name').toLowerCase());
 });
-
-Ape.setInterval(function(a, b){
-	Ape.log(a + b);
-}, 1000, 1, 2);
