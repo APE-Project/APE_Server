@@ -44,7 +44,6 @@
 #include "ticks.h"
 
 
-
 static enum dns_class qcls = DNS_C_IN;
 
 static struct query *query_new(const char *name, const unsigned char *dn, enum dns_type qtyp) {
@@ -55,7 +54,7 @@ static struct query *query_new(const char *name, const unsigned char *dn, enum d
 	
 	memcpy(cdn, dn, l);
 	
-	q->name = name;
+	q->name = xstrdup(name);
 	q->dn = cdn;
 	q->qtyp = qtyp;
 	
@@ -78,10 +77,10 @@ static void ape_dns_write(ape_socket *client, acetables *g_ape)
 }
 
 static void query_free(struct query *q) {
+	free(q->name);
 	free(q->dn);
 	free(q);
 }
-
 
 
 static void dnscb(struct dns_ctx *ctx, void *result, void *data) {
@@ -152,13 +151,11 @@ void ape_gethostbyname(char *name, void (*callback)(char *, void *, acetables *)
 	struct query *q;
     unsigned char dn[DNS_MAXDN];
 	int abs = 0;
-	
 	enum dns_type l_qtyp = 0;
-	
+
     if (dns_pton(AF_INET, name, &addr) > 0) {
 		/* We have an IP */
-		dns_a4todn(&addr, 0, dn, sizeof(dn));
-		callback(name, data, g_ape);
+		callback(xstrdup(name), data, g_ape);
 		return;
     } else if (!dns_ptodn(name, strlen(name), dn, sizeof(dn), &abs)) {
 		/* We have an invalid domain name */

@@ -184,7 +184,7 @@ static void ape_connect_name_cb(char *ip, void *data, acetables *g_ape)
 {
 	struct _ape_sock_connect_async *asca = data;
 	ape_socket *sock;
-	
+
 	if ((sock = ape_connect(ip, asca->port, g_ape)) != NULL) {
 		
 		sock->attach = asca->sock->attach;
@@ -210,7 +210,7 @@ void ape_connect_name(char *name, int port, ape_socket *pattern, acetables *g_ap
 	
 	asca->sock = pattern;
 	asca->port = port;
-	
+
 	ape_gethostbyname(name, ape_connect_name_cb, asca, g_ape);
 }
 
@@ -281,8 +281,7 @@ unsigned int sockroutine(acetables *g_ape)
 	
 	sl.co = co;
 	sl.tfd = &tfd;
-	
-	g_ape->bufout = xmalloc(sizeof(struct _socks_bufout) * g_ape->basemem);
+
 
 	#if 0
 	add_periodical(5, 0, check_idle, &sl, g_ape);

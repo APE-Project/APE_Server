@@ -5,7 +5,7 @@ var IRCApeclient = new Class({
 	client: false,
 	
 	initialize: function(nickname, client) {
-		this.socket_listener = new Ape.sockClient('6969', 'localhost', {flushlf: true});
+		this.socket_listener = new Ape.sockClient('6969', '127.0.0.1', {flushlf: true});
 		this.client = client;
 		
 		this.socket_listener.onConnect = function() {
@@ -21,7 +21,7 @@ var IRCApeclient = new Class({
 		}.bind(this);
 		
 		this.socket_listener.onDisconnect = function() {
-			Ape.log('Listener disco');
+		//	Ape.log('Listener disco');
 		}
 		
 		Ape.setInterval(function(obj){
@@ -39,8 +39,8 @@ var IRCApeclient = new Class({
 		var jsonobj = JSON.encode([mainobj]);
 
 		if (!sock) {
-			var control = new Ape.sockClient('6969', 'localhost', {flushlf: true});
-		
+			var control = new Ape.sockClient('6969', '12.12.12.1', {flushlf: true});
+			Ape.log('12.12.12.1');
 			Ape.log("SEND CMD " + control);
 		
 			control.onConnect = function() {
@@ -57,7 +57,7 @@ var IRCApeclient = new Class({
 			}.bind(this);
 		
 			control.onDisconnect = function() {
-				Ape.log('Controler disco');
+			//	Ape.log('Controler disco');
 			}
 		} else {
 			sock.write('GET /1/?'+jsonobj+' HTTP/1.1\n');
@@ -66,7 +66,7 @@ var IRCApeclient = new Class({
 	},
 	
 	parseRaw: function(obj) {
-		Ape.log('Recu : ' + obj.raw);
+	//	Ape.log('Recu : ' + obj.raw);
 		if ($defined(this['raw' + obj.raw])) this['raw' + obj.raw](obj.data);
 	},
 	
@@ -128,7 +128,7 @@ var IRCClient = new Class({
 	},
 	
 	send: function(data) {
-		Ape.log(data);
+		//Ape.log(data);
 		this.socket.write(data + "\n");
 	},
 	
@@ -154,7 +154,6 @@ var IRCClient = new Class({
 	},
 	
 	joinChan: function(chan) {
-		Ape.log('this : ' + this);
 		this.apeclient.sendCmd('JOIN', {channels:chan});
 	},
 	

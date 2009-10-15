@@ -26,7 +26,7 @@
 #include <udns.h>
 
 struct query {
-	const char *name;		/* original query string */
+	char *name;		/* original query string */
 	unsigned char *dn;		/* the DN being looked up */
 	enum dns_type qtyp;		/* type of the query */
 	void (*callback)(char *ip, void *data, acetables *g_ape);

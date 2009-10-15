@@ -161,6 +161,8 @@ int main(int argc, char **argv)
 
 	g_ape->co = xmalloc(sizeof(*g_ape->co) * g_ape->basemem);
 	memset(g_ape->co, 0, sizeof(*g_ape->co) * g_ape->basemem);
+
+	g_ape->bufout = xmalloc(sizeof(struct _socks_bufout) * g_ape->basemem);
 	
 	g_ape->timers.timers = NULL;
 	g_ape->timers.ntimers = 0;
@@ -227,9 +229,7 @@ int main(int argc, char **argv)
 	g_ape->proxy.hosts = NULL;
 	
 	g_ape->hCallback = hashtbl_init();
-	
-	g_ape->bufout = NULL;
-	
+
 	g_ape->uHead = NULL;
 	
 	g_ape->nConnected = 0;

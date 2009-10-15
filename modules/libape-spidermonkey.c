@@ -1483,7 +1483,7 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	if (!JS_ConvertArguments(cx, argc, argv, "is/o", &port, &ip, &options)) {
 		return JS_TRUE;
 	}
-	
+
 	sock_obj = xmalloc(sizeof(*sock_obj));
 	sock_obj->client_obj = NULL;
 	
@@ -1506,6 +1506,7 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	}	
 	pattern->attach = cbcopy;
 	JS_SetPrivate(cx, obj, cbcopy);
+	
 	ape_connect_name(ip, port, pattern, g_ape);
 
 	JS_DefineFunctions(cx, obj, apesocket_client_funcs);
