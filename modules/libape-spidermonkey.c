@@ -1972,8 +1972,9 @@ static CHANNEL *ape_cb_mkchan(char *name, acetables *g_ape)
 	extend *jsobj;
 	jsval params[1], pipe;
 	JSContext *gcx = ASMC;
+	CHANNEL *chan;
 	
-	if ((CHANNEL *chan = mkchan(name, g_ape)) == NULL) {
+	if ((chan = mkchan(name, g_ape)) == NULL) {
 		return NULL;
 	}
 
