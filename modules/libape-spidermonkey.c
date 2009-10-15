@@ -1972,8 +1972,11 @@ static CHANNEL *ape_cb_mkchan(char *name, acetables *g_ape)
 	extend *jsobj;
 	jsval params[1], pipe;
 	JSContext *gcx = ASMC;
-	CHANNEL *chan = mkchan(name, g_ape);
 	
+	if ((CHANNEL *chan = mkchan(name, g_ape)) == NULL) {
+		return NULL;
+	}
+
 	JS_SetContextThread(gcx);
 	JS_BeginRequest(gcx);
 

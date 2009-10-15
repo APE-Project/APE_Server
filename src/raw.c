@@ -232,7 +232,7 @@ int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuse
 			send_error(sender, "UNKNOWN_PIPE", "109", g_ape);
 			return 0;
 		}
-		json_set_property_objN(jlist, "sender", 6, get_json_object_user(sender));
+		json_set_property_objN(jlist, "from", 4, get_json_object_user(sender));
 
 	}
 
