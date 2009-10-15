@@ -2,7 +2,7 @@
 
 /* APE Http (MonkURL)
 
-	Exemple 2:
+	Exemple 1:
 		// URL to call
 		var request = new Http('http://www.google.fr:80/');
 		
@@ -13,7 +13,7 @@
 			Ape.log(result);
 		});
 
-	Example 1:
+	Example 2:
 		request = new Http('http://twitter.com:80/statuses/update.json');
 		request.options('action', 'POST');
 		
@@ -24,6 +24,12 @@
 		request.options('auth', 'user:password');
 		
 		request.doCall(function (result) {
+			Ape.log(result);
+		});
+		
+	Example 3:
+		request = new Http('http://www.google.com/');
+		request.urlGetContents(function (result) {
 			Ape.log(result);
 		});
 */
@@ -56,6 +62,11 @@ var Http = new Class({
 		if (result[3]) {
 			this.port	= result[3];
 		}
+	},
+
+	urlGetContents: function(callback) {
+		this.options('action', 'GET');
+		this.doCall(callback);
 	},
 
 	initHeaders: function () {
