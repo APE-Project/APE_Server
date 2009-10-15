@@ -14,10 +14,6 @@ Ape.registerHookCmd("connect", function(params, infos) {
 	};
 });
 
-Ape.addEvent('adduser', function(user) {
-	Ape.log('name : ' + user.getProperty('name'));
-});
-
 Ape.addEvent('deluser', function(user) {
 	userlist.erase(user.getProperty('name').toLowerCase());
 });

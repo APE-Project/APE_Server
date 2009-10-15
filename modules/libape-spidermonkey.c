@@ -85,7 +85,11 @@ struct _ape_sm_compiled {
 	JSObject *scriptObj;
 	
 	acetables *g_ape;
-	ape_sm_callback *callbacks;
+	
+	struct {
+		ape_sm_callback *head;
+		ape_sm_callback *foot;
+	} callbacks;
 	
 	struct _ape_sm_compiled *next;
 };
@@ -1020,12 +1024,18 @@ APE_JS_NATIVE(ape_sm_register_cmd)
 	
 	
 	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
-	ascb->next = asc->callbacks;
+	ascb->next = NULL;
 	ascb->type = APE_CMD;
 	ascb->cx = cx;
 	ascb->callbackname = xstrdup(cmd);
 	
-	asc->callbacks = ascb;	
+	if (asc->callbacks.head == NULL) {
+		asc->callbacks.head = ascb;
+		asc->callbacks.foot = ascb;
+	} else {
+		asc->callbacks.foot->next = ascb;
+		asc->callbacks.foot = ascb;
+	}
 	
 	register_cmd(cmd, ape_sm_cmd_wrapper, (needsessid == JS_TRUE ? NEED_SESSID : NEED_NOTHING), g_ape);
 	
@@ -1062,12 +1072,18 @@ APE_JS_NATIVE(ape_sm_hook_cmd)
 	JS_AddRoot(cx, &ascb->func);
 	
 	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
-	ascb->next = asc->callbacks;
+	ascb->next = NULL;
 	ascb->type = APE_HOOK;
 	ascb->cx = cx;
 	ascb->callbackname = xstrdup(cmd);
 	
-	asc->callbacks = ascb;
+	if (asc->callbacks.head == NULL) {
+		asc->callbacks.head = ascb;
+		asc->callbacks.foot = ascb;
+	} else {
+		asc->callbacks.foot->next = ascb;
+		asc->callbacks.foot = ascb;
+	}
 		
 	return JS_TRUE;	
 }
@@ -1180,13 +1196,19 @@ APE_JS_NATIVE(ape_sm_addEvent)
 		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
-		
-	ascb->next = asc->callbacks;
+
+	ascb->next = NULL;
 	ascb->type = APE_EVENT;
 	ascb->cx = cx;
 	ascb->callbackname = xstrdup(event);
 	
-	asc->callbacks = ascb;
+	if (asc->callbacks.head == NULL) {
+		asc->callbacks.head = ascb;
+		asc->callbacks.foot = ascb;
+	} else {
+		asc->callbacks.foot->next = ascb;
+		asc->callbacks.foot = ascb;
+	}
 	
 	return JS_TRUE;
 }
@@ -1617,7 +1639,7 @@ static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetable
 	while (asc != NULL) {
 		ape_sm_callback *cbk;
 		
-		for (cbk = asc->callbacks; cbk != NULL; cbk = cbk->next) {
+		for (cbk = asc->callbacks.head; cbk != NULL; cbk = cbk->next) {
 			if (cbk->type == APE_CMD && strcasecmp(name, cbk->callbackname) == 0) {
 				jsval rval;
 				JS_SetContextThread(cbk->cx);
@@ -1763,7 +1785,7 @@ static void ape_fire_callback(const char *name, uintN argc, jsval *argv, acetabl
 	while (asc != NULL) {
 		ape_sm_callback *cb;
 		
-		for (cb = asc->callbacks; cb != NULL; cb = cb->next) {
+		for (cb = asc->callbacks.head; cb != NULL; cb = cb->next) {
 			
 			if (cb->type == APE_EVENT && strcasecmp(name, cb->callbackname) == 0) {
 				jsval rval;
@@ -1860,7 +1882,8 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 				/* put the Ape table on the script structure */
 				asc->g_ape = g_ape;
 
-				asc->callbacks = NULL;
+				asc->callbacks.head = NULL;
+				asc->callbacks.foot = NULL;
 				
 				/* Run the script */
 				JS_ExecuteScript(asc->cx, asc->global, asc->bytecode, &rval);
