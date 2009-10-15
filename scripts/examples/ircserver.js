@@ -23,6 +23,10 @@ var IRCApeclient = new Class({
 		this.socket_listener.onDisconnect = function() {
 			Ape.log('Listener disco');
 		}
+		
+		Ape.setInterval(function(obj){
+			obj.sendCmd('CHECK', {'null':'null'});
+		}, 20000, this);
 	},
 	
 	sendCmd: function(cmdname, obj, sock) {
