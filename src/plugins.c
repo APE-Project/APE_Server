@@ -61,6 +61,7 @@ void unfire(ace_plugins *plug)
 	plug->fire.c_deluser = 0;
 	
 	plug->fire.c_mkchan = 0;
+	plug->fire.c_rmchan = 0;
 	
 	plug->fire.c_join = 0;
 	plug->fire.c_left = 0;

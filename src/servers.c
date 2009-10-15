@@ -74,7 +74,7 @@ int servers_init(acetables *g_ape)
 	if ((main_server = ape_listen(atoi(CONFIG_VAL(Server, port, g_ape->srv)), CONFIG_VAL(Server, ip_listen, g_ape->srv), g_ape)) == NULL) {
 		return 0;
 	}
-	
+
 	main_server->callbacks.on_read = ape_read;
 	main_server->callbacks.on_disconnect = ape_disconnect;
 	main_server->callbacks.on_data_completly_sent = ape_sent;
