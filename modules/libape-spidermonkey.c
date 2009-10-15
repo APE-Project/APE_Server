@@ -1216,6 +1216,24 @@ static JSObject *get_pipe_object(const char *pubid, transpipe *pipe, JSContext *
 	return NULL;	
 }
 
+APE_JS_NATIVE(ape_sm_get_user_by_pubid)
+//{
+	char *pubid;
+	USERS *user;
+	
+	*rval = JSVAL_NULL;
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &pubid)) {
+		return JS_TRUE;
+	}
+	
+	if ((user = seek_user_simple(pubid, g_ape)) != NULL) {
+		*rval = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
+	}
+	
+	return JS_TRUE;	
+}
+
 APE_JS_NATIVE(ape_sm_get_pipe)
 //{
 	char *pubid;
@@ -1534,6 +1552,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("HTTPRequest", ape_sm_http_request, 2, 0, 0),
 	JS_FS("getPipe", ape_sm_get_pipe, 1, 0, 0),
 	JS_FS("getChannelByName", ape_sm_get_channel_by_name, 1, 0, 0),
+	JS_FS("getUserByPubid", ape_sm_get_user_by_pubid, 1, 0, 0),
 	JS_FS("config", ape_sm_config, 2, 0, 0),
 	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0, 0),
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0, 0),
