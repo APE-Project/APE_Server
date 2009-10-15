@@ -1943,11 +1943,31 @@ static CHANNEL *ape_cb_mkchan(char *name, acetables *g_ape)
 	return chan;
 }
 
+static void ape_cb_rmchan(CHANNEL *chan, acetables *g_ape)
+{
+	extend *jsobj;
+	jsval params[1];
+	JSObject *pipe;
+	JSContext *gcx = ASMC;
+	
+	params[0] = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(chan));
+	
+	APE_JS_EVENT("rmchan", 1, params);
+	
+	jsobj = get_property(chan->properties, "jsobj");
+	
+	JS_SetPrivate(gcx, jsobj->val, (void *)NULL);
+	JS_RemoveRoot(gcx, &jsobj->val);
+	
+	pipe = chan->pipe->data;
+	JS_SetPrivate(gcx, pipe, (void *)NULL);
+	
+	rmchan(chan, g_ape);
+}
 
 static void ape_cb_join(USERS *user, CHANNEL *chan, acetables *g_ape)
 {
 	jsval params[2];
-	
 	
 	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
 	params[1] = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(chan));
@@ -1957,6 +1977,7 @@ static void ape_cb_join(USERS *user, CHANNEL *chan, acetables *g_ape)
 	join(user, chan, g_ape);
 	
 	APE_JS_EVENT("afterJoin", 2, params);
+	APE_JS_EVENT("join", 2, params);
 }
 
 static void ape_cb_left(USERS *user, CHANNEL *chan, acetables *g_ape)
@@ -1978,6 +1999,7 @@ static ace_callbacks callbacks = {
 	ape_cb_add_user,	/* Called when new user is added */
 	ape_cb_del_user,	/* Called when a user is disconnected */
 	ape_cb_mkchan,		/* Called when new chan is created */
+	ape_cb_rmchan,
 	ape_cb_join,		/* Called when a user join a channel */
 	ape_cb_left				/* Called when a user leave a channel */
 };

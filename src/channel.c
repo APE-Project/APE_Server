@@ -88,12 +88,13 @@ CHANNEL *getchan(const char *chan, acetables *g_ape)
 
 void rmchan(CHANNEL *chan, acetables *g_ape)
 {
-
 	if (chan->head != NULL) {
 		return;
 	}
+	
+	FIRE_EVENT_NULL(rmchan, chan, g_ape);
+	
 	rmallban(chan);
-
 		
 	hashtbl_erase(g_ape->hLusers, chan->name);
 	

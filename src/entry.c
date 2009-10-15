@@ -46,7 +46,7 @@
 
 #include <errno.h>
 
-#define _VERSION "1.0-BETA1"
+#define _VERSION "1.0-BETA3"
 
 static void signal_handler(int sign)
 {

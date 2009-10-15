@@ -3,6 +3,7 @@ Ape.addEvent("mkchan", function(channel) {
 	channel.userslist = new $H;
 });
 
+
 Ape.addEvent("afterJoin", function(user, channel) {
 	channel.userslist.set(user.getProperty('pubid'), user);
 });

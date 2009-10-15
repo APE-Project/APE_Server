@@ -54,7 +54,6 @@ static void growup(int *basemem, ape_socket **conn_list, struct _fdevent *ev, st
 			sizeof(struct _socks_bufout) * (*basemem));
 }
 
-
 ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 {
 	int sock;
@@ -268,7 +267,6 @@ static void check_idle(struct _socks_list *sl)
 	}
 }
 #endif
-
 
 unsigned int sockroutine(acetables *g_ape)
 {

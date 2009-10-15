@@ -50,6 +50,7 @@ struct _ace_callbacks
 	USERS *(*c_adduser)(ape_socket *, char *, acetables *);
 	void (*c_deluser)(USERS *, acetables *);
 	CHANNEL *(*c_mkchan)(char *, acetables *);
+	void (*c_rmchan)(CHANNEL *, acetables *);
 	void (*c_join)(USERS *, CHANNEL *, acetables *);
 	void (*c_left)(USERS *, CHANNEL *, acetables *);
 	void (*c_tickuser)(subuser *, acetables *);
