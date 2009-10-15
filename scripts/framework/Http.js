@@ -130,7 +130,7 @@ var Http = new Class({
 		socket.onRead = function(data) { 
 			this.lastResponse[this.currentCall] += data;
 
-			if (data.contains("\r\n\r\n")) {
+			if (lastResponse[this.currentCall].contains("\r\n\r\n")) {
 				this.parseHeaders(this.currentCall);
 				if (this.headersDetails[this.currentCall].get('Content-Length') != null && this.lastResponse[this.currentCall].length > this.headersDetails[this.currentCall].get('Content-Length')) {
 					socket.close();
