@@ -308,9 +308,8 @@ unsigned int cmd_connect(callbackp *callbacki)
 	USERS *nuser;
 	RAW *newraw;
 	json_item *jstr = NULL;
-	extend *e;
-	
-	nuser = adduser(callbacki->client, callbacki->host, callbacki->g_ape);
+
+	nuser = adduser(callbacki->client, callbacki->host, callbacki->properties, callbacki->g_ape);
 	
 	if (nuser == NULL) {
 		RAW *newraw;
@@ -326,14 +325,6 @@ unsigned int cmd_connect(callbackp *callbacki)
 		clear_properties(&callbacki->properties);
 		
 		return (RETURN_NOTHING);
-	}
-	
-	for (e = callbacki->properties; e != NULL; e = e->next) {
-		if (e->next == NULL) {
-			e->next = nuser->properties;
-			nuser->properties = e;
-			break;
-		}
 	}
 	
 	callbacki->call_user = nuser;

@@ -1884,14 +1884,14 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 }
 
-static USERS *ape_cb_add_user(ape_socket *client, char *host, acetables *g_ape)
+static USERS *ape_cb_add_user(ape_socket *client, char *host, extend *default_props, acetables *g_ape)
 {
 	JSObject *user;
 	extend *jsobj;
 	JSContext *gcx = ASMC;
 	jsval params[1], pipe;
 	
-	USERS *u = adduser(client, host, g_ape);
+	USERS *u = adduser(client, host, default_props, g_ape);
 	
 	if (u != NULL) {
 		JS_SetContextThread(gcx);

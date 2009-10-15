@@ -219,8 +219,8 @@ enum {
 #define RAW_PROXY		"PROXY"
 
 USERS *seek_user(const char *nick, const char *linkid, acetables *g_ape);
-USERS *init_user(acetables *g_ape);
-USERS *adduser(ape_socket *client, char *host, acetables *g_ape);
+USERS *init_user(extend *default_props, acetables *g_ape);
+USERS *adduser(ape_socket *client, char *host, extend *default_props, acetables *g_ape);
 USERS *seek_user_id(const char *sessid, acetables *g_ape);
 USERS *seek_user_simple(const char *nick, acetables *g_ape);
 

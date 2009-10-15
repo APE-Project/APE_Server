@@ -47,7 +47,7 @@ typedef struct _ace_callbacks ace_callbacks;
 
 struct _ace_callbacks
 {		
-	USERS *(*c_adduser)(ape_socket *, char *, acetables *);
+	USERS *(*c_adduser)(ape_socket *, char *, extend *, acetables *);
 	void (*c_deluser)(USERS *, acetables *);
 	CHANNEL *(*c_mkchan)(char *, acetables *);
 	void (*c_rmchan)(CHANNEL *, acetables *);

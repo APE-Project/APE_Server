@@ -110,7 +110,7 @@ USERS *seek_user_id(const char *sessid, acetables *g_ape)
 }
 
 
-USERS *init_user(acetables *g_ape)
+USERS *init_user(extend *default_props, acetables *g_ape)
 {
 	USERS *nuser;
 	
@@ -127,7 +127,7 @@ USERS *init_user(acetables *g_ape)
 	nuser->sessions.data = NULL;
 	nuser->sessions.length = 0;
 	
-	nuser->properties = NULL;
+	nuser->properties = default_props;
 	nuser->subuser = NULL;
 	nuser->nsub = 0;
 	nuser->type = HUMAN;
@@ -147,14 +147,14 @@ USERS *init_user(acetables *g_ape)
 	return nuser;
 }
 
-USERS *adduser(ape_socket *client, char *host, acetables *g_ape)
+USERS *adduser(ape_socket *client, char *host, extend *default_props, acetables *g_ape)
 {
 	USERS *nuser = NULL;
 
 	/* Calling module */
-	FIRE_EVENT(adduser, nuser, client, host, g_ape);
+	FIRE_EVENT(adduser, nuser, client, host, default_props, g_ape);
 
-	nuser = init_user(g_ape);
+	nuser = init_user(default_props, g_ape);
 	
 	nuser->type = (client != NULL ? HUMAN : BOT);
 		
