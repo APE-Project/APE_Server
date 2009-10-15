@@ -17,8 +17,3 @@ Ape.registerHookCmd("connect", function(params, infos) {
 Ape.addEvent('deluser', function(user) {
 	userlist.erase(user.getProperty('name').toLowerCase());
 });
-
-Ape.addEvent('adduser', function(user) {
-
-	//user.pipe.sendRaw('inline', {'kikoo':'lol'}, {from: user.pipe});
-});

@@ -387,7 +387,18 @@ APE_JS_NATIVE(apepipe_sm_set_property)
 		return JS_TRUE;
 	}
 	
-	add_property(&pipe->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+	switch(pipe->type) {
+		case USER_PIPE:
+			add_property(&((USERS *)(pipe->pipe))->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+			break;
+		case CHANNEL_PIPE:
+			add_property(&((CHANNEL *)(pipe->pipe))->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+			break;
+		case CUSTOM_PIPE:
+			add_property(&pipe->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+		default:
+			break;
+	}
 	
 	return JS_TRUE;
 }
