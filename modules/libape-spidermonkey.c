@@ -198,6 +198,13 @@ static JSClass pipe_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+static JSClass cmdresponse_class = {
+	"cmdresponse", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 /* TODO : Add binary capabilities (remove strlen and use native JSString) */
 APE_JS_NATIVE(apesocket_write)
 //{
@@ -453,20 +460,19 @@ APE_JS_NATIVE(apepipe_sm_destroy)
 		return JS_TRUE;
 	}
 	
+	JS_SetPrivate(cx, obj, (void *)NULL);
 	destroy_pipe(pipe, g_ape);
 	
 	return JS_TRUE;
 }
 
-APE_JS_NATIVE(apepipe_sm_send_raw)
-//{
+static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc, jsval *argv, acetables *g_ape)
+{
 	RAW *newraw;
 	const char *raw;
 	JSObject *json_obj = NULL, *options = NULL;
 	json_item *jstr;
 	jsval vp;
-
-	transpipe *to_pipe = JS_GetPrivate(cx, obj);
 	
 	if (to_pipe == NULL) {
 		return JS_TRUE;
@@ -501,6 +507,12 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 			json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
 		}
 	}
+	
+	/* in the case of sendResponse */
+	if (chl) {
+		json_set_property_intN(jstr, "chl", 3, chl);
+	}
+	
 	newraw = forge_raw(raw, jstr);
 	
 	if (to_pipe->type == CHANNEL_PIPE) {
@@ -508,10 +520,45 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 	} else {
 		post_raw(newraw, to_pipe->pipe, g_ape);
 	}
-
-//	printf("First value : %s\n", JS_GetStringBytes(JSVAL_TO_STRING(propname)));
 	
 	return JS_TRUE;
+}
+
+APE_JS_NATIVE(apepipe_sm_send_raw)
+//{
+	transpipe *to_pipe = JS_GetPrivate(cx, obj);
+	
+	if (to_pipe == NULL) {
+		return JS_TRUE;
+	}
+	
+	return sm_send_raw(cx, to_pipe, 0, argc, argv, g_ape);
+
+}
+
+APE_JS_NATIVE(apepipe_sm_send_response)
+//{
+	jsval user, chl, pipe;
+	JS_GetProperty(cx, obj, "user", &user);
+	
+	if (user == JSVAL_VOID || JS_InstanceOf(cx, JSVAL_TO_OBJECT(user), &user_class, 0) == JS_FALSE) {
+		return JS_TRUE;
+	}
+	
+	JS_GetProperty(cx, JSVAL_TO_OBJECT(user), "pipe", &pipe);
+	
+	if (pipe == JSVAL_VOID || JS_InstanceOf(cx, JSVAL_TO_OBJECT(pipe), &pipe_class, 0) == JS_FALSE) {
+		return JS_TRUE;
+	}
+	
+	JS_GetProperty(cx, obj, "chl", &chl);
+	
+	if (chl == JSVAL_VOID || !JSVAL_IS_NUMBER(chl)) {
+		return JS_TRUE;
+	}
+	
+	/* TODO : Fixme JSVAL_TO_INT => double */
+	return sm_send_raw(cx, JS_GetPrivate(cx, JSVAL_TO_OBJECT(pipe)), JSVAL_TO_INT(chl), argc, argv, g_ape);
 }
 
 APE_JS_NATIVE(apechannel_sm_get_property)
@@ -656,6 +703,12 @@ static JSFunctionSpec apepipe_funcs[] = {
 	JS_FS("onSend", ape_sm_stub, 0, 0, 0),
 	JS_FS_END
 };
+
+static JSFunctionSpec cmdresponse_funcs[] = {
+	JS_FS("sendResponse", apepipe_sm_send_response, 3, 0, 0),
+	JS_FS_END
+};
+
 
 static JSFunctionSpec apepipecustom_funcs[] = {
 	JS_FS("destroy", apepipe_sm_destroy, 0, 0, 0),
@@ -942,24 +995,6 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	if (asc == NULL) {
 		return (RETURN_NOTHING);
 	}
-	
-	/* Retrieve the CX */
-	/* TODO : Add a private data to the callbacki struct (pass it to register_cmd) */
-	
-	#if 0
-	while (asc != NULL) {
-		ape_sm_callback *cbk;
-		
-		for (cbk = asc->callbacks; cbk != NULL; cbk = cbk->next) {
-			
-			if ((cbk->type == APE_CMD || cbk->type == APE_HOOK) && (strcasecmp(callbacki->cmd, cbk->callbackname) == 0)) {
-				cx = cbk->cx;
-				break;
-			}
-		}
-		asc = asc->next;
-	}
-	#endif
 
 	JS_SetContextThread(cx);
 	JS_BeginRequest(cx);
@@ -969,8 +1004,10 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		JS_AddRoot(cx, &obj);
 		ape_json_to_jsobj(cx, head, obj);
 		
-		cb = JS_NewObject(cx, NULL, NULL, NULL);
+		cb = JS_NewObject(cx, &cmdresponse_class, NULL, NULL);
 		JS_AddRoot(cx, &cb);
+		JS_DefineFunctions(cx, cb, cmdresponse_funcs);
+		
 		/* TODO : RemoveRoot */
 		
 		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->host));
