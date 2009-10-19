@@ -307,7 +307,16 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				
 				break;
 			case JSTYPE_OBJECT:
-
+				
+				/* hmm "null" is an empty object */
+	            if (JSVAL_TO_OBJECT(vp) == NULL) {
+		            if (!isarray) {
+		                    json_set_property_intN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), 0);
+		            } else {
+		                    json_set_element_int(ape_json, 0);
+		            }
+		            break;
+	            }			
 				if ((val_obj = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(vp))) != NULL) {
 					if (!isarray) {
 						json_set_property_objN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), val_obj);
@@ -331,10 +340,15 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				
 				break;
 			case JSTYPE_NUMBER:
-				if (!isarray) {
-					json_set_property_intN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), JSVAL_TO_INT(vp));
-				} else {
-					json_set_element_int(ape_json, JSVAL_TO_INT(vp));
+				{
+					jsdouble dp;
+					JS_ValueToNumber(cx, vp, &dp);
+				
+					if (!isarray) {
+						json_set_property_intN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), (long int)dp);
+					} else {
+						json_set_element_int(ape_json, (long int)dp);
+					}
 				}
 				break;
 			case JSTYPE_BOOLEAN:

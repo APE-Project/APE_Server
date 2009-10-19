@@ -542,6 +542,7 @@ unsigned int cmd_session(callbackp *callbacki)
 			}
 			jlist = json_new_object();
 			json_set_property_objN(jlist, "sessions", 8, jobj);
+			json_set_property_intN(jlist, "chl", 3, callbacki->chl);
 
 			newraw = forge_raw("SESSIONS", jlist);
 			newraw->priority = RAW_PRI_LO;

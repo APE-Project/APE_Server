@@ -527,7 +527,7 @@ void json_set_property_objZ(json_item *obj, const char *key, json_item *value)
 	json_set_property_objN(obj, key, strlen(key), value);
 }
 
-void json_set_property_intN(json_item *obj, const char *key, int keylen, int value)
+void json_set_property_intN(json_item *obj, const char *key, int keylen, long int value)
 {
 	json_item *new_item = init_json_item();
 	
@@ -548,7 +548,7 @@ void json_set_property_intN(json_item *obj, const char *key, int keylen, int val
 	obj->jchild.head = new_item;	
 }
 
-void json_set_property_intZ(json_item *obj, const char *key, int value)
+void json_set_property_intZ(json_item *obj, const char *key, long int value)
 {
 	int len = (key != NULL ? strlen(key) : 0);
 	
@@ -603,7 +603,7 @@ void json_set_element_obj(json_item *obj, json_item *value)
 	json_set_property_objN(obj, NULL, 0, value);
 }
 
-void json_set_element_int(json_item *obj, int value)
+void json_set_element_int(json_item *obj, long int value)
 {
 	json_set_property_intN(obj, NULL, 0, value);
 }
