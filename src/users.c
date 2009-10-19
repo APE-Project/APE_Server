@@ -466,10 +466,10 @@ subuser *addsubuser(ape_socket *client, const char *channel, USERS *user, acetab
 	user->subuser = sub;
 	
 	/* if the previous subuser have some messages in queue, copy them to the new subuser */
-	if (sub->next != NULL && sub->next->nraw) {
+	if (sub->next != NULL && sub->next->raw_pools.low.nraw) {
 		struct _raw_pool *rTmp;
-		
-		for (rTmp = sub->next->raw_pools.low.rawhead; rTmp != NULL; rTmp = rTmp->next) {
+		// TODO : FIXME !!!
+		for (rTmp = sub->next->raw_pools.low.rawhead; rTmp->raw != NULL; rTmp = rTmp->next) {
 			post_raw_sub(copy_raw_z(rTmp->raw), sub, g_ape);
 		}
 

@@ -18,7 +18,7 @@
 #endif
 
 /* Determine the integer type use to parse non-floating point numbers */
-#if __STDC_VERSION__ >= 199901L || HAVE_LONG_LONG == 1
+#if 0
 typedef long long JSON_int_t;
 #define JSON_PARSER_INTEGER_SSCANF_TOKEN "%lld"
 #define JSON_PARSER_INTEGER_SPRINTF_TOKEN "%lld"

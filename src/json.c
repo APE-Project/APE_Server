@@ -290,13 +290,25 @@ static int json_evaluate_string_size(json_item *head)
 	return evalsize;
 }
 
+static int escape_json_string(char *in, char *out, int len)
+{
+	int i, e;
+	for (i = 0, e = 0; i < len; i++, e++) {
+		if (in[i] == '"' || in[i] == '\\') {
+			out[e++] = '\\';
+		}
+		out[e] = in[i];
+	}
+	return e;
+}
+
 struct jsontring *json_to_string(json_item *head, struct jsontring *string, int free_tree)
 {
 	if (string == NULL) {
 		string = xmalloc(sizeof(struct jsontring));
 		
 		/* Ok, this can cost a lot (traversing the tree), but avoid realloc at each iteration */
-		string->jsize = json_evaluate_string_size(head);
+		string->jsize = json_evaluate_string_size(head) * 2;
 		
 		string->jstring = xmalloc(sizeof(char) * (string->jsize + 1));
 		string->len = 0;
@@ -319,19 +331,28 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 		if (head->jval.vu.str.value != NULL) {
 
 			string->jstring[string->len++] = '"';
-			memcpy(string->jstring + string->len, head->jval.vu.str.value, head->jval.vu.str.length);
-			string->len += head->jval.vu.str.length;	
+			//memcpy(string->jstring + string->len, head->jval.vu.str.value, head->jval.vu.str.length);
+			string->len += escape_json_string(head->jval.vu.str.value, string->jstring + string->len, head->jval.vu.str.length);	
 			string->jstring[string->len++] = '"';
 			
 			if (free_tree) {
 				free(head->jval.vu.str.value);
 			}
 		} else if (head->jval.vu.integer_value) {
-			int l = LENGTH_N(head->jval.vu.integer_value);
-			char integer_str[l+1];
-			memcpy(string->jstring + string->len, itos(head->jval.vu.integer_value, integer_str), l);
 			
-			string->len += l;
+			long int l = LENGTH_N(head->jval.vu.integer_value);
+			long int offset;
+			char integer_str[l+2];
+
+			offset = itos(head->jval.vu.integer_value, integer_str, l+2);
+			
+			memcpy(string->jstring + string->len, &integer_str[offset], ((l+2)-1)-offset);
+			
+			string->len += ((l+2)-1)-offset;
+			
+		} else if (head->jchild.child == NULL) {
+			memcpy(string->jstring + string->len, "0", 1);
+			string->len++;
 		}
 		
 		if (head->jchild.child != NULL) {

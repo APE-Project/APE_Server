@@ -1,3 +1,4 @@
+
 var IRCApeclient = new Class({
 	socket_listener: false,
 	sessid: false,
@@ -36,10 +37,10 @@ var IRCApeclient = new Class({
 
 		this.chl++;
 
-		var jsonobj = JSON.encode([mainobj]);
+		var jsonobj = JSON.stringify([mainobj]);
 
 		if (!sock) {
-			var control = new Ape.sockClient('6969', '12.12.12.1', {flushlf: true});
+			var control = new Ape.sockClient('6969', '127.0.0.1', {flushlf: true});
 			Ape.log('12.12.12.1');
 			Ape.log("SEND CMD " + control);
 		

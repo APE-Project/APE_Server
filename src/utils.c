@@ -43,20 +43,64 @@ void *xrealloc(void *ptr, size_t size)
 	return r;
 }
 
-char *itos(int input, char *output)
+
+long int itos(long int input, char *output, long int len)
 {
-	int i = 1;
-	
-	output[sizeof(output) - i] = '\0';
+	int sign = 0, i = 1;
+
+	if (input < 0) {
+		sign = 1;
+		input = -input;
+	}
+	output[(len - i)] = '\0';
 	
 	for (i = 2; input != 0; i++) {	
 		
-		output[sizeof(output) - i] = '0' + (input % 10);
+		output[len - i] = '0' + (input % 10);
 		
 		input /= 10;
 	}
-	return &output[sizeof(output)-(i-1)];
+	if (sign) {
+		output[len - i++] = '-';
+	}
+
+	return len-(i-1);
 }
+
+/*
+static void reverse(char s[], int len)
+{
+    int i, j;
+    char c;
+
+    for (i = 0, j = len-1; i<j; i++, j--) {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
+}
+
+void itos(int n, char s[])
+{
+    int i = 0, sign;
+
+    if ((sign = n) < 0) {
+		n = -n;
+	}
+    do {
+        s[i++] = n % 10 + '0';
+    } while ((n /= 10) > 0);
+
+	if (sign < 0) {
+		s[i++] = '-';
+	}
+	s[i] = '\0';
+	
+	reverse(s, i-1);
+}
+*/
+
+
 
 /* Taken from a random source */
 char *trim(char *s)

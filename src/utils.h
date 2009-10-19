@@ -32,7 +32,7 @@ char *xstrdup(const char *s);
 
 int seof(char *buf);
 int sneof(char *buf, size_t len, size_t max);
-char *itos(int input, char *output);
+long int itos(long int input, char *output, long int len);
 char *trim(char *s);
 char *removelast(char *input, unsigned int n);
 size_t explode(const char split, char *input, char **tP, unsigned int limit);
@@ -40,7 +40,7 @@ char hex2int(unsigned char hex);
 int urldecode(char *string);
 int rand_n(int n);
 
-#define LENGTH_N(num) ((num<10 && num >= 0)?1:(int)log10(fabs(num))+1);
+#define LENGTH_N(num) ((num<10 && num >= 0)?1:(long int)log10(fabs(num))+1);
 #ifndef MAX
   #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 #endif

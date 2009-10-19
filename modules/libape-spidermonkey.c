@@ -301,12 +301,13 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 		} else {
 			JS_GetElement(cx, json_obj, i, &vp);
 		}
-		
+
 		switch(JS_TypeOfValue(cx, vp)) {
 			case JSTYPE_VOID:
-				printf("Value is void\n");
+				
 				break;
 			case JSTYPE_OBJECT:
+
 				if ((val_obj = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(vp))) != NULL) {
 					if (!isarray) {
 						json_set_property_objN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), val_obj);
@@ -316,9 +317,10 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				}
 				break;
 			case JSTYPE_FUNCTION:
+
 				break;
 			case JSTYPE_STRING:
-
+				
 				value = JSVAL_TO_STRING(vp);
 				
 				if (!isarray) {
@@ -336,13 +338,13 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				}
 				break;
 			case JSTYPE_BOOLEAN:
-				//printf("Value is a bool\n");
+
 				break;
 			case JSTYPE_NULL:
-				//printf("Value is a null\n");
+
 				break;
 			default:
-				//printf("Wtf is a value\n");
+
 				break;
 		}
 	}
@@ -460,7 +462,7 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
 	if (!JS_ConvertArguments(cx, 3, argv, "so/o", &raw, &json_obj, &options) || json_obj == NULL) {
 		return JS_TRUE;
 	}
-
+	
 	jstr = jsobj_to_ape_json(cx, json_obj);
 
 
@@ -726,12 +728,14 @@ static void sm_sock_ondisconnect(ape_socket *client, acetables *g_ape)
 			if (client_obj != NULL) {
 				jsval params[1];
 				params[0] = OBJECT_TO_JSVAL(client_obj);
+				
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 1, params, &rval);
 				JS_SetPrivate(cb->asc->cx, client_obj, (void *)NULL);
 				JS_RemoveRoot(cb->asc->cx, &((struct _ape_sock_js_obj *)cb->private)->client_obj);
 			} else {
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 0, NULL, &rval);
 				JS_SetPrivate(cb->asc->cx, cb->server_obj, (void *)NULL);
+				JS_RemoveRoot(cb->asc->cx, &cb->server_obj);
 			}
 			
 			free(cb->private);
@@ -757,19 +761,16 @@ static void sm_sock_onread_lf(ape_socket *client, char *data, acetables *g_ape)
 				jsval params[2];
 				params[0] = OBJECT_TO_JSVAL(client_obj);
 				params[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(cb->asc->cx, data));
-			
-				JS_AddRoot(cb->asc->cx, &params[1]);
+
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 2, params, &rval);
-				JS_RemoveRoot(cb->asc->cx, &params[1]);
 			} else {
 				jsval params[1];
 				params[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(cb->asc->cx, data));
-			
-				JS_AddRoot(cb->asc->cx, &params[0]);
+
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 1, params, &rval);
-				JS_RemoveRoot(cb->asc->cx, &params[0]);				
+		
 			}
-			
+		JS_MaybeGC(cb->asc->cx);
 		JS_EndRequest(cb->asc->cx);
 		JS_ClearContextThread(cb->asc->cx);						
 		
@@ -806,19 +807,16 @@ static void sm_sock_onread(ape_socket *client, ape_buffer *buf, size_t offset, a
 				jsval params[2];
 				params[0] = OBJECT_TO_JSVAL(client_obj);
 				params[1] = STRING_TO_JSVAL(JS_NewStringCopyN(cb->asc->cx, buf->data, buf->length));
-			
-				JS_AddRoot(cb->asc->cx, &params[1]);
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 2, params, &rval);
-				JS_RemoveRoot(cb->asc->cx, &params[1]);
 			} else {
 				jsval params[1];
+				
 				params[0] = STRING_TO_JSVAL(JS_NewStringCopyN(cb->asc->cx, buf->data, buf->length));
-			
-				JS_AddRoot(cb->asc->cx, &params[0]);
+
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onRead", 1, params, &rval);
-				JS_RemoveRoot(cb->asc->cx, &params[0]);				
+
 			}
-		
+		JS_MaybeGC(cb->asc->cx);
 		JS_EndRequest(cb->asc->cx);
 		JS_ClearContextThread(cb->asc->cx);						
 		buf->length = 0;
@@ -1112,7 +1110,6 @@ APE_JS_NATIVE(ape_sm_include)
 	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), rpath);
 	
 	if (bytecode == NULL) {
-
 		return JS_TRUE;
 	}
 
@@ -1493,6 +1490,8 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	cbcopy->asc = asc;
 	cbcopy->server_obj = obj;
 	
+	JS_AddRoot(cx, &cbcopy->server_obj);
+	
 	pattern = xmalloc(sizeof(*pattern));
 	pattern->callbacks.on_connect = sm_sock_onconnect;
 	pattern->callbacks.on_disconnect = sm_sock_ondisconnect;
@@ -1550,6 +1549,11 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	}
 
 	server = ape_listen(port, ip, g_ape);
+	
+	if (server == NULL) {
+		return JS_TRUE;
+	}
+	
 	server->attach = xmalloc(sizeof(struct _ape_sock_callbacks));
 
 	((struct _ape_sock_callbacks *)server->attach)->asc 			= asc;

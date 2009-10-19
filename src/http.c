@@ -267,9 +267,9 @@ int http_send_headers(http_headers_response *headers, const char *default_h, uns
 		finish &= sendbin(client->fd, (char *)default_h, default_len, g_ape);
 	} else {
 		/* We have a lot of write syscall here. TODO : use of writev */
-	
+		itos(headers->code, code, 4);
 		finish &= sendbin(client->fd, "HTTP/1.1 ", 9, g_ape);
-		finish &= sendbin(client->fd, itos(headers->code, code), 3, g_ape);
+		finish &= sendbin(client->fd, code, 3, g_ape);
 		finish &= sendbin(client->fd, " ", 1, g_ape);
 		finish &= sendbin(client->fd, headers->detail.val, headers->detail.len, g_ape);
 		finish &= sendbin(client->fd, "\r\n", 2, g_ape);
