@@ -67,41 +67,6 @@ long int itos(long int input, char *output, long int len)
 	return len-(i-1);
 }
 
-/*
-static void reverse(char s[], int len)
-{
-    int i, j;
-    char c;
-
-    for (i = 0, j = len-1; i<j; i++, j--) {
-        c = s[i];
-        s[i] = s[j];
-        s[j] = c;
-    }
-}
-
-void itos(int n, char s[])
-{
-    int i = 0, sign;
-
-    if ((sign = n) < 0) {
-		n = -n;
-	}
-    do {
-        s[i++] = n % 10 + '0';
-    } while ((n /= 10) > 0);
-
-	if (sign < 0) {
-		s[i++] = '-';
-	}
-	s[i] = '\0';
-	
-	reverse(s, i-1);
-}
-*/
-
-
-
 /* Taken from a random source */
 char *trim(char *s)
 {

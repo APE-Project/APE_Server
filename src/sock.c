@@ -520,7 +520,7 @@ unsigned int sockroutine(acetables *g_ape)
 									/* realloc the buffer for the next read (x2) */
 									if (co[active_fd].buffer_in.length == co[active_fd].buffer_in.size) {
 										co[active_fd].buffer_in.size *= 2;
-										printf("Realloc buffer to %i\n", co[active_fd].buffer_in.size);
+
 										co[active_fd].buffer_in.data = xrealloc(co[active_fd].buffer_in.data, 
 																sizeof(char) * (co[active_fd].buffer_in.size + 1));
 									
