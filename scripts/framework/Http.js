@@ -45,9 +45,8 @@ var Http = new Class({
 	authKey: 		null,
 	returnHeaders:	false,
 	redirected:		false,
-	headersDetails: [],
-	receiveHeaders: [],
-	lastResponse: 	[],
+	receiveHeaders: false,
+	lastResponse: 	'',
 	currentCall:  	0,
 
 	initialize: function (url) {
@@ -64,7 +63,7 @@ var Http = new Class({
 		}
 	},
 
-	urlGetContents: function(callback) {
+	getContent: function(callback) {
 		this.options('action', 'GET');
 		this.doCall(callback);
 	},
@@ -107,9 +106,7 @@ var Http = new Class({
 		}
 	},
 
-	doCall: function (callback) {
-		this.currentCall++;
-		
+	doCall: function (callback) {		
 		if (!this.action) {
 			this.actions('action', 'GET');
 		}
@@ -124,39 +121,41 @@ var Http = new Class({
 			if (this.data && this.action == 'POST') {
 				socket.write(this.data);
 			}
-			this.lastResponse[this.currentCall] = '';
+			this.lastResponse = '';
 		}.bind(this);
 
 		socket.onRead = function(data) { 
-			this.lastResponse[this.currentCall] += data;
+			this.lastResponse += data;
 
-			if (this.lastResponse[this.currentCall].contains("\r\n\r\n")) {
-				this.parseHeaders(this.currentCall);
-				if (this.headersDetails[this.currentCall].get('Content-Length') != null && this.lastResponse[this.currentCall].length > this.headersDetails[this.currentCall].get('Content-Length')) {
+			if (this.lastResponse.contains("\r\n\r\n")) {
+				this.parseHeaders();
+				if (this.headersDetails['Content-Length'] != null && this.lastResponse.length > this.headersDetails['Content-Length']) {
 					socket.close();
 				}
-				if (this.headersDetails[this.currentCall].get('Location') != null) {
+
+				if (this.headersDetails['Location'] != null) {
 					socket.close();
-					this.redirect = this.headersDetails[this.currentCall].get('Location');
+					this.redirect = this.headersDetails.get('Location');
 				}
 			}
 		}.bind(this);
 
 		socket.onDisconnect = function(callback) {
-			this.parseResult(this.lastResponse[this.currentCall], callback);
-			delete this.lastResponse[this.currentCall];
+			this.parseResult(this.lastResponse, callback);
+			delete this.lastResponse;
 		}.bind(this, callback);
 	},
 	
-	parseHeaders: function (data) {
-		var tmp		= this.lastResponse[this.currentCall].split("\r\n\r\n");
+	parseHeaders: function () {
+		var tmp		= this.lastResponse.split("\r\n\r\n");
 		tmp 		= tmp[0].split("\r\n");
 
-		if (!this.headersDetails[this.currentCall]) {
-			this.headersDetails[this.currentCall] = new Hash();
+
+		if ($defined(this.headersDetails) == false) {
+			this.headersDetails = new Hash();
 			for (var i = 1; i < tmp.length; i++) {
 				var tmpHeaders = tmp[i].split(": ");
-				this.headersDetails[this.currentCall].set(tmpHeaders[0], tmpHeaders[1]);
+				this.headersDetails.set(tmpHeaders[0], tmpHeaders[1]);
 			}
 		}
 	},
