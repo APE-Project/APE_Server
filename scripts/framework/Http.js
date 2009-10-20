@@ -54,7 +54,7 @@ var Http = new Class({
 		this.parseURL();
 	},
 
-	parseURL: function() {
+	parseURL: function () {
 		var result	= this.url.match("^.*?://(.*?)(:(.*?)|)(/.*)$");
 		this.host	= result[1];
 		this.query	= result[4];
@@ -63,11 +63,18 @@ var Http = new Class({
 		}
 	},
 
-	getContent: function(callback) {
+	/* new urlGetContents */
+	getContent: function (callback) {
 		this.options('action', 'GET');
 		this.doCall(callback);
 	},
 
+	/* For compatibility */
+	urlGetContents: function (callback) {
+		this.getContent(callback);
+	}
+
+	/* Build Headers */
 	initHeaders: function () {
 		if (this.data) {
 			this.data = "?" + this.data;
@@ -106,6 +113,7 @@ var Http = new Class({
 		}
 	},
 
+	/* Exec HTTP request */
 	doCall: function (callback) {		
 		if (!this.action) {
 			this.actions('action', 'GET');
@@ -146,6 +154,7 @@ var Http = new Class({
 		}.bind(this, callback);
 	},
 	
+	/* Split headers */
 	parseHeaders: function () {
 		var tmp		= this.lastResponse.split("\r\n\r\n");
 		tmp 		= tmp[0].split("\r\n");
@@ -160,6 +169,7 @@ var Http = new Class({
 		}
 	},
 
+	/* Parsing data */
 	parseResult: function (result, callback) {
 		if (!this.redirect) {
 			var parseResult = result.split("\r\n\r\n");
