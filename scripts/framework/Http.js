@@ -72,7 +72,7 @@ var Http = new Class({
 	/* For compatibility */
 	urlGetContents: function (callback) {
 		this.getContent(callback);
-	}
+	},
 
 	/* Build Headers */
 	initHeaders: function () {
