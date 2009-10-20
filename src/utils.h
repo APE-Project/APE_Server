@@ -39,6 +39,7 @@ size_t explode(const char split, char *input, char **tP, unsigned int limit);
 char hex2int(unsigned char hex);
 int urldecode(char *string);
 int rand_n(int n);
+void s_tolower(char *upper, unsigned int len);
 
 #define LENGTH_N(num) ((num<10 && num >= 0)?1:(long int)log10(fabs(num))+1);
 #ifndef MAX

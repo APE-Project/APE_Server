@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <ctype.h>
 
 void *xmalloc(size_t size)
 {
@@ -43,6 +43,14 @@ void *xrealloc(void *ptr, size_t size)
 	return r;
 }
 
+void s_tolower(char *upper, unsigned int len)
+{
+	unsigned int i;
+	
+	for (i = 0; i < len; i++) {
+		upper[i] = tolower(upper[i]);
+	}
+}
 
 long int itos(long int input, char *output, long int len)
 {

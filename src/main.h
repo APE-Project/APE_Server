@@ -83,6 +83,7 @@ struct _http_state
 	int read;
 	unsigned short int error;
 	unsigned short int ready;
+	struct _http_header_line *hlines;
 };
 
 typedef enum {

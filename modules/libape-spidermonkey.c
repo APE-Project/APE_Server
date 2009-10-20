@@ -987,10 +987,13 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 {
 	acetables *g_ape = callbacki->g_ape;
 	ape_sm_compiled *asc = ASMR->scripts;
+	struct _http_header_line *hlines;
+	
 	json_item *head = callbacki->param;
 	JSContext *cx = ASMC;
 	JSObject *obj; // param obj
 	JSObject *cb;
+	JSObject *hl;
 	
 	if (asc == NULL) {
 		return (RETURN_NOTHING);
@@ -1013,6 +1016,14 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->host));
 		/* infos.host */	
 		JS_SetProperty(cx, cb, "host", &jval);
+		
+		hl = JS_DefineObject(cx, cb, "http", NULL, NULL, 0);
+		
+		for(hlines = callbacki->client->http.hlines; hlines != NULL; hlines = hlines->next) {
+			s_tolower(hlines->key.val, hlines->key.len);
+			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, hlines->value.val, hlines->value.len));
+			JS_SetProperty(cx, hl, hlines->key.val, &jval);
+		}
 		
 		jval = OBJECT_TO_JSVAL(sm_ape_socket_to_jsobj(cx, callbacki->client));
 		JS_SetProperty(cx, cb, "client", &jval);

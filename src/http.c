@@ -34,22 +34,7 @@ struct _http_attach {
 	char file[1024];
 	
 	const char *post;
-	u_short port;
-};
-
-struct _http_header_line
-{
-	struct {
-		char val[64];
-		unsigned int len;
-	} key;
-	
-	struct {
-		char val[1024];
-		unsigned int len;
-	} value;
-	
-	struct _http_header_line *next;
+	unsigned short int port;
 };
 
 static struct _http_header_line *parse_header_line(const char *line)
@@ -172,8 +157,12 @@ void process_http(ape_buffer *buffer, http_state *http)
 					
 				}
 			} else {
-				/* TODO */
-				//parse_header_line(data);
+				struct _http_header_line *hl;
+				
+				if ((hl = parse_header_line(data)) != NULL) {
+					hl->next = http->hlines;
+					http->hlines = hl;
+				}
 			}
 			http->pos += pos;
 			process_http(buffer, http);

@@ -62,6 +62,21 @@ typedef enum {
 } http_method;
 
 
+struct _http_header_line
+{
+	struct {
+		char val[64];
+		unsigned int len;
+	} key;
+	
+	struct {
+		char val[1024];
+		unsigned int len;
+	} value;
+	
+	struct _http_header_line *next;
+};
+
 void process_http(struct _ape_buffer *buffer, struct _http_state *http);
 void ape_http_request(char *url, const char *post, acetables *g_ape);
 http_headers_response *http_headers_init(int code, char *detail, int detail_len);

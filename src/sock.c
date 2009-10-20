@@ -244,6 +244,8 @@ static void clear_buffer(ape_socket *co, int *tfd)
 	co->http.error = 0;
 	co->http.ready = 0;
 	co->http.read = 0;
+	free(co->http.hlines);
+	co->http.hlines = NULL;
 	co->attach = NULL;
 	co->data = NULL;
 	
@@ -307,7 +309,7 @@ unsigned int sockroutine(acetables *g_ape)
 				
 					while (1) {
 
-						http_state http = {0, HTTP_NULL, 0, -1, 0, 0, 0};
+						http_state http = {0, HTTP_NULL, 0, -1, 0, 0, 0, NULL};
 					
 						new_fd = accept(active_fd, 
 							(struct sockaddr *)&their_addr,
@@ -574,7 +576,7 @@ unsigned int sockroutine(acetables *g_ape)
 			while (proxy != NULL) {
 
 				if (proxy->state == PROXY_NOT_CONNECTED && ((psock = proxy_connect(proxy, g_ape)) != 0)) {
-					http_state http_s = {0, HTTP_NULL, 0, -1, 0, 0, 0};
+					http_state http_s = {0, HTTP_NULL, 0, -1, 0, 0, 0, NULL};
 					if (psock + 4 == g_ape->basemem) {
 						growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
 						co = g_ape->co;
