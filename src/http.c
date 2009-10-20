@@ -37,8 +37,61 @@ struct _http_attach {
 	u_short port;
 };
 
-/* Just a lightweight http request processor */
+struct _http_header_line
+{
+	struct {
+		char val[64];
+		unsigned int len;
+	} key;
+	
+	struct {
+		char val[1024];
+		unsigned int len;
+	} value;
+	
+	struct _http_header_line *next;
+};
 
+static struct _http_header_line *parse_header_line(const char *line)
+{
+	unsigned int i;
+	unsigned short int state = 0;
+	struct _http_header_line *hline;
+	for (i = 0; i < 1024 && line[i] != '\0' && line[i] != '\r' && line[i] != '\n'; i++) {
+		if (i == 0) {
+			hline = xmalloc(sizeof(*hline));
+			hline->key.len = 0;
+			hline->value.len = 0;
+		}
+		switch(state) {
+			case 0:
+				if ((i == 0 && (line[i] == ':' || line[i] == ' ')) || (line[i] == ':' && line[i+1] != ' ') || (i > 63)) {
+					free(hline);
+					return NULL;
+				}
+				if (line[i] == ':') {
+					hline->key.val[hline->key.len] = '\0';
+					state = 1;
+					i++;
+				} else {
+					hline->key.val[hline->key.len++] = line[i];
+				}
+				break;
+			case 1:
+				hline->value.val[hline->value.len++] = line[i];
+				break;
+		}
+	}
+	if (!state) {
+		free(hline);
+		return NULL;
+	}
+	hline->value.val[hline->value.len] = '\0';
+
+	return hline;
+}
+
+/* Just a lightweight http request processor */
 void process_http(ape_buffer *buffer, http_state *http)
 {
 	char *data = buffer->data;
@@ -98,7 +151,7 @@ void process_http(ape_buffer *buffer, http_state *http)
 					/* Content-Length is mandatory in case of POST */
 					if (http->contentlength == 0) {
 						http->error = 1;
-						
+									
 						return;
 					} else {
 						http->step = 2;
@@ -118,12 +171,16 @@ void process_http(ape_buffer *buffer, http_state *http)
 					http->contentlength = cl;
 					
 				}
+			} else {
+				/* TODO */
+				//parse_header_line(data);
 			}
 			http->pos += pos;
 			process_http(buffer, http);
 			break;
 		case 2:
-			read = strlen(data);
+			read = buffer->length - http->pos; // data length
+
 			http->pos += read;
 			http->read += read;
 

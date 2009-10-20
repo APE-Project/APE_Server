@@ -76,13 +76,13 @@ struct _ape_transports {
 typedef struct _http_state http_state;
 struct _http_state
 {
-	int step;
-	int type; /* HTTP_GET or HTTP_POST */
+	unsigned short int step;
+	unsigned short int type; /* HTTP_GET or HTTP_POST */
 	int pos;
 	int contentlength;
 	int read;
-	int error;
-	int ready;
+	unsigned short int error;
+	unsigned short int ready;
 };
 
 typedef enum {
