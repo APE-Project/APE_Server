@@ -137,13 +137,16 @@ var Http = new Class({
 
 			if (this.lastResponse.contains("\r\n\r\n")) {
 				this.parseHeaders();
-				if (this.headersDetails['Content-Length'] != null && this.lastResponse.length > this.headersDetails['Content-Length']) {
-					socket.close();
-				}
-
-				if (this.headersDetails['Location'] != null) {
-					socket.close();
-					this.redirect = this.headersDetails.get('Location');
+				
+				if ($defined(this.headersDetails)) {
+					if (this.getBufferSize() >= this.headersDetails['Content-Length']) {
+						socket.close();
+					}
+				
+					if (this.headersDetails['Location'] != null) {
+						socket.close();
+						this.redirect = this.headersDetails.get('Location');
+					}
 				}
 			}
 		}.bind(this);
@@ -154,13 +157,18 @@ var Http = new Class({
 		}.bind(this, callback);
 	},
 	
+	getBufferSize: function() {
+		return this.lastResponse.length-this.headersLength-4;
+	},
+	
 	/* Split headers */
 	parseHeaders: function () {
-		var tmp		= this.lastResponse.split("\r\n\r\n");
-		tmp 		= tmp[0].split("\r\n");
+		if (!this.headersDetails) {
+			var tmp				= this.lastResponse.split("\r\n\r\n");
+			this.headersLength  = tmp[0].length;
+			tmp 				= tmp[0].split("\r\n");
 
-
-		if ($defined(this.headersDetails) == false) {
+			
 			this.headersDetails = new Hash();
 			for (var i = 1; i < tmp.length; i++) {
 				var tmpHeaders = tmp[i].split(": ");
