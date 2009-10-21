@@ -133,13 +133,14 @@ var Http = new Class({
 		}.bind(this);
 
 		socket.onRead = function(data) { 
+
 			this.lastResponse += data;
 
 			if (this.lastResponse.contains("\r\n\r\n")) {
 				this.parseHeaders();
 				
 				if ($defined(this.headersDetails)) {
-					if (this.getBufferSize() >= this.headersDetails['Content-Length']) {
+					if ($defined(this.headersDetails['Content-Length']) && this.getBufferSize() >= this.headersDetails['Content-Length']) {
 						socket.close();
 					}
 				
