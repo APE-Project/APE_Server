@@ -618,7 +618,7 @@ APE_JS_NATIVE(apeuser_sm_get_property)
 //{
 	const char *property;
 	USERS *user = JS_GetPrivate(cx, obj);
-	
+
 	if (user == NULL) {
 		return JS_TRUE;
 	}

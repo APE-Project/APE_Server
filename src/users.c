@@ -179,17 +179,15 @@ void deluser(USERS *user, acetables *g_ape)
 		return;
 	}
 
-	FIRE_EVENT_NULL(deluser, user, g_ape);
-	
-
 	left_all(user, g_ape);
+	
+	FIRE_EVENT_NULL(deluser, user, g_ape);
 	
 	/* kill all users connections */
 	
 	clear_subusers(user);
 
 	hashtbl_erase(g_ape->hSessid, user->sessid);
-
 	
 	g_ape->nConnected--;
 
@@ -208,6 +206,8 @@ void deluser(USERS *user, acetables *g_ape)
 	destroy_pipe(user->pipe, g_ape);
 	
 	user->pipe = NULL;
+	
+	/* TODO Add Event */
 	
 	free(user);
 

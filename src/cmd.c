@@ -131,11 +131,10 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 		
 		send_raw_inline(cget->client, transport, newraw, g_ape);
 	} else {
-		//else if ((rjson = json_lookup(ijson->child, "cmd")) != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
 		for (ijson = ijson->jchild.child; ijson != NULL; ijson = ijson->next) {
 
 			rjson = json_lookup(ijson->jchild.child, "cmd");
-			//printf("valval %s\n", rjson->jval.vu.str.value);
+
 			if (rjson != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
 				callbackp cp;
 				cp.client = NULL;
@@ -159,8 +158,7 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 				}
 		
 				if (cmdback->need != NEED_NOTHING) {
-					//json_item *jchl;
-					
+
 					if (guser == NULL) {
 						
 						RAW *newraw;
@@ -324,7 +322,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 		
 		clear_properties(&callbacki->properties);
 		
-		return (RETURN_NOTHING);
+		return (RETURN_NULL);
 	}
 	
 	callbacki->call_user = nuser;
