@@ -2263,6 +2263,15 @@ jsdValue::GetWrappedValue()
     return NS_OK;
 }
 
+NS_IMETHODIMP
+jsdValue::GetScript(jsdIScript **_rval)
+{
+    ASSERT_VALID_EPHEMERAL;
+    JSDScript *script = JSD_GetScriptForValue(mCx, mValue);
+    *_rval = jsdScript::FromPtr(mCx, script);
+    return NS_OK;
+}
+
 /******************************************************************************
  * debugger service implementation
  ******************************************************************************/
@@ -2929,7 +2938,13 @@ jsdService::WrapValue(jsdIValue **_rval)
     if (NS_FAILED(rv))
         return rv;
 
-    JSDValue *jsdv = JSD_NewValue (mCx, argv[0]);
+    return WrapJSValue(argv[0], _rval);
+}
+
+NS_IMETHODIMP
+jsdService::WrapJSValue(jsval value, jsdIValue** _rval)
+{
+    JSDValue *jsdv = JSD_NewValue(mCx, value);
     if (!jsdv)
         return NS_ERROR_FAILURE;
     

@@ -265,7 +265,10 @@ static JSBool apesocket_close(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 		return JS_TRUE;
 	}
 	
+	printf("Pass\n");
+	
 	client = ((struct _ape_sock_js_obj *)cb->private)->client;
+	
 	shutdown(client->fd, 2);
 
 	return JS_TRUE;
@@ -901,6 +904,7 @@ static void reportError(JSContext *cx, const char *message, JSErrorReport *repor
 
 static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 {
+	JS_AddRoot(cx, &root);
 	while (head != NULL) {
 		if (head->jchild.child == NULL && head->key.val != NULL) {
 			jsval jval;
@@ -914,8 +918,7 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 			jsuint rval;
 			jsval jval;
 			
-			if (head->jval.vu.str.value != NULL) {
-		
+			if (head->jval.vu.str.value != NULL) {	
 				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
 			} else {
 				jval = INT_TO_JSVAL(head->jval.vu.integer_value);
@@ -939,9 +942,10 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 				default:
 					break;
 			}
+			
 			if (cobj != NULL) {
 				ape_json_to_jsobj(cx, head->jchild.child, cobj);
-			
+				JS_AddRoot(cx, &cobj);
 				if (head->key.val != NULL) {
 					jsval jval;
 					jval = OBJECT_TO_JSVAL(cobj);
@@ -950,16 +954,18 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 					jsval jval;
 					jsuint rval;
 					jval = OBJECT_TO_JSVAL(cobj);
-				
+					
 					if (JS_GetArrayLength(cx, root, &rval)) {
 						JS_SetElement(cx, root, rval, &jval);
 					}								
 				}
+				JS_RemoveRoot(cx, &cobj);
 			}
+			
 		}
-	//	printf("Next\n");
 		head = head->next;
-	}	
+	}
+	JS_RemoveRoot(cx, &root);
 }
 
 static void ape_sm_pipe_on_send_wrapper(transpipe *pipe, USERS *user, json_item *jstr, acetables *g_ape)
@@ -1004,8 +1010,8 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		jsval jval;
 
 		obj = JS_NewObject(cx, NULL, NULL, NULL);
-		JS_AddRoot(cx, &obj);
 		ape_json_to_jsobj(cx, head, obj);
+		JS_AddRoot(cx, &obj);
 		
 		cb = JS_NewObject(cx, &cmdresponse_class, NULL, NULL);
 		JS_AddRoot(cx, &cb);
@@ -1041,9 +1047,10 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 			/* infos.user */
 			JS_SetProperty(cx, cb, "user", &jval);
 		}
-	
+		
 		JS_RemoveRoot(cx, &obj);
-		JS_RemoveRoot(cx, &cb);
+		JS_RemoveRoot(cx, &cb);	
+		
 	
 	JS_EndRequest(cx);
 	JS_ClearContextThread(cx);
@@ -1699,7 +1706,6 @@ static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetable
 	if (asc == NULL) {
 		return;
 	}
-	
 	params[0] = OBJECT_TO_JSVAL(obj);
 	params[1] = OBJECT_TO_JSVAL(cb);
 
@@ -1711,9 +1717,7 @@ static void ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, acetable
 				jsval rval;
 				JS_SetContextThread(cbk->cx);
 				JS_BeginRequest(cbk->cx);
-					
 					JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), 2, params, &rval);
-					
 				JS_EndRequest(cbk->cx);
 				JS_ClearContextThread(cbk->cx);
 				return;
@@ -1897,9 +1901,11 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	/* Setup a global context to store shared object */
 	gcx = JS_NewContext(rt, 8192);
 	JS_SetOptions(gcx, JSOPTION_VAROBJFIX | JSOPTION_JIT);
-	JS_SetVersion(gcx, JSVERSION_LATEST);	
-	add_property(&g_ape->properties, "sm_context", gcx, EXTEND_POINTER, EXTEND_ISPRIVATE);
+	JS_SetVersion(gcx, JSVERSION_LATEST);
+	JS_SetErrorReporter(gcx, reportError);
+	JS_InitStandardClasses(gcx, JS_NewObject(gcx, &global_class, NULL, NULL));
 	
+	add_property(&g_ape->properties, "sm_context", gcx, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	add_property(&g_ape->properties, "sm_runtime", asr, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	
 	memset(rpath, '\0', sizeof(rpath));
@@ -1908,11 +1914,9 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 	glob(rpath, 0, NULL, &globbuf);
 	
-
 	for (i = 0; i < globbuf.gl_pathc; i++) {
 		ape_sm_compiled *asc = xmalloc(sizeof(*asc));
-
-		
+	
 		asc->filename = (void *)xstrdup(globbuf.gl_pathv[i]);
 
 		asc->cx = JS_NewContext(rt, 8192);
@@ -1940,7 +1944,6 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 			asc->bytecode = JS_CompileFile(asc->cx, asc->global, asc->filename);
 			
 			if (asc->bytecode != NULL) {
-			
 				asc->scriptObj = JS_NewScriptObject(asc->cx, asc->bytecode);
 
 				/* Adding to the root (prevent the script to be GC collected) */
@@ -1954,8 +1957,6 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 				
 				/* Run the script */
 				JS_ExecuteScript(asc->cx, asc->global, asc->bytecode, &rval);
-				//JS_SetGCZeal(asc->cx, 2);
-				//JS_MaybeGC(asc->cx);
 				
 			}
 		JS_EndRequest(asc->cx);
@@ -2117,7 +2118,6 @@ static void ape_cb_left(USERS *user, CHANNEL *chan, acetables *g_ape)
 	left(user, chan, g_ape);
 
 }
-
 
 static ace_callbacks callbacks = {
 	ape_cb_add_user,	/* Called when new user is added */

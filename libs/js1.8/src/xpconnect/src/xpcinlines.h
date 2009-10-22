@@ -757,11 +757,17 @@ xpc_SameScope(XPCWrappedNativeScope *objectscope, XPCWrappedNativeScope *xpcscop
     return JS_FALSE;
 }
 
+inline jsid
+GetRTIdByIndex(JSContext *cx, uintN index)
+{
+  XPCJSRuntime *rt = nsXPConnect::GetRuntimeInstance();
+  return rt->GetStringID(index);
+}
+
 inline jsval
 GetRTStringByIndex(JSContext *cx, uintN index)
 {
-  XPCJSRuntime *rt = nsXPConnect::GetRuntimeInstance();
-  return ID_TO_VALUE(rt->GetStringID(index));
+  return ID_TO_VALUE(GetRTIdByIndex(cx, index));
 }
 
 inline
@@ -776,6 +782,27 @@ void ThrowBadResult(nsresult result, XPCCallContext& ccx)
 {
     XPCThrower::ThrowBadResult(NS_ERROR_XPC_NATIVE_RETURNED_FAILURE,
                                result, ccx);
+}
+
+inline void
+XPCLazyCallContext::SetWrapper(XPCWrappedNative* wrapper,
+                               XPCWrappedNativeTearOff* tearoff)
+{
+    mWrapper = wrapper;
+    mTearOff = tearoff;
+    if(mTearOff)
+        mCurrentJSObject = mTearOff->GetJSObject();
+    else
+        mWrapper->GetJSObject(&mCurrentJSObject);
+}
+inline void
+XPCLazyCallContext::SetWrapper(JSObject* currentJSObject)
+{
+    NS_ASSERTION(IS_SLIM_WRAPPER_OBJECT(currentJSObject),
+                 "What kind of object is this?");
+    mWrapper = nsnull;
+    mTearOff = nsnull;
+    mCurrentJSObject = currentJSObject;
 }
 
 /***************************************************************************/

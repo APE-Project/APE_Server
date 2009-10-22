@@ -3,7 +3,7 @@ var userlist = new $H;
 Ape.registerHookCmd("connect", function(params, infos) {
 	if (!$defined(params.name)) return 0;
 	if (userlist.has(params.name.toLowerCase())) return ["005", "NICK_USED"];
-	if (params.name.length > 16 || params.name.test('[^a-z]', 'i')) return ["006", "BAD_NICK"];
+	if (params.name.length > 16 || params.name.test('[^a-z0-9]', 'i')) return ["006", "BAD_NICK"];
 	
 	userlist.set(params.name.toLowerCase(), true);
 
@@ -12,6 +12,10 @@ Ape.registerHookCmd("connect", function(params, infos) {
 			'name':params.name
 		}
 	};
+});
+
+Ape.addEvent('adduser', function(user) {
+	Ape.log(user.getProperty('name'));
 });
 
 Ape.addEvent('deluser', function(user) {

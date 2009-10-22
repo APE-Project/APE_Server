@@ -93,6 +93,7 @@ FinishThreadData(JSThreadData *data)
 {
 #ifdef DEBUG
     /* All GC-related things must be already removed at this point. */
+    data->gcFreeLists.assertEmpty();
     for (size_t i = 0; i != JS_ARRAY_LENGTH(data->scriptsToGC); ++i)
         JS_ASSERT(!data->scriptsToGC[i]);
     for (size_t i = 0; i != JS_ARRAY_LENGTH(data->nativeEnumCache); ++i)
@@ -109,10 +110,7 @@ FinishThreadData(JSThreadData *data)
 static void
 PurgeThreadData(JSContext *cx, JSThreadData *data)
 {
-    /*
-     * Clear the double free list to release all the pre-allocated doubles.
-     */
-    data->doubleFreeList = NULL;
+    data->gcFreeLists.purge();
 
     js_PurgeGSNCache(&data->gsnCache);
 
@@ -271,15 +269,16 @@ thread_purger(JSDHashTable *table, JSDHashEntryHdr *hdr, uint32 /* index */,
         js_DestroyScriptsToGC(cx, &thread->data);
 
         /*
-         * The following is potentially suboptimal as it also zeros the cache
+         * The following is potentially suboptimal as it also zeros the caches
          * in data, but the code simplicity wins here.
          */
+        thread->data.gcFreeLists.purge();
         js_PurgeCachedNativeEnumerators(cx, &thread->data);
         DestroyThread(thread);
         return JS_DHASH_REMOVE;
     }
     PurgeThreadData(cx, &thread->data);
-    memset(thread->gcFreeLists, 0, sizeof(thread->gcFreeLists));
+    thread->gcThreadMallocBytes = JS_GC_THREAD_MALLOC_LIMIT;
     return JS_DHASH_NEXT;
 }
 
@@ -1864,4 +1863,38 @@ js_CurrentPCIsInImacro(JSContext *cx)
 #else
     return false;
 #endif
+}
+
+void
+JSContext::checkMallocGCPressure(void *p)
+{
+    if (!p) {
+        js_ReportOutOfMemory(this);
+        return;
+    }
+
+#ifdef JS_THREADSAFE
+    JS_ASSERT(thread->gcThreadMallocBytes <= 0);
+    ptrdiff_t n = JS_GC_THREAD_MALLOC_LIMIT - thread->gcThreadMallocBytes;
+    thread->gcThreadMallocBytes = JS_GC_THREAD_MALLOC_LIMIT;
+
+    JS_LOCK_GC(runtime);
+    runtime->gcMallocBytes -= n;
+    if (runtime->isGCMallocLimitReached())
+#endif
+    {
+        JS_ASSERT(runtime->isGCMallocLimitReached());
+        runtime->gcMallocBytes = -1;
+
+        /*
+         * Empty the GC free lists to trigger a last-ditch GC when allocating
+         * any GC thing later on this thread. This minimizes the amount of
+         * checks on the fast path of the GC allocator. Note that we cannot
+         * touch the free lists on other threads as their manipulation is not
+         * thread-safe.
+         */
+        JS_THREAD_DATA(this)->gcFreeLists.purge();
+        js_TriggerGC(this, true);
+    }
+    JS_UNLOCK_GC(runtime);
 }

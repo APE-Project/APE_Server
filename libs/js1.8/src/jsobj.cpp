@@ -1426,8 +1426,7 @@ obj_eval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
                  * Get the prior (cache-filling) eval's saved caller function.
                  * See JSCompiler::compileScript in jsparse.cpp.
                  */
-                JSFunction *fun;
-                fun = script->getFunction(0);
+                JSFunction *fun = script->getFunction(0);
 
                 if (fun == caller->fun) {
                     /*
@@ -1446,6 +1445,7 @@ obj_eval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
                          */
                         JSObjectArray *objarray = script->objects();
                         int i = 1;
+
                         if (objarray->length == 1) {
                             if (script->regexpsOffset != 0) {
                                 objarray = script->regexps();
@@ -1483,7 +1483,8 @@ obj_eval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     callerFrame = (staticLevel != 0) ? caller : NULL;
     if (!script) {
         script = JSCompiler::compileScript(cx, scopeobj, callerFrame,
-                                           principals, TCF_COMPILE_N_GO,
+                                           principals,
+                                           TCF_COMPILE_N_GO | TCF_NEED_MUTABLE_SCRIPT,
                                            str->chars(), str->length(),
                                            NULL, file, line, str, staticLevel);
         if (!script) {
@@ -2073,6 +2074,7 @@ obj_keys(JSContext *cx, uintN argc, jsval *vp)
         return JS_FALSE;
     *vp = OBJECT_TO_JSVAL(aobj);
 
+    JS_ASSERT(DSLOTS_IS_NOT_NULL(aobj));
     jsval *slots = aobj->dslots;
     size_t len = ida.length();
     JS_ASSERT(js_DenseArrayCapacity(aobj) >= len);
@@ -2233,7 +2235,8 @@ js_NewObjectWithGivenProto(JSContext *cx, JSClass *clasp, JSObject *proto,
     obj->init(clasp,
               proto,
               (!parent && proto) ? proto->getParent() : parent,
-              JSObject::defaultPrivate(clasp));
+              JSObject::defaultPrivate(clasp),
+              OPS_IS_NATIVE(ops) ? DSLOTS_NULL_INIT_OBJECT_NATIVE : DSLOTS_NULL_INIT_OBJECT_NONNATIVE);
 
     if (OPS_IS_NATIVE(ops)) {
         if (!InitScopeForObject(cx, obj, proto, ops)) {
@@ -2245,9 +2248,6 @@ js_NewObjectWithGivenProto(JSContext *cx, JSClass *clasp, JSObject *proto,
         obj->map = const_cast<JSObjectMap *>(ops->objectMap);
     }
 
-    /* Check that the newborn root still holds the object. */
-    JS_ASSERT_IF(!cx->localRootStack, cx->weakRoots.newbornObject == obj);
-
     /*
      * Do not call debug hooks on trace, because we might be in a non-_FAIL
      * builtin. See bug 481444.
@@ -2258,7 +2258,7 @@ js_NewObjectWithGivenProto(JSContext *cx, JSClass *clasp, JSObject *proto,
         cx->debugHooks->objectHook(cx, obj, JS_TRUE,
                                    cx->debugHooks->objectHookData);
         JS_UNKEEP_ATOMS(cx->runtime);
-        cx->weakRoots.newbornObject = obj;
+        cx->weakRoots.finalizableNewborns[FINALIZE_OBJECT] = obj;
     }
 
 out:
@@ -2327,7 +2327,7 @@ NewNativeObject(JSContext* cx, JSClass* clasp, JSObject* proto,
     if (!obj)
         return NULL;
 
-    obj->init(clasp, proto, parent, privateSlotValue);
+    obj->init(clasp, proto, parent, privateSlotValue, DSLOTS_NULL_INIT_NATIVE);
     return InitScopeForObject(cx, obj, proto, &js_ObjectOps) ? obj : NULL;
 }
 
@@ -2679,7 +2679,7 @@ js_CloneBlockObject(JSContext *cx, JSObject *proto, JSStackFrame *fp)
     JS_ASSERT(scope->freeslot == JSSLOT_BLOCK_DEPTH + 1);
     for (uint32 i = JSSLOT_BLOCK_DEPTH + 1; i < JS_INITIAL_NSLOTS; ++i)
         clone->fslots[i] = JSVAL_VOID;
-    clone->dslots = NULL;
+    clone->dslots = DSLOTS_NULL_CLONE_BLOCK_OBJECT;
     JS_ASSERT(OBJ_IS_CLONED_BLOCK(clone));
     return clone;
 }
@@ -3115,7 +3115,7 @@ bad:
 static bool
 AllocSlots(JSContext *cx, JSObject *obj, size_t nslots)
 {
-    JS_ASSERT(!obj->dslots);
+    JS_ASSERT(!DSLOTS_IS_NOT_NULL(obj));
     JS_ASSERT(nslots > JS_INITIAL_NSLOTS);
 
     jsval* slots;
@@ -3171,7 +3171,7 @@ js_GrowSlots(JSContext *cx, JSObject *obj, size_t nslots)
      * If nothing was allocated yet, treat it as initial allocation (but with
      * the exponential growth algorithm applied).
      */
-    jsval* slots = obj->dslots;
+    jsval* slots = DSLOTS_NORMALIZE(obj);
     if (!slots)
         return AllocSlots(cx, obj, nslots);
 
@@ -3192,7 +3192,7 @@ js_GrowSlots(JSContext *cx, JSObject *obj, size_t nslots)
 void
 js_ShrinkSlots(JSContext *cx, JSObject *obj, size_t nslots)
 {
-    jsval* slots = obj->dslots;
+    jsval* slots = DSLOTS_NORMALIZE(obj);
 
     /* Nothing to shrink? */
     if (!slots)
@@ -3203,7 +3203,7 @@ js_ShrinkSlots(JSContext *cx, JSObject *obj, size_t nslots)
 
     if (nslots <= JS_INITIAL_NSLOTS) {
         cx->free(slots - 1);
-        obj->dslots = NULL;
+        obj->dslots = DSLOTS_NULL_SHRINK_SLOTS;
     } else {
         size_t nwords = SLOTS_TO_DYNAMIC_WORDS(nslots);
         slots = (jsval*) cx->realloc(slots - 1, nwords * sizeof(jsval));
@@ -3216,7 +3216,7 @@ bool
 js_EnsureReservedSlots(JSContext *cx, JSObject *obj, size_t nreserved)
 {
     JS_ASSERT(OBJ_IS_NATIVE(obj));
-    JS_ASSERT(!obj->dslots);
+    JS_ASSERT(!DSLOTS_IS_NOT_NULL(obj));
 
     uintN nslots = JSSLOT_FREE(STOBJ_GET_CLASS(obj)) + nreserved;
     if (nslots > STOBJ_NSLOTS(obj) && !AllocSlots(cx, obj, nslots))
@@ -3272,7 +3272,8 @@ js_NewNativeObject(JSContext *cx, JSClass *clasp, JSObject *proto,
         return NULL;
     }
     obj->map = scope;
-    obj->init(clasp, proto, proto->getParent(), privateSlotValue);
+    obj->init(clasp, proto, proto->getParent(), privateSlotValue,
+              DSLOTS_NULL_INIT_JSNATIVE);
     return obj;
 }
 
@@ -5511,7 +5512,8 @@ js_GetClassPrototype(JSContext *cx, JSObject *scope, jsid id,
              * instance that delegates to this object, or just query the
              * prototype for its class.
              */
-            cx->weakRoots.newbornObject = JSVAL_TO_OBJECT(v);
+            cx->weakRoots.finalizableNewborns[FINALIZE_OBJECT] =
+                JSVAL_TO_OBJECT(v);
         }
     }
     *protop = JSVAL_IS_OBJECT(v) ? JSVAL_TO_OBJECT(v) : NULL;
@@ -5995,7 +5997,7 @@ js_SetReservedSlot(JSContext *cx, JSObject *obj, uint32 index, jsval v)
         return false;
 
     uint32 slot = JSSLOT_START(clasp) + index;
-    if (slot >= JS_INITIAL_NSLOTS && !obj->dslots) {
+    if (slot >= JS_INITIAL_NSLOTS && !DSLOTS_IS_NOT_NULL(obj)) {
         /*
          * At this point, obj may or may not own scope, and we may or may not
          * need to allocate dslots. If scope is shared, scope->freeslot may not

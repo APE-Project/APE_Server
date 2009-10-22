@@ -2498,7 +2498,7 @@ JS_MaybeGC(JSContext *cx)
      * or approximately F == 0 && B > 4/3 Bl.
      */
     if ((bytes > 8192 && bytes > lastBytes + lastBytes / 3) ||
-        rt->gcMallocBytes >= rt->gcMaxMallocBytes) {
+        rt->isGCMallocLimitReached()) {
         JS_GC(cx);
     }
 }
@@ -2535,7 +2535,7 @@ JS_SetGCParameter(JSRuntime *rt, JSGCParamKey key, uint32 value)
         rt->gcMaxBytes = value;
         break;
       case JSGC_MAX_MALLOC_BYTES:
-        rt->gcMaxMallocBytes = value;
+        rt->setGCMaxMallocBytes(value);
         break;
       case JSGC_STACKPOOL_LIFESPAN:
         rt->gcEmptyArenaPoolLifespan = value;
@@ -4255,7 +4255,7 @@ JS_CloneFunctionObject(JSContext *cx, JSObject *funobj, JSObject *parent)
      * but looking up the property by name instead of frame slot.
      */
     if (FUN_FLAT_CLOSURE(fun)) {
-        JS_ASSERT(funobj->dslots);
+        JS_ASSERT(DSLOTS_IS_NOT_NULL(funobj));
         if (!js_EnsureReservedSlots(cx, clone,
                                     fun->countInterpretedReservedSlots())) {
             return NULL;
@@ -4612,7 +4612,7 @@ JS_CompileUCScriptForPrincipals(JSContext *cx, JSObject *obj,
     JSScript *script;
 
     CHECK_REQUEST(cx);
-    tcflags = JS_OPTIONS_TO_TCFLAGS(cx);
+    tcflags = JS_OPTIONS_TO_TCFLAGS(cx) | TCF_NEED_MUTABLE_SCRIPT;
     script = JSCompiler::compileScript(cx, obj, NULL, principals, tcflags,
                                        chars, length, NULL, filename, lineno);
     LAST_FRAME_CHECKS(cx, script);
@@ -4867,7 +4867,7 @@ JS_CompileUCFunctionForPrincipals(JSContext *cx, JSObject *obj,
 #endif
 
   out:
-    cx->weakRoots.newbornObject = FUN_OBJECT(fun);
+    cx->weakRoots.finalizableNewborns[FINALIZE_FUNCTION] = fun;
     JS_POP_TEMP_ROOT(cx, &tvr);
 
   out2:

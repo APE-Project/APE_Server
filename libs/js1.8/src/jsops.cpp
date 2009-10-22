@@ -314,12 +314,6 @@ BEGIN_CASE(JSOP_STOP)
         if (JS_LIKELY(ok)) {
             JS_ASSERT(js_CodeSpec[js_GetOpcode(cx, script, regs.pc)].length
                       == JSOP_CALL_LENGTH);
-#ifdef DEBUG
-            JSOp traceOp = js_GetOpcode(cx, script, regs.pc +
-                                        JSOP_CALL_LENGTH);
-            JS_ASSERT_IF(*regs.pc == JSOP_CALL && !fp->imacpc,
-                         traceOp == JSOP_TRACE || traceOp == JSOP_NOP);
-#endif
             TRACE_0(LeaveFrame);
             if (!TRACE_RECORDER(cx) && recursive) {
                 if (*(regs.pc + JSOP_CALL_LENGTH) == JSOP_TRACE) {
@@ -2034,12 +2028,17 @@ BEGIN_CASE(JSOP_NEW)
             }
             rval = vp[1];
             obj2 = js_NewObject(cx, &js_ObjectClass,
-                                JSVAL_IS_OBJECT(rval)
-                                ? JSVAL_TO_OBJECT(rval)
-                                : NULL,
+                                JSVAL_IS_OBJECT(rval) ? JSVAL_TO_OBJECT(rval) : NULL,
                                 OBJ_GET_PARENT(cx, obj));
             if (!obj2)
                 goto error;
+
+            if (fun->u.i.script->isEmpty()) {
+                *vp = OBJECT_TO_JSVAL(obj2);
+                regs.sp = vp + 1;
+                goto end_new;
+            }
+
             vp[1] = OBJECT_TO_JSVAL(obj2);
             flags = JSFRAME_CONSTRUCTING;
             goto inline_call;
@@ -2051,6 +2050,8 @@ BEGIN_CASE(JSOP_NEW)
     regs.sp = vp + 1;
     CHECK_INTERRUPT_HANDLER();
     TRACE_0(NativeCallComplete);
+
+  end_new:
 END_CASE(JSOP_NEW)
 
 BEGIN_CASE(JSOP_CALL)
@@ -2077,16 +2078,22 @@ BEGIN_CASE(JSOP_APPLY)
             JSInlineFrame *newifp;
             JSInterpreterHook hook;
 
+            script = fun->u.i.script;
+            if (script->isEmpty()) {
+                script = fp->script;
+                *vp = JSVAL_VOID;
+                regs.sp = vp + 1;
+                goto end_call;
+            }
+
             /* Restrict recursion of lightweight functions. */
-            if (inlineCallCount >= MAX_INLINE_CALL_COUNT) {
+            if (inlineCallCount >= JS_MAX_INLINE_CALL_COUNT) {
                 js_ReportOverRecursed(cx);
                 goto error;
             }
 
             /* Compute the total number of stack slots needed by fun. */
-            nframeslots = JS_HOWMANY(sizeof(JSInlineFrame),
-                                     sizeof(jsval));
-            script = fun->u.i.script;
+            nframeslots = JS_HOWMANY(sizeof(JSInlineFrame), sizeof(jsval));
             atoms = script->atomMap.vector;
             nbytes = (nframeslots + script->nslots) * sizeof(jsval);
 
@@ -2226,15 +2233,9 @@ BEGIN_CASE(JSOP_APPLY)
                 TRACE_1(EnterFrame, inlineCallCount);
                 RESTORE_INTERP_VARS();
             } else if (fp->script == fp->down->script &&
-                       *fp->down->regs->pc == JSOP_CALL) {
-#ifdef DEBUG
-                JSOp traceOp = js_GetOpcode(cx, fp->script,
-                                            fp->regs->pc);
-                JS_ASSERT_IF(!fp->imacpc, traceOp == JSOP_TRACE ||
-                             traceOp == JSOP_NOP);
-#endif
-                if (*fp->regs->pc == JSOP_TRACE)
-                    MONITOR_BRANCH(Monitor_EnterFrame);
+                       *fp->down->regs->pc == JSOP_CALL &&
+                       *fp->regs->pc == JSOP_TRACE) {
+                MONITOR_BRANCH(Monitor_EnterFrame);
             }
 #endif
 
@@ -2856,7 +2857,7 @@ BEGIN_CASE(JSOP_CALLDSLOT)
     JS_ASSERT(fp->argv);
     obj = JSVAL_TO_OBJECT(fp->argv[-2]);
     JS_ASSERT(obj);
-    JS_ASSERT(obj->dslots);
+    JS_ASSERT(DSLOTS_IS_NOT_NULL(obj));
 
     index = GET_UINT16(regs.pc);
     JS_ASSERT(JS_INITIAL_NSLOTS + index < jsatomid(obj->dslots[-1]));
@@ -3474,7 +3475,7 @@ BEGIN_CASE(JSOP_ENDINIT)
     JS_ASSERT(regs.sp - StackBase(fp) >= 1);
     lval = FETCH_OPND(-1);
     JS_ASSERT(JSVAL_IS_OBJECT(lval));
-    cx->weakRoots.newbornObject = JSVAL_TO_OBJECT(lval);
+    cx->weakRoots.finalizableNewborns[FINALIZE_OBJECT] = JSVAL_TO_OBJECT(lval);
 END_CASE(JSOP_ENDINIT)
 
 BEGIN_CASE(JSOP_INITPROP)

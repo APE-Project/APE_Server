@@ -46,12 +46,17 @@
 #ifndef __VMPI_h__
 #define __VMPI_h__
 
+#if defined(HAVE_CONFIG_H) && defined(NANOJIT_CENTRAL)
+#include "config.h"
+#endif
+
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdarg.h>
 
 #if defined(AVMPLUS_UNIX) || defined(AVMPLUS_OS2)
 #include <unistd.h>
@@ -80,6 +85,7 @@ typedef unsigned __int64 uint64_t;
 #define VMPI_strncat strncat
 #define VMPI_strcpy strcpy
 #define VMPI_sprintf sprintf
+#define VMPI_vfprintf vfprintf
 #define VMPI_memset memset
 #define VMPI_isdigit isdigit
 #define VMPI_getDate()

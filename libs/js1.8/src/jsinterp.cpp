@@ -246,6 +246,8 @@ js_FillPropertyCache(JSContext *cx, JSObject *obj,
             SPROP_HAS_VALID_SLOT(sprop, scope)) {
             /* Great, let's cache sprop's slot and use it on cache hit. */
             vword = SLOT_TO_PCVAL(sprop->slot);
+            if (sprop->slot >= JS_INITIAL_NSLOTS && !DSLOTS_IS_NOT_NULL(obj))
+                DSLOTS_BUMP(obj);
         } else {
             /* Best we can do is to cache sprop (still a nice speedup). */
             vword = SPROP_TO_PCVAL(sprop);
@@ -856,6 +858,17 @@ js_GetPrimitiveThis(JSContext *cx, jsval *vp, JSClass *clasp, jsval *thisvp)
     return JS_TRUE;
 }
 
+/* Some objects (e.g., With) delegate 'this' to another object. */
+static inline JSObject *
+CallThisObjectHook(JSContext *cx, JSObject *obj, jsval *argv)
+{
+    JSObject *thisp = obj->thisObject(cx);
+    if (!thisp)
+        return NULL;
+    argv[-1] = OBJECT_TO_JSVAL(thisp);
+    return thisp;
+}
+
 /*
  * ECMA requires "the global object", but in embeddings such as the browser,
  * which have multiple top-level objects (windows, frames, etc. in the DOM),
@@ -925,12 +938,7 @@ js_ComputeGlobalThis(JSContext *cx, JSBool lazy, jsval *argv)
             thisp = parent;
     }
 
-    /* Some objects (e.g., With) delegate 'this' to another object. */
-    thisp = thisp->thisObject(cx);
-    if (!thisp)
-        return NULL;
-    argv[-1] = OBJECT_TO_JSVAL(thisp);
-    return thisp;
+    return CallThisObjectHook(cx, thisp, argv);
 }
 
 static JSObject *
@@ -943,20 +951,14 @@ ComputeThis(JSContext *cx, JSBool lazy, jsval *argv)
         if (!js_PrimitiveToObject(cx, &argv[-1]))
             return NULL;
         thisp = JSVAL_TO_OBJECT(argv[-1]);
-    } else {
-        thisp = JSVAL_TO_OBJECT(argv[-1]);
-        if (OBJ_GET_CLASS(cx, thisp) == &js_CallClass ||
-            OBJ_GET_CLASS(cx, thisp) == &js_BlockClass) {
-            return js_ComputeGlobalThis(cx, lazy, argv);
-        }
+        return thisp;
+    } 
 
-        /* Some objects (e.g., With) delegate 'this' to another object. */
-        thisp = thisp->thisObject(cx);
-        if (!thisp)
-            return NULL;
-        argv[-1] = OBJECT_TO_JSVAL(thisp);
-    }
-    return thisp;
+    thisp = JSVAL_TO_OBJECT(argv[-1]);
+    if (OBJ_GET_CLASS(cx, thisp) == &js_CallClass || OBJ_GET_CLASS(cx, thisp) == &js_BlockClass)
+        return js_ComputeGlobalThis(cx, lazy, argv);
+
+    return CallThisObjectHook(cx, thisp, argv);
 }
 
 JSObject *
@@ -1183,6 +1185,17 @@ have_fun:
             native = NULL;
             script = fun->u.i.script;
             JS_ASSERT(script);
+
+            if (script->isEmpty()) {
+                if (flags & JSINVOKE_CONSTRUCT) {
+                    JS_ASSERT(!JSVAL_IS_PRIMITIVE(vp[1]));
+                    *vp = vp[1];
+                } else {
+                    *vp = JSVAL_VOID;
+                }
+                ok = JS_TRUE;
+                goto out2;
+            }
         } else {
             native = fun->u.n.native;
             script = NULL;
@@ -1471,6 +1484,12 @@ js_Execute(JSContext *cx, JSObject *chain, JSScript *script,
     JSStackFrame *oldfp, frame;
     JSObject *obj, *tmp;
     JSBool ok;
+
+    if (script->isEmpty()) {
+        if (result)
+            *result = JSVAL_VOID;
+        return JS_TRUE;
+    }
 
     js_LeaveTrace(cx);
 
@@ -2488,8 +2507,6 @@ JS_STATIC_ASSERT(!CAN_DO_FAST_INC_DEC(INT_TO_JSVAL_CONSTEXPR(JSVAL_INT_MAX)));
 
 #endif
 
-#define MAX_INLINE_CALL_COUNT 3000
-
 /*
  * Threaded interpretation via computed goto appears to be well-supported by
  * GCC 3 and higher.  IBM's C compiler when run with the right options (e.g.,
@@ -2795,7 +2812,8 @@ js_Interpret(JSContext *cx)
     /* Set registerized frame pointer and derived script pointer. */
     fp = cx->fp;
     script = fp->script;
-    JS_ASSERT(script->length != 0);
+    JS_ASSERT(!script->isEmpty());
+    JS_ASSERT(script->length > 1);
 
     /* Count of JS function calls that nest in this C js_Interpret frame. */
     inlineCallCount = 0;

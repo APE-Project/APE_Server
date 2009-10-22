@@ -277,10 +277,9 @@ static int json_evaluate_string_size(json_item *head)
 		
 		if (head->jval.vu.str.value != NULL) {
 			evalsize += head->jval.vu.str.length + 3;
-		} else if (head->jval.vu.integer_value || head->jval.vu.float_value) {
+		} else if (head->jchild.child == NULL) {
 			evalsize += 16;
 		}
-		
 		if (head->jchild.child != NULL) {
 			evalsize += json_evaluate_string_size(head->jchild.child);
 		}
