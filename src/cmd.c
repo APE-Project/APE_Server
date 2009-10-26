@@ -27,27 +27,18 @@
 #include "raw.h"
 #include "transports.h"
 
-void do_register(acetables *g_ape) // register_raw("CMD", Nparam (without IP and time, with sessid), callback_func, NEEDSOMETHING?, g_ape);
+void do_register(acetables *g_ape)
 {
 	register_cmd("CONNECT",		cmd_connect, 	NEED_NOTHING, g_ape);
-	register_cmd("SCRIPT",        	cmd_script,		NEED_NOTHING, g_ape);
+	register_cmd("SCRIPT",      cmd_script,		NEED_NOTHING, g_ape);
 	
 	register_cmd("CHECK", 		cmd_check, 		NEED_SESSID, g_ape);
 	register_cmd("SEND", 		cmd_send, 		NEED_SESSID, g_ape);
 
 	register_cmd("QUIT", 		cmd_quit, 		NEED_SESSID, g_ape);
-	//register_cmd("SETLEVEL", 	cmd_setlevel, 	NEED_SESSID, g_ape); // Module
-	//register_cmd("SETTOPIC", 	cmd_settopic, 	NEED_SESSID, g_ape); // Module
 	register_cmd("JOIN", 		cmd_join, 		NEED_SESSID, g_ape);
 	register_cmd("LEFT", 		cmd_left, 		NEED_SESSID, g_ape);
-	//register_cmd("KICK", 		cmd_kick, 		NEED_SESSID, g_ape); // Module
-	//register_cmd("BAN",		cmd_ban,		NEED_SESSID, g_ape); // Module
-	register_cmd("SESSION",        	cmd_session,		NEED_SESSID, g_ape);
-	
-	//register_cmd("KONG", 		cmd_pong, 		NEED_SESSID, g_ape);
-	
-	//register_cmd("PROXY_CONNECT", 	cmd_proxy_connect, 	NEED_SESSID, g_ape);
-	//register_cmd("PROXY_WRITE", 	cmd_proxy_write, 	NEED_SESSID, g_ape);
+	register_cmd("SESSION",     cmd_session,	NEED_SESSID, g_ape);
 }
 
 void register_cmd(const char *cmd, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape)
@@ -82,7 +73,6 @@ int register_hook_cmd(const char *cmd, unsigned int (*func)(callbackp *), void *
 	hook->func = func;
 	hook->data = data;
 	g_ape->cmd_hook = hook;
-	
 	return 1;
 }
 
@@ -93,12 +83,12 @@ int call_cmd_hook(const char *cmd, callbackp *cp, acetables *g_ape)
 	for (hook = g_ape->cmd_hook; hook != NULL; hook = hook->next) {
 		cp->data = hook->data;
 		unsigned int ret;
-		if (strcasecmp(hook->cmd, cmd) == 0 && (ret = hook->func(cp)) != RETURN_NOTHING) {
+		if (strcasecmp(hook->cmd, cmd) == 0 && (ret = hook->func(cp)) != RETURN_CONTINUE) {
 			return ret;
 		}
 	}
 	cp->data = NULL;
-	return RETURN_NOTHING;
+	return RETURN_CONTINUE;
 }
 
 void unregister_cmd(const char *cmd, acetables *g_ape)
@@ -153,7 +143,7 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 						}
 						break;
 					case NEED_NOTHING:
-						guser = NULL;
+						//guser = NULL;
 						break;
 				}
 		
@@ -210,20 +200,21 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 						sub->idle = guser->idle; // Update subuser idle
 						
 					}
-					
-					if (sub != NULL && (jchl = json_lookup(ijson->jchild.child, "chl")) != NULL && jchl->jval.vu.integer_value > sub->current_chl) {
-						sub->current_chl = jchl->jval.vu.integer_value;
-					} else if (sub != NULL) {
-						/* if a bad challenge is detected, we are stoping walking on cmds */
-						send_error(guser, "BAD_CHL", "250", g_ape);
 
-						free_json_item(ojson);
-						sub->state = ALIVE;
-						
-						return (CONNECT_KEEPALIVE);
-					}
 				}
-		
+				
+				if (guser != NULL && sub != NULL && (jchl = json_lookup(ijson->jchild.child, "chl")) != NULL && jchl->jval.vu.integer_value > sub->current_chl) {
+					sub->current_chl = jchl->jval.vu.integer_value;
+				} else if (guser != NULL && sub != NULL) {
+					/* if a bad challenge is detected, we are stoping walking on cmds */
+					send_error(guser, "BAD_CHL", "250", g_ape);
+
+					free_json_item(ojson);
+					sub->state = ALIVE;
+					
+					return (CONNECT_KEEPALIVE);
+				}
+							
 				cp.param = json_lookup(ijson->jchild.child, "params");
 				cp.client = (cp.client != NULL ? cp.client : cget->client);
 				cp.call_user = guser;
@@ -235,7 +226,7 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 				cp.transport = transport;
 				// Ajouter un string de la commande
 				
-				if ((flag = call_cmd_hook(cp.cmd, &cp, g_ape)) == RETURN_NOTHING) {
+				if ((flag = call_cmd_hook(cp.cmd, &cp, g_ape)) == RETURN_CONTINUE) {
 					flag = cmdback->func(&cp);
 				}
 		
@@ -247,14 +238,23 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 					RAW *newraw;
 					json_item *jlist = json_new_object();
 
+					if (cp.chl) {
+						json_set_property_intN(jlist, "chl", 3, cp.chl);
+					}
 					json_set_property_strZ(jlist, "code", "001");
 					json_set_property_strZ(jlist, "value", "BAD_PARAMS");
 
 					newraw = forge_raw(RAW_ERR, jlist);
-
-					send_raw_inline(cget->client, transport, newraw, g_ape);
 					
-					guser = NULL;
+					if (cp.call_user != NULL) {	
+						if (sub == NULL) {
+							sub = getsubuser(guser, cget->host);	
+						}
+						post_raw_sub(newraw, sub, g_ape);
+					} else {
+						send_raw_inline(cget->client, transport, newraw, g_ape);
+					}
+					//guser = NULL;
 				}
 		
 				if (guser != NULL) {
@@ -471,19 +471,6 @@ unsigned int cmd_quit(callbackp *callbacki)
 	return (RETURN_NULL);
 }
 
-#if 0
-unsigned int cmd_setlevel(callbackp *callbacki)
-{
-	USERS *recver;
-	
-	if ((recver = seek_user(callbacki->param[3], callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_USER", "102", callbacki->g_ape);
-	} else {
-		setlevel(callbacki->call_user, recver, getchan(callbacki->param[2], callbacki->g_ape), atoi(callbacki->param[4]), callbacki->g_ape);
-	}
-	return (RETURN_NOTHING);
-}
-#endif
 
 unsigned int cmd_left(callbackp *callbacki)
 {
@@ -558,45 +545,6 @@ unsigned int cmd_session(callbackp *callbacki)
 }
 
 #if 0
-unsigned int cmd_proxy_connect(callbackp *callbacki)
-{
-	ape_proxy *proxy;
-	RAW *newraw;
-	json *jlist = NULL;
-	
-	proxy = proxy_init_by_host_port(callbacki->param[2], callbacki->param[3], callbacki->g_ape);
-	
-	if (proxy == NULL) {
-		send_error(callbacki->call_user, "PROXY_INIT_ERROR", "204", callbacki->g_ape);
-	} else {
-		proxy_attach(proxy, callbacki->call_user->pipe->pubid, 1, callbacki->g_ape);
-		
-		set_json("pipe", NULL, &jlist);
-		json_attach(jlist, get_json_object_proxy(proxy), JSON_OBJECT);
-	
-		newraw = forge_raw(RAW_PROXY, jlist);
-		post_raw(newraw, callbacki->call_user, callbacki->g_ape);		
-	}
-	
-	return (RETURN_NOTHING);
-}
-
-unsigned int cmd_proxy_write(callbackp *callbacki)
-{
-	ape_proxy *proxy;
-
-	if ((proxy = proxy_are_linked(callbacki->call_user->pipe->pubid, callbacki->param[2], callbacki->g_ape)) == NULL) {
-		send_error(callbacki->call_user, "UNKNOWN_PIPE", "109", callbacki->g_ape);
-	} else if (proxy->state != PROXY_CONNECTED) {
-		send_error(callbacki->call_user, "PROXY_NOT_CONNETED", "205", callbacki->g_ape);
-	} else {
-		proxy_write(proxy, callbacki->param[3], callbacki->g_ape);
-	}
-	
-	return (RETURN_NOTHING);
-}
-#endif
-#if 0
 /* This is usefull to ask all subuser to update their sessions */
 unsigned int cmd_pong(callbackp *callbacki)
 {
@@ -615,7 +563,5 @@ unsigned int cmd_pong(callbackp *callbacki)
 	}
 	return (RETURN_NOTHING);
 }
-
-
 
 #endif

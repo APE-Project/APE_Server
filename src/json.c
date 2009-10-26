@@ -168,104 +168,7 @@ void json_concat(struct json *json_father, struct json *json_child)
 
 }
 
-/*
-	Transforme a JSON tree to a allocated string and free memory
-*/
-struct jsontring *jsontr(struct json *jlist, struct jsontring *string)
-{
-	struct json_childs *pchild;
-	struct json *pjson;
-	size_t string_osize = 0;
-	
-	if (string == NULL) { // initial size
-		string = xmalloc(sizeof(struct jsontring));
-		string->jsize = jlist->name.len+3 + 
-				(jlist->jchilds == NULL ? (jlist->value.buf != NULL ? jlist->value.len+2 : 4) : 0) + 
-				(jlist->prev == NULL ? 2 : 1) + (jlist->next == NULL && jlist->jchilds == NULL ? 1 : 0) + 2; /* Estimate init size ~ 2 bytes */
-				
-		string->jstring = xmalloc(sizeof(char) * string->jsize);
-		string->len = 0;
-		
-	} else {
-
-		string_osize = string->jsize;
-		string->jsize += jlist->name.len+3 + 
-				(jlist->jchilds == NULL ? (jlist->value.buf != NULL ? jlist->value.len+2 : 4) : 0) + 
-				(jlist->prev == NULL ? 2 : 1) + (jlist->next == NULL && jlist->jchilds == NULL ? 1 : 0) + 2; /* Estimate new size ~ 2 bytes */
-				
-		string->jstring = xrealloc(string->jstring, sizeof(char) * string->jsize);
-	}
-	memset(string->jstring + string_osize, '\0', string->jsize - string_osize);
-	
-	pchild = jlist->jchilds;
-	pjson = jlist->next;
-	
-	if (jlist->prev == NULL) {
-		string->jstring[string->len++] = '{';
-	}
-	
-	string->jstring[string->len++] = '"';
-	
-	memcpy(&string->jstring[string->len], jlist->name.buf, jlist->name.len);
-	
-	string->len += jlist->name.len;
-	
-	string->jstring[string->len++] = '"';
-	string->jstring[string->len++] = ':';
-	
-	free(jlist->name.buf);
-	if (pchild == NULL) {
-		if (jlist->value.buf != NULL) {
-			string->jstring[string->len++] = '"';
-			memcpy(&string->jstring[string->len], jlist->value.buf, jlist->value.len);
-			string->len += jlist->value.len;
-			string->jstring[string->len++] = '"';
-
-			free(jlist->value.buf);
-		} else {
-			strncpy(&string->jstring[string->len], "null", 4);
-			string->len += 4;
-
-		}
-	} else if (pchild->type == JSON_ARRAY) {
-		string->jstring[string->len++] = '[';
-	}
-	while (pchild != NULL) {
-		struct json_childs *pPchild = pchild;
-
-		jsontr(pchild->child, string);
-		
-		pchild = pchild->next;
-		
-		if (pchild == NULL && pPchild->type == JSON_ARRAY) {
-			string->jstring[string->len++] = ']';
-
-		} else if (pchild != NULL) {
-			string->jstring[string->len++] = ',';
-		}
-		free(pPchild);
-	}
-	if (jlist->next == NULL) {
-		string->jstring[string->len++] = '}';
-	} else {
-		string->jstring[string->len++] = ',';
-	}
-	if (pjson != NULL) {
-
-		jsontr(pjson, string);
-	}
-
-	if (jlist->jchilds == NULL) {
-		free(jlist);
-		
-		return string;
-	}
-	free(jlist);
-	return string;
-}
-
 /* Determinate an heuristic final string size */
-/* TODO : Try to replace this by realloc in json_to_string and make some bench */
 static int json_evaluate_string_size(json_item *head)
 {
 	int evalsize = 2;
@@ -278,7 +181,7 @@ static int json_evaluate_string_size(json_item *head)
 		if (head->jval.vu.str.value != NULL) {
 			evalsize += head->jval.vu.str.length + 3;
 		} else if (head->jchild.child == NULL) {
-			evalsize += 16;
+			evalsize += 16; /* uch ! TODO : int length */
 		}
 		if (head->jchild.child != NULL) {
 			evalsize += json_evaluate_string_size(head->jchild.child);
@@ -307,7 +210,7 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 		string = xmalloc(sizeof(struct jsontring));
 		
 		/* Ok, this can cost a lot (traversing the tree), but avoid realloc at each iteration */
-		string->jsize = json_evaluate_string_size(head) * 2;
+		string->jsize = json_evaluate_string_size(head) * 2; /* TODO : Remove * 2, add some padding, realloc when necessary (or at least just x2 str val) */
 		
 		string->jstring = xmalloc(sizeof(char) * (string->jsize + 1));
 		string->len = 0;
@@ -330,8 +233,7 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 		if (head->jval.vu.str.value != NULL) {
 
 			string->jstring[string->len++] = '"';
-			//memcpy(string->jstring + string->len, head->jval.vu.str.value, head->jval.vu.str.length);
-			string->len += escape_json_string(head->jval.vu.str.value, string->jstring + string->len, head->jval.vu.str.length);	
+			string->len += escape_json_string(head->jval.vu.str.value, string->jstring + string->len, head->jval.vu.str.length); /* TODO : Add a "escape" argument to json_to_string */	
 			string->jstring[string->len++] = '"';
 			
 			if (free_tree) {
