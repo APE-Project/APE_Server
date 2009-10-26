@@ -1288,7 +1288,9 @@ APE_JS_NATIVE(ape_sm_b64_decode)
 	b64 = xmalloc(length+1);
 	len = base64_decode(b64, JS_GetStringBytes(string), length+1);
 	
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, b64, len));
+	if (len != -1) {
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, b64, len));
+	}
 	
 	free(b64);
 	

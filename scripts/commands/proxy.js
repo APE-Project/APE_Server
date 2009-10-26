@@ -21,7 +21,7 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 		/* Called when an user send a "SEND" command on this pipe */
 		pipe.onSend = function(user, params) {
 			/* "this" refer to the pipe object */
-			this.link.write(Ape.base64.decode(params.msg));
+			this.link.write(Ape.base64.decode(unescape(params.msg)));
 		}
 		
 		pipe.onDettach = function() {
