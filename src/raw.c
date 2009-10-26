@@ -236,7 +236,7 @@ int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuse
 
 	}
 
-	jlist_copy = json_item_copy(jlist);
+	jlist_copy = json_item_copy(jlist, NULL);
 	
 	switch(recver->type) {
 		case USER_PIPE:

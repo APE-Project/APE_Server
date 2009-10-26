@@ -56,8 +56,7 @@ extend *add_property(extend **entry, const char *key, void *val, EXTEND_TYPE ety
 	
 	switch(etype) {
 		case EXTEND_STR:
-			new_property->val = xstrdup(val);
-			strcpy(new_property->val, val);		
+			new_property->val = xstrdup(val);	
 			break;
 		case EXTEND_POINTER:
 		default:
@@ -89,8 +88,7 @@ extend *get_property(extend *entry, const char *key)
 		entry = entry->next;
 	}
 	
-	return NULL;
-	
+	return NULL;	
 }
 
 void *get_property_val(extend *entry, const char *key)
@@ -117,7 +115,7 @@ void del_property(extend **entry, const char *key)
 					free(pEntry->val);
 					break;
 				case EXTEND_JSON:
-					json_free(pEntry->val);
+					free_json_item(pEntry->val);
 					break;
 				default:
 					break;
@@ -132,6 +130,7 @@ void del_property(extend **entry, const char *key)
 
 }
 
+/* TODO : use del_property */
 void clear_properties(extend **entry)
 {
 	extend *pEntry = *entry, *pTmp;
@@ -143,7 +142,7 @@ void clear_properties(extend **entry)
 				free(pEntry->val);
 				break;
 			case EXTEND_JSON:
-				json_free(pEntry->val);
+				free_json_item(pEntry->val);
 				break;
 			default:
 				break;

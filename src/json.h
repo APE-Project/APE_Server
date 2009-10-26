@@ -130,7 +130,7 @@ void json_set_element_obj(json_item *obj, json_item *value);
 void json_set_property_intN(json_item *obj, const char *key, int keylen, long int value);
 void json_set_property_intZ(json_item *obj, const char *key, long int value);
 struct jsontring *json_to_string(json_item *head, struct jsontring *string, int free_tree);
-json_item *json_item_copy(json_item *cx);
+json_item *json_item_copy(json_item *cx, json_item *father);
 
 void json_aff(json_item *cx, int depth);
 

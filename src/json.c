@@ -343,13 +343,18 @@ void free_json_item(json_item *cx)
 	}
 }
 
-json_item *json_item_copy(json_item *cx)
+json_item *json_item_copy(json_item *cx, json_item *father)
 {
-	json_item *new_item = NULL;
+	json_item *new_item = NULL, *return_item = NULL;
 	json_item *temp_item = NULL;
 	
 	while (cx != NULL) {	
 		new_item = init_json_item();
+		new_item->father = father;
+		
+		if (return_item == NULL) {
+			return_item = new_item;
+		}
 		new_item->jchild.type = cx->jchild.type;
 		
 		if (temp_item != NULL) {
@@ -373,8 +378,7 @@ json_item *json_item_copy(json_item *cx)
 		}
 		
 		if (cx->jchild.child != NULL) {
-			new_item->jchild.child = json_item_copy(cx->jchild.child);
-			new_item->jchild.child->father = new_item;
+			new_item->jchild.child = json_item_copy(cx->jchild.child, new_item);
 			new_item->jchild.head = new_item->jchild.child;
 		}
 		
@@ -383,7 +387,7 @@ json_item *json_item_copy(json_item *cx)
 		cx = cx->next;
 	}
 	
-	return new_item;
+	return return_item;
 }
 
 json_item *json_new_object()

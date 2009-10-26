@@ -57,7 +57,7 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root);
 	
 static JSBool ape_sm_stub(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	return JS_FALSE;
+	return JS_TRUE;
 }
 
 typedef enum {
@@ -362,10 +362,11 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				}
 				break;
 			case JSTYPE_BOOLEAN:
-
-				break;
-			case JSTYPE_NULL:
-
+				if (!isarray) {
+					json_set_property_intN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), (vp == JSVAL_TRUE));
+				} else {
+					json_set_element_int(ape_json, (vp == JSVAL_TRUE));
+				}
 				break;
 			default:
 
@@ -392,8 +393,14 @@ APE_JS_NATIVE(apepipe_sm_get_property)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, pipe->pubid, 32));
 	} else {
 		extend *getprop = get_property(pipe->properties, property);
-		if (getprop != NULL && getprop->type == EXTEND_STR) {
-			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+		if (getprop != NULL) {
+			if (getprop->type == EXTEND_STR) {
+				*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+			} else if (getprop->type == EXTEND_JSON) {
+				JSObject *propobj = JS_NewObject(cx, NULL, NULL, NULL);
+				ape_json_to_jsobj(cx, ((json_item *)getprop->val)->jchild.child, propobj);
+				*rval = OBJECT_TO_JSVAL(propobj);
+			}
 		}
 	}	
 	
@@ -402,8 +409,10 @@ APE_JS_NATIVE(apepipe_sm_get_property)
 
 APE_JS_NATIVE(apepipe_sm_set_property)
 //{
-	char *key, *property;
+	char *key;
 	transpipe *pipe = JS_GetPrivate(cx, obj);
+	int typextend;
+	void *valuextend;
 	
 	if (pipe == NULL) {
 		return JS_TRUE;
@@ -413,19 +422,33 @@ APE_JS_NATIVE(apepipe_sm_set_property)
 		return JS_TRUE;
 	}	
 	
-	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &key)) {
 		return JS_TRUE;
 	}
 	
+	if (JSVAL_IS_OBJECT(argv[1])) { /* Convert to APE JSON Object */
+		json_item *ji;
+
+		if ((ji = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(argv[1]))) != NULL) {
+			typextend = EXTEND_JSON;
+			valuextend = ji;
+		}
+	} else { /* Convert to string */
+		typextend = EXTEND_STR;
+		valuextend = JS_GetStringBytes(JS_ValueToString(cx, argv[1])); /* No needs to be gc-rooted while there is no JSAPI Call after that */
+	}	
+
 	switch(pipe->type) {
 		case USER_PIPE:
-			add_property(&((USERS *)(pipe->pipe))->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+			/* Set property on directly on the user (not on the pipe) */
+			add_property(&((USERS *)(pipe->pipe))->properties, key, valuextend, typextend, EXTEND_ISPUBLIC);
 			break;
 		case CHANNEL_PIPE:
-			add_property(&((CHANNEL *)(pipe->pipe))->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+			/* Set property on directly on the channel (not on the pipe) */
+			add_property(&((CHANNEL *)(pipe->pipe))->properties, key, valuextend, typextend, EXTEND_ISPUBLIC);
 			break;
 		case CUSTOM_PIPE:
-			add_property(&pipe->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+			add_property(&pipe->properties, key, valuextend, typextend, EXTEND_ISPUBLIC);
 		default:
 			break;
 	}
@@ -487,7 +510,6 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 	}
 	
 	jstr = jsobj_to_ape_json(cx, json_obj);
-
 
 	if (options != NULL && JS_GetProperty(cx, options, "from", &vp) && JSVAL_IS_OBJECT(vp) && JS_InstanceOf(cx, JSVAL_TO_OBJECT(vp), &pipe_class, 0) == JS_TRUE) {
 		JSObject *js_pipe = JSVAL_TO_OBJECT(vp);
@@ -583,8 +605,14 @@ APE_JS_NATIVE(apechannel_sm_get_property)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, chan->name));
 	} else {
 		extend *getprop = get_property(chan->properties, property);
-		if (getprop != NULL && getprop->type == EXTEND_STR) {
-			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+		if (getprop != NULL) {
+			if (getprop->type == EXTEND_STR) {
+				*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+			} else if (getprop->type == EXTEND_JSON) {
+				JSObject *propobj = JS_NewObject(cx, NULL, NULL, NULL);
+				ape_json_to_jsobj(cx, ((json_item *)getprop->val)->jchild.child, propobj);
+				*rval = OBJECT_TO_JSVAL(propobj);
+			}
 		}
 	}
 	
@@ -593,7 +621,9 @@ APE_JS_NATIVE(apechannel_sm_get_property)
 
 APE_JS_NATIVE(apechannel_sm_set_property)
 //{
-	char *key, *property;
+	char *key;
+	JSString *property;
+
 	CHANNEL *chan = JS_GetPrivate(cx, obj);
 	
 	if (chan == NULL) {
@@ -604,11 +634,21 @@ APE_JS_NATIVE(apechannel_sm_set_property)
 		return JS_TRUE;
 	}	
 	
-	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
+	if (!JS_ConvertArguments(cx, 2, argv, "s", &key)) {
 		return JS_TRUE;
 	}
 	
-	add_property(&chan->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+	if (JSVAL_IS_OBJECT(argv[1])) { /* Convert to APE JSON Object */
+		json_item *ji;
+		
+		if ((ji = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(argv[1]))) != NULL) {
+			add_property(&chan->properties, key, ji, EXTEND_JSON, EXTEND_ISPUBLIC);
+		}
+	} else { /* Convert to string */
+		property = JS_ValueToString(cx, argv[1]); /* No needs to be gc-rooted while there is no JSAPI Call after that */
+		add_property(&chan->properties, key, JS_GetStringBytes(property), EXTEND_STR, EXTEND_ISPUBLIC);
+	}
+
 	
 	return JS_TRUE;
 }
@@ -635,8 +675,14 @@ APE_JS_NATIVE(apeuser_sm_get_property)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, user->ip));
 	} else {
 		extend *getprop = get_property(user->properties, property);
-		if (getprop != NULL && getprop->type == EXTEND_STR) {
-			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+		if (getprop != NULL) {
+			if (getprop->type == EXTEND_STR) {
+				*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, getprop->val));
+			} else if (getprop->type == EXTEND_JSON) {
+				JSObject *propobj = JS_NewObject(cx, NULL, NULL, NULL);
+				ape_json_to_jsobj(cx, ((json_item *)getprop->val)->jchild.child, propobj);
+				*rval = OBJECT_TO_JSVAL(propobj);
+			}
 		}
 	}
 	
@@ -645,7 +691,8 @@ APE_JS_NATIVE(apeuser_sm_get_property)
 
 APE_JS_NATIVE(apeuser_sm_set_property)
 //{
-	char *key, *property;
+	char *key;
+	JSString *property;
 	USERS *user = JS_GetPrivate(cx, obj);
 	
 	if (user == NULL) {
@@ -656,11 +703,20 @@ APE_JS_NATIVE(apeuser_sm_set_property)
 		return JS_TRUE;
 	}	
 	
-	if (!JS_ConvertArguments(cx, 2, argv, "ss", &key, &property)) {
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &key)) {
 		return JS_TRUE;
 	}
 	
-	add_property(&user->properties, key, property, EXTEND_STR, EXTEND_ISPUBLIC);
+	if (JSVAL_IS_OBJECT(argv[1])) { /* Convert to APE JSON Object */
+		json_item *ji;
+		
+		if ((ji = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(argv[1]))) != NULL) {
+			add_property(&user->properties, key, ji, EXTEND_JSON, EXTEND_ISPUBLIC);
+		}
+	} else { /* Convert to string */
+		property = JS_ValueToString(cx, argv[1]); /* No needs to be gc-rooted while there is no JSAPI Call after that */
+		add_property(&user->properties, key, JS_GetStringBytes(property), EXTEND_STR, EXTEND_ISPUBLIC);
+	}
 	
 	return JS_TRUE;
 }
@@ -1736,10 +1792,17 @@ static int process_cmd_return(JSContext *cx, jsval rval, callbackp *callbacki, a
 					if (JS_GetProperty(cx, op, JS_GetStringBytes(key), &vp[0]) == JS_FALSE) {
 						continue;
 					}
-					if (JS_TypeOfValue(cx, vp[0]) == JSTYPE_STRING) {
-						value = JSVAL_TO_STRING(vp[0]);
+					if (JSVAL_IS_STRING(vp[0]) || JSVAL_IS_NUMBER(vp[0])) {
+						value = JS_ValueToString(cx, vp[0]);
 						/* if (callcacki->call_user != NULL) do_nothing (avoid memory leak) ? */
 						add_property(&callbacki->properties, JS_GetStringBytes(key), JS_GetStringBytes(value), EXTEND_STR, EXTEND_ISPUBLIC);
+					} else if (JSVAL_IS_OBJECT(vp[0])) {
+						json_item *ji;
+						
+						if ((ji = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(vp[0]))) != NULL) {
+							add_property(&callbacki->properties, JS_GetStringBytes(key), ji, EXTEND_JSON, EXTEND_ISPUBLIC);
+						}						
+						
 					}
 					
 				}

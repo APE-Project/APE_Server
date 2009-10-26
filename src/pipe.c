@@ -161,11 +161,9 @@ json_item *get_json_object_pipe_custom(transpipe *pipe)
 						jprop = json_new_object();
 					}
 					if (eTmp->type == EXTEND_JSON) {
-					/*	json *jcopy = json_copy(eTmp->val);
+						json_item *jcopy = json_item_copy(eTmp->val, NULL);
 						
-						set_json(eTmp->key, NULL, &jprop);
-						
-						json_attach(jprop, jcopy, JSON_OBJECT);*/
+						json_set_property_objZ(jprop, eTmp->key, jcopy);
 					} else {
 						json_set_property_strZ(jprop, eTmp->key, eTmp->val);
 
