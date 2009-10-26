@@ -1029,9 +1029,7 @@ static void ape_sm_pipe_on_send_wrapper(transpipe *pipe, USERS *user, json_item 
 	JSObject *obj;
 	jsval params[2], rval;
 	JSContext *cx = get_property(pipe->properties, "cx")->val;
-	
-	json_aff(jstr, 10);
-	
+
 	obj = JS_NewObject(cx, NULL, NULL, NULL);
 	JS_AddRoot(cx, &obj);
 	ape_json_to_jsobj(cx, jstr->jchild.child, obj);
