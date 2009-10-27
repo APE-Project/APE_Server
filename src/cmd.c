@@ -307,7 +307,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	RAW *newraw;
 	json_item *jstr = NULL;
 
-	nuser = adduser(callbacki->client, callbacki->host, callbacki->properties, callbacki->g_ape);
+	nuser = adduser(callbacki->client, callbacki->host, callbacki->properties, callbacki->ip, callbacki->g_ape);
 	
 	if (nuser == NULL) {
 		RAW *newraw;

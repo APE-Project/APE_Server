@@ -1760,6 +1760,36 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(ape_sm_xorize)
+//{
+	JSString *s1, *s2;
+	char *ps1, *ps2, *final;
+	int i, len;
+	
+	if (!JS_ConvertArguments(cx, 2, argv, "SS", &s1, &s2)) {
+		return JS_TRUE;
+	}
+	
+	ps1 = JS_GetStringBytes(s1);
+	ps2 = JS_GetStringBytes(s2);
+	len = JS_GetStringLength(s1);
+	
+	if (JS_GetStringLength(s2) < len) {
+		return JS_TRUE;
+	}
+	
+	final = xmalloc(sizeof(char) * len);
+	
+	for (i = 0; i < len; i++) {
+		final[i] = ps1[i] ^ ps2[i];
+	}
+	
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, final, len));
+	
+	free(final);
+	
+	return JS_TRUE;
+}
 
 static JSFunctionSpec ape_funcs[] = {
     JS_FS("addEvent",   ape_sm_addEvent,	2, 0, 0), /* Ape.addEvent('name', function() { }); */
@@ -1774,6 +1804,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0, 0),
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0, 0),
 	JS_FS("clearTimeout", ape_sm_clear_timeout, 1, 0, 0),
+	JS_FS("xorize", ape_sm_xorize, 2, 0, 0),
     JS_FS_END
 };
 
@@ -2096,14 +2127,14 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 }
 
-static USERS *ape_cb_add_user(ape_socket *client, char *host, extend *default_props, acetables *g_ape)
+static USERS *ape_cb_add_user(ape_socket *client, char *host, extend *default_props, char *ip, acetables *g_ape)
 {
 	JSObject *user;
 	extend *jsobj;
 	JSContext *gcx = ASMC;
 	jsval params[1], pipe;
 	
-	USERS *u = adduser(client, host, default_props, g_ape);
+	USERS *u = adduser(client, host, default_props, ip, g_ape);
 	
 	if (u != NULL) {
 		//JS_SetContextThread(gcx);

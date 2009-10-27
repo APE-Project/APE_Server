@@ -147,14 +147,15 @@ USERS *init_user(extend *default_props, acetables *g_ape)
 	return nuser;
 }
 
-USERS *adduser(ape_socket *client, char *host, extend *default_props, acetables *g_ape)
+USERS *adduser(ape_socket *client, char *host, extend *default_props, char *ip, acetables *g_ape)
 {
 	USERS *nuser = NULL;
 
 	/* Calling module */
-	FIRE_EVENT(adduser, nuser, client, host, default_props, g_ape);
+	FIRE_EVENT(adduser, nuser, client, host, default_props, ip, g_ape);
 
 	nuser = init_user(default_props, g_ape);
+	strncpy(nuser->ip, ip, 16);
 	
 	nuser->type = (client != NULL ? HUMAN : BOT);
 		
