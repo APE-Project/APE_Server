@@ -37,6 +37,7 @@
 #include "../src/pipe.h"
 #include "../src/raw.h"
 #include "../src/base64.h"
+#include "../src/sha1.h"
 
 #include <stdarg.h>
 

@@ -158,6 +158,13 @@ static JSClass b64_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+static JSClass sha1_class = {
+	"sha1", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 static JSClass socketserver_class = {
 	"sockServer", JSCLASS_HAS_PRIVATE,
 	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
@@ -1295,6 +1302,53 @@ APE_JS_NATIVE(ape_sm_b64_decode)
 	return JS_TRUE;
 }
 
+
+APE_JS_NATIVE(ape_sm_sha1_bin)
+//{
+	JSString *string, *hmac = NULL;
+	unsigned char digest[20];
+
+	if (!JS_ConvertArguments(cx, argc, argv, "S/S", &string, &hmac)) {
+		return JS_TRUE;
+	}
+	
+	if (hmac == NULL) {
+		sha1_csum((unsigned char *)JS_GetStringBytes(string), JS_GetStringLength(string), digest);
+	} else {
+		sha1_hmac((unsigned char *)JS_GetStringBytes(hmac), JS_GetStringLength(hmac), (unsigned char *)JS_GetStringBytes(string), JS_GetStringLength(string), digest);
+	}
+	
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, (char *)digest, 20));
+	
+	return JS_TRUE;	
+}
+
+APE_JS_NATIVE(ape_sm_sha1_str)
+//{
+	JSString *string, *hmac = NULL;
+	unsigned char digest[20];
+	char output[40];
+	unsigned int i;
+	
+	if (!JS_ConvertArguments(cx, argc, argv, "S/S", &string, &hmac)) {
+		return JS_TRUE;
+	}
+
+	if (hmac == NULL) {
+		sha1_csum((unsigned char *)JS_GetStringBytes(string), JS_GetStringLength(string), digest);
+	} else {
+		sha1_hmac((unsigned char *)JS_GetStringBytes(hmac), JS_GetStringLength(hmac), (unsigned char *)JS_GetStringBytes(string), JS_GetStringLength(string), digest);
+	}
+	
+	for (i = 0; i < 20; i++) {
+		sprintf(output + (i*2), "%x", digest[i]);
+	}
+	
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, output, 40));
+	
+	return JS_TRUE;	
+}
+
 APE_JS_NATIVE(ape_sm_addEvent)
 //{
 	const char *event;
@@ -1734,17 +1788,25 @@ static JSFunctionSpec b64_funcs[] = {
 	JS_FS_END
 };
 
+static JSFunctionSpec sha1_funcs[] = {
+	JS_FS("str",   ape_sm_sha1_str,	1, 0, 0),
+	JS_FS("bin",   ape_sm_sha1_bin,	1, 0, 0),
+	JS_FS_END
+};
+
 
 static void ape_sm_define_ape(ape_sm_compiled *asc)
 {
-	JSObject *obj, *b64;
+	JSObject *obj, *b64, *sha1;
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
 	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
+	sha1 = JS_DefineObject(asc->cx, obj, "sha1", &sha1_class, NULL, 0);
 	
 	JS_DefineFunctions(asc->cx, obj, ape_funcs);
 	JS_DefineFunctions(asc->cx, asc->global, global_funcs);
 	JS_DefineFunctions(asc->cx, b64, b64_funcs);
+	JS_DefineFunctions(asc->cx, sha1, sha1_funcs);
 	
 	JS_InitClass(asc->cx, obj, NULL, &pipe_class, ape_sm_pipe_constructor, 0, NULL, NULL, NULL, NULL);
 	JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
