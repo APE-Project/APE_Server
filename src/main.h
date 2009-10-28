@@ -121,6 +121,8 @@ typedef struct _acetables
 
 	struct apeconfig *srv;
 	
+	struct _callback_hook *bad_cmd_callbacks;
+	
 	struct _callback_hook *cmd_hook;
 	
 	struct _ape_transports transports;

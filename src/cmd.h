@@ -62,6 +62,7 @@ void do_register(acetables *g_ape);
 #define RETURN_NOTHING 		0x10
 #define RETURN_BAD_PARAMS 	0x20
 #define RETURN_CONTINUE 	0x40
+#define RETURN_BAD_CMD		0x80
 
 typedef struct _callbackp callbackp;
 
@@ -125,7 +126,7 @@ unsigned int cmd_proxy_write(struct _callbackp *);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void register_cmd(const char *cmd, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape);
 void unregister_cmd(const char *cmd, acetables *g_ape);
-
+void register_bad_cmd(unsigned int (*func)(callbackp *), void *data, acetables *g_ape);
 int register_hook_cmd(const char *cmd, unsigned int (*func)(callbackp *), void *data, acetables *g_ape);
 int call_cmd_hook(const char *cmd, callbackp *cp, acetables *g_ape);
 #endif

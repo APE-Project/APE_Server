@@ -161,7 +161,8 @@ int main(int argc, char **argv)
 
 	g_ape->co = xmalloc(sizeof(*g_ape->co) * g_ape->basemem);
 	memset(g_ape->co, 0, sizeof(*g_ape->co) * g_ape->basemem);
-
+	
+	g_ape->bad_cmd_callbacks = NULL;
 	g_ape->bufout = xmalloc(sizeof(struct _socks_bufout) * g_ape->basemem);
 	
 	g_ape->timers.timers = NULL;

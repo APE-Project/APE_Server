@@ -59,10 +59,24 @@ void register_cmd(const char *cmd, unsigned int (*func)(callbackp *), unsigned i
 	
 }
 
+void register_bad_cmd(unsigned int (*func)(callbackp *), void *data, acetables *g_ape)
+{
+	callback_hook *new_cmd;
+	
+	new_cmd = xmalloc(sizeof(*new_cmd));
+
+	new_cmd->func = func;
+	new_cmd->next = g_ape->bad_cmd_callbacks;
+	new_cmd->data = data;
+	
+	g_ape->bad_cmd_callbacks = new_cmd;
+	
+}
 
 int register_hook_cmd(const char *cmd, unsigned int (*func)(callbackp *), void *data, acetables *g_ape)
 {
 	callback_hook *hook;
+	
 	if (hashtbl_seek(g_ape->hCallback, cmd) == NULL) {
 		return 0;
 	}
@@ -72,7 +86,9 @@ int register_hook_cmd(const char *cmd, unsigned int (*func)(callbackp *), void *
 	hook->next = g_ape->cmd_hook;
 	hook->func = func;
 	hook->data = data;
+	
 	g_ape->cmd_hook = hook;
+	
 	return 1;
 }
 
@@ -96,11 +112,30 @@ void unregister_cmd(const char *cmd, acetables *g_ape)
 	hashtbl_erase(g_ape->hCallback, cmd);
 }
 
+static unsigned int handle_bad_cmd(callbackp *callbacki)
+{
+	callback_hook *hook_bad;
+	int flagret;
+	
+	for (hook_bad = callbacki->g_ape->bad_cmd_callbacks; hook_bad != NULL; hook_bad = hook_bad->next) {
+		callbacki->data = hook_bad->data;
+		if ((flagret = hook_bad->func(callbacki)) != RETURN_BAD_CMD) {
+			return flagret;
+		} else {
+			;
+		}
+	}
+	callbacki->data = NULL;
+	
+	return RETURN_BAD_CMD;
+}
+
+
 unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, acetables *g_ape)
 {
+	unsigned short int attach = 1;
+	callback *cmdback, tmpback = {NEED_NOTHING, handle_bad_cmd};
 	
-	int attach = 1;
-	callback *cmdback;
 	json_item *ijson, *ojson, *rjson, *jchl;
 	
 	unsigned int flag;
@@ -125,29 +160,23 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 
 			rjson = json_lookup(ijson->jchild.child, "cmd");
 
-			if (rjson != NULL && rjson->jval.vu.str.value != NULL && (cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) != NULL) {
+			if (rjson != NULL && rjson->jval.vu.str.value != NULL) {
 				callbackp cp;
 				cp.client = NULL;
-				cp.cmd = rjson->jval.vu.str.value;
+				cp.cmd 	= rjson->jval.vu.str.value;
 				cp.data = NULL;
 				cp.properties = NULL;
+				json_item *jsid;
 				
-				switch(cmdback->need) {
-					case NEED_SESSID:
-						{
-							json_item *jsid;
-				
-							if (guser == NULL && (jsid = json_lookup(ijson->jchild.child, "sessid")) != NULL && jsid->jval.vu.str.value != NULL) {
-								guser = seek_user_id(jsid->jval.vu.str.value, g_ape);
-							}
-						}
-						break;
-					case NEED_NOTHING:
-						//guser = NULL;
-						break;
+ 				if ((cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) == NULL) {
+					cmdback = &tmpback;
 				}
-		
-				if (cmdback->need != NEED_NOTHING) {
+				
+				if ((guser == NULL && (jsid = json_lookup(ijson->jchild.child, "sessid")) != NULL && jsid->jval.vu.str.value != NULL)) {
+					guser = seek_user_id(jsid->jval.vu.str.value, g_ape);
+				}
+
+				if (cmdback->need != NEED_NOTHING || guser != NULL) { // We process the connection like a "NEED_SESSID" if the user provide its key
 
 					if (guser == NULL) {
 						
@@ -255,6 +284,26 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 						send_raw_inline(cget->client, transport, newraw, g_ape);
 					}
 					//guser = NULL;
+				} else if (flag & RETURN_BAD_CMD) {
+					RAW *newraw;
+					json_item *jlist = json_new_object();
+
+					if (cp.chl) {
+						json_set_property_intN(jlist, "chl", 3, cp.chl);
+					}
+					json_set_property_strZ(jlist, "code", "003");
+					json_set_property_strZ(jlist, "value", "BAD_CMD");
+
+					newraw = forge_raw(RAW_ERR, jlist);
+					
+					if (cp.call_user != NULL) {	
+						if (sub == NULL) {
+							sub = getsubuser(guser, cget->host);	
+						}
+						post_raw_sub(newraw, sub, g_ape);
+					} else {
+						send_raw_inline(cget->client, transport, newraw, g_ape);
+					}					
 				}
 		
 				if (guser != NULL) {
@@ -279,11 +328,12 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 					return (CONNECT_SHUTDOWN);
 				}
 			} else {
+
 				RAW *newraw;
 				json_item *jlist = json_new_object();
 
-				json_set_property_strZ(jlist, "code", "002");
-				json_set_property_strZ(jlist, "value", "BAD_CMD");
+				json_set_property_strZ(jlist, "code", "003");
+				json_set_property_strZ(jlist, "value", "NO_CMD");
 
 				newraw = forge_raw(RAW_ERR, jlist);
 
@@ -300,6 +350,7 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 	
 	return (CONNECT_SHUTDOWN);
 }
+
 
 unsigned int cmd_connect(callbackp *callbacki)
 {

@@ -63,7 +63,8 @@ static JSBool ape_sm_stub(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 typedef enum {
 	APE_EVENT,
 	APE_CMD,
-	APE_HOOK
+	APE_HOOK,
+	APE_BADCMD
 } ape_sm_callback_t;
 
 typedef struct _ape_sm_callback ape_sm_callback;
@@ -1087,7 +1088,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		
 		hl = JS_DefineObject(cx, cb, "http", NULL, NULL, 0);
 		
-		for(hlines = callbacki->client->http.hlines; hlines != NULL; hlines = hlines->next) {
+		for (hlines = callbacki->client->http.hlines; hlines != NULL; hlines = hlines->next) {
 			s_tolower(hlines->key.val, hlines->key.len);
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, hlines->value.val, hlines->value.len));
 			JS_SetProperty(cx, hl, hlines->key.val, &jval);
@@ -1125,6 +1126,38 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 	return (RETURN_NOTHING);
 }
 
+APE_JS_NATIVE(ape_sm_register_bad_cmd)
+//{
+	ape_sm_callback *ascb;
+
+	ascb = xmalloc(sizeof(*ascb));
+
+	if (!JS_ConvertValue(cx, argv[0], JSTYPE_FUNCTION, &ascb->func)) {
+		free(ascb);
+		return JS_TRUE;
+	}
+	JS_AddRoot(cx, &ascb->func);
+	
+	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
+	ascb->next = NULL;
+	ascb->type = APE_BADCMD;
+	ascb->cx = cx;
+	ascb->callbackname = NULL;
+	
+	if (asc->callbacks.head == NULL) {
+		asc->callbacks.head = ascb;
+		asc->callbacks.foot = ascb;
+	} else {
+		asc->callbacks.foot->next = ascb;
+		asc->callbacks.foot = ascb;
+	}
+	
+	register_bad_cmd(ape_sm_cmd_wrapper, ascb, g_ape);
+	
+	return JS_TRUE;	
+	
+}
+
 APE_JS_NATIVE(ape_sm_register_cmd)
 //{
 	const char *cmd;
@@ -1149,7 +1182,6 @@ APE_JS_NATIVE(ape_sm_register_cmd)
 		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
-	
 	
 	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
 	ascb->next = NULL;
@@ -1194,6 +1226,7 @@ APE_JS_NATIVE(ape_sm_hook_cmd)
 	}
 
 	if (!register_hook_cmd(cmd, ape_sm_cmd_wrapper, ascb, g_ape)) {
+		/* CMD doesn't exist */
 		free(ascb);
 		return JS_TRUE;
 	}
@@ -1341,7 +1374,7 @@ APE_JS_NATIVE(ape_sm_sha1_str)
 	}
 	
 	for (i = 0; i < 20; i++) {
-		sprintf(output + (i*2), "%x", digest[i]);
+		sprintf(output + (i*2), "%02x", digest[i]);
 	}
 	
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, output, 40));
@@ -1548,7 +1581,7 @@ APE_JS_NATIVE(ape_sm_set_timeout)
 	
 	JS_AddRoot(cx, &params->func);
 	
-	for(i = 0; i < argc-2; i++) {
+	for (i = 0; i < argc-2; i++) {
 		params->argv[i] = argv[i+2];
 	}
 	
@@ -1582,7 +1615,7 @@ APE_JS_NATIVE(ape_sm_set_interval)
 	
 	JS_AddRoot(cx, &params->func);
 	
-	for(i = 0; i < argc-2; i++) {
+	for (i = 0; i < argc-2; i++) {
 		params->argv[i] = argv[i+2];
 	}
 	
@@ -1794,6 +1827,7 @@ APE_JS_NATIVE(ape_sm_xorize)
 static JSFunctionSpec ape_funcs[] = {
     JS_FS("addEvent",   ape_sm_addEvent,	2, 0, 0), /* Ape.addEvent('name', function() { }); */
 	JS_FS("registerCmd", ape_sm_register_cmd, 3, 0, 0),
+	JS_FS("registerHookBadCmd", ape_sm_register_bad_cmd, 1, 0, 0),
 	JS_FS("registerHookCmd", ape_sm_hook_cmd, 2, 0, 0),
     JS_FS("log",  		ape_sm_echo,  		1, 0, 0),/* Ape.echo('stdout\n'); */
 	JS_FS("HTTPRequest", ape_sm_http_request, 2, 0, 0),
@@ -1904,13 +1938,13 @@ static int process_cmd_return(JSContext *cx, jsval rval, callbackp *callbacki, a
 				
 				JS_GetProperty(cx, op, "name", &rawname);
 				JS_GetProperty(cx, op, "data", &data);						
-				
+			
 				if (rawname != JSVAL_VOID && JSVAL_IS_STRING(rawname) && data != JSVAL_VOID && JSVAL_IS_OBJECT(data)) {
 					json_item *rawdata = NULL;
 					
 					if ((rawdata = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(data))) != NULL) {
 						RAW *newraw = forge_raw(JS_GetStringBytes(JSVAL_TO_STRING(rawname)), rawdata);
-
+						
 						send_raw_inline(callbacki->client, callbacki->transport, newraw, g_ape);
 
 						return RETURN_NULL;
@@ -1953,7 +1987,7 @@ static int ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, callbackp
 {
 	ape_sm_compiled *asc = ASMR->scripts;
 	jsval params[2];
-
+	
 	if (asc == NULL) {
 		return RETURN_CONTINUE;
 	}
@@ -1964,11 +1998,12 @@ static int ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, callbackp
 		ape_sm_callback *cbk;
 		
 		for (cbk = asc->callbacks.head; cbk != NULL; cbk = cbk->next) {
-			if (cbk->type == APE_CMD && strcasecmp(name, cbk->callbackname) == 0) {
+			if ((cbk->type == APE_CMD && strcasecmp(name, cbk->callbackname) == 0)) {
 				jsval rval;
 				if (JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), 2, params, &rval) == JS_FALSE) {
-					return RETURN_BAD_PARAMS;
-				}		
+					return (cbk->type == APE_CMD ? RETURN_BAD_PARAMS : RETURN_BAD_CMD);
+				}
+				
 				return process_cmd_return(cbk->cx, rval, callbacki, g_ape);
 			}
 		}
@@ -1980,8 +2015,9 @@ static int ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, callbackp
 static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, callbackp *callbacki, acetables *g_ape)
 {
 	ape_sm_compiled *asc = ASMR->scripts;
-	jsval params[2];
+	jsval params[3];
 	jsval rval;
+	int flagret;
 
 	if (asc == NULL) {
 		return RETURN_CONTINUE;
@@ -1989,12 +2025,17 @@ static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, call
 	
 	params[0] = OBJECT_TO_JSVAL(obj);
 	params[1] = OBJECT_TO_JSVAL(cb);
+	if (cbk->type == APE_BADCMD) {
+		params[2] = STRING_TO_JSVAL(JS_NewStringCopyZ(cbk->cx, callbacki->cmd));
+	}
+	
+	if (JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), (cbk->type == APE_BADCMD ? 3 : 2), params, &rval) == JS_FALSE) {
+		return (cbk->type != APE_BADCMD ? RETURN_BAD_PARAMS : RETURN_BAD_CMD);
+	}
+	
+	flagret = process_cmd_return(cbk->cx, rval, callbacki, g_ape);
 
-	if (JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), 2, params, &rval) == JS_FALSE) {
-		return RETURN_BAD_PARAMS;
-	}		
-	return process_cmd_return(cbk->cx, rval, callbacki, g_ape);
-
+	return (cbk->type == APE_BADCMD && flagret == RETURN_CONTINUE ? RETURN_BAD_CMD : flagret);
 }
 
 static void ape_fire_callback(const char *name, uintN argc, jsval *argv, acetables *g_ape)
