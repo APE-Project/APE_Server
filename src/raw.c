@@ -317,6 +317,8 @@ int send_raws(subuser *user, acetables *g_ape)
 		return 1;
 	}
 	
+	PACK_TCP(user->client->fd); /* Activate TCP_CORK */
+	
 	properties = transport_get_properties(user->user->transport, g_ape);
 	
 	if (!user->headers.sent) {
@@ -381,6 +383,8 @@ int send_raws(subuser *user, acetables *g_ape)
 	
 	user->raw_pools.high.rawfoot = user->raw_pools.high.rawhead;
 	user->raw_pools.low.rawfoot = user->raw_pools.low.rawhead;
+	
+	FLUSH_TCP(user->client->fd);
 	
 	return finish;
 }

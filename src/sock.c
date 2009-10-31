@@ -670,6 +670,7 @@ static int sendqueue(int sock, acetables *g_ape)
 	return 1;
 }
 
+/* TODO : add "nowrite" flag to avoid write syscall when calling several time sendbin() */
 int sendbin(int sock, char *bin, int len, acetables *g_ape)
 {
 	int t_bytes = 0, r_bytes, n = 0;
@@ -679,7 +680,7 @@ int sendbin(int sock, char *bin, int len, acetables *g_ape)
 	if (sock != 0) {
 		while(t_bytes < len) {
 			n = write(sock, bin + t_bytes, r_bytes);
-			/* TODO : Look at writev */
+			/* TODO : Look at writev or TCP_CORK */
 			if (n == -1) {
 				if (errno == EAGAIN && r_bytes > 0) {
 					if (g_ape->bufout[sock].buf == NULL) {

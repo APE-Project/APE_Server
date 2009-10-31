@@ -24,6 +24,7 @@
 
 #include <sys/types.h> 
 #include <netinet/in.h> 
+#include <netinet/tcp.h>
 #include <sys/socket.h> 
 #include <sys/wait.h>
 #include <arpa/inet.h>
@@ -54,7 +55,6 @@ struct _ape_sock_connect_async
 	int port;
 };
 
-
 ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape);
 ape_socket *ape_connect(char *ip, int port, acetables *g_ape);
 void ape_connect_name(char *name, int port, ape_socket *pattern, acetables *g_ape);
@@ -72,6 +72,21 @@ unsigned int sockroutine(acetables *g_ape);
 #define QUIT(x, g_ape) \
 	sendbin(x, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);\
 	sendbin(x, "QUIT", 4, g_ape)
+	
+#ifndef TCP_CORK
+	#define TCP_CORK TCP_NOPUSH
+#endif
 
+#define PACK_TCP(fd) \
+	do { \
+		int __state = 1; \
+		setsockopt(fd, IPPROTO_TCP, TCP_CORK, &__state, sizeof(__state)); \
+	} while(0)
 
+#define FLUSH_TCP(fd) \
+do { \
+	int __state = 0; \
+	setsockopt(fd, IPPROTO_TCP, TCP_CORK, &__state, sizeof(__state)); \
+} while(0)
+	
 #endif

@@ -785,22 +785,23 @@ static JSFunctionSpec apepipecustom_funcs[] = {
 
 static JSObject *sm_ape_socket_to_jsobj(JSContext *cx, ape_socket *client)
 {
-	if (client->data != NULL) {
+	/*if (client->data != NULL) {
 		return (JSObject *)client->data;
-	} else {
-
+	} else {*/
+		
 		JSObject *obj = JS_NewObject(cx, &apesocket_class, NULL, NULL);
+		
 		JS_AddRoot(cx, &obj);
+
 		JS_DefineFunctions(cx, obj, apesocketclient_funcs);
 		JS_SetPrivate(cx, obj, client);
+		
 		JS_RemoveRoot(cx, &obj);
+		
 		client->data = obj;
-
 		return obj;
-	}
+//	}
 }
-
-
 
 static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
 {
@@ -1080,13 +1081,13 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		JS_AddRoot(cx, &cb);
 		JS_DefineFunctions(cx, cb, cmdresponse_funcs);
 		
-		/* TODO : RemoveRoot */
+		/* TODO : RemoveRoot */		
 		
 		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->host));
 		/* infos.host */	
 		JS_SetProperty(cx, cb, "host", &jval);
 		
-		hl = JS_DefineObject(cx, cb, "http", NULL, NULL, 0);
+		hl = JS_DefineObject(cx, cb, "http", NULL, NULL, 0);		
 		
 		for (hlines = callbacki->client->http.hlines; hlines != NULL; hlines = hlines->next) {
 			s_tolower(hlines->key.val, hlines->key.len);
@@ -1116,7 +1117,6 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		
 	//JS_EndRequest(cx);
 	//JS_ClearContextThread(cx);
-	
 	if (callbacki->data == NULL) {
 		return ape_fire_cmd(callbacki->cmd, obj, cb, callbacki, callbacki->g_ape);
 	} else {
@@ -1566,7 +1566,8 @@ APE_JS_NATIVE(ape_sm_set_timeout)
 	int ms, i;
 	
 	params->cx = cx;
-	params->global = asc->global;
+	//params->global = asc->global;
+	params->global = obj;
 	params->argc = argc-2;
 	
 	params->argv = (argc-2 ? xmalloc(sizeof(*params->argv) * argc-2) : NULL);
@@ -1580,6 +1581,7 @@ APE_JS_NATIVE(ape_sm_set_timeout)
 	}
 	
 	JS_AddRoot(cx, &params->func);
+	//JS_AddRoot(cx, &params->global);
 	
 	for (i = 0; i < argc-2; i++) {
 		params->argv[i] = argv[i+2];
@@ -1640,6 +1642,7 @@ APE_JS_NATIVE(ape_sm_clear_timeout)
 		params = timer->params;
 
 		JS_RemoveRoot(params->cx, &params->func);
+		
 		if (params->argv != NULL) {
 			free(params->argv);
 		}
@@ -2029,7 +2032,7 @@ static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, call
 		params[2] = STRING_TO_JSVAL(JS_NewStringCopyZ(cbk->cx, callbacki->cmd));
 	}
 	
-	if (JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), (cbk->type == APE_BADCMD ? 3 : 2), params, &rval) == JS_FALSE) {
+	if (JS_CallFunctionValue(cbk->cx, cb, (cbk->func), (cbk->type == APE_BADCMD ? 3 : 2), params, &rval) == JS_FALSE) {
 		return (cbk->type != APE_BADCMD ? RETURN_BAD_PARAMS : RETURN_BAD_CMD);
 	}
 	
@@ -2113,6 +2116,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 		asc->filename = (void *)xstrdup(globbuf.gl_pathv[i]);
 
 		asc->cx = JS_NewContext(rt, 8192);
+		//JS_SetGCZeal(asc->cx, 2);
 		
 		if (asc->cx == NULL) {
 			free(asc->filename);
