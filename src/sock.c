@@ -94,7 +94,8 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 		/* Increase connection & events size */
 		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
 		co = g_ape->co;
-	}	
+	}
+	
 	co[sock].buffer_in.data = NULL;
 	co[sock].buffer_in.size = 0;
 	co[sock].buffer_in.length = 0;
@@ -600,13 +601,14 @@ unsigned int sockroutine(acetables *g_ape)
 				proxy = proxy->next;
 			}
 			
+			/* TODO : Why the hell there is 2 loop ?! */
 			while (lticks > 1000) {
 				ticks++;
 				lticks -= 1000;
 			}
 			for (nticks = 0; nticks < ticks; nticks++) {
 				process_tick(g_ape);
-			}
+			}			
 		}
 	}
 

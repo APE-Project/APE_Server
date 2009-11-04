@@ -110,7 +110,7 @@ USERS *seek_user_id(const char *sessid, acetables *g_ape)
 }
 
 
-USERS *init_user(extend *default_props, acetables *g_ape)
+USERS *init_user(acetables *g_ape)
 {
 	USERS *nuser;
 	
@@ -127,7 +127,7 @@ USERS *init_user(extend *default_props, acetables *g_ape)
 	nuser->sessions.data = NULL;
 	nuser->sessions.length = 0;
 	
-	nuser->properties = default_props;
+	nuser->properties = NULL;
 	nuser->subuser = NULL;
 	nuser->nsub = 0;
 	nuser->type = HUMAN;
@@ -141,33 +141,38 @@ USERS *init_user(extend *default_props, acetables *g_ape)
 	if (nuser->next != NULL) {
 		nuser->next->prev = nuser;
 	}
-
+	g_ape->uHead = nuser;
 	gen_sessid_new(nuser->sessid, g_ape);
 	
 	return nuser;
 }
 
-USERS *adduser(ape_socket *client, char *host, extend *default_props, char *ip, acetables *g_ape)
+USERS *adduser(ape_socket *client, char *host, char *ip, USERS *allocated, acetables *g_ape)
 {
 	USERS *nuser = NULL;
 
 	/* Calling module */
-	FIRE_EVENT(adduser, nuser, client, host, default_props, ip, g_ape);
-
-	nuser = init_user(default_props, g_ape);
-	strncpy(nuser->ip, ip, 16);
-	
-	nuser->type = (client != NULL ? HUMAN : BOT);
+	if (allocated == NULL) {
+		FIRE_EVENT(allocateuser, nuser, client, host, ip, g_ape);
 		
-	g_ape->uHead = nuser;
-	
-	nuser->pipe = init_pipe(nuser, USER_PIPE, g_ape);
+		nuser = init_user(g_ape);
+		strncpy(nuser->ip, ip, 16);
 
-	hashtbl_append(g_ape->hSessid, nuser->sessid, (void *)nuser);
-	
-	g_ape->nConnected++;
-	
-	addsubuser(client, host, nuser, g_ape);
+		nuser->type = (client != NULL ? HUMAN : BOT);
+
+		nuser->pipe = NULL;
+		
+		hashtbl_append(g_ape->hSessid, nuser->sessid, (void *)nuser);
+
+		addsubuser(client, host, nuser, g_ape);
+	} else {
+		FIRE_EVENT(adduser, nuser, allocated, g_ape);
+		
+		nuser = allocated;
+		nuser->pipe = init_pipe(nuser, USER_PIPE, g_ape);
+		
+		g_ape->nConnected++;		
+	}
 
 	return nuser;
 	
@@ -182,7 +187,7 @@ void deluser(USERS *user, acetables *g_ape)
 
 	left_all(user, g_ape);
 	
-	FIRE_EVENT_NULL(deluser, user, g_ape);
+	FIRE_EVENT_NULL(deluser, user, (user->pipe == NULL), g_ape);
 	
 	/* kill all users connections */
 	
@@ -204,10 +209,11 @@ void deluser(USERS *user, acetables *g_ape)
 
 	clear_sessions(user);
 	clear_properties(&user->properties);
-	destroy_pipe(user->pipe, g_ape);
 	
-	user->pipe = NULL;
-	
+	if (user->pipe) {
+		destroy_pipe(user->pipe, g_ape);
+		user->pipe = NULL;
+	}
 	/* TODO Add Event */
 	
 	free(user);
@@ -237,6 +243,7 @@ void check_timeout(acetables *g_ape, int last)
 	while (list != NULL) {
 		
 		wait = list->next;
+
 		if ((ctime - list->idle) >= TIMEOUT_SEC && list->type == HUMAN) {
 			deluser(list, g_ape);
 		} else if (list->type == HUMAN) {

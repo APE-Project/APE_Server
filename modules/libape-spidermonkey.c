@@ -1106,7 +1106,6 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		JS_SetProperty(cx, cb, "ip", &jval);
 		
 		if (callbacki->call_user != NULL) {
-			
 			jval = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(callbacki->call_user));	
 			/* infos.user */
 			JS_SetProperty(cx, cb, "user", &jval);
@@ -1380,6 +1379,40 @@ APE_JS_NATIVE(ape_sm_sha1_str)
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, output, 40));
 	
 	return JS_TRUE;	
+}
+
+APE_JS_NATIVE(ape_sm_adduser)
+//{
+	JSObject *user;
+	USERS *u;
+	RAW *newraw;
+	json_item *jstr = NULL;
+		
+	if (!JS_ConvertArguments(cx, 1, argv, "o", &user)) {
+		return JS_TRUE;
+	}
+	if (JS_InstanceOf(cx, user, &user_class, 0) == JS_FALSE) {
+		return JS_TRUE;
+	}
+	
+	if ((u = JS_GetPrivate(cx, user)) == NULL || u->pipe != NULL) {
+		return JS_TRUE;
+	}
+	
+	adduser(NULL, NULL, NULL, u, g_ape);
+	
+	subuser_restor(u->subuser, g_ape);
+	
+	jstr = json_new_object();	
+	json_set_property_strN(jstr, "sessid", 6, u->sessid, 32);
+	
+	newraw = forge_raw(RAW_LOGIN, jstr);
+	newraw->priority = RAW_PRI_HI;
+	
+	post_raw(newraw, u, g_ape);
+	
+	return JS_TRUE;
+	
 }
 
 APE_JS_NATIVE(ape_sm_addEvent)
@@ -1842,6 +1875,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0, 0),
 	JS_FS("clearTimeout", ape_sm_clear_timeout, 1, 0, 0),
 	JS_FS("xorize", ape_sm_xorize, 2, 0, 0),
+	JS_FS("addUser", ape_sm_adduser, 1, 0, 0),
     JS_FS_END
 };
 
@@ -1890,70 +1924,28 @@ static int process_cmd_return(JSContext *cx, jsval rval, callbackp *callbacki, a
 	JSObject *ret_opt = NULL;
 	
 	if (JSVAL_IS_INT(rval) && JSVAL_TO_INT(rval) == 0) {
-
 		return RETURN_BAD_PARAMS;
+	} else if (JSVAL_IS_INT(rval) && JSVAL_TO_INT(rval) == -1) {
+		return RETURN_NOTHING;
 	} else if (JSVAL_IS_OBJECT(rval)) {
-		JSIdArray *enumjson = NULL;
 		jsval vp[2];
-		int i;
 		ret_opt = JSVAL_TO_OBJECT(rval);
-		if (JS_IsArrayObject(cx, ret_opt) == JS_FALSE) {
-			jsval propname;
-			JSObject *op;
-			JSString *key = NULL, *value = NULL;
-			
-			JS_GetProperty(cx, ret_opt, "raw", &vp[0]);
-			JS_GetProperty(cx, ret_opt, "properties", &vp[1]);
-			
-			if ((vp[0] == JSVAL_VOID || !JSVAL_IS_OBJECT(vp[0]))
-			 		&& (vp[1] == JSVAL_VOID || !JSVAL_IS_OBJECT(vp[1]))) {
+		if (JS_IsArrayObject(cx, ret_opt) == JS_FALSE) {		
+			jsval rawname, data;
 
-				return RETURN_CONTINUE;						
-			}
-			
-			op = (vp[0] != JSVAL_VOID ? JSVAL_TO_OBJECT(vp[0]) : JSVAL_TO_OBJECT(vp[1]));
-			
-			if (vp[1] != JSVAL_VOID) { 
-				enumjson = JS_Enumerate(cx, op);
-			
-				for (i = 0; i < enumjson->length; i++) {
-					JS_IdToValue(cx, enumjson->vector[i], &propname);
-					key = JS_ValueToString(cx, propname);
-					if (JS_GetProperty(cx, op, JS_GetStringBytes(key), &vp[0]) == JS_FALSE) {
-						continue;
-					}
-					if (JSVAL_IS_STRING(vp[0]) || JSVAL_IS_NUMBER(vp[0])) {
-						value = JS_ValueToString(cx, vp[0]);
-						/* if (callcacki->call_user != NULL) do_nothing (avoid memory leak) ? */
-						add_property(&callbacki->properties, JS_GetStringBytes(key), JS_GetStringBytes(value), EXTEND_STR, EXTEND_ISPUBLIC);
-					} else if (JSVAL_IS_OBJECT(vp[0])) {
-						json_item *ji;
-						
-						if ((ji = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(vp[0]))) != NULL) {
-							add_property(&callbacki->properties, JS_GetStringBytes(key), ji, EXTEND_JSON, EXTEND_ISPUBLIC);
-						}						
-						
-					}
-					
-				}
-			} else {
-				jsval rawname, data;
+			JS_GetProperty(cx, ret_opt, "name", &rawname);
+			JS_GetProperty(cx, ret_opt, "data", &data);						
+		
+			if (rawname != JSVAL_VOID && JSVAL_IS_STRING(rawname) && data != JSVAL_VOID && JSVAL_IS_OBJECT(data)) {
+				json_item *rawdata = NULL;
 				
-				JS_GetProperty(cx, op, "name", &rawname);
-				JS_GetProperty(cx, op, "data", &data);						
-			
-				if (rawname != JSVAL_VOID && JSVAL_IS_STRING(rawname) && data != JSVAL_VOID && JSVAL_IS_OBJECT(data)) {
-					json_item *rawdata = NULL;
+				if ((rawdata = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(data))) != NULL) {
+					RAW *newraw = forge_raw(JS_GetStringBytes(JSVAL_TO_STRING(rawname)), rawdata);
 					
-					if ((rawdata = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(data))) != NULL) {
-						RAW *newraw = forge_raw(JS_GetStringBytes(JSVAL_TO_STRING(rawname)), rawdata);
-						
-						send_raw_inline(callbacki->client, callbacki->transport, newraw, g_ape);
+					send_raw_inline(callbacki->client, callbacki->transport, newraw, g_ape);
 
-						return RETURN_NULL;
-					}
-				}
-				
+					return RETURN_NULL;
+				}			
 			}
 		} else {
 			unsigned int length = 0;
@@ -2172,34 +2164,19 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 }
 
-static USERS *ape_cb_add_user(ape_socket *client, char *host, extend *default_props, char *ip, acetables *g_ape)
+static USERS *ape_cb_add_user(USERS *allocated, acetables *g_ape)
 {
-	JSObject *user;
-	extend *jsobj;
+	jsval params[1], pipe;	
 	JSContext *gcx = ASMC;
-	jsval params[1], pipe;
+	JSObject *user;
 	
-	USERS *u = adduser(client, host, default_props, ip, g_ape);
+	USERS *u = adduser(NULL, NULL, NULL, allocated, g_ape);
 	
 	if (u != NULL) {
-		//JS_SetContextThread(gcx);
-		//JS_BeginRequest(gcx);
-	
-		user = JS_NewObject(gcx, &user_class, NULL, NULL);
-
-		/* Store the JSObject into a private properties of the user */
-	
-		/* TODO => deluser => RemoveRoot */
-		jsobj = add_property(&u->properties, "jsobj", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
-		JS_AddRoot(gcx, &jsobj->val);
+		user = APEUSER_TO_JSOBJ(u);
 		
-		JS_DefineFunctions(gcx, user, apeuser_funcs);
 		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, u->pipe, gcx, g_ape));
 		JS_SetProperty(gcx, user, "pipe", &pipe);
-		JS_SetPrivate(gcx, user, u);
-
-		//JS_EndRequest(gcx);
-		//JS_ClearContextThread(gcx);
 		
 		params[0] = OBJECT_TO_JSVAL(user);
 		APE_JS_EVENT("adduser", 1, params);
@@ -2208,25 +2185,51 @@ static USERS *ape_cb_add_user(ape_socket *client, char *host, extend *default_pr
 	return u;	
 }
 
-static void ape_cb_del_user(USERS *user, acetables *g_ape)
+static USERS *ape_cb_allocateuser(ape_socket *client, char *host, char *ip, acetables *g_ape)
+{
+	JSObject *user;
+	extend *jsobj;
+	JSContext *gcx = ASMC;
+	jsval params[1];
+	
+	USERS *u = adduser(client, host, ip, NULL, g_ape);
+	
+	if (u != NULL) {
+		user = JS_NewObject(gcx, &user_class, NULL, NULL);
+
+		/* Store the JSObject into a private properties of the user */
+		jsobj = add_property(&u->properties, "jsobj", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
+		JS_AddRoot(gcx, &jsobj->val);
+		
+		JS_DefineFunctions(gcx, user, apeuser_funcs);
+
+		JS_SetPrivate(gcx, user, u);
+		
+		params[0] = OBJECT_TO_JSVAL(user);
+	}
+
+	return u;	
+}
+
+static void ape_cb_del_user(USERS *user, int istmp, acetables *g_ape)
 {
 	jsval params[1];
 	extend *jsobj;
 	JSObject *pipe;
 	JSContext *gcx = ASMC;
 	
-	params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
-	
-	APE_JS_EVENT("deluser", 1, params);
+	if (!istmp) {
+		params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
+		APE_JS_EVENT("deluser", 1, params);
+		pipe = user->pipe->data;	
+		JS_SetPrivate(gcx, pipe, (void *)NULL);
+	}
 	
 	jsobj = get_property(user->properties, "jsobj");
 	
 	JS_SetPrivate(gcx, jsobj->val, (void *)NULL);
 	JS_RemoveRoot(gcx, &jsobj->val);
-	
-	pipe = user->pipe->data;
-	
-	JS_SetPrivate(gcx, pipe, (void *)NULL);
+
 
 	deluser(user, g_ape);
 }
@@ -2321,7 +2324,10 @@ static ace_callbacks callbacks = {
 	ape_cb_mkchan,		/* Called when new chan is created */
 	ape_cb_rmchan,		/* Called when a chan is deleted */
 	ape_cb_join,		/* Called when a user join a channel */
-	ape_cb_left			/* Called when a user leave a channel */
+	ape_cb_left,			/* Called when a user leave a channel */
+	NULL,
+	NULL,
+	ape_cb_allocateuser
 };
 
 APE_INIT_PLUGIN(MODULE_NAME, init_module, callbacks)

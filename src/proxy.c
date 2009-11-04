@@ -108,7 +108,6 @@ ape_proxy *proxy_init_by_host_port(char *host, char *port, acetables *g_ape)
 }
 
 
-
 ape_proxy *proxy_init(char *ident, char *host, int port, acetables *g_ape)
 {
 	ape_proxy *proxy;

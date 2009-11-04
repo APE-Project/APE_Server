@@ -101,7 +101,7 @@ void process_http(ape_buffer *buffer, http_state *http)
 			if (pos == -1) {
 				return;
 			}
-			
+			/* TODO : switch integer */
 			if (strncasecmp(data, "POST ", 5) == 0) {
 				http->type = HTTP_POST;
 			} else if (strncasecmp(data, "GET ", 4) == 0) {

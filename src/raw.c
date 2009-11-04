@@ -142,7 +142,6 @@ void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape)
 		}
 		tSub = tSub->next;
 	}
-
 }
 
 /************* Channels related functions ****************/

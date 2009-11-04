@@ -83,12 +83,17 @@ int register_hook_cmd(const char *cmd, unsigned int (*func)(callbackp *), void *
 	
 	hook = xmalloc(sizeof(*hook));
 	hook->cmd = xstrdup(cmd);
-	hook->next = g_ape->cmd_hook;
 	hook->func = func;
 	hook->data = data;
 	
-	g_ape->cmd_hook = hook;
-	
+	if (g_ape->cmd_hook.head == NULL) {
+		g_ape->cmd_hook.head = hook;
+		g_ape->cmd_hook.foot = hook;
+	} else {
+		g_ape->cmd_hook.foot->next = hook;
+		g_ape->cmd_hook.foot = hook;
+	}
+
 	return 1;
 }
 
@@ -96,7 +101,7 @@ int call_cmd_hook(const char *cmd, callbackp *cp, acetables *g_ape)
 {
 	callback_hook *hook;
 	
-	for (hook = g_ape->cmd_hook; hook != NULL; hook = hook->next) {
+	for (hook = g_ape->cmd_hook.head; hook != NULL; hook = hook->next) {
 		cp->data = hook->data;
 		unsigned int ret;
 		if (strcasecmp(hook->cmd, cmd) == 0 && (ret = hook->func(cp)) != RETURN_CONTINUE) {
@@ -165,7 +170,6 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 				cp.client = NULL;
 				cp.cmd 	= rjson->jval.vu.str.value;
 				cp.data = NULL;
-				cp.properties = NULL;
 				json_item *jsid;
 				
  				if ((cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) == NULL) {
@@ -253,16 +257,21 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 				cp.ip = cget->ip_get;
 				cp.chl = (sub != NULL ? sub->current_chl : 0);
 				cp.transport = transport;
-				// Ajouter un string de la commande
+				
+				/* Little hack */
+				if (strncasecmp(cp.cmd, "CONNECT", 7) == 0) {
+					guser = cp.call_user = adduser(cp.client, cp.host, cp.ip, NULL, g_ape);
+					guser->transport = transport;
+					sub = cp.call_subuser = cp.call_user->subuser;
+					/* adduser(callbacki->client, callbacki->host, callbacki->properties, callbacki->ip, callbacki->g_ape); */
+				}
 				
 				if ((flag = call_cmd_hook(cp.cmd, &cp, g_ape)) == RETURN_CONTINUE) {
 					flag = cmdback->func(&cp);
 				}
-		
+				
 				if (flag & RETURN_NULL) {
 					guser = NULL;
-				} else if (flag & RETURN_LOGIN) {
-					guser = cp.call_user;
 				} else if (flag & RETURN_BAD_PARAMS) {
 					RAW *newraw;
 					json_item *jlist = json_new_object();
@@ -307,16 +316,12 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 				}
 		
 				if (guser != NULL) {
-			
 					if (sub == NULL) {
 						sub = getsubuser(guser, cget->host);	
 					}
 			
 					*iuser = (attach ? sub : NULL);
-			
-					if (flag & RETURN_UPDATE_IP) {
-						strncpy(guser->ip, cget->ip_get, 16);
-					}
+
 			
 					/* If tmpfd is set, we do not have any reasons to change its state */
 					sub->state = ALIVE;
@@ -358,47 +363,9 @@ unsigned int cmd_connect(callbackp *callbacki)
 	RAW *newraw;
 	json_item *jstr = NULL;
 
-	nuser = adduser(callbacki->client, callbacki->host, callbacki->properties, callbacki->ip, callbacki->g_ape);
-	
-	if (nuser == NULL) {
-		RAW *newraw;
-		json_item *jlist = json_new_object();
-
-		json_set_property_strZ(jlist, "code", "200");
-		json_set_property_strZ(jlist, "value", "UNKNOWN_CONNECTION_ERROR");
-
-		newraw = forge_raw(RAW_ERR, jlist);
-
-		send_raw_inline(callbacki->client, callbacki->transport, newraw, callbacki->g_ape);
-		
-		clear_properties(&callbacki->properties);
-		
-		return (RETURN_NULL);
-	}
+	nuser = adduser(NULL, NULL, NULL, callbacki->call_user, callbacki->g_ape);
 	
 	callbacki->call_user = nuser;
-		
-	switch(callbacki->transport) {
-		case 1:
-			nuser->transport = TRANSPORT_XHRSTREAMING;
-			break;
-		case 2:
-			nuser->transport = TRANSPORT_JSONP;
-			break;
-		case 3:
-			nuser->transport = TRANSPORT_PERSISTANT;
-			break;
-		case 4:
-			nuser->transport = TRANSPORT_SSE_LONGPOLLING;
-			break;
-		case 5:
-			nuser->transport = TRANSPORT_SSE_JSONP;
-			break;
-		default:
-			nuser->transport = TRANSPORT_LONGPOLLING;
-			break;
-		
-	}
 
 	subuser_restor(getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
 	
@@ -411,7 +378,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	post_raw(newraw, nuser, callbacki->g_ape);
 	
 	
-	return (RETURN_LOGIN | RETURN_UPDATE_IP);
+	return (RETURN_NOTHING);
 
 }
 

@@ -82,7 +82,6 @@ struct _callbackp
 	char *cmd;
 	void *data;
 	acetables *g_ape;
-	struct _extend *properties;
 };
 
 

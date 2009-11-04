@@ -123,8 +123,10 @@ typedef struct _acetables
 	
 	struct _callback_hook *bad_cmd_callbacks;
 	
-	struct _callback_hook *cmd_hook;
-	
+	struct {
+		struct _callback_hook *head;
+		struct _callback_hook *foot;
+	} cmd_hook;
 	struct _ape_transports transports;
 	
 	struct USERS *uHead;

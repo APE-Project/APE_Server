@@ -54,10 +54,9 @@ int base64_decode(char* out, const char *in, int out_length)
              }
          }
      }
- 
+
      return (dst - out);
 }
-
 
 char *base64_encode(char * src, int len)
 {
@@ -74,7 +73,7 @@ char *base64_encode(char * src, int len)
 			i_bits = (i_bits << 8) + *src++;
 			bytes_remaining--;
 			i_shift += 8;
-	 
+			
 			do {
 				*dst++ = b64[(i_bits << 6 >> i_shift) & 0x3f];
 				i_shift -= 6;

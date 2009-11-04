@@ -93,14 +93,14 @@ int main(int argc, char **argv)
 	
 	char cfgfile[512] = APE_CONFIG_FILE;
 	
-	register acetables *g_ape;
+	acetables *g_ape;
 	
 	if (argc > 1 && strcmp(argv[1], "--version") == 0) {
-		printf("\n   AJAX Push Engine Serveur %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
+		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
 		return 0;
 	}
 	if (argc > 1 && strcmp(argv[1], "--help") == 0) {
-		printf("\n   AJAX Push Engine Serveur %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n", _VERSION);
+		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n", _VERSION);
 		printf("\n   usage: aped [options]\n\n");
 		printf("   Options:\n     --help             : Display this help\n     --version          : Show version number\n     --cfg <config path>: Load a specific config file (default is %s)\n\n", cfgfile);
 		return 0;
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 		cfgfile[strlen(argv[2])] = '\0';
 		
 	} else if (argc > 1) {
-		printf("\n   AJAX Push Engine Serveur %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
+		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
 		printf("   Unknown parameters - check \"aped --help\"\n\n");
 		return 0;		
 	}
@@ -218,7 +218,8 @@ int main(int argc, char **argv)
 		ape_daemon();
 	}
 	
-	g_ape->cmd_hook = NULL;
+	g_ape->cmd_hook.head = NULL;
+	g_ape->cmd_hook.foot = NULL;
 	
 	g_ape->hLogin = hashtbl_init();
 	g_ape->hSessid = hashtbl_init();
@@ -242,14 +243,17 @@ int main(int argc, char **argv)
 	
 	do_register(g_ape);
 	
-	proxy_init_from_conf(g_ape);
+	//proxy_init_from_conf(g_ape);
+	
 	transport_start(g_ape);	
+	
 	findandloadplugin(g_ape);
 	
 	
 	/* Starting Up */
 	sockroutine(g_ape); /* loop */
 	/* Shutdown */
+	
 	
 	hashtbl_free(g_ape->hLogin);
 	hashtbl_free(g_ape->hSessid);
