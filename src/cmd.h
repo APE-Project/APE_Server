@@ -63,6 +63,7 @@ void do_register(acetables *g_ape);
 #define RETURN_BAD_PARAMS 	0x20
 #define RETURN_CONTINUE 	0x40
 #define RETURN_BAD_CMD		0x80
+#define RETURN_HANG			0x100
 
 typedef struct _callbackp callbackp;
 

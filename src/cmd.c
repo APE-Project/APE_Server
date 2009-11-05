@@ -102,12 +102,10 @@ int call_cmd_hook(const char *cmd, callbackp *cp, acetables *g_ape)
 	callback_hook *hook;
 	
 	for (hook = g_ape->cmd_hook.head; hook != NULL; hook = hook->next) {
-		cp->data = hook->data;
 		unsigned int ret;
+		
+		cp->data = hook->data;
 		if (strcasecmp(hook->cmd, cmd) == 0 && (ret = hook->func(cp)) != RETURN_CONTINUE) {
-			if (cp->call_user != NULL && cp->call_user->istmp) {
-				cp->call_user->istmp = 0;
-			}
 			return ret;
 		}
 	}
@@ -252,7 +250,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 		} else if (flag & RETURN_BAD_PARAMS) {
 			RAW *newraw;
 			json_item *jlist = json_new_object();
-
+			cp.call_user->istmp = 0;
 			if (cp.chl) {
 				json_set_property_intN(jlist, "chl", 3, cp.chl);
 			}
@@ -269,6 +267,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 			} else {
 				send_raw_inline(pc->client, pc->transport, newraw, g_ape);
 			}
+			
 			//guser = NULL;
 		} else if (flag & RETURN_BAD_CMD) {
 			RAW *newraw;
@@ -301,6 +300,11 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 			}
 			/* If tmpfd is set, we do not have any reasons to change its state */
 			sub->state = ALIVE;
+			
+			if (flag & RETURN_HANG || flag & RETURN_BAD_PARAMS) {
+				pc->guser->istmp = 0;
+				return (CONNECT_KEEPALIVE);
+			}
 			
 		} else {
 			/* Doesn't need sessid */

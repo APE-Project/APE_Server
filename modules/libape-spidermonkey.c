@@ -1986,7 +1986,7 @@ static int process_cmd_return(JSContext *cx, jsval rval, callbackp *callbacki, a
 					} else {
 						send_raw_inline(callbacki->client, callbacki->transport, newraw, g_ape);							
 					}
-					return RETURN_NOTHING;
+					return RETURN_HANG;
 				}
 			}
 		}
