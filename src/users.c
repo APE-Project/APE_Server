@@ -252,7 +252,7 @@ void check_timeout(acetables *g_ape, int last)
 					delsubuser(n);
 					continue;
 				}
-				if (!(*n)->user->istmp && (*n)->state == ALIVE && (*n)->raw_pools.nraw && !(*n)->need_update) {
+				if ((*n)->state == ALIVE && (*n)->raw_pools.nraw && !(*n)->need_update) {
 
 					/* Data completetly sent => closed */
 					if (send_raws(*n, g_ape)) {

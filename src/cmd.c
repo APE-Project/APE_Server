@@ -302,7 +302,6 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 			sub->state = ALIVE;
 			
 			if (flag & RETURN_HANG || flag & RETURN_BAD_PARAMS) {
-				pc->guser->istmp = 0;
 				return (CONNECT_KEEPALIVE);
 			}
 			
