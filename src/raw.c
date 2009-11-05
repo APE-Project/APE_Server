@@ -99,9 +99,8 @@ RAW *copy_raw_z(RAW *input)
 /* Post raw to a subuser */
 void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape)
 {
-	
 	FIRE_EVENT_NULL(post_raw_sub, raw, sub, g_ape);
-	
+
 	int add_size = 16;
 	struct _raw_pool_user *pool = (raw->priority == RAW_PRI_LO ? &sub->raw_pools.low : &sub->raw_pools.high);
 
@@ -121,7 +120,6 @@ void post_raw_sub(RAW *raw, subuser *sub, acetables *g_ape)
 void post_raw(RAW *raw, USERS *user, acetables *g_ape)
 {
 	subuser *sub = user->subuser;
-	
 	while (sub != NULL) {
 		post_raw_sub(copy_raw_z(raw), sub, g_ape);
 		sub = sub->next;

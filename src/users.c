@@ -136,6 +136,8 @@ USERS *init_user(acetables *g_ape)
 	nuser->links.nlink = 0;
 	nuser->transport = TRANSPORT_LONGPOLLING;
 	
+	nuser->cmdqueue = NULL;
+	
 	nuser->lastping[0] = '\0';
 	
 	if (nuser->next != NULL) {
@@ -157,10 +159,11 @@ USERS *adduser(ape_socket *client, char *host, char *ip, USERS *allocated, aceta
 		
 		nuser = init_user(g_ape);
 		strncpy(nuser->ip, ip, 16);
-
+		
+		nuser->pipe = init_pipe(nuser, USER_PIPE, g_ape);
 		nuser->type = (client != NULL ? HUMAN : BOT);
-
-		nuser->pipe = NULL;
+		
+		nuser->istmp = 1;
 		
 		hashtbl_append(g_ape->hSessid, nuser->sessid, (void *)nuser);
 
@@ -169,7 +172,7 @@ USERS *adduser(ape_socket *client, char *host, char *ip, USERS *allocated, aceta
 		FIRE_EVENT(adduser, nuser, allocated, g_ape);
 		
 		nuser = allocated;
-		nuser->pipe = init_pipe(nuser, USER_PIPE, g_ape);
+		nuser->istmp = 0;
 		
 		g_ape->nConnected++;		
 	}
@@ -186,9 +189,9 @@ void deluser(USERS *user, acetables *g_ape)
 	}
 
 	left_all(user, g_ape);
-	
-	FIRE_EVENT_NULL(deluser, user, (user->pipe == NULL), g_ape);
-	
+
+	FIRE_EVENT_NULL(deluser, user, (!user->istmp), g_ape);
+
 	/* kill all users connections */
 	
 	clear_subusers(user);
@@ -196,7 +199,6 @@ void deluser(USERS *user, acetables *g_ape)
 	hashtbl_erase(g_ape->hSessid, user->sessid);
 	
 	g_ape->nConnected--;
-
 	
 	if (user->prev == NULL) {
 		g_ape->uHead = user->next;
@@ -209,13 +211,10 @@ void deluser(USERS *user, acetables *g_ape)
 
 	clear_sessions(user);
 	clear_properties(&user->properties);
+
+	destroy_pipe(user->pipe, g_ape);
 	
-	if (user->pipe) {
-		destroy_pipe(user->pipe, g_ape);
-		user->pipe = NULL;
-	}
 	/* TODO Add Event */
-	
 	free(user);
 
 	user = NULL;
@@ -248,14 +247,12 @@ void check_timeout(acetables *g_ape, int last)
 			deluser(list, g_ape);
 		} else if (list->type == HUMAN) {
 			subuser **n = &(list->subuser);
-			while (*n != NULL)
-			{
-				if ((ctime - (*n)->idle) >= TIMEOUT_SEC)
-				{
+			while (*n != NULL) {
+				if ((ctime - (*n)->idle) >= TIMEOUT_SEC) {
 					delsubuser(n);
 					continue;
 				}
-				if ((*n)->state == ALIVE && (*n)->raw_pools.nraw && !(*n)->need_update) {
+				if (!(*n)->user->istmp && (*n)->state == ALIVE && (*n)->raw_pools.nraw && !(*n)->need_update) {
 
 					/* Data completetly sent => closed */
 					if (send_raws(*n, g_ape)) {
@@ -476,7 +473,6 @@ subuser *addsubuser(ape_socket *client, const char *channel, USERS *user, acetab
 	/* if the previous subuser have some messages in queue, copy them to the new subuser */
 	if (sub->next != NULL && sub->next->raw_pools.low.nraw) {
 		struct _raw_pool *rTmp;
-		// TODO : FIXME !!!
 		for (rTmp = sub->next->raw_pools.low.rawhead; rTmp->raw != NULL; rTmp = rTmp->next) {
 			post_raw_sub(copy_raw_z(rTmp->raw), sub, g_ape);
 		}

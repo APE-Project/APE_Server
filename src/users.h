@@ -56,7 +56,8 @@ typedef struct USERS
 	unsigned int nraw;
 	unsigned int flags;
 	unsigned short int type;
-
+	unsigned short int istmp;
+	
 	char sessid[33];
 	
 	char ip[16]; // ipv4
@@ -86,6 +87,8 @@ typedef struct USERS
 	
 	struct _subuser *subuser;
 	int nsub;
+	
+	json_item *cmdqueue;
 	
 	char lastping[24];
 

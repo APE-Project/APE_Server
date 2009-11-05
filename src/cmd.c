@@ -105,6 +105,9 @@ int call_cmd_hook(const char *cmd, callbackp *cp, acetables *g_ape)
 		cp->data = hook->data;
 		unsigned int ret;
 		if (strcasecmp(hook->cmd, cmd) == 0 && (ret = hook->func(cp)) != RETURN_CONTINUE) {
+			if (cp->call_user != NULL && cp->call_user->istmp) {
+				cp->call_user->istmp = 0;
+			}
 			return ret;
 		}
 	}
@@ -135,19 +138,202 @@ static unsigned int handle_bad_cmd(callbackp *callbacki)
 	return RETURN_BAD_CMD;
 }
 
+int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acetables *g_ape)
+{
+	callback *cmdback, tmpback = {NEED_NOTHING, handle_bad_cmd};
+	json_item *rjson = json_lookup(ijson->jchild.child, "cmd"), *jchl;
+	subuser *sub = pc->sub;
+	unsigned int flag;
+	unsigned short int attach = 1;
+	
+	if (rjson != NULL && rjson->jval.vu.str.value != NULL) {
+		callbackp cp;
+		cp.client = NULL;
+		cp.cmd 	= rjson->jval.vu.str.value;
+		cp.data = NULL;
+		json_item *jsid;
+		
+		if ((cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) == NULL) {
+			cmdback = &tmpback;
+		}
+		
+		if ((pc->guser == NULL && (jsid = json_lookup(ijson->jchild.child, "sessid")) != NULL && jsid->jval.vu.str.value != NULL)) {
+			pc->guser = seek_user_id(jsid->jval.vu.str.value, g_ape);
+		}
+
+		if (cmdback->need != NEED_NOTHING || pc->guser != NULL) { // We process the connection like a "NEED_SESSID" if the user provide its key
+
+			if (pc->guser == NULL) {
+				
+				RAW *newraw;
+				json_item *jlist = json_new_object();
+
+				json_set_property_strZ(jlist, "code", "004");
+				json_set_property_strZ(jlist, "value", "BAD_SESSID");
+
+				newraw = forge_raw(RAW_ERR, jlist);
+				
+				send_raw_inline(pc->client, pc->transport, newraw, g_ape);
+
+				return (CONNECT_SHUTDOWN);
+			} else if (sub == NULL) {
+				
+				sub = getsubuser(pc->guser, pc->host);
+				if (sub != NULL && sub->client->fd != pc->client->fd && sub->state == ALIVE) {
+					/* The user open a new connection while he already has one openned */
+					struct _transport_open_same_host_p retval = transport_open_same_host(sub, pc->client, pc->guser->transport);				
+			
+					if (retval.client_close != NULL) {
+						RAW *newraw;
+						json_item *jlist = json_new_object();
+
+						json_set_property_strZ(jlist, "value", "null");
+
+						newraw = forge_raw("CLOSE", jlist);
+
+						send_raw_inline((retval.client_close->fd == pc->client->fd ? pc->client : sub->client), pc->transport, newraw, g_ape);
+						
+						shutdown(retval.client_close->fd, 2);
+					}
+					sub->client = cp.client = retval.client_listener;
+					sub->state = retval.substate;
+					attach = retval.attach;
+			
+				} else if (sub == NULL) {
+					sub = addsubuser(pc->client, pc->host, pc->guser, g_ape);
+					if (sub != NULL) {
+						subuser_restor(sub, g_ape);
+					}
+				} else if (sub != NULL) {
+					sub->client = pc->client;
+				}
+				pc->guser->idle = (long int)time(NULL); // update user idle
+
+				sub->idle = pc->guser->idle; // Update subuser idle
+				
+			}
+
+		}
+		
+		if (pc->guser != NULL && sub != NULL && (jchl = json_lookup(ijson->jchild.child, "chl")) != NULL && jchl->jval.vu.integer_value > sub->current_chl) {
+			sub->current_chl = jchl->jval.vu.integer_value;
+		} else if (pc->guser != NULL && sub != NULL) {
+			/* if a bad challenge is detected, we are stoping walking on cmds */
+			send_error(pc->guser, "BAD_CHL", "250", g_ape);
+
+			sub->state = ALIVE;
+			
+			return (CONNECT_KEEPALIVE);
+		}
+					
+		cp.param = json_lookup(ijson->jchild.child, "params");
+		cp.client = (cp.client != NULL ? cp.client : pc->client);
+		cp.call_user = pc->guser;
+		cp.call_subuser = sub;
+		cp.g_ape = g_ape;
+		cp.host = pc->host;
+		cp.ip = pc->ip;
+		cp.chl = (sub != NULL ? sub->current_chl : 0);
+		cp.transport = pc->transport;
+		
+		/* Little hack to access user object on connect hook callback (preallocate an user) */
+		if (strncasecmp(cp.cmd, "CONNECT", 7) == 0) {
+			pc->guser = cp.call_user = adduser(cp.client, cp.host, cp.ip, NULL, g_ape);
+			pc->guser->transport = pc->transport;
+			sub = cp.call_subuser = cp.call_user->subuser;
+		}
+		
+		if ((flag = call_cmd_hook(cp.cmd, &cp, g_ape)) == RETURN_CONTINUE) {
+			flag = cmdback->func(&cp);
+		}
+		
+		if (flag & RETURN_NULL) {
+			pc->guser = NULL;
+		} else if (flag & RETURN_BAD_PARAMS) {
+			RAW *newraw;
+			json_item *jlist = json_new_object();
+
+			if (cp.chl) {
+				json_set_property_intN(jlist, "chl", 3, cp.chl);
+			}
+			json_set_property_strZ(jlist, "code", "001");
+			json_set_property_strZ(jlist, "value", "BAD_PARAMS");
+
+			newraw = forge_raw(RAW_ERR, jlist);
+			
+			if (cp.call_user != NULL) {	
+				if (sub == NULL) {
+					sub = getsubuser(pc->guser, pc->host);	
+				}
+				post_raw_sub(newraw, sub, g_ape);
+			} else {
+				send_raw_inline(pc->client, pc->transport, newraw, g_ape);
+			}
+			//guser = NULL;
+		} else if (flag & RETURN_BAD_CMD) {
+			RAW *newraw;
+			json_item *jlist = json_new_object();
+
+			if (cp.chl) {
+				json_set_property_intN(jlist, "chl", 3, cp.chl);
+			}
+			json_set_property_strZ(jlist, "code", "003");
+			json_set_property_strZ(jlist, "value", "BAD_CMD");
+
+			newraw = forge_raw(RAW_ERR, jlist);
+			
+			if (cp.call_user != NULL) {	
+				if (sub == NULL) {
+					sub = getsubuser(pc->guser, pc->host);	
+				}
+				post_raw_sub(newraw, sub, g_ape);
+			} else {
+				send_raw_inline(pc->client, pc->transport, newraw, g_ape);
+			}					
+		}
+
+		if (pc->guser != NULL) {
+			if (sub == NULL) {
+				sub = getsubuser(pc->guser, pc->host);	
+			}
+			if (iuser != NULL) {
+				*iuser = (attach ? sub : NULL);
+			}
+			/* If tmpfd is set, we do not have any reasons to change its state */
+			sub->state = ALIVE;
+			
+		} else {
+			/* Doesn't need sessid */
+
+			return (CONNECT_SHUTDOWN);
+		}
+	} else {
+
+		RAW *newraw;
+		json_item *jlist = json_new_object();
+
+		json_set_property_strZ(jlist, "code", "003");
+		json_set_property_strZ(jlist, "value", "NO_CMD");
+
+		newraw = forge_raw(RAW_ERR, jlist);
+
+		send_raw_inline(pc->client, pc->transport, newraw, g_ape);
+		//printf("Cant find %s\n", rjson->jval.vu.str.value);
+		return (CONNECT_SHUTDOWN);
+	}
+	
+	return -1;
+}
+
 
 unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, acetables *g_ape)
-{
-	unsigned short int attach = 1;
-	callback *cmdback, tmpback = {NEED_NOTHING, handle_bad_cmd};
+{	
+	struct _cmd_process pc = {NULL, NULL, cget->client, cget->host, cget->ip_get, transport};
 	
-	json_item *ijson, *ojson, *rjson, *jchl;
+	json_item *ijson, *ojson;
 	
-	unsigned int flag;
-	
-	USERS *guser = NULL;
-	subuser *sub = NULL;
-	
+	unsigned int ret;
+
 	ijson = ojson = init_json_parser(cget->get);
 	
 	if (ijson == NULL || ijson->jchild.child == NULL) {
@@ -162,191 +348,17 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 		send_raw_inline(cget->client, transport, newraw, g_ape);
 	} else {
 		for (ijson = ijson->jchild.child; ijson != NULL; ijson = ijson->next) {
-
-			rjson = json_lookup(ijson->jchild.child, "cmd");
-
-			if (rjson != NULL && rjson->jval.vu.str.value != NULL) {
-				callbackp cp;
-				cp.client = NULL;
-				cp.cmd 	= rjson->jval.vu.str.value;
-				cp.data = NULL;
-				json_item *jsid;
-				
- 				if ((cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) == NULL) {
-					cmdback = &tmpback;
-				}
-				
-				if ((guser == NULL && (jsid = json_lookup(ijson->jchild.child, "sessid")) != NULL && jsid->jval.vu.str.value != NULL)) {
-					guser = seek_user_id(jsid->jval.vu.str.value, g_ape);
-				}
-
-				if (cmdback->need != NEED_NOTHING || guser != NULL) { // We process the connection like a "NEED_SESSID" if the user provide its key
-
-					if (guser == NULL) {
-						
-						RAW *newraw;
-						json_item *jlist = json_new_object();
-
-						json_set_property_strZ(jlist, "code", "004");
-						json_set_property_strZ(jlist, "value", "BAD_SESSID");
-
-						newraw = forge_raw(RAW_ERR, jlist);
-						
-						send_raw_inline(cget->client, transport, newraw, g_ape);
-						
-						free_json_item(ojson);
-						
-						return (CONNECT_SHUTDOWN);
-					} else if (sub == NULL) {
-						
-						sub = getsubuser(guser, cget->host);
-						if (sub != NULL && sub->client->fd != cget->client->fd && sub->state == ALIVE) {
-							/* The user open a new connection while he already has one openned */
-							struct _transport_open_same_host_p retval = transport_open_same_host(sub, cget->client, guser->transport);				
-					
-							if (retval.client_close != NULL) {
-								RAW *newraw;
-								json_item *jlist = json_new_object();
-
-								json_set_property_strZ(jlist, "value", "null");
-
-								newraw = forge_raw("CLOSE", jlist);
-
-								send_raw_inline((retval.client_close->fd == cget->client->fd ? cget->client : sub->client), transport, newraw, g_ape);
-								
-								shutdown(retval.client_close->fd, 2);
-							}
-							sub->client = cp.client = retval.client_listener;
-							sub->state = retval.substate;
-							attach = retval.attach;
-					
-						} else if (sub == NULL) {
-							sub = addsubuser(cget->client, cget->host, guser, g_ape);
-							if (sub != NULL) {
-								subuser_restor(sub, g_ape);
-							}
-						} else if (sub != NULL) {
-							sub->client = cget->client;
-						}
-						guser->idle = (long int)time(NULL); // update user idle
-
-						sub->idle = guser->idle; // Update subuser idle
-						
-					}
-
-				}
-				
-				if (guser != NULL && sub != NULL && (jchl = json_lookup(ijson->jchild.child, "chl")) != NULL && jchl->jval.vu.integer_value > sub->current_chl) {
-					sub->current_chl = jchl->jval.vu.integer_value;
-				} else if (guser != NULL && sub != NULL) {
-					/* if a bad challenge is detected, we are stoping walking on cmds */
-					send_error(guser, "BAD_CHL", "250", g_ape);
-
-					free_json_item(ojson);
-					sub->state = ALIVE;
-					
-					return (CONNECT_KEEPALIVE);
-				}
-							
-				cp.param = json_lookup(ijson->jchild.child, "params");
-				cp.client = (cp.client != NULL ? cp.client : cget->client);
-				cp.call_user = guser;
-				cp.call_subuser = sub;
-				cp.g_ape = g_ape;
-				cp.host = cget->host;
-				cp.ip = cget->ip_get;
-				cp.chl = (sub != NULL ? sub->current_chl : 0);
-				cp.transport = transport;
-				
-				/* Little hack */
-				if (strncasecmp(cp.cmd, "CONNECT", 7) == 0) {
-					guser = cp.call_user = adduser(cp.client, cp.host, cp.ip, NULL, g_ape);
-					guser->transport = transport;
-					sub = cp.call_subuser = cp.call_user->subuser;
-					/* adduser(callbacki->client, callbacki->host, callbacki->properties, callbacki->ip, callbacki->g_ape); */
-				}
-				
-				if ((flag = call_cmd_hook(cp.cmd, &cp, g_ape)) == RETURN_CONTINUE) {
-					flag = cmdback->func(&cp);
-				}
-				
-				if (flag & RETURN_NULL) {
-					guser = NULL;
-				} else if (flag & RETURN_BAD_PARAMS) {
-					RAW *newraw;
-					json_item *jlist = json_new_object();
-
-					if (cp.chl) {
-						json_set_property_intN(jlist, "chl", 3, cp.chl);
-					}
-					json_set_property_strZ(jlist, "code", "001");
-					json_set_property_strZ(jlist, "value", "BAD_PARAMS");
-
-					newraw = forge_raw(RAW_ERR, jlist);
-					
-					if (cp.call_user != NULL) {	
-						if (sub == NULL) {
-							sub = getsubuser(guser, cget->host);	
-						}
-						post_raw_sub(newraw, sub, g_ape);
-					} else {
-						send_raw_inline(cget->client, transport, newraw, g_ape);
-					}
-					//guser = NULL;
-				} else if (flag & RETURN_BAD_CMD) {
-					RAW *newraw;
-					json_item *jlist = json_new_object();
-
-					if (cp.chl) {
-						json_set_property_intN(jlist, "chl", 3, cp.chl);
-					}
-					json_set_property_strZ(jlist, "code", "003");
-					json_set_property_strZ(jlist, "value", "BAD_CMD");
-
-					newraw = forge_raw(RAW_ERR, jlist);
-					
-					if (cp.call_user != NULL) {	
-						if (sub == NULL) {
-							sub = getsubuser(guser, cget->host);	
-						}
-						post_raw_sub(newraw, sub, g_ape);
-					} else {
-						send_raw_inline(cget->client, transport, newraw, g_ape);
-					}					
-				}
-		
-				if (guser != NULL) {
-					if (sub == NULL) {
-						sub = getsubuser(guser, cget->host);	
-					}
 			
-					*iuser = (attach ? sub : NULL);
-
-			
-					/* If tmpfd is set, we do not have any reasons to change its state */
-					sub->state = ALIVE;
-					
-				} else {
-					/* Doesn't need sessid */
-					free_json_item(ojson);
-					
-					return (CONNECT_SHUTDOWN);
-				}
-			} else {
-
-				RAW *newraw;
-				json_item *jlist = json_new_object();
-
-				json_set_property_strZ(jlist, "code", "003");
-				json_set_property_strZ(jlist, "value", "NO_CMD");
-
-				newraw = forge_raw(RAW_ERR, jlist);
-
-				send_raw_inline(cget->client, transport, newraw, g_ape);
-				//printf("Cant find %s\n", rjson->jval.vu.str.value);
-				free_json_item(ojson);
-				return (CONNECT_SHUTDOWN);
+			if (pc.guser != NULL && pc.guser->istmp) { /* if "CONNECT" was delayed, push other cmd to the queue and stop execution */
+				pc.guser->cmdqueue = json_item_copy(ijson, NULL);
+				break;
 			}
+			
+			if ((ret = process_cmd(ijson, &pc, iuser, g_ape)) != -1) {
+				free_json_item(ojson);
+				return ret;
+			}
+		
 		}
 		free_json_item(ojson);
 
@@ -375,11 +387,9 @@ unsigned int cmd_connect(callbackp *callbacki)
 	newraw = forge_raw(RAW_LOGIN, jstr);
 	newraw->priority = RAW_PRI_HI;
 	
-	post_raw(newraw, nuser, callbacki->g_ape);
-	
+	post_raw(newraw, nuser, callbacki->g_ape);	
 	
 	return (RETURN_NOTHING);
-
 }
 
 unsigned int cmd_script(callbackp *callbacki)
@@ -412,7 +422,7 @@ unsigned int cmd_join(callbackp *callbacki)
 	char *chan_name = NULL;
 	
 	APE_PARAMS_INIT();
-	
+
 	JFOREACH(channels, chan_name) {
 	
 		if ((jchan = getchan(chan_name, callbacki->g_ape)) == NULL) {

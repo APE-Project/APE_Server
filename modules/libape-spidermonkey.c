@@ -305,7 +305,7 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 		}
 		ape_json = json_new_object();
 	}
-
+	
 	for (i = 0; i < length; i++) {
 		jsval vp;
 		JSString *key = NULL;
@@ -979,7 +979,7 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 				jval = INT_TO_JSVAL(head->jval.vu.integer_value);
 			}
 			JS_SetProperty(cx, root, head->key.val, &jval);
-		} else if (head->key.val == NULL) {
+		} else if (head->key.val == NULL && head->jchild.child == NULL) {
 			jsuint rval;
 			jsval jval;
 			
@@ -990,8 +990,7 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 			}
 			if (JS_GetArrayLength(cx, root, &rval)) {
 				JS_SetElement(cx, root, rval, &jval);
-			}
-			
+			}			
 		}
 		
 		if (head->jchild.child != NULL) {
@@ -1010,6 +1009,7 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 			
 			if (cobj != NULL) {
 				ape_json_to_jsobj(cx, head->jchild.child, cobj);
+
 				JS_AddRoot(cx, &cobj);
 				if (head->key.val != NULL) {
 					jsval jval;
@@ -1019,7 +1019,7 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 					jsval jval;
 					jsuint rval;
 					jval = OBJECT_TO_JSVAL(cobj);
-					
+				
 					if (JS_GetArrayLength(cx, root, &rval)) {
 						JS_SetElement(cx, root, rval, &jval);
 					}								
@@ -1395,7 +1395,7 @@ APE_JS_NATIVE(ape_sm_adduser)
 		return JS_TRUE;
 	}
 	
-	if ((u = JS_GetPrivate(cx, user)) == NULL || u->pipe != NULL) {
+	if ((u = JS_GetPrivate(cx, user)) == NULL) {
 		return JS_TRUE;
 	}
 	
@@ -1410,6 +1410,23 @@ APE_JS_NATIVE(ape_sm_adduser)
 	newraw->priority = RAW_PRI_HI;
 	
 	post_raw(newraw, u, g_ape);
+		
+	if (u->cmdqueue != NULL) {
+		unsigned int ret;
+		json_item *queue;
+		struct _cmd_process pc = {u, u->subuser, u->subuser->client, NULL, NULL, 0};
+		
+		for (queue = u->cmdqueue; queue != NULL; queue = queue->next) {
+			if ((ret = process_cmd(queue, &pc, NULL, g_ape)) != -1) {
+				if (ret == CONNECT_SHUTDOWN) {
+					shutdown(u->subuser->client->fd, 2);
+				}
+				break;
+			}
+		}
+		u->cmdqueue = NULL;
+		free_json_item(u->cmdqueue);
+	}
 	
 	return JS_TRUE;
 	
@@ -1918,7 +1935,6 @@ static void ape_sm_define_ape(ape_sm_compiled *asc)
 	JS_SetContextPrivate(asc->cx, asc);
 }
 
-
 static int process_cmd_return(JSContext *cx, jsval rval, callbackp *callbacki, acetables *g_ape)
 {
 	JSObject *ret_opt = NULL;
@@ -2166,19 +2182,13 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 static USERS *ape_cb_add_user(USERS *allocated, acetables *g_ape)
 {
-	jsval params[1], pipe;	
-	JSContext *gcx = ASMC;
-	JSObject *user;
-	
+	jsval params[1];	
+
 	USERS *u = adduser(NULL, NULL, NULL, allocated, g_ape);
 	
 	if (u != NULL) {
-		user = APEUSER_TO_JSOBJ(u);
 		
-		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, u->pipe, gcx, g_ape));
-		JS_SetProperty(gcx, user, "pipe", &pipe);
-		
-		params[0] = OBJECT_TO_JSVAL(user);
+		params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(u));
 		APE_JS_EVENT("adduser", 1, params);
 	}
 
@@ -2190,7 +2200,7 @@ static USERS *ape_cb_allocateuser(ape_socket *client, char *host, char *ip, acet
 	JSObject *user;
 	extend *jsobj;
 	JSContext *gcx = ASMC;
-	jsval params[1];
+	jsval params[1], pipe;
 	
 	USERS *u = adduser(client, host, ip, NULL, g_ape);
 	
@@ -2199,11 +2209,12 @@ static USERS *ape_cb_allocateuser(ape_socket *client, char *host, char *ip, acet
 
 		/* Store the JSObject into a private properties of the user */
 		jsobj = add_property(&u->properties, "jsobj", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
-		JS_AddRoot(gcx, &jsobj->val);
-		
+		JS_AddRoot(gcx, &jsobj->val);		
 		JS_DefineFunctions(gcx, user, apeuser_funcs);
-
 		JS_SetPrivate(gcx, user, u);
+		
+		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, u->pipe, gcx, g_ape));
+		JS_SetProperty(gcx, user, "pipe", &pipe);		
 		
 		params[0] = OBJECT_TO_JSVAL(user);
 	}
@@ -2220,8 +2231,10 @@ static void ape_cb_del_user(USERS *user, int istmp, acetables *g_ape)
 	
 	if (!istmp) {
 		params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
-		APE_JS_EVENT("deluser", 1, params);
-		pipe = user->pipe->data;	
+		if (!user->istmp) {
+			APE_JS_EVENT("deluser", 1, params);
+		}
+		pipe = user->pipe->data;
 		JS_SetPrivate(gcx, pipe, (void *)NULL);
 	}
 	

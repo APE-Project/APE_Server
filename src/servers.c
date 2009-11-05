@@ -55,11 +55,15 @@ static void ape_disconnect(ape_socket *co, acetables *g_ape)
 {
 	if (co->attach != NULL) {
 		if (co->fd == ((subuser *)(co->attach))->client->fd) {
+
 			((subuser *)(co->attach))->headers.sent = 0;
 			((subuser *)(co->attach))->state = ADIED;
-			
 			http_headers_free(((subuser *)(co->attach))->headers.content);
-			((subuser *)(co->attach))->headers.content = NULL;			
+			((subuser *)(co->attach))->headers.content = NULL;
+			if (((subuser *)(co->attach))->user->istmp) {
+				deluser(((subuser *)(co->attach))->user, g_ape);
+			}
+		
 		}
 		if (((subuser *)(co->attach))->wait_for_free == 1) {
 			free(co->attach);
