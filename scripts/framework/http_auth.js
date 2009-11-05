@@ -12,7 +12,6 @@
 		});	
 	}
 
-	
 	Ape.registerHookCmd("CONNECT", function(params, cmd) {
 		http_auth("http://127.0.0.1/index.php", params, function(result) {
 			if (result == 1) Ape.addUser(cmd.user);

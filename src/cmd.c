@@ -85,6 +85,7 @@ int register_hook_cmd(const char *cmd, unsigned int (*func)(callbackp *), void *
 	hook->cmd = xstrdup(cmd);
 	hook->func = func;
 	hook->data = data;
+	hook->next = NULL;
 	
 	if (g_ape->cmd_hook.head == NULL) {
 		g_ape->cmd_hook.head = hook;

@@ -108,6 +108,8 @@ ac_help="$ac_help
 ac_help="$ac_help
   --enable-gczeal          Enable zealous GCing"
 ac_help="$ac_help
+  --enable-fileobject          Enable fileobject"
+ac_help="$ac_help
   --with-static-checking=path/to/gcc_dehydra.so
                             Enable static checking of code using GCC-dehydra"
 ac_help="$ac_help
@@ -12124,6 +12126,26 @@ if test -n "$JS_GC_ZEAL"; then
 EOF
 
 fi
+
+# Check whether --enable-fileobject or --disable-fileobject was given.
+if test "${enable_fileobject+set}" = set; then
+  enableval="$enable_fileobject"
+  if test "$enableval" = "yes"; then
+    JS_HAS_FILE_OBJECT=1 
+  elif test "$enableval" = "no"; then
+    JS_HAS_FILE_OBJECT=
+  else
+    { echo "configure: error: Option, fileobject, does not take an argument ($enableval)." 1>&2; exit 1; }
+  fi
+fi
+
+if test -n "$JS_HAS_FILE_OBJECT"; then
+    cat >> confdefs.h <<\EOF
+#define JS_HAS_FILE_OBJECT 1
+EOF   
+    
+fi
+
 
 
 # Check whether --with-static-checking or --without-static-checking was given.
