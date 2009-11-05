@@ -14,7 +14,7 @@
 		});
 
 	Example 2:
-		request = new Http('http://twitter.com:80/statuses/update.json');
+		var request = new Http('http://twitter.com:80/statuses/update.json');
 		request.options('action', 'POST');
 		
 		// GET or POST data
