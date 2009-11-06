@@ -190,7 +190,7 @@ void deluser(USERS *user, acetables *g_ape)
 
 	left_all(user, g_ape);
 
-	FIRE_EVENT_NULL(deluser, user, (!user->istmp), g_ape);
+	FIRE_EVENT_NULL(deluser, user, user->istmp, g_ape);
 
 	/* kill all users connections */
 	

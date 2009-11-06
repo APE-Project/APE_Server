@@ -13,4 +13,6 @@ Ape.registerCmd("inlinepush", false, function(params, infos) {
 	} else {
 		return ["400", "BAD_PASSWORD"];
 	}
+	
+	return 1;
 })

@@ -2200,7 +2200,7 @@ static USERS *ape_cb_allocateuser(ape_socket *client, char *host, char *ip, acet
 	JSObject *user;
 	extend *jsobj;
 	JSContext *gcx = ASMC;
-	jsval params[1], pipe;
+	jsval pipe;
 	
 	USERS *u = adduser(client, host, ip, NULL, g_ape);
 	
@@ -2209,14 +2209,13 @@ static USERS *ape_cb_allocateuser(ape_socket *client, char *host, char *ip, acet
 
 		/* Store the JSObject into a private properties of the user */
 		jsobj = add_property(&u->properties, "jsobj", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
-		JS_AddRoot(gcx, &jsobj->val);		
+		JS_AddRoot(gcx, &jsobj->val); /* add user object to the gc root */
+		
 		JS_DefineFunctions(gcx, user, apeuser_funcs);
 		JS_SetPrivate(gcx, user, u);
 		
 		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, u->pipe, gcx, g_ape));
-		JS_SetProperty(gcx, user, "pipe", &pipe);		
-		
-		params[0] = OBJECT_TO_JSVAL(user);
+		JS_SetProperty(gcx, user, "pipe", &pipe);
 	}
 
 	return u;	
@@ -2231,18 +2230,16 @@ static void ape_cb_del_user(USERS *user, int istmp, acetables *g_ape)
 	
 	if (!istmp) {
 		params[0] = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(user));
-		if (!user->istmp) {
-			APE_JS_EVENT("deluser", 1, params);
-		}
-		pipe = user->pipe->data;
-		JS_SetPrivate(gcx, pipe, (void *)NULL);
+		APE_JS_EVENT("deluser", 1, params);
 	}
+	
+	pipe = user->pipe->data;
+	JS_SetPrivate(gcx, pipe, (void *)NULL);
 	
 	jsobj = get_property(user->properties, "jsobj");
 	
 	JS_SetPrivate(gcx, jsobj->val, (void *)NULL);
 	JS_RemoveRoot(gcx, &jsobj->val);
-
 
 	deluser(user, g_ape);
 }
