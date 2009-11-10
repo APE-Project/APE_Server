@@ -7,12 +7,12 @@ Ape.registerCmd("inlinepush", false, function(params, infos) {
 			
 			chan.pipe.sendRaw(params.raw, params.data);
 			
+			return {"name":"pushed","data":{"value":"ok"}};
 		} else {
 			return 0;
 		}
 	} else {
 		return ["400", "BAD_PASSWORD"];
 	}
-	
-	return 1;
+
 })

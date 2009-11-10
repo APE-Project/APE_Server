@@ -415,6 +415,26 @@ APE_JS_NATIVE(apepipe_sm_get_property)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apepipe_sm_get_parent)
+//{
+	transpipe *pipe = JS_GetPrivate(cx, obj);
+	
+	if (pipe == NULL) {
+		return JS_TRUE;
+	}
+	
+	switch(pipe->type) {
+		case USER_PIPE:
+			*rval = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(((USERS*)pipe->pipe)));
+		case CHANNEL_PIPE:
+			*rval = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(((CHANNEL*)pipe->pipe)));
+		default:
+			break;
+	}
+	
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(apepipe_sm_set_property)
 //{
 	char *key;
@@ -637,11 +657,7 @@ APE_JS_NATIVE(apechannel_sm_set_property)
 	if (chan == NULL) {
 		return JS_TRUE;
 	}
-	
-	if (argc != 2) {
-		return JS_TRUE;
-	}	
-	
+
 	if (!JS_ConvertArguments(cx, 2, argv, "s", &key)) {
 		return JS_TRUE;
 	}
@@ -658,6 +674,19 @@ APE_JS_NATIVE(apechannel_sm_set_property)
 	}
 
 	
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(apechannel_sm_isinteractive)
+//{
+	CHANNEL *chan = JS_GetPrivate(cx, obj);
+	
+	if (chan == NULL) {
+        return JS_TRUE;
+	}
+	
+	*rval = (chan->interactive ? JSVAL_TRUE : JSVAL_FALSE);
+		
 	return JS_TRUE;
 }
 
@@ -759,6 +788,7 @@ static JSFunctionSpec apeuser_funcs[] = {
 static JSFunctionSpec apechannel_funcs[] = {
 	JS_FS("getProperty", apechannel_sm_get_property, 1, 0, 0),
 	JS_FS("setProperty", apechannel_sm_set_property, 2, 0, 0),
+	JS_FS("isInteractive", apechannel_sm_isinteractive, 1, 0, 0),
 	JS_FS_END
 };
 
@@ -767,6 +797,7 @@ static JSFunctionSpec apepipe_funcs[] = {
 	JS_FS("toObject", apepipe_sm_to_object, 0, 0, 0),
 	JS_FS("getProperty", apepipe_sm_get_property, 1, 0, 0),
 	JS_FS("setProperty", apepipe_sm_set_property, 2, 0, 0),
+	JS_FS("getParent", apepipe_sm_get_parent, 0, 0, 0),
 	JS_FS("onSend", ape_sm_stub, 0, 0, 0),
 	JS_FS_END
 };
@@ -776,12 +807,10 @@ static JSFunctionSpec cmdresponse_funcs[] = {
 	JS_FS_END
 };
 
-
 static JSFunctionSpec apepipecustom_funcs[] = {
 	JS_FS("destroy", apepipe_sm_destroy, 0, 0, 0),
 	JS_FS_END
 };
-
 
 static JSObject *sm_ape_socket_to_jsobj(JSContext *cx, ape_socket *client)
 {
@@ -1526,6 +1555,24 @@ APE_JS_NATIVE(ape_sm_get_user_by_pubid)
 	return JS_TRUE;	
 }
 
+APE_JS_NATIVE(ape_sm_get_channel_by_pubid)
+//{
+	char *pubid;
+	CHANNEL *chan;
+	
+	*rval = JSVAL_NULL;
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &pubid)) {
+		return JS_TRUE;
+	}
+	
+	if ((chan = getchanbypubid(pubid, g_ape)) != NULL) {
+		*rval = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(chan));
+	}
+	
+	return JS_TRUE;	
+}
+
 APE_JS_NATIVE(ape_sm_get_pipe)
 //{
 	char *pubid;
@@ -1887,6 +1934,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("getPipe", ape_sm_get_pipe, 1, 0, 0),
 	JS_FS("getChannelByName", ape_sm_get_channel_by_name, 1, 0, 0),
 	JS_FS("getUserByPubid", ape_sm_get_user_by_pubid, 1, 0, 0),
+	JS_FS("getChannelByPubid", ape_sm_get_channel_by_pubid, 1, 0, 0),
 	JS_FS("config", ape_sm_config, 2, 0, 0),
 	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0, 0),
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0, 0),

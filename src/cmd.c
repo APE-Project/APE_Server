@@ -251,7 +251,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 		} else if (flag & RETURN_BAD_PARAMS) {
 			RAW *newraw;
 			json_item *jlist = json_new_object();
-			cp.call_user->istmp = 0;
+			
 			if (cp.chl) {
 				json_set_property_intN(jlist, "chl", 3, cp.chl);
 			}
@@ -260,7 +260,8 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 
 			newraw = forge_raw(RAW_ERR, jlist);
 			
-			if (cp.call_user != NULL) {	
+			if (cp.call_user != NULL) {
+				cp.call_user->istmp = 0;
 				if (sub == NULL) {
 					sub = getsubuser(pc->guser, pc->host);	
 				}

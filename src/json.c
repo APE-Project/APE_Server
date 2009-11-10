@@ -195,6 +195,7 @@ static int json_evaluate_string_size(json_item *head)
 static int escape_json_string(char *in, char *out, int len)
 {
 	int i, e;
+	
 	for (i = 0, e = 0; i < len; i++, e++) {
 		if (in[i] == '"' || in[i] == '\\') {
 			out[e++] = '\\';
