@@ -377,12 +377,12 @@ json_item *json_item_copy(json_item *cx, json_item *father)
 		} else if (cx->jval.vu.float_value) {
 			new_item->jval.vu.float_value = cx->jval.vu.float_value;
 		}
-		
 		if (cx->jchild.child != NULL) {
 			new_item->jchild.child = json_item_copy(cx->jchild.child, new_item);
-			new_item->jchild.head = new_item->jchild.child;
 		}
-		
+		if (new_item->father != NULL) {
+			new_item->father->jchild.head = new_item;
+		}
 		temp_item = new_item;
 		
 		cx = cx->next;
