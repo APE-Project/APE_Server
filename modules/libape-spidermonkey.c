@@ -685,7 +685,7 @@ APE_JS_NATIVE(apechannel_sm_isinteractive)
         return JS_TRUE;
 	}
 	
-	*rval = (chan->interactive ? JSVAL_TRUE : JSVAL_FALSE);
+	*rval = (!(chan->flags & CHANNEL_NONINTERACTIVE) ? JSVAL_TRUE : JSVAL_FALSE);
 		
 	return JS_TRUE;
 }
