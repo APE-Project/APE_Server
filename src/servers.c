@@ -62,10 +62,11 @@ static void ape_disconnect(ape_socket *co, acetables *g_ape)
 			((subuser *)(co->attach))->headers.content = NULL;
 			if (((subuser *)(co->attach))->user->istmp) {
 				deluser(((subuser *)(co->attach))->user, g_ape);
+				co->attach = NULL;
 			}
-		
 		}
-		if (((subuser *)(co->attach))->wait_for_free == 1) {
+		
+		if (co->attach != NULL && ((subuser *)(co->attach))->wait_for_free == 1) {
 			free(co->attach);
 			co->attach = NULL;						
 		}		

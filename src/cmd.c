@@ -236,7 +236,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 		cp.transport = pc->transport;
 		
 		/* Little hack to access user object on connect hook callback (preallocate an user) */
-		if (strncasecmp(cp.cmd, "CONNECT", 7) == 0) {
+		if (strlen(cp.cmd) == 7 && strncasecmp(cp.cmd, "CONNECT", 7) == 0) {
 			pc->guser = cp.call_user = adduser(cp.client, cp.host, cp.ip, NULL, g_ape);
 			pc->guser->transport = pc->transport;
 			sub = cp.call_subuser = cp.call_user->subuser;
