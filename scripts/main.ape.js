@@ -10,3 +10,5 @@ Ape.addEvent("init", function() {
 	//include("framework/http_auth.js");
 	Ape.log("[JS] ../scripts/main.ape.js loaded");
 });
+	
+	

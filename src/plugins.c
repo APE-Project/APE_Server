@@ -105,12 +105,13 @@ void findandloadplugin(acetables *g_ape)
 				
 			plugin_read_config(pcurrent);
 			printf("[Module] [%s] Loading module : %s (%s) - %s\n", pcurrent->modulename, pcurrent->infos->name, pcurrent->infos->version, pcurrent->infos->author);
+
+			pcurrent->next = plist;
+			g_ape->plugins = pcurrent;
 			
 			/* Calling init module */		
 			pcurrent->loader(g_ape);
-			
-			pcurrent->next = plist;
-			g_ape->plugins = pcurrent;
+
 		}
 		
 	}

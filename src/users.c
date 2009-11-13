@@ -499,7 +499,7 @@ void subuser_restor(subuser *sub, acetables *g_ape)
 		
 		chan = chanl->chaninfo;
 		
-		if (chan->interactive && chan->head != NULL) {
+		if (!(chan->flags & CHANNEL_NONINTERACTIVE) && chan->head != NULL) {
 			json_item *user_list = json_new_array();
 			
 			ulist = chan->head;

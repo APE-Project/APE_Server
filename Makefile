@@ -14,7 +14,7 @@ RM=rm -f
 all: aped
 
 aped: $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o $(EXEC) $(LFLAGS) ./libs/udns-0.0.9/libudns.a -I ./libs/udns-0.0.9/
+	$(CC) $(CFLAGS) $(SRC) -o $(EXEC) $(LFLAGS) ./deps/udns-0.0.9/libudns.a -I ./deps/udns-0.0.9/
 install: 
 	install -d $(bindir)
 	install -m 755 $(EXEC) $(bindir)

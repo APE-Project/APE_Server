@@ -726,6 +726,39 @@ APE_JS_NATIVE(apeuser_sm_get_property)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apeuser_sm_join)
+//{
+	CHANNEL *chan;
+	char *chan_name;
+	JSObject *chan_obj;
+	USERS *user = JS_GetPrivate(cx, obj);
+	
+	*rval = JSVAL_FALSE;
+		
+	if (user == NULL) {
+		return JS_TRUE;
+	}
+	
+	if (JSVAL_IS_STRING(argv[0])) {
+		JS_ConvertArguments(cx, 1, argv, "s", &chan_name);
+		if ((chan = getchan(chan_name, g_ape)) == NULL) {
+			return JS_TRUE;
+		}
+	} else if (JSVAL_IS_OBJECT(argv[0])) {
+		JS_ConvertArguments(cx, 1, argv, "o", &chan_obj);
+		if (!JS_InstanceOf(cx, chan_obj, &channel_class, 0) || (chan = JS_GetPrivate(cx, chan_obj)) == NULL) {
+			return JS_TRUE;
+		}
+	} else {
+		return JS_TRUE;
+	}
+	
+	join(user, chan, g_ape);
+	
+	*rval = JSVAL_TRUE;
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(apeuser_sm_set_property)
 //{
 	char *key;
@@ -782,6 +815,7 @@ static JSFunctionSpec apesocket_client_funcs[] = {
 static JSFunctionSpec apeuser_funcs[] = {
 	JS_FS("getProperty", apeuser_sm_get_property, 1, 0, 0),
 	JS_FS("setProperty", apeuser_sm_set_property, 2, 0, 0),
+	JS_FS("join", apeuser_sm_join, 1, 0, 0),
 	JS_FS_END
 };
 
@@ -1410,6 +1444,22 @@ APE_JS_NATIVE(ape_sm_sha1_str)
 	return JS_TRUE;	
 }
 
+APE_JS_NATIVE(ape_sm_mkchan)
+//{
+	char *chan_name;
+	CHANNEL *new_chan;
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &chan_name) || getchan(chan_name, g_ape) != NULL) {
+		return JS_TRUE;
+	}
+	
+	if ((new_chan = mkchan(chan_name, 0, g_ape)) != NULL) {
+		*rval = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(new_chan));
+	}
+
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(ape_sm_adduser)
 //{
 	JSObject *user;
@@ -1941,6 +1991,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("clearTimeout", ape_sm_clear_timeout, 1, 0, 0),
 	JS_FS("xorize", ape_sm_xorize, 2, 0, 0),
 	JS_FS("addUser", ape_sm_adduser, 1, 0, 0),
+	JS_FS("mkChan", ape_sm_mkchan, 1, 0, 0),
     JS_FS_END
 };
 
@@ -2292,15 +2343,15 @@ static void ape_cb_del_user(USERS *user, int istmp, acetables *g_ape)
 	deluser(user, g_ape);
 }
 
-static CHANNEL *ape_cb_mkchan(char *name, acetables *g_ape)
+static CHANNEL *ape_cb_mkchan(char *name, int flags, acetables *g_ape)
 {
 	JSObject *js_channel;
 	extend *jsobj;
 	jsval params[1], pipe;
 	JSContext *gcx = ASMC;
 	CHANNEL *chan;
-	
-	if ((chan = mkchan(name, g_ape)) == NULL) {
+
+	if ((chan = mkchan(name, flags, g_ape)) == NULL) {
 		return NULL;
 	}
 
@@ -2382,7 +2433,7 @@ static ace_callbacks callbacks = {
 	ape_cb_mkchan,		/* Called when new chan is created */
 	ape_cb_rmchan,		/* Called when a chan is deleted */
 	ape_cb_join,		/* Called when a user join a channel */
-	ape_cb_left,			/* Called when a user leave a channel */
+	ape_cb_left,		/* Called when a user leave a channel */
 	NULL,
 	NULL,
 	ape_cb_allocateuser

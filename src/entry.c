@@ -46,7 +46,7 @@
 
 #include <errno.h>
 
-#define _VERSION "1.0-BETA4"
+#define _VERSION "1.0-BETA5"
 
 static void signal_handler(int sign)
 {
@@ -248,7 +248,6 @@ int main(int argc, char **argv)
 	transport_start(g_ape);	
 	
 	findandloadplugin(g_ape);
-	
 	
 	/* Starting Up */
 	sockroutine(g_ape); /* loop */

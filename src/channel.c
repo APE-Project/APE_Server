@@ -43,14 +43,12 @@ unsigned int isvalidchan(char *name)
 	return 1;
 }
 
-CHANNEL *mkchan(char *chan, acetables *g_ape)
+CHANNEL *mkchan(char *chan, int flags, acetables *g_ape)
 {
 	CHANNEL *new_chan = NULL;
 
+	FIRE_EVENT(mkchan, new_chan, chan, flags, g_ape);
 
-	FIRE_EVENT(mkchan, new_chan, chan, g_ape);
-
-	
 	if (!isvalidchan(chan)) {
 		return NULL;
 	}
@@ -62,8 +60,7 @@ CHANNEL *mkchan(char *chan, acetables *g_ape)
 	new_chan->head = NULL;
 	new_chan->banned = NULL;
 	new_chan->properties = NULL;
-	
-	new_chan->interactive = (*new_chan->name == '*' ? 0 : 1);
+	new_chan->flags = flags | (*new_chan->name == '*' ? CHANNEL_NONINTERACTIVE : 0);
 
 	//memcpy(new_chan->topic, topic, strlen(topic)+1);
 
@@ -73,7 +70,7 @@ CHANNEL *mkchan(char *chan, acetables *g_ape)
 	
 	/* just to test */
 	//proxy_attach(proxy_init("olol", "localhost", 1337, g_ape), new_chan->pipe->pubid, 0, g_ape);
-	
+
 	return new_chan;
 	
 }
@@ -148,7 +145,7 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 	
 	user->chan_foot = chanl;
 
-	if (chan->interactive) {
+	if (!(chan->flags & CHANNEL_NONINTERACTIVE)) {
 		json_item *user_list = json_new_array();
 		json_item *uinfo = json_new_object();
 		
@@ -252,7 +249,7 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 			}
 			free(list);
 			list = NULL;
-			if (chan->head != NULL && chan->interactive) {
+			if (chan->head != NULL && !(chan->flags & CHANNEL_NONINTERACTIVE)) {
 				jlist = json_new_object();
 				
 				json_set_property_objN(jlist, "user", 4, get_json_object_user(user));
@@ -260,7 +257,7 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 				
 				newraw = forge_raw(RAW_LEFT, jlist);
 				post_raw_channel(newraw, chan, g_ape);
-			} else if (chan->head == NULL) {
+			} else if (chan->head == NULL && chan->flags & CHANNEL_AUTODESTROY) {
 				rmchan(chan, g_ape);
 			}
 			break;
@@ -323,7 +320,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 		
 		user_passif_chan->level = lvl;
 		
-		if (chan->interactive) {
+		if (!(chan->flags & CHANNEL_NONINTERACTIVE)) {
 			jlist = json_new_object();
 			
 			json_set_property_objN(jlist, "ope", 3, get_json_object_user(user_passif));
@@ -338,7 +335,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 	} else if (user_passif_chan != NULL && lvl > 0 && lvl < 32) {		
 		user_passif_chan->level = lvl;
 		
-		if (chan->interactive) {
+		if (!(chan->flags & CHANNEL_NONINTERACTIVE)) {
 			jlist = json_new_object();
 
 			json_set_property_objN(jlist, "ope", 3, get_json_object_user(user_passif));

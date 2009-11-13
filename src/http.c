@@ -101,17 +101,19 @@ void process_http(ape_buffer *buffer, http_state *http)
 			if (pos == -1) {
 				return;
 			}
-			/* TODO : switch integer */
-			if (strncasecmp(data, "POST ", 5) == 0) {
-				http->type = HTTP_POST;
-			} else if (strncasecmp(data, "GET ", 4) == 0) {
-				http->type = HTTP_GET;
-			} else {
-				/* Other methods are not implemented yet */
-				http->error = 1;
-				
-				return;
+
+			switch(*(int *)data) {
+				case 542393671: /* GET + space */
+					http->type = HTTP_GET;
+					break;
+				case 1414745936: /* POST */
+					http->type = HTTP_POST;
+					break;
+				default:
+					http->error = 1;
+					return;
 			}
+
 			http->pos = pos;
 			http->step = 1;
 			

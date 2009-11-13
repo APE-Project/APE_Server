@@ -261,7 +261,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 			newraw = forge_raw(RAW_ERR, jlist);
 			
 			if (cp.call_user != NULL) {
-				cp.call_user->istmp = 0;
+				//cp.call_user->istmp = 0;
 				if (sub == NULL) {
 					sub = getsubuser(pc->guser, pc->host);	
 				}
@@ -431,14 +431,12 @@ unsigned int cmd_join(callbackp *callbacki)
 	JFOREACH(channels, chan_name) {
 	
 		if ((jchan = getchan(chan_name, callbacki->g_ape)) == NULL) {
-			jchan = mkchan(chan_name, callbacki->g_ape);
+			jchan = mkchan(chan_name, CHANNEL_AUTODESTROY, callbacki->g_ape);
 		
 			if (jchan == NULL) {
-			
 				send_error(callbacki->call_user, "CANT_JOIN_CHANNEL", "202", callbacki->g_ape);
 			
 			} else {
-		
 				join(callbacki->call_user, jchan, callbacki->g_ape);
 			}
 	

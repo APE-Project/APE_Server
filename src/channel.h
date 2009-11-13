@@ -31,6 +31,9 @@
 #define MAX_TOPIC_LEN 128
 #define DEFAULT_TOPIC "Chat%20powered%20by%20AJAX%20Push%20Engine\0"
 
+#define CHANNEL_NONINTERACTIVE 		0x01
+#define CHANNEL_AUTODESTROY 		0x02
+
 typedef struct CHANNEL
 {
 	char name[MAX_CHAN_LEN+1];
@@ -42,8 +45,8 @@ typedef struct CHANNEL
 	struct BANNED *banned;
 	
 	extend *properties;
-	
-	int interactive;
+
+	int flags;
 
 } CHANNEL;
 
@@ -57,7 +60,7 @@ typedef struct BANNED
 	struct BANNED *next;
 } BANNED;
 
-CHANNEL *mkchan(char *chan, acetables *g_ape);
+CHANNEL *mkchan(char *chan, int flags, acetables *g_ape);
 CHANNEL *getchan(const char *chan, acetables *g_ape);
 
 BANNED *getban(CHANNEL *chan, const char *ip);
