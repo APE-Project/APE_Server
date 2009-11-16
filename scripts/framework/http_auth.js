@@ -2,9 +2,9 @@
 	function http_auth(url, params, callback)
 	{
 		var request = new Http(url);
-		request.options('action', 'POST');
-		request.options('data', params);
-		request.doCall(function(result) {
+		request.set('method', 'POST');
+		request.writeObject(params);
+		request.getContent(function(result) {
 			var ret = {};
 			try { ret = JSON.parse(result); } catch(e){};
 		
