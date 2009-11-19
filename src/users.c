@@ -217,7 +217,6 @@ void deluser(USERS *user, acetables *g_ape)
 	/* TODO Add Event */
 	free(user);
 
-	user = NULL;
 }
 
 void do_died(subuser *sub)

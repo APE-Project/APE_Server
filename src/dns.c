@@ -195,7 +195,6 @@ void ape_dns_init(acetables *g_ape)
 	
 	dns_fd = dns_init(NULL, 1);
 	
-
 	co[dns_fd].buffer_in.data = NULL;
 	co[dns_fd].buffer_in.size = 0;
 	co[dns_fd].buffer_in.length = 0;
@@ -214,7 +213,7 @@ void ape_dns_init(acetables *g_ape)
 	
 	co[dns_fd].callbacks.on_read = ape_dns_read;
 	co[dns_fd].callbacks.on_write = ape_dns_write;
-	
+
 	events_add(g_ape->events, dns_fd, EVENT_READ|EVENT_WRITE);
 
 	add_periodical(50, 0, ape_dns_timeout, NULL, g_ape);

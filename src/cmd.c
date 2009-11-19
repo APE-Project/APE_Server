@@ -139,7 +139,7 @@ static unsigned int handle_bad_cmd(callbackp *callbacki)
 
 int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acetables *g_ape)
 {
-	callback *cmdback, tmpback = {NEED_NOTHING, handle_bad_cmd};
+	callback *cmdback, tmpback = {handle_bad_cmd, NEED_NOTHING};
 	json_item *rjson = json_lookup(ijson->jchild.child, "cmd"), *jchl;
 	subuser *sub = pc->sub;
 	unsigned int flag;
@@ -236,7 +236,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 		cp.transport = pc->transport;
 		
 		/* Little hack to access user object on connect hook callback (preallocate an user) */
-		if (strlen(cp.cmd) == 7 && strncasecmp(cp.cmd, "CONNECT", 7) == 0) {
+		if (strncasecmp(cp.cmd, "CONNECT", 7) == 0 && cp.cmd[7] == '\0') {
 			pc->guser = cp.call_user = adduser(cp.client, cp.host, cp.ip, NULL, g_ape);
 			pc->guser->transport = pc->transport;
 			sub = cp.call_subuser = cp.call_user->subuser;

@@ -49,7 +49,9 @@ static void growup(int *basemem, ape_socket **conn_list, struct _fdevent *ev, st
 	
 	*conn_list = xrealloc(*conn_list, 
 			sizeof(ape_socket) * (*basemem));
-						
+	
+	//memset(*conn_list, 0, sizeof(ape_socket) * *basemem);
+	
 	*bufout = xrealloc(*bufout, 
 			sizeof(struct _socks_bufout) * (*basemem));
 }
@@ -90,7 +92,7 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 	}
 	
 	setnonblocking(sock);
-	if (sock + 4 == g_ape->basemem) {
+	if (sock + 4 >= g_ape->basemem) {
 		/* Increase connection & events size */
 		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
 		co = g_ape->co;
@@ -127,7 +129,7 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 	ape_socket *co = g_ape->co;
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		printf("ERREUR: socket().. (%s line: %i)\n",__FILE__, __LINE__);
+		printf("ERREUR: socket().. (%s line: %i) %s\n",__FILE__, __LINE__, strerror(errno));
 		return NULL;
 	}
 
@@ -142,13 +144,13 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 		return NULL;
 	}
 	
-	ret = events_add(g_ape->events, sock, EVENT_READ|EVENT_WRITE);
-
-	if (sock + 4 == g_ape->basemem) {
+	if (sock + 4 >= g_ape->basemem) {
 		/* Increase connection & events size */
 		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
 		co = g_ape->co;
 	}
+
+	ret = events_add(g_ape->events, sock, EVENT_READ|EVENT_WRITE);
 	
 	co[sock].buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
 	co[sock].buffer_in.size = DEFAULT_BUFFER_SIZE;
@@ -249,7 +251,6 @@ static void clear_buffer(ape_socket *co, int *tfd)
 	co->http.hlines = NULL;
 	co->attach = NULL;
 	co->data = NULL;
-	
 	(*tfd)--;
 }
 
@@ -276,15 +277,13 @@ unsigned int sockroutine(acetables *g_ape)
 	struct _socks_list sl;
 	
 	int new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i, tfd = 0;
-	ape_socket *co = g_ape->co;
 
 	struct timeval t_start, t_end;	
 	long int ticks = 0, uticks = 0, lticks = 0;
 	struct sockaddr_in their_addr;
 	
-	sl.co = co;
+	//sl.co = co;
 	sl.tfd = &tfd;
-
 
 	#if 0
 	add_periodical(5, 0, check_idle, &sl, g_ape);
@@ -306,11 +305,11 @@ unsigned int sockroutine(acetables *g_ape)
 
 				int active_fd = events_get_current_fd(g_ape->events, i);
 				
-				if (co[active_fd].stream_type == STREAM_SERVER) {
+				if (g_ape->co[active_fd].stream_type == STREAM_SERVER) {
 				
 					while (1) {
 
-						http_state http = {0, HTTP_NULL, 0, -1, 0, 0, 0, NULL};
+						http_state http = {NULL, 0, -1, 0, 0, HTTP_NULL, 0, 0};
 					
 						new_fd = accept(active_fd, 
 							(struct sockaddr *)&their_addr,
@@ -320,41 +319,40 @@ unsigned int sockroutine(acetables *g_ape)
 							break;
 						}
 						
-						if (new_fd + 4 == g_ape->basemem) {
+						if (new_fd + 4 >= g_ape->basemem) {
 							/* Increase connection & events size */
 							growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
-							co = g_ape->co;
 						}
 
-						strncpy(co[new_fd].ip_client, inet_ntoa(their_addr.sin_addr), 16);
+						strncpy(g_ape->co[new_fd].ip_client, inet_ntoa(their_addr.sin_addr), 16);
 						
-						co[new_fd].buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
-						co[new_fd].buffer_in.size = DEFAULT_BUFFER_SIZE;
-						co[new_fd].buffer_in.length = 0;
-						co[new_fd].buffer_in.slot = NULL;
-						co[new_fd].buffer_in.islot = 0;
-						
-						co[new_fd].http = http;
-						co[new_fd].attach = NULL;
-						co[new_fd].data = NULL;
-						co[new_fd].idle = time(NULL);
-						co[new_fd].fd = new_fd;
-						
-						co[new_fd].stream_type = STREAM_IN;
-						co[new_fd].state = STREAM_ONLINE;
+						g_ape->co[new_fd].buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
+						g_ape->co[new_fd].buffer_in.size = DEFAULT_BUFFER_SIZE;
+						g_ape->co[new_fd].buffer_in.length = 0;
+						g_ape->co[new_fd].buffer_in.slot = NULL;
+						g_ape->co[new_fd].buffer_in.islot = 0;
+
+						g_ape->co[new_fd].http = http;
+						g_ape->co[new_fd].attach = NULL;
+						g_ape->co[new_fd].data = NULL;
+						g_ape->co[new_fd].idle = time(NULL);
+						g_ape->co[new_fd].fd = new_fd;
+
+						g_ape->co[new_fd].stream_type = STREAM_IN;
+						g_ape->co[new_fd].state = STREAM_ONLINE;
 					
 						g_ape->bufout[new_fd].fd = new_fd;
 						g_ape->bufout[new_fd].buf = NULL;
 						g_ape->bufout[new_fd].buflen = 0;
 						g_ape->bufout[new_fd].allocsize = 0;
 						
-						co[new_fd].callbacks.on_disconnect = co[active_fd].callbacks.on_disconnect;
-						co[new_fd].callbacks.on_read = co[active_fd].callbacks.on_read;
-						co[new_fd].callbacks.on_read_lf = co[active_fd].callbacks.on_read_lf;
-						co[new_fd].callbacks.on_data_completly_sent = co[active_fd].callbacks.on_data_completly_sent;
-						co[new_fd].callbacks.on_write = co[active_fd].callbacks.on_write;
+						g_ape->co[new_fd].callbacks.on_disconnect = g_ape->co[active_fd].callbacks.on_disconnect;
+						g_ape->co[new_fd].callbacks.on_read = g_ape->co[active_fd].callbacks.on_read;
+						g_ape->co[new_fd].callbacks.on_read_lf = g_ape->co[active_fd].callbacks.on_read_lf;
+						g_ape->co[new_fd].callbacks.on_data_completly_sent = g_ape->co[active_fd].callbacks.on_data_completly_sent;
+						g_ape->co[new_fd].callbacks.on_write = g_ape->co[active_fd].callbacks.on_write;
 						
-						co[new_fd].attach = co[active_fd].attach;
+						g_ape->co[new_fd].attach = g_ape->co[active_fd].attach;
 						
 						setnonblocking(new_fd);
 									
@@ -362,8 +360,8 @@ unsigned int sockroutine(acetables *g_ape)
 						
 						tfd++;
 						
-						if (co[active_fd].callbacks.on_accept != NULL) {
-							co[active_fd].callbacks.on_accept(&co[new_fd], g_ape);
+						if (g_ape->co[active_fd].callbacks.on_accept != NULL) {
+							g_ape->co[active_fd].callbacks.on_accept(&g_ape->co[new_fd], g_ape);
 						}
 					
 					}
@@ -374,7 +372,7 @@ unsigned int sockroutine(acetables *g_ape)
 						
 					if (bitev & EVENT_WRITE) {
 						
-						if (co[active_fd].stream_type == STREAM_OUT && co[active_fd].state == STREAM_PROGRESS) {
+						if (g_ape->co[active_fd].stream_type == STREAM_OUT && g_ape->co[active_fd].state == STREAM_PROGRESS) {
 							
 							int serror = 0, ret;
 							socklen_t serror_len = sizeof(serror);
@@ -383,70 +381,40 @@ unsigned int sockroutine(acetables *g_ape)
 							
 							if (ret == 0 && serror == 0) {
 
-								co[active_fd].state = STREAM_ONLINE;
-								if (co[active_fd].callbacks.on_connect != NULL) {
+								g_ape->co[active_fd].state = STREAM_ONLINE;
+								if (g_ape->co[active_fd].callbacks.on_connect != NULL) {
 
-									co[active_fd].callbacks.on_connect(&co[active_fd], g_ape);
+									g_ape->co[active_fd].callbacks.on_connect(&g_ape->co[active_fd], g_ape);
 								}
 							} else { /* This can happen ? epoll seems set EPOLLIN as if the host is disconnecting */
 
-								if (co[active_fd].callbacks.on_disconnect != NULL) {
-									co[active_fd].callbacks.on_disconnect(&co[active_fd], g_ape);
+								if (g_ape->co[active_fd].callbacks.on_disconnect != NULL) {
+									g_ape->co[active_fd].callbacks.on_disconnect(&g_ape->co[active_fd], g_ape);
 								}
-								clear_buffer(&co[active_fd], &tfd);
+								clear_buffer(&g_ape->co[active_fd], &tfd);
 								close(active_fd);
 							}							
-						}
-						#if 0
-						if (co[active_fd].stream_type == STREAM_OUT && 
-						((ape_proxy *)(co[active_fd].attach))->state == PROXY_IN_PROGRESS) {
-							
-							int serror = 0, ret;
-							socklen_t serror_len = sizeof(serror);
-						
-							ret = getsockopt(active_fd, SOL_SOCKET, SO_ERROR, &serror, &serror_len);
-							
-							if (ret == 0 && serror == 0) {
-								((ape_proxy *)(co[active_fd].attach))->state = PROXY_CONNECTED;
-								((ape_proxy *)(co[active_fd].attach))->sock.fd = active_fd;
-								proxy_onevent((ape_proxy *)(co[active_fd].attach), "CONNECT", g_ape);
-								
-								if (co[active_fd].callbacks.on_connect != NULL) {
-									co[active_fd].callbacks.on_connect(&co[active_fd]);
-								}
-							} else { /* This can happen ? epoll seems set EPOLLIN as if the host is disconnecting */
-								if (co[active_fd].callbacks.on_disconnect != NULL) {
-									co[active_fd].callbacks.on_disconnect(&co[active_fd]);
-								}
-								((ape_proxy *)(co[active_fd].attach))->state = PROXY_THROTTLED;
-								//epoll_ctl(event_fd, EPOLL_CTL_DEL, active_fd, NULL);
-								clear_buffer(&co[active_fd], &tfd);
-								close(active_fd);
-							}
-
-						}
-						#endif
-						else if (co[active_fd].stream_type == STREAM_IN && g_ape->bufout[active_fd].buf != NULL) {
+						} else if (g_ape->co[active_fd].stream_type == STREAM_IN && g_ape->bufout[active_fd].buf != NULL) {
 
 							if (sendqueue(active_fd, g_ape) == 1) {
 								
-								if (co[active_fd].callbacks.on_data_completly_sent != NULL) {
-									co[active_fd].callbacks.on_data_completly_sent(&co[active_fd], g_ape);
+								if (g_ape->co[active_fd].callbacks.on_data_completly_sent != NULL) {
+									g_ape->co[active_fd].callbacks.on_data_completly_sent(&g_ape->co[active_fd], g_ape);
 								}
 
 							}
-						} else if (co[active_fd].stream_type == STREAM_DELEGATE) {
-							if (co[active_fd].callbacks.on_write != NULL) {
-								co[active_fd].callbacks.on_write(&co[active_fd], g_ape);
+						} else if (g_ape->co[active_fd].stream_type == STREAM_DELEGATE) {
+							if (g_ape->co[active_fd].callbacks.on_write != NULL) {
+								g_ape->co[active_fd].callbacks.on_write(&g_ape->co[active_fd], g_ape);
 
 							}							
 						}
 					}
 
 					if (bitev & EVENT_READ) {
-						if (co[active_fd].stream_type == STREAM_DELEGATE) {
-							if (co[active_fd].callbacks.on_read != NULL) {
-								co[active_fd].callbacks.on_read(&co[active_fd], NULL, 0, g_ape);
+						if (g_ape->co[active_fd].stream_type == STREAM_DELEGATE) {
+							if (g_ape->co[active_fd].callbacks.on_read != NULL) {
+								g_ape->co[active_fd].callbacks.on_read(&g_ape->co[active_fd], NULL, 0, g_ape);
 								continue;
 							}							
 						}
@@ -456,8 +424,8 @@ unsigned int sockroutine(acetables *g_ape)
 								Huge data may attempt to increase third parameter
 							*/
 							readb = read(active_fd, 
-										co[active_fd].buffer_in.data + co[active_fd].buffer_in.length, 
-										co[active_fd].buffer_in.size - co[active_fd].buffer_in.length);
+										g_ape->co[active_fd].buffer_in.data + g_ape->co[active_fd].buffer_in.length, 
+										g_ape->co[active_fd].buffer_in.size - g_ape->co[active_fd].buffer_in.length);
 						
 						
 							if (readb == -1 && errno == EAGAIN) {
@@ -466,7 +434,7 @@ unsigned int sockroutine(acetables *g_ape)
 									Nothing to read again
 								*/
 								
-								if (co[active_fd].stream_type == STREAM_OUT) {
+								if (g_ape->co[active_fd].stream_type == STREAM_OUT) {
 									
 										//proxy_process_eol(&co[active_fd], g_ape);
 										//co[active_fd].buffer_in.length = 0;
@@ -477,8 +445,8 @@ unsigned int sockroutine(acetables *g_ape)
 							} else {
 								if (readb < 1) {
 
-									if (co[active_fd].callbacks.on_disconnect != NULL) { 
-										co[active_fd].callbacks.on_disconnect(&co[active_fd], g_ape);
+									if (g_ape->co[active_fd].callbacks.on_disconnect != NULL) {
+										g_ape->co[active_fd].callbacks.on_disconnect(&g_ape->co[active_fd], g_ape);
 									}
 									
 									#if 0
@@ -504,7 +472,7 @@ unsigned int sockroutine(acetables *g_ape)
 										}
 									}
 									#endif
-									clear_buffer(&co[active_fd], &tfd);
+									clear_buffer(&g_ape->co[active_fd], &tfd);
 								
 									if (g_ape->bufout[active_fd].buf != NULL) {
 										free(g_ape->bufout[active_fd].buf);
@@ -518,38 +486,38 @@ unsigned int sockroutine(acetables *g_ape)
 									break;
 								} else {
 									
-									co[active_fd].buffer_in.length += readb;
+									g_ape->co[active_fd].buffer_in.length += readb;
 									
 									/* realloc the buffer for the next read (x2) */
-									if (co[active_fd].buffer_in.length == co[active_fd].buffer_in.size) {
-										co[active_fd].buffer_in.size *= 2;
+									if (g_ape->co[active_fd].buffer_in.length == g_ape->co[active_fd].buffer_in.size) {
+										g_ape->co[active_fd].buffer_in.size *= 2;
 
-										co[active_fd].buffer_in.data = xrealloc(co[active_fd].buffer_in.data, 
-																sizeof(char) * (co[active_fd].buffer_in.size + 1));
+										g_ape->co[active_fd].buffer_in.data = xrealloc(g_ape->co[active_fd].buffer_in.data, 
+																sizeof(char) * (g_ape->co[active_fd].buffer_in.size + 1));
 									
 									}
-									if (co[active_fd].callbacks.on_read_lf != NULL) {
-										int eol, len = co[active_fd].buffer_in.length;
-										char *pBuf = co[active_fd].buffer_in.data;
+									if (g_ape->co[active_fd].callbacks.on_read_lf != NULL) {
+										int eol, len = g_ape->co[active_fd].buffer_in.length;
+										char *pBuf = g_ape->co[active_fd].buffer_in.data;
 
 										while ((eol = sneof(pBuf, len, 4096)) != -1) {
 											pBuf[eol-1] = '\0';
-											co[active_fd].callbacks.on_read_lf(&co[active_fd], pBuf, g_ape);
+											g_ape->co[active_fd].callbacks.on_read_lf(&g_ape->co[active_fd], pBuf, g_ape);
 											pBuf = &pBuf[eol];
 											len -= eol;
 										}
 										if (len > 4096 || !len) {
-											co[active_fd].buffer_in.length = 0;
+											g_ape->co[active_fd].buffer_in.length = 0;
 										} else if (len) {
-											memmove(co[active_fd].buffer_in.data, &co[active_fd].buffer_in.data[co[active_fd].buffer_in.length - len], len);
-											co[active_fd].buffer_in.length = len;
+											memmove(g_ape->co[active_fd].buffer_in.data, &g_ape->co[active_fd].buffer_in.data[g_ape->co[active_fd].buffer_in.length - len], len);
+											g_ape->co[active_fd].buffer_in.length = len;
 										}
 
 									}
 									
 									/* on_read can't get along with on_read_lf */
-									if (co[active_fd].callbacks.on_read != NULL && co[active_fd].callbacks.on_read_lf == NULL) {
-										co[active_fd].callbacks.on_read(&co[active_fd], &co[active_fd].buffer_in, co[active_fd].buffer_in.length - readb, g_ape);
+									if (g_ape->co[active_fd].callbacks.on_read != NULL && g_ape->co[active_fd].callbacks.on_read_lf == NULL) {
+										g_ape->co[active_fd].callbacks.on_read(&g_ape->co[active_fd], &g_ape->co[active_fd].buffer_in, g_ape->co[active_fd].buffer_in.length - readb, g_ape);
 									}
 								} 
 							}
@@ -568,38 +536,9 @@ unsigned int sockroutine(acetables *g_ape)
 		
 		lticks += uticks;
 
-		/* Tic tac, tic tac :-) */
+		/* Tic tac, tic tac */
 		{
 			unsigned long int nticks;
-			ape_proxy *proxy = g_ape->proxy.list;
-			int psock;
-
-			while (proxy != NULL) {
-
-				if (proxy->state == PROXY_NOT_CONNECTED && ((psock = proxy_connect(proxy, g_ape)) != 0)) {
-					http_state http_s = {0, HTTP_NULL, 0, -1, 0, 0, 0, NULL};
-					if (psock + 4 == g_ape->basemem) {
-						growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
-						co = g_ape->co;
-					}
-					co[psock].ip_client[0] = '\0';
-					co[psock].buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
-					co[psock].buffer_in.size = DEFAULT_BUFFER_SIZE;
-					co[psock].buffer_in.length = 0;
-					co[psock].buffer_in.slot = NULL;
-					co[psock].buffer_in.islot = 0;
-					
-					co[psock].idle = time(NULL);
-					co[psock].http = http_s;
-					co[psock].attach = proxy;
-					co[psock].stream_type = STREAM_OUT;
-					co[psock].fd = psock;
-					
-					tfd++;
-				}
-
-				proxy = proxy->next;
-			}
 			
 			/* TODO : Why the hell there is 2 loop ?! */
 			while (lticks > 1000) {
@@ -614,9 +553,6 @@ unsigned int sockroutine(acetables *g_ape)
 
 	return 0;
 }
-
-
-
 
 int sendf(int sock, acetables *g_ape, char *buf, ...)
 {
@@ -682,7 +618,7 @@ int sendbin(int sock, char *bin, int len, acetables *g_ape)
 	if (sock != 0) {
 		while(t_bytes < len) {
 			n = write(sock, bin + t_bytes, r_bytes);
-			/* TODO : Look at writev or TCP_CORK */
+
 			if (n == -1) {
 				if (errno == EAGAIN && r_bytes > 0) {
 					if (g_ape->bufout[sock].buf == NULL) {
@@ -701,6 +637,7 @@ int sendbin(int sock, char *bin, int len, acetables *g_ape)
 					
 					return 0;
 				}
+				
 				break;
 			}
 			t_bytes += n;

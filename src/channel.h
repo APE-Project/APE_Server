@@ -36,7 +36,6 @@
 
 typedef struct CHANNEL
 {
-	char name[MAX_CHAN_LEN+1];
 	//char topic[MAX_TOPIC_LEN+1];
 
 	struct _transpipe *pipe;
@@ -47,6 +46,7 @@ typedef struct CHANNEL
 	extend *properties;
 
 	int flags;
+	char name[MAX_CHAN_LEN+1];
 
 } CHANNEL;
 

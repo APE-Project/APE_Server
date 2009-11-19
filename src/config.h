@@ -27,18 +27,15 @@
 
 
 struct _apeconfig_def {
-	char key[33];
 	char *val;
-	
 	struct _apeconfig_def *next;
+	char key[33];
 };
 
 typedef struct apeconfig {
-	char section[33];
 	struct _apeconfig_def *def;
-	
 	struct apeconfig *next;
-	
+	char section[33];
 } apeconfig;
 
 

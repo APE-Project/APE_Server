@@ -895,7 +895,6 @@ static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
 			JS_AddRoot(cb->asc->cx, &sock_obj->client_obj);
 
 			JS_SetPrivate(cb->asc->cx, obj, cbcopy);
-			JS_DefineFunctions(cb->asc->cx, obj, apesocket_funcs);
 			
 			params[0] = OBJECT_TO_JSVAL(sock_obj->client_obj);
 			
@@ -1192,10 +1191,10 @@ APE_JS_NATIVE(ape_sm_register_bad_cmd)
 //{
 	ape_sm_callback *ascb;
 
-	ascb = xmalloc(sizeof(*ascb));
+	ascb = JS_malloc(cx, sizeof(*ascb));
 
 	if (!JS_ConvertValue(cx, argv[0], JSTYPE_FUNCTION, &ascb->func)) {
-		free(ascb);
+		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
@@ -1237,10 +1236,10 @@ APE_JS_NATIVE(ape_sm_register_cmd)
 		return JS_TRUE;
 	}
 	
-	ascb = xmalloc(sizeof(*ascb));
+	ascb = JS_malloc(cx, sizeof(*ascb));
 
 	if (!JS_ConvertValue(cx, argv[2], JSTYPE_FUNCTION, &ascb->func)) {
-		free(ascb);
+		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
@@ -1280,16 +1279,16 @@ APE_JS_NATIVE(ape_sm_hook_cmd)
 		return JS_TRUE;
 	}
 
-	ascb = xmalloc(sizeof(*ascb));
+	ascb = JS_malloc(cx, sizeof(*ascb));
 
 	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, &ascb->func)) {
-		free(ascb);
+		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
 
 	if (!register_hook_cmd(cmd, ape_sm_cmd_wrapper, ascb, g_ape)) {
 		/* CMD doesn't exist */
-		free(ascb);
+		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
@@ -1456,7 +1455,7 @@ APE_JS_NATIVE(ape_sm_mkchan)
 	if ((new_chan = mkchan(chan_name, 0, g_ape)) != NULL) {
 		*rval = OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(new_chan));
 	}
-
+	
 	return JS_TRUE;
 }
 
@@ -1527,10 +1526,10 @@ APE_JS_NATIVE(ape_sm_addEvent)
 		return JS_TRUE;
 	}
 
-	ascb = xmalloc(sizeof(*ascb));
+	ascb = JS_malloc(cx, sizeof(*ascb));
 
 	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, &ascb->func)) {
-		free(ascb);
+		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
 	JS_AddRoot(cx, &ascb->func);
@@ -1572,9 +1571,14 @@ static JSObject *get_pipe_object(const char *pubid, transpipe *pipe, JSContext *
 		
 	if ((pipe != NULL) || ((pipe = get_pipe(pubid, g_ape)) != NULL)) {
 		if ((jspipe = pipe->data) == NULL) {
-			jspipe = JS_NewObject(cx, &pipe_class, NULL, NULL);
+			jspipe = JS_NewObject(cx, &pipe_class, get_property(g_ape->properties, "pipe_proto")->val, NULL);
+			
+			if (jspipe == NULL) {
+				return NULL;
+			}
+			
 			JS_AddRoot(cx, &jspipe);
-			JS_DefineFunctions(cx, jspipe, apepipe_funcs);
+			//JS_DefineFunctions(cx, jspipe, apepipe_funcs);
 			JS_SetPrivate(cx, jspipe, pipe);
 			JS_RemoveRoot(cx, &jspipe);
 			
@@ -1708,16 +1712,22 @@ static void ape_sm_timer_wrapper(struct _ape_sm_timer *params, int last)
 
 APE_JS_NATIVE(ape_sm_set_timeout)
 //{
-	struct _ape_sm_timer *params = xmalloc(sizeof(*params));
+	struct _ape_sm_timer *params;
 	struct _ticks_callback *timer;
 	int ms, i;
+	
+	params = JS_malloc(cx, sizeof(*params));
+	
+	if (params == NULL) {
+		return JS_FALSE;
+	}
 	
 	params->cx = cx;
 	//params->global = asc->global;
 	params->global = obj;
 	params->argc = argc-2;
 	
-	params->argv = (argc-2 ? xmalloc(sizeof(*params->argv) * argc-2) : NULL);
+	params->argv = (argc-2 ? JS_malloc(cx, sizeof(*params->argv) * argc-2) : NULL);
 	
 	if (!JS_ConvertValue(cx, argv[0], JSTYPE_FUNCTION, &params->func)) {
 		return JS_TRUE;
@@ -1744,15 +1754,21 @@ APE_JS_NATIVE(ape_sm_set_timeout)
 
 APE_JS_NATIVE(ape_sm_set_interval)
 //{
-	struct _ape_sm_timer *params = xmalloc(sizeof(*params));
+	struct _ape_sm_timer *params;
 	struct _ticks_callback *timer;
 	int ms, i;
+	
+	params = JS_malloc(cx, sizeof(*params));
+	
+	if (params == NULL) {
+		return JS_FALSE;
+	}
 	
 	params->cx = cx;
 	params->global = asc->global;
 	params->argc = argc-2;
 	
-	params->argv = (argc-2 ? xmalloc(sizeof(*params->argv) * argc-2) : NULL);
+	params->argv = (argc-2 ? JS_malloc(cx, sizeof(*params->argv) * argc-2) : NULL);
 	
 	if (!JS_ConvertValue(cx, argv[0], JSTYPE_FUNCTION, &params->func)) {
 		return JS_TRUE;
@@ -1786,14 +1802,16 @@ APE_JS_NATIVE(ape_sm_clear_timeout)
 	}
 	
 	if ((timer = get_timer_identifier(identifier, g_ape)) != NULL) {
+		JSContext *cx = params->cx;
+		
 		params = timer->params;
 
 		JS_RemoveRoot(params->cx, &params->func);
 		
 		if (params->argv != NULL) {
-			free(params->argv);
+			JS_free(cx, params->argv);
 		}
-		free(params);
+		JS_free(cx, params);
 		
 		del_timer(timer, g_ape);
 
@@ -1870,8 +1888,8 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	
 	ape_connect_name(ip, port, pattern, g_ape);
 
-	JS_DefineFunctions(cx, obj, apesocket_client_funcs);
-	JS_DefineFunctions(cx, obj, apesocket_funcs);
+/*	JS_DefineFunctions(cx, obj, apesocket_client_funcs);
+	JS_DefineFunctions(cx, obj, apesocket_funcs);*/
 	
 	return JS_TRUE;
 }
@@ -1891,9 +1909,7 @@ APE_JS_NATIVE(ape_sm_pipe_constructor)
 	JS_SetPrivate(cx, obj, pipe);
 	
 	/* TODO : This private data must be removed is the pipe is destroyed */
-	
-	JS_DefineFunctions(cx, obj, apepipe_funcs);
-	JS_DefineFunctions(cx, obj, apepipecustom_funcs);
+
 	
 	return JS_TRUE;
 }
@@ -2013,23 +2029,43 @@ static JSFunctionSpec sha1_funcs[] = {
 };
 
 
-static void ape_sm_define_ape(ape_sm_compiled *asc)
+static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g_ape)
 {
-	JSObject *obj, *b64, *sha1;
+	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *pipe;
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
 	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
 	sha1 = JS_DefineObject(asc->cx, obj, "sha1", &sha1_class, NULL, 0);
+	user = JS_DefineObject(gcx, obj, "user", &user_class, NULL, 0);
+	channel = JS_DefineObject(gcx, obj, "channel", &channel_class, NULL, 0);
+	pipe = JS_DefineObject(gcx, obj, "pipe", &pipe_class, NULL, 0);
+	
+	JS_DefineFunctions(gcx, user, apeuser_funcs);
+	JS_DefineFunctions(gcx, channel, apechannel_funcs);
+	JS_DefineFunctions(gcx, pipe, apepipe_funcs);
+	
+	add_property(&g_ape->properties, "user_proto", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
+	add_property(&g_ape->properties, "channel_proto", channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
+	add_property(&g_ape->properties, "pipe_proto", pipe, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	
 	JS_DefineFunctions(asc->cx, obj, ape_funcs);
 	JS_DefineFunctions(asc->cx, asc->global, global_funcs);
 	JS_DefineFunctions(asc->cx, b64, b64_funcs);
 	JS_DefineFunctions(asc->cx, sha1, sha1_funcs);
 	
-	JS_InitClass(asc->cx, obj, NULL, &pipe_class, ape_sm_pipe_constructor, 0, NULL, NULL, NULL, NULL);
-	JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
-	JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
-	JS_InitClass(asc->cx, obj, NULL, &raw_class, ape_sm_raw_constructor, 1, NULL, NULL, NULL, NULL);
+	custompipe = JS_InitClass(asc->cx, obj, NULL, &pipe_class, ape_sm_pipe_constructor, 0, NULL, NULL, NULL, NULL);
+	sockserver = JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
+	sockclient = JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
+	JS_InitClass(asc->cx, obj, NULL, &raw_class, ape_sm_raw_constructor, 1, NULL, NULL, NULL, NULL); /* Not used */
+
+	JS_DefineFunctions(asc->cx, sockclient, apesocket_client_funcs);
+	JS_DefineFunctions(asc->cx, sockclient, apesocket_funcs);
+
+	JS_DefineFunctions(asc->cx, sockserver, apesocket_client_funcs);
+	JS_DefineFunctions(asc->cx, sockserver, apesocket_funcs);
+
+	JS_DefineFunctions(asc->cx, custompipe, apepipe_funcs);
+	JS_DefineFunctions(asc->cx, custompipe, apepipecustom_funcs);
 	
 	JS_SetContextPrivate(asc->cx, asc);
 }
@@ -2191,7 +2227,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 	glob_t globbuf;
 
-	rt = JS_NewRuntime(8L * 1024L * 1024L); // 8 Mio allocated
+	rt = JS_NewRuntime(128L * 1024L * 1024L);
 	
 	if (rt == NULL) {
 		printf("[ERR] Not enougth memory\n");
@@ -2243,7 +2279,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 			JS_InitStandardClasses(asc->cx, asc->global);
 			
 			/* define the Ape Object */
-			ape_sm_define_ape(asc);
+			ape_sm_define_ape(asc, gcx, g_ape);
 
 			asc->bytecode = JS_CompileFile(asc->cx, asc->global, asc->filename);
 			
@@ -2304,13 +2340,12 @@ static USERS *ape_cb_allocateuser(ape_socket *client, char *host, char *ip, acet
 	USERS *u = adduser(client, host, ip, NULL, g_ape);
 	
 	if (u != NULL) {
-		user = JS_NewObject(gcx, &user_class, NULL, NULL);
+		user = JS_NewObject(gcx, &user_class, get_property(g_ape->properties, "user_proto")->val, NULL);
 
 		/* Store the JSObject into a private properties of the user */
 		jsobj = add_property(&u->properties, "jsobj", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
 		JS_AddRoot(gcx, &jsobj->val); /* add user object to the gc root */
-		
-		JS_DefineFunctions(gcx, user, apeuser_funcs);
+
 		JS_SetPrivate(gcx, user, u);
 		
 		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, u->pipe, gcx, g_ape));
@@ -2358,12 +2393,15 @@ static CHANNEL *ape_cb_mkchan(char *name, int flags, acetables *g_ape)
 	//JS_SetContextThread(gcx);
 	//JS_BeginRequest(gcx);
 
-		js_channel = JS_NewObject(gcx, &channel_class, NULL, NULL);
-
+		js_channel = JS_NewObject(gcx, &channel_class, get_property(g_ape->properties, "channel_proto")->val, NULL);
+		
+		if (js_channel == NULL) {
+			return NULL;
+		}
+		
 		jsobj = add_property(&chan->properties, "jsobj", js_channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
 		JS_AddRoot(gcx, &jsobj->val);
-		
-		JS_DefineFunctions(gcx, js_channel, apechannel_funcs);
+
 		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, chan->pipe, gcx, g_ape));
 		JS_SetProperty(gcx, js_channel, "pipe", &pipe);
 		JS_SetPrivate(gcx, js_channel, chan);

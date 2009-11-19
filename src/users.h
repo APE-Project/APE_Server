@@ -45,52 +45,44 @@
 
 struct _raw_pool {
 	struct RAW *raw;
-	int start;
 	struct _raw_pool *next;
 	struct _raw_pool *prev;
+	int start;
 };
 
 typedef struct USERS
 {
+	
+	struct {
+		struct _link_list *ulink;
+		int nlink;
+	} links;
 
-	unsigned int nraw;
-	unsigned int flags;
-	unsigned short int type;
-	unsigned short int istmp;
-	
-	char sessid[33];
-	
-	char ip[16]; // ipv4
-	
-	long int idle;
-	
-	int transport;
-	
+	struct {
+		struct _session *data;
+		int length;
+	} sessions;
+
 	struct USERS *next;
 	struct USERS *prev;
-	
 	struct CHANLIST *chan_foot;
-
-	struct {
-		int length;
-		struct _session *data;
-	} sessions;
-	
 	struct _transpipe *pipe;
-	
-	struct {
-		int nlink;
-		struct _link_list *ulink;
-	} links;
 	struct _extend *properties;
-
-	
 	struct _subuser *subuser;
-	int nsub;
-	
 	json_item *cmdqueue;
 	
+	long int idle;
+	int transport;
+	int nsub;
+	unsigned int nraw;
+	unsigned int flags;
+	
+	unsigned short int type;
+	unsigned short int istmp;
+
+	char ip[16]; // ipv4
 	char lastping[24];
+	char sessid[33];
 
 } USERS;
 
@@ -105,38 +97,30 @@ struct _raw_pool_user {
 typedef struct _subuser subuser;
 struct _subuser
 {
-	ape_socket *client;
-	int state;
 	
 	struct {
-		int sent;
-		struct _http_headers_response *content;
-	} headers;
-		
-	int need_update;
-	
-	/* In case of subuser socket is still marked as ALIVE and timed out */
-	int wait_for_free;
-	
-	/* Channel can be identified by Host HTTP Header */
-	char channel[MAX_HOST_LENGTH+1];
-	
-	struct _subuser *next;
-	USERS *user;
-	
-	int nraw;
-	
-	int burn_after_writing;
-	
-	struct {
-		int nraw;
 		struct _raw_pool_user low;
 		struct _raw_pool_user high;
+		int nraw;
 	} raw_pools;
+		
+	struct {
+		struct _http_headers_response *content;
+		int sent;
+	} headers;
 	
+	struct _subuser *next;
+	ape_socket *client;
+	USERS *user;
 	long int idle;
 	
+	int state;		
+	int need_update;	
+	int wait_for_free;
+	int nraw;
+	int burn_after_writing;
 	int current_chl;
+	char channel[MAX_HOST_LENGTH+1];
 };
 
 
@@ -177,9 +161,9 @@ typedef struct _session session;
 
 struct _session
 {
-	char key[33];
 	char *val;
 	struct _session *next;
+	char key[33];
 };
 
 

@@ -52,9 +52,8 @@ typedef enum
 
 typedef struct JSON_value_struct {
     struct {
+		long double float_value;
         JSON_int_t integer_value;
-        
-        long double float_value;
         
         struct {
             char* value;

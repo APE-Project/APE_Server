@@ -133,7 +133,6 @@ int main(int argc, char **argv)
 	printf("Author  : Weelya (contact@weelya.com)\n\n");
 
 	signal(SIGINT, &signal_handler);
-	signal(SIGPIPE, SIG_IGN);
 	
 	if (TICKS_RATE < 1) {
 		printf("[ERR] TICKS_RATE cant be less than 1\n");
@@ -148,7 +147,7 @@ int main(int argc, char **argv)
 	read(random, &getrandom, 3);
 	srand(getrandom);
 	close(random);
-	
+
 	g_ape = xmalloc(sizeof(*g_ape));
 	g_ape->basemem = 512;
 	
@@ -217,6 +216,7 @@ int main(int argc, char **argv)
 	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0) {
 		ape_daemon();
 	}
+	signal(SIGPIPE, SIG_IGN);
 	
 	g_ape->cmd_hook.head = NULL;
 	g_ape->cmd_hook.foot = NULL;

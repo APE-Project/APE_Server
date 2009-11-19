@@ -28,10 +28,10 @@
 struct query {
 	char *name;		/* original query string */
 	unsigned char *dn;		/* the DN being looked up */
-	enum dns_type qtyp;		/* type of the query */
 	void (*callback)(char *ip, void *data, acetables *g_ape);
 	void *data;
 	acetables *g_ape;
+	enum dns_type qtyp;		/* type of the query */
 };
 
 void ape_dns_init();

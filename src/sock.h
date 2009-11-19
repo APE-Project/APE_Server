@@ -37,8 +37,8 @@
 
 struct _socks_bufout
 {
-	int fd;
 	char *buf;
+	int fd;
 	int buflen;
 	int allocsize;
 };

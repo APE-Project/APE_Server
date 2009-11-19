@@ -49,9 +49,7 @@ typedef enum {
 
 struct _fdevent {
 	/* Common values */
-	fdevent_handler_t handler;
 	int *basemem;
-	
 	/* Interface */
 	int (*add)(struct _fdevent *, int, int);
 	int (*poll)(struct _fdevent *, int);
@@ -68,6 +66,8 @@ struct _fdevent {
 	struct epoll_event *events;
 	int epoll_fd;
 	#endif
+	
+	fdevent_handler_t handler;
 };
 
 int events_init(acetables *g_ape, int *basemem);

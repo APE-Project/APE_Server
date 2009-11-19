@@ -72,25 +72,23 @@ typedef enum {
 } json_child_t;
 
 typedef struct _json_item {
-
-	struct {
-        	char *val;
-        	size_t len;
-	} key;
-	int type;
-	
 	struct JSON_value_struct jval;
-
-	struct _json_item *father;
-	
 	struct {
 		struct _json_item *child;
 		struct _json_item *head;
 		json_child_t type;
 	} jchild;
 	
+	struct {
+        	char *val;
+        	size_t len;
+	} key;
+	
+	struct _json_item *father;
 	struct _json_item *next;
-
+			
+	int type;
+	
 } json_item;
 
 

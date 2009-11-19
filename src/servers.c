@@ -54,6 +54,13 @@ static void ape_sent(ape_socket *co, acetables *g_ape)
 static void ape_disconnect(ape_socket *co, acetables *g_ape)
 {
 	if (co->attach != NULL) {
+		
+		if (((subuser *)(co->attach))->wait_for_free == 1) {
+			free(co->attach);
+			co->attach = NULL;
+			return;				
+		}
+		
 		if (co->fd == ((subuser *)(co->attach))->client->fd) {
 
 			((subuser *)(co->attach))->headers.sent = 0;
@@ -66,10 +73,6 @@ static void ape_disconnect(ape_socket *co, acetables *g_ape)
 			}
 		}
 		
-		if (co->attach != NULL && ((subuser *)(co->attach))->wait_for_free == 1) {
-			free(co->attach);
-			co->attach = NULL;						
-		}		
 	}
 }
 
