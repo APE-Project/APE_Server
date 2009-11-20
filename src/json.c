@@ -21,7 +21,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <string.h>
 
 #include "json.h"
@@ -348,7 +347,7 @@ json_item *json_item_copy(json_item *cx, json_item *father)
 {
 	json_item *new_item = NULL, *return_item = NULL;
 	json_item *temp_item = NULL;
-	
+
 	while (cx != NULL) {	
 		new_item = init_json_item();
 		new_item->father = father;

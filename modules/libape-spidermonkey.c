@@ -532,7 +532,6 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 		return JS_TRUE;
 	}
 	
-	/* Don't know why, but JS_ConvertArguments success even if json_obj is not an Object and leaves json_obj unchanged */
 	if (!JS_ConvertArguments(cx, 3, argv, "so/o", &raw, &json_obj, &options) || json_obj == NULL) {
 		return JS_TRUE;
 	}
@@ -549,11 +548,12 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 			if (to_pipe->type == USER_PIPE) {
 				json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
 			} else if (to_pipe->type == CHANNEL_PIPE) {
-				json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(to_pipe));
+				if (((CHANNEL*)to_pipe->pipe)->head != NULL && ((CHANNEL*)to_pipe->pipe)->head->next != NULL) {
+					json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(to_pipe));
 				
-				newraw = forge_raw(raw, jstr);
-				post_raw_channel_restricted(newraw, to_pipe->pipe, from_pipe->pipe, g_ape);
-				
+					newraw = forge_raw(raw, jstr);
+					post_raw_channel_restricted(newraw, to_pipe->pipe, from_pipe->pipe, g_ape);
+				}
 				return JS_TRUE;
 			}
 		} else if (from_pipe->type == CUSTOM_PIPE) {
@@ -1038,7 +1038,8 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 			if (head->jval.vu.str.value != NULL) {
 				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
 			} else {
-				jval = INT_TO_JSVAL(head->jval.vu.integer_value);
+				jsdouble dp = (head->jval.vu.integer_value ? head->jval.vu.integer_value : head->jval.vu.float_value);
+				JS_NewNumberValue(cx, dp, &jval);				
 			}
 			JS_SetProperty(cx, root, head->key.val, &jval);
 		} else if (head->key.val == NULL && head->jchild.child == NULL) {
@@ -1048,8 +1049,10 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 			if (head->jval.vu.str.value != NULL) {	
 				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
 			} else {
-				jval = INT_TO_JSVAL(head->jval.vu.integer_value);
+				jsdouble dp = (head->jval.vu.integer_value ? head->jval.vu.integer_value : head->jval.vu.float_value);
+				JS_NewNumberValue(cx, dp, &jval);
 			}
+			/* TODO : jsdouble can be garbaged in the next call */
 			if (JS_GetArrayLength(cx, root, &rval)) {
 				JS_SetElement(cx, root, rval, &jval);
 			}			
@@ -1142,8 +1145,6 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		cb = JS_NewObject(cx, &cmdresponse_class, NULL, NULL);
 		JS_AddRoot(cx, &cb);
 		JS_DefineFunctions(cx, cb, cmdresponse_funcs);
-		
-		/* TODO : RemoveRoot */		
 		
 		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->host));
 		/* infos.host */	

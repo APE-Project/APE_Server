@@ -146,14 +146,22 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 	user->chan_foot = chanl;
 
 	if (!(chan->flags & CHANNEL_NONINTERACTIVE)) {
-		json_item *user_list = json_new_array();
-		json_item *uinfo = json_new_object();
 		
-		json_set_property_objN(uinfo, "user", 4, get_json_object_user(user));
-		json_set_property_objN(uinfo, "pipe", 4, get_json_object_channel(chan));
+		json_item *user_list;
+		json_item *uinfo;
+		
+		user_list = json_new_array();
+		
+		if (list->next != NULL) {
+			
+			uinfo = json_new_object();
+		
+			json_set_property_objN(uinfo, "user", 4, get_json_object_user(user));
+			json_set_property_objN(uinfo, "pipe", 4, get_json_object_channel(chan));
 
-		newraw = forge_raw(RAW_JOIN, uinfo);
-		post_raw_channel_restricted(newraw, chan, user, g_ape);
+			newraw = forge_raw(RAW_JOIN, uinfo);
+			post_raw_channel_restricted(newraw, chan, user, g_ape);
+		}
 		
 		ulist = chan->head;
 		while (ulist != NULL) {

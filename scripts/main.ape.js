@@ -8,5 +8,4 @@ Ape.addEvent("init", function() {
 	include("examples/nickname.js");
 	//include("examples/ircserver.js");
 	//include("framework/http_auth.js");
-	Ape.log("[JS] ../scripts/main.ape.js loaded");
 });

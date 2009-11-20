@@ -540,7 +540,7 @@ unsigned int sockroutine(acetables *g_ape)
 		{
 			unsigned long int nticks;
 			
-			/* TODO : Why the hell there is 2 loop ?! */
+			/* TODO : Why the hell there is 2 loop ?! (while+for) */
 			while (lticks > 1000) {
 				ticks++;
 				lticks -= 1000;
