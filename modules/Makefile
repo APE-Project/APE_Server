@@ -1,6 +1,6 @@
 include ./plateform.mk
 
-CC=gcc -std=c99 -D_GNU_SOURCE
+CC=gcc -D_GNU_SOURCE
 
 ifdef DARWIN_BUILD
 
@@ -8,7 +8,7 @@ all: modules
 
 modules: libape-spidermonkey.c
 
-	$(CC) -Wall -g -bundle -undefined suppress -flat_namespace -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../deps/js1.8/src/dist/include/ -L../deps/js1.8/src/ -ljs_static -lstdc++
+	$(CC) -Wall -g -bundle -undefined suppress -flat_namespace -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../deps/js1.8/src/dist/include/ -L../deps/js1.8/src/ -ljs_static -lstdc++ -L./deps/mysac-0.4b/ -I./deps/mysac-0.4b/ -lmysac -L/opt/local/lib/mysql5/mysql/ -lmysqlclient_r
 
 endif
 ifdef LINUX_BUILD

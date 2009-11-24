@@ -144,7 +144,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 	subuser *sub = pc->sub;
 	unsigned int flag;
 	unsigned short int attach = 1;
-	
+
 	if (rjson != NULL && rjson->jval.vu.str.value != NULL) {
 		callbackp cp;
 		cp.client = NULL;

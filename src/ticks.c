@@ -55,7 +55,7 @@ void process_tick(acetables *g_ape)
 }
 #endif
 
-void process_tick(acetables *g_ape)
+inline void process_tick(acetables *g_ape)
 {
 	struct _ticks_callback *timers = g_ape->timers.timers;
 	

@@ -41,7 +41,7 @@ static struct _http_header_line *parse_header_line(const char *line)
 {
 	unsigned int i;
 	unsigned short int state = 0;
-	struct _http_header_line *hline;
+	struct _http_header_line *hline = NULL;
 	for (i = 0; i < 1024 && line[i] != '\0' && line[i] != '\r' && line[i] != '\n'; i++) {
 		if (i == 0) {
 			hline = xmalloc(sizeof(*hline));

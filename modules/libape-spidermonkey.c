@@ -22,6 +22,7 @@
 
 #define XP_UNIX
 
+#include <mysac.h>
 #include <jsapi.h>
 #include <stdio.h>
 #include <glob.h>
@@ -54,6 +55,9 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root);
 		g_ape = asc->g_ape;\
 		
 #define APE_JS_NATIVE_END(func_name) }
+
+
+static void apemysql_finalize(JSContext *cx, JSObject *jsmysql);
 	
 static JSBool ape_sm_stub(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -117,6 +121,41 @@ struct _ape_sock_js_obj {
 	JSObject *client_obj;
 };
 
+
+struct _ape_mysql_queue {
+	struct _ape_mysql_queue	*next;
+	MYSAC_RES *res;
+	char *query;
+	unsigned int query_len;
+	jsval callback;
+};
+
+typedef enum {
+	SQL_READY_FOR_QUERY,
+	SQL_NEED_QUEUE
+} ape_mysql_state_t;
+
+struct _ape_mysql_data {
+	MYSAC *my;
+	void (*on_success)(struct _ape_mysql_data *, int);
+	JSObject *jsmysql;
+	JSContext *cx;
+	char *db;
+	void *data;
+	jsval callback;
+	ape_mysql_state_t state;
+	
+	struct {
+		struct _ape_mysql_queue *head;
+		struct _ape_mysql_queue *foot;
+	} queue;
+};
+
+
+static void mysac_query_success(struct _ape_mysql_data *myhandle, int code);
+static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myhandle, char *query, unsigned int query_len, jsval callback);
+static void apemysql_shift_queue(struct _ape_mysql_data *myhandle);
+
 //static JSBool sockserver_addproperty(JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 static ace_plugin_infos infos_module = {
@@ -125,8 +164,6 @@ static ace_plugin_infos infos_module = {
 	"Anthony Catel",	// Module Author
 	"javascript.conf"			// Config file
 };
-
-
 
 static JSClass apesocket_class = {
 	"apesocket", JSCLASS_HAS_PRIVATE,
@@ -208,12 +245,20 @@ static JSClass pipe_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+static JSClass mysql_class = {
+	"MySQL", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, apemysql_finalize,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 static JSClass cmdresponse_class = {
 	"cmdresponse", JSCLASS_HAS_PRIVATE,
 	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
 	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
+
 
 /* TODO : Add binary capabilities (remove strlen and use native JSString) */
 APE_JS_NATIVE(apesocket_write)
@@ -439,8 +484,8 @@ APE_JS_NATIVE(apepipe_sm_set_property)
 //{
 	char *key;
 	transpipe *pipe = JS_GetPrivate(cx, obj);
-	int typextend;
-	void *valuextend;
+	int typextend = EXTEND_STR;
+	void *valuextend = NULL;
 	
 	if (pipe == NULL) {
 		return JS_TRUE;
@@ -791,6 +836,40 @@ APE_JS_NATIVE(apeuser_sm_set_property)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apemysql_sm_errorstring)
+//{
+	struct _ape_mysql_data *myhandle;
+	
+	if ((myhandle = JS_GetPrivate(cx, obj)) == NULL) {
+		return JS_TRUE;
+	}
+
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, mysac_advance_error(myhandle->my)));
+	
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(apemysql_sm_query)
+//{
+	JSString *query;
+	struct _ape_mysql_data *myhandle;
+	jsval callback;
+	
+	if ((myhandle = JS_GetPrivate(cx, obj)) == NULL) {
+		return JS_TRUE;
+	}
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "S", &query)) {
+		return JS_TRUE;
+	}
+	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, &callback)) {
+		return JS_TRUE;
+	}
+	
+	apemysql_push_queue(myhandle, JS_GetStringBytes(query), JS_GetStringLength(query), callback);
+	
+	return JS_TRUE;
+}
 
 static JSFunctionSpec apesocket_funcs[] = {
     JS_FS("write",   apesocket_write,	1, 0, 0),
@@ -833,6 +912,14 @@ static JSFunctionSpec apepipe_funcs[] = {
 	JS_FS("setProperty", apepipe_sm_set_property, 2, 0, 0),
 	JS_FS("getParent", apepipe_sm_get_parent, 0, 0, 0),
 	JS_FS("onSend", ape_sm_stub, 0, 0, 0),
+	JS_FS_END
+};
+
+static JSFunctionSpec apemysql_funcs[] = {
+	JS_FS("onConnect", ape_sm_stub, 0, 0, 0),
+	JS_FS("onError", ape_sm_stub, 0, 0, 0),
+	JS_FS("errorString", apemysql_sm_errorstring, 0, 0, 0),
+	JS_FS("query", apemysql_sm_query, 2, 0, 0),
 	JS_FS_END
 };
 
@@ -1803,9 +1890,11 @@ APE_JS_NATIVE(ape_sm_clear_timeout)
 	}
 	
 	if ((timer = get_timer_identifier(identifier, g_ape)) != NULL) {
-		JSContext *cx = params->cx;
+		JSContext *cx;
 		
 		params = timer->params;
+		
+		cx = params->cx;
 
 		JS_RemoveRoot(params->cx, &params->func);
 		
@@ -1898,10 +1987,10 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 APE_JS_NATIVE(ape_sm_pipe_constructor)
 //{
 	transpipe *pipe;
-	JSObject *link;
+	//JSObject *link;
 
 	/* Add link to a Root ? */
-	pipe = init_pipe(link, CUSTOM_PIPE, g_ape);
+	pipe = init_pipe(NULL, CUSTOM_PIPE, g_ape);
 	pipe->on_send = ape_sm_pipe_on_send_wrapper;
 	pipe->data = obj;
 	
@@ -1912,6 +2001,290 @@ APE_JS_NATIVE(ape_sm_pipe_constructor)
 	/* TODO : This private data must be removed is the pipe is destroyed */
 
 	
+	return JS_TRUE;
+}
+
+static void ape_mysql_handle_io(struct _ape_mysql_data *myhandle, acetables *g_ape)
+{
+	int ret;
+	
+	if (myhandle->my->call_it == NULL) {
+		return;
+	}
+	ret = mysac_io(myhandle->my);
+
+	switch(ret) {
+		case MYERR_WANT_WRITE:
+		case MYERR_WANT_READ:
+			break;
+		default:
+			
+			myhandle->my->call_it = NULL; /* prevent any extra IO call */
+			
+			if (myhandle->on_success != NULL) {
+				myhandle->on_success(myhandle, ret);
+			}
+			
+			break;
+	}
+}
+
+static void ape_mysql_io_read(ape_socket *client, ape_buffer *buf, size_t offset, acetables *g_ape)
+{
+	struct _ape_mysql_data *myhandle = client->data;
+
+	ape_mysql_handle_io(myhandle, g_ape);
+}
+
+static void ape_mysql_io_write(ape_socket *client, acetables *g_ape)
+{
+	#if 0
+	struct _ape_mysql_data *myhandle = client->data;
+	
+	ape_mysql_handle_io(myhandle, g_ape);	
+	#endif
+}
+
+static void mysac_setdb_success(struct _ape_mysql_data *myhandle, int code)
+{
+	jsval rval;
+	if (myhandle->jsmysql == NULL) {
+		return;
+	}
+	
+	if (!code) {
+		myhandle->state = SQL_READY_FOR_QUERY;
+		apemysql_shift_queue(myhandle);
+		
+		JS_CallFunctionName(myhandle->cx, myhandle->jsmysql, "onConnect", 0, NULL, &rval);
+	} else {
+		jsval params[1];
+		params[0] = INT_TO_JSVAL(code);
+		
+		JS_CallFunctionName(myhandle->cx, myhandle->jsmysql, "onError", 1, params, &rval);
+		
+		myhandle->jsmysql = NULL;
+		myhandle->on_success = NULL;
+		
+		/* TODO : Supress queue */
+		
+		free(myhandle->db);		
+	}
+}
+
+static void mysac_connect_success(struct _ape_mysql_data *myhandle, int code)
+{
+	jsval rval;
+	if (myhandle->jsmysql == NULL) {
+		return;
+	}
+
+	if (!code) {
+		myhandle->on_success = mysac_setdb_success;
+		
+		mysac_set_database(myhandle->my, myhandle->db);
+		mysac_send_database(myhandle->my);
+		
+	} else {
+		jsval params[1];
+		params[0] = INT_TO_JSVAL(code);
+		
+		JS_CallFunctionName(myhandle->cx, myhandle->jsmysql, "onError", 1, params, &rval);
+		
+		/* TODO : Supress queue */
+		
+		myhandle->jsmysql = NULL;
+		myhandle->on_success = NULL;
+		
+		free(myhandle->db);
+	}
+}
+
+static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
+{
+	struct _ape_mysql_queue *queue = myhandle->data;
+	jsval params[2], rval;
+	myhandle->state = SQL_READY_FOR_QUERY;
+	
+	apemysql_shift_queue(myhandle);
+	if (!code) {
+		MYSAC_ROW *row;
+		MYSAC_RES *myres = queue->res;
+		
+		unsigned int nfield = mysac_field_count(myres), nrow = mysac_num_rows(myres), pos = 0;;
+		JSObject *res = JS_NewArrayObject(myhandle->cx, nrow, NULL); /* First param [{},{},{},] */
+		
+		JS_AddRoot(myhandle->cx, &res);
+		
+		while ((row = mysac_fetch_row(myres)) != NULL) {
+			unsigned int i;
+			jsval currentval;
+			JSObject *elem = JS_NewObject(myhandle->cx, NULL, NULL, res);
+			
+			currentval = OBJECT_TO_JSVAL(elem);
+			JS_SetElement(myhandle->cx, res, pos, &currentval);
+			
+			for (i = 0; i < nfield; i++) {
+				int fieldlen, valuelen;
+				char *field, *val;
+				jsval jval;
+				
+				valuelen = ((MYSAC_RES *)myres)->cr->lengths[i];
+				fieldlen = ((MYSAC_RES *)myres)->cols[i].name_length;
+				
+				field = ((MYSAC_RES *)myres)->cols[i].name;
+				val = row[i].blob;
+				
+				jval = STRING_TO_JSVAL(JS_NewStringCopyN(myhandle->cx, val, valuelen));
+				JS_SetProperty(myhandle->cx, elem, field, &jval);
+			}
+			pos++;
+		}
+		params[0] = OBJECT_TO_JSVAL(res);
+		params[1] = JSVAL_FALSE;
+		
+		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
+		
+		JS_RemoveRoot(myhandle->cx, &res);
+	} else {
+		params[0] = JSVAL_FALSE;
+		params[1] = INT_TO_JSVAL(code);
+
+		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
+	}
+	
+	JS_RemoveRoot(myhandle->cx, &queue->callback);
+	free(queue);
+
+}
+
+static void apemysql_finalize(JSContext *cx, JSObject *jsmysql)
+{
+	struct _ape_mysql_data *myhandle;
+
+	if ((myhandle = JS_GetPrivate(cx, jsmysql)) != NULL) {
+		myhandle->jsmysql = NULL;
+		/* Todo: shutdown mysql */
+	}
+}
+
+static void apemysql_shift_queue(struct _ape_mysql_data *myhandle)
+{
+	struct _ape_mysql_queue *queue;
+	
+	if (myhandle->queue.head == NULL || myhandle->state != SQL_READY_FOR_QUERY) {
+		return;
+	}
+	
+	queue = myhandle->queue.head;
+	myhandle->state = SQL_NEED_QUEUE;
+	myhandle->data = queue;
+	
+	if ((myhandle->queue.head = queue->next) == NULL) {
+		myhandle->queue.foot = NULL;
+	}
+	mysac_b_set_query(myhandle->my, queue->res, queue->query, queue->query_len);
+	mysac_send_query(myhandle->my);
+	
+	myhandle->on_success = mysac_query_success;
+	
+}
+
+static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myhandle, char *query, unsigned int query_len, jsval callback)
+{
+	struct _ape_mysql_queue *nqueue;	
+	int basemem = (1024*1024);
+	MYSAC_RES *res;
+	char *res_buf = xmalloc(sizeof(char) * basemem);
+	
+	res = mysac_init_res(res_buf, basemem);
+	
+	nqueue = xmalloc(sizeof(*nqueue));
+	
+	nqueue->next = NULL;
+	nqueue->query = query;
+	nqueue->query_len = query_len;
+	nqueue->callback = callback;
+	nqueue->res = res;
+	
+	if (myhandle->queue.foot == NULL) {
+		myhandle->queue.head = nqueue;
+	} else {
+		myhandle->queue.foot->next = nqueue;
+	}
+	myhandle->queue.foot = nqueue;
+	
+	JS_AddRoot(myhandle->cx, &nqueue->callback);
+
+	if (myhandle->queue.head->next == NULL && myhandle->state == SQL_READY_FOR_QUERY) {
+		
+		apemysql_shift_queue(myhandle);
+		
+		return NULL;
+	}
+	
+	return nqueue;
+}
+
+APE_JS_NATIVE(ape_sm_mysql_constructor)
+//{
+	char *host, *login, *pass, *db;
+	
+	MYSAC *my;
+	int fd;
+	struct _ape_mysql_data *myhandle;
+	ape_socket *co;
+	
+	if (!JS_ConvertArguments(cx, argc, argv, "ssss", &host, &login, &pass, &db)) {
+		return JS_TRUE;
+	}
+	
+	co = g_ape->co;
+	myhandle = xmalloc(sizeof(*myhandle));
+	
+	my = mysac_new(1024*1024);
+	mysac_setup(my, host, login, pass, db, 0);
+	mysac_connect(my);
+	
+	myhandle->my = my;
+	myhandle->jsmysql = obj;
+	myhandle->cx = cx;
+	myhandle->db = xstrdup(db);
+	myhandle->data = NULL;
+	myhandle->callback = JSVAL_NULL;
+	myhandle->state = SQL_NEED_QUEUE;
+	myhandle->queue.head = NULL;
+	myhandle->queue.foot = NULL;
+	
+	JS_SetPrivate(cx, obj, myhandle);
+	
+	fd = mysac_get_fd(my);
+	
+	co[fd].buffer_in.data = NULL;
+	co[fd].buffer_in.size = 0;
+	co[fd].buffer_in.length = 0;
+
+	co[fd].attach = NULL;
+	co[fd].idle = 0;
+	co[fd].fd = fd;
+
+	co[fd].stream_type = STREAM_DELEGATE;
+
+	co[fd].callbacks.on_accept = NULL;
+	co[fd].callbacks.on_connect = NULL;
+	co[fd].callbacks.on_disconnect = NULL;
+	co[fd].callbacks.on_read_lf = NULL;
+	co[fd].callbacks.on_data_completly_sent = NULL;
+
+	co[fd].callbacks.on_read = ape_mysql_io_read;
+	co[fd].callbacks.on_write = ape_mysql_io_write;
+	co[fd].data = myhandle;
+
+	events_add(g_ape->events, fd, EVENT_READ|EVENT_WRITE);
+	
+	//myhandle->to_call = mysac_connect;
+	myhandle->on_success = mysac_connect_success;
+
 	return JS_TRUE;
 }
 
@@ -2032,7 +2405,7 @@ static JSFunctionSpec sha1_funcs[] = {
 
 static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g_ape)
 {
-	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *pipe;
+	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *pipe, *jsmysql;
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
 	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
@@ -2057,6 +2430,7 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	custompipe = JS_InitClass(asc->cx, obj, NULL, &pipe_class, ape_sm_pipe_constructor, 0, NULL, NULL, NULL, NULL);
 	sockserver = JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
 	sockclient = JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
+	jsmysql = JS_InitClass(asc->cx, obj, NULL, &mysql_class, ape_sm_mysql_constructor, 2, NULL, NULL, NULL, NULL);
 	JS_InitClass(asc->cx, obj, NULL, &raw_class, ape_sm_raw_constructor, 1, NULL, NULL, NULL, NULL); /* Not used */
 
 	JS_DefineFunctions(asc->cx, sockclient, apesocket_client_funcs);
@@ -2067,6 +2441,8 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 
 	JS_DefineFunctions(asc->cx, custompipe, apepipe_funcs);
 	JS_DefineFunctions(asc->cx, custompipe, apepipecustom_funcs);
+	
+	JS_DefineFunctions(asc->cx, jsmysql, apemysql_funcs);
 	
 	JS_SetContextPrivate(asc->cx, asc);
 }

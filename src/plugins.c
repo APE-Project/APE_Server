@@ -126,7 +126,7 @@ plug_config *plugin_parse_conf(const char *file)
 	if (fp == NULL) {
 		return NULL;
 	}
-	plug_config *tmpconf = NULL, *new_conf;
+	plug_config *tmpconf = NULL, *new_conf = NULL;
 	
 	while(fgets(lines, 2048, fp)) {
 		int nTok = 0;

@@ -38,6 +38,7 @@
 #include "../src/raw.h"
 #include "../src/base64.h"
 #include "../src/sha1.h"
+#include "../src/events.h"
 
 #include <stdarg.h>
 

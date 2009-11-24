@@ -196,10 +196,41 @@ static int escape_json_string(char *in, char *out, int len)
 	int i, e;
 	
 	for (i = 0, e = 0; i < len; i++, e++) {
-		if (in[i] == '"' || in[i] == '\\') {
-			out[e++] = '\\';
+		
+		switch(in[i]) {
+			case '"':
+				out[e++] = '\\';
+				out[e] = '"';
+				break;
+			case '\\':
+				out[e++] = '\\';
+				out[e] = '\\';
+				break;
+			case '\n':
+				out[e++] = '\\';
+				out[e] = 'n';
+				break;
+			case '\b':
+				out[e++] = '\\';
+				out[e] = 'b';
+				break;
+			case '\t':
+				out[e++] = '\\';
+				out[e] = 't';
+				break;
+			case '\f':
+				out[e++] = '\\';
+				out[e] = 'f';
+				break;
+			case '\r':
+				out[e++] = '\\';
+				out[e] = 'r';
+				break;
+			default: 
+				out[e] = in[i];
+				break;
 		}
-		out[e] = in[i];
+
 	}
 	return e;
 }

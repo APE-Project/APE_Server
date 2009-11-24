@@ -288,11 +288,10 @@ unsigned int sockroutine(acetables *g_ape)
 	#if 0
 	add_periodical(5, 0, check_idle, &sl, g_ape);
 	#endif
-	
+	gettimeofday(&t_start, NULL);
 	while (1) {
 	//	int timeout_to_hang = MAX((1000/TICKS_RATE)-ticks, 1);
 		/* Linux 2.6.25 provides a fd-driven timer system. It could be usefull to implement */
-		gettimeofday(&t_start, NULL);
 
 		nfds = events_poll(g_ape->events, 1);
 		
@@ -318,7 +317,7 @@ unsigned int sockroutine(acetables *g_ape)
 						if (new_fd == -1) {
 							break;
 						}
-						
+						printf("Accept : %i\n", new_fd);
 						if (new_fd + 4 >= g_ape->basemem) {
 							/* Increase connection & events size */
 							growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
@@ -528,27 +527,19 @@ unsigned int sockroutine(acetables *g_ape)
 		}
 		
 		gettimeofday(&t_end, NULL);
-
+		
 		ticks = 0;
 		
-		uticks = 1000000 * (t_end.tv_sec - t_start.tv_sec);
+		uticks = 1000000L * (t_end.tv_sec - t_start.tv_sec);
 		uticks += (t_end.tv_usec - t_start.tv_usec);
-		
+		t_start = t_end;
 		lticks += uticks;
-
 		/* Tic tac, tic tac */
-		{
-			unsigned long int nticks;
-			
-			/* TODO : Why the hell there is 2 loop ?! (while+for) */
-			while (lticks > 1000) {
-				ticks++;
-				lticks -= 1000;
-			}
-			for (nticks = 0; nticks < ticks; nticks++) {
-				process_tick(g_ape);
-			}			
-		}
+
+		while (lticks >= 1000) {
+			lticks -= 1000;
+			process_tick(g_ape);
+		}		
 	}
 
 	return 0;

@@ -8,7 +8,7 @@ SRC=src/entry.c src/sock.c src/hash.c src/handle_http.c src/cmd.c src/users.c sr
 
 CFLAGS=-Wall -g -minline-all-stringops -rdynamic
 LFLAGS=-ldl -lm
-CC=gcc -std=c99 -D_GNU_SOURCE
+CC=gcc -D_GNU_SOURCE
 RM=rm -f
 
 all: aped
