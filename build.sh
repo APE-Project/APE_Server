@@ -18,7 +18,7 @@ esac
 
 cd ./deps/udns-0.0.9/
 make clean && ./configure && make
-cd ../js1.8/src/
+cd ../js/src/
 ./configure && make
 cd ../../../
 make
