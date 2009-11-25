@@ -1,5 +1,0 @@
-two = int 7
-three = int 3
-targ = add two three
-res =   sub targ three
-ret res

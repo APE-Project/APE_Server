@@ -1,0 +1,258 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ * vim: set ts=8 sw=4 et tw=0 ft=C:
+ *
+ * ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is SpiderMonkey nanojit.
+ *
+ * The Initial Developer of the Original Code is
+ * the Mozilla Corporation.
+ * Portions created by the Initial Developer are Copyright (C) 2008
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Jeff Walden <jwalden+code@mit.edu>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either of the GNU General Public License Version 2 or later (the "GPL"),
+ * or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+/*
+ * Definitions of LIR opcodes.  If you need to allocate an opcode, look
+ * for a name beginning with "__" and claim it.
+ *
+ * Includers must define OPDEF and OPD64 macros of the following forms:
+ *
+ * #define OPDEF(op,val,repkind) ...
+ * #define OPD64(op,val,repkind) ...
+ *
+ * Selected arguments can then be used within the macro expansions.
+ * - op         Bytecode name, token-pasted after "LIR_" to form an LOpcode.
+ * - val        Bytecode value, which is the LOpcode enumerator value.
+ * - repkind    Indicates how the instruction is represented in memory;  XYZ
+ *              corresponds to LInsXYZ and LRK_XYZ.
+ *
+ * This file is best viewed with 128 columns:
+12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
+ *
+ * Aliases for pointer-sized operations that choose 32bit or 64bit instructions
+ * are given in the LOpcode enum in LIR.h just after including LIRopcodes.tbl.
+ */
+
+/*    op    val name        operands */
+
+/* special operations (must be 0..N) */
+OPDEF(start,     0, Op0)    // start of a fragment
+OPDEF(regfence,  1, Op0)    // register fence, no register allocation is allowed across this meta instruction
+OPDEF(skip,      2, Sk)     // holds blobs ("payloads") of data;  also links pages
+OPDEF(__3,       3, None)
+OPDEF(__4,       4, None)
+OPDEF(__5,       5, None)
+OPDEF(__6,       6, None)
+
+/* non-pure operations */
+OPDEF(iaddp,     7, Op2)    // integer addition for temporary pointer calculations (32bit only)
+OPDEF(iparam,    8, P)      // load a parameter (32bit register or stk location)
+OPDEF(__9,       9, None)
+OPDEF(ld,       10, Ld)     // 32-bit load
+OPDEF(ialloc,   11, I)      // alloc some stack space (value is 32bit address)
+OPDEF(sti,      12, Sti)    // 32-bit store
+OPDEF(ret,      13, Op1)    // return a word-sized value
+OPDEF(live,     14, Op1)    // extend live range of reference
+OPDEF(flive,    15, Op1)    // extend live range of a floating point value reference
+OPDEF(icall,    16, C)      // subroutine call returning a 32-bit value
+OPDEF(__17,     17, None)
+
+/* guards */
+OPDEF(x,        18, Op2)    // exit always
+
+/* branches */
+OPDEF(j,        19, Op2)    // jump always
+OPDEF(jt,       20, Op2)    // jump if true
+OPDEF(jf,       21, Op2)    // jump if false
+OPDEF(label,    22, Op0)    // a jump target (no machine code is emitted for this)
+OPDEF(jtbl,     23, Jtbl)   // jump to address in table
+
+/* operators */
+
+/*
+ * NB: Opcodes LIR_int through LIR_uge must remain continuous to aid in
+ *     common-subexpression-elimination detection code.
+ */
+
+OPDEF(int,      24, I)      // constant 32-bit integer
+OPDEF(cmov,     25, Op3)    // conditional move
+OPDEF(callh,    26, Op1)    // get the high 32 bits of a call returning a 64-bit value in two 32bit registers
+
+/*
+ * feq though fge must only be used on float arguments.  They return integers.
+ * For all except feq, (op ^ 1) is the op which flips the
+ * left and right sides of the comparison, so (lt ^ 1) == gt, or the operator
+ * "<" is xored with 1 to get ">".  Similarly, (op ^ 3) is the complement of
+ * op, so (lt ^ 1) == ge, or the complement of the operator "<" is ">=" xored
+ * with 3.  NB: These opcodes must remain continuous so that comparison-opcode
+ * detection works correctly.
+ */
+OPDEF(feq,      27, Op2)    // floating-point equality
+OPDEF(flt,      28, Op2)    // floating-point less-than
+OPDEF(fgt,      29, Op2)    // floating-point greater-than
+OPDEF(fle,      30, Op2)    // floating-point less-than-or-equal
+OPDEF(fge,      31, Op2)    // floating-point greater-than-or-equal
+
+OPDEF(ldcb,     32, Ld)     // non-volatile  8-bit load
+OPDEF(ldcs,     33, Ld)     // non-volatile 16-bit load
+OPDEF(ldc,      34, Ld)     // non-volatile 32-bit load
+
+OPDEF(neg,      35, Op1)    // integer negation
+OPDEF(add,      36, Op2)    // integer addition
+OPDEF(sub,      37, Op2)    // integer subtraction
+OPDEF(mul,      38, Op2)    // integer multiplication
+OPDEF(div,      39, Op2)    // integer division
+OPDEF(mod,      40, Op1)    // hack: get the modulus from a LIR_div result, for x86 only
+
+OPDEF(and,      41, Op2)    // 32-bit bitwise AND
+OPDEF(or,       42, Op2)    // 32-bit bitwise OR
+OPDEF(xor,      43, Op2)    // 32-bit bitwise XOR
+OPDEF(not,      44, Op1)    // 32-bit bitwise NOT
+OPDEF(lsh,      45, Op2)    // 32-bit left shift
+OPDEF(rsh,      46, Op2)    // 32-bit right shift with sign-extend (>>)
+OPDEF(ush,      47, Op2)    // 32-bit unsigned right shift (>>>)
+
+// conditional guards, op^1 to complement.  Only things that are
+// isCond() can be passed to these.
+OPDEF(xt,       48, Op2)    // exit if true   (0x30 0011 0000)
+OPDEF(xf,       49, Op2)    // exit if false  (0x31 0011 0001)
+
+OPDEF(qlo,      50, Op1)    // get the low  32 bits of a 64-bit value
+OPDEF(qhi,      51, Op1)    // get the high 32 bits of a 64-bit value
+
+OPDEF(__52,     52, None)
+OPDEF(__53,     53, None)
+
+// This must be right before LIR_eq, so (op&~LIR64 - LIR_ov) can be indexed
+// into a convenient table.
+OPDEF(ov,       54, Op1)    // test for overflow;  value must have just been computed
+
+// Integer (32 bit) relational operators.  (op ^ 1) is the op which flips the
+// left and right sides of the comparison, so (lt ^ 1) == gt, or the operator
+// "<" is xored with 1 to get ">".  Similarly, (op ^ 3) is the complement of
+// op, so (lt ^ 1) == ge, or the complement of the operator "<" is ">=" xored
+// with 3.  'u' prefix indicates the unsigned integer variant.
+// NB: These opcodes must remain continuous so that comparison-opcode detection
+// works correctly.
+OPDEF(eq,       55, Op2)    //          integer equality
+OPDEF(lt,       56, Op2)    //   signed integer less-than             (0x38 0011 1000)
+OPDEF(gt,       57, Op2)    //   signed integer greater-than          (0x39 0011 1001)
+OPDEF(le,       58, Op2)    //   signed integer less-than-or-equal    (0x3A 0011 1010)
+OPDEF(ge,       59, Op2)    //   signed integer greater-than-or-equal (0x3B 0011 1011)
+OPDEF(ult,      60, Op2)    // unsigned integer less-than             (0x3C 0011 1100)
+OPDEF(ugt,      61, Op2)    // unsigned integer greater-than          (0x3D 0011 1101)
+OPDEF(ule,      62, Op2)    // unsigned integer less-than-or-equal    (0x3E 0011 1110)
+OPDEF(uge,      63, Op2)    // unsigned integer greater-than-or-equal (0x3F 0011 1111)
+
+OPD64(__0_64,    0, None)
+
+OPD64(file,      1, Op1)    // source filename for debug symbols
+OPD64(line,      2, Op1)    // source line number for debug symbols
+OPD64(xbarrier,  3, Op2)    // memory barrier;  doesn't exit, but flushes all values to the stack
+OPD64(xtbl,      4, Op2)    // exit via indirect jump
+
+OPD64(__5_64,    5, None)
+OPD64(__6_64,    6, None)
+OPD64(qaddp, LIR_iaddp, Op2)    // integer addition for temp pointer calculations (64bit only)
+OPD64(qparam, LIR_iparam, P)    // load a parameter (64bit register or stk location)
+OPD64(__9_64,    9, None)
+
+OPD64(ldq,  LIR_ld, Ld)     // 64-bit (quad) load
+
+OPD64(qalloc, LIR_ialloc, I)    // allocate some stack space (value is 64bit address)
+
+OPD64(stqi, LIR_sti, Sti)   // 64-bit (quad) store
+OPD64(fret, LIR_ret, Op1)
+
+OPD64(__14_64,  14, None)
+OPD64(__15_64,  15, None)
+
+OPD64(fcall, LIR_icall, C)  // subroutine call returning 64-bit (quad) double value
+OPD64(qcall,    17, C)      // subroutine call returning 64-bit (quad) integer value
+
+OPD64(__18_64,  18, None)
+OPD64(__19_64,  19, None)
+OPD64(__20_64,  20, None)
+OPD64(__21_64,  21, None)
+OPD64(__22_64,  22, None)
+OPD64(__23_64,  23, None)
+
+// We strip off the 64 bit flag and compare that the opcode is between LIR_int
+// and LIR_uge to decide whether we can CSE the opcode. All opcodes below
+// this marker are subject to CSE.
+
+OPD64(quad,  LIR_int, I64)  // 64-bit (quad) constant value
+OPD64(qcmov, LIR_cmov, Op3) // 64-bit conditional move
+
+OPD64(i2q,      26, Op1)    // sign-extend i32 to i64
+OPD64(u2q,      27, Op1)    // zero-extend u32 to u64
+OPD64(i2f,      28, Op1)    // convert a signed 32-bit integer to a float
+OPD64(u2f,      29, Op1)    // convert an unsigned 32-bit integer to a float
+
+OPD64(__30_64,  30, None)
+OPD64(__31_64,  31, None)
+OPD64(__32_64,  32, None)
+OPD64(__33_64,  33, None)
+
+OPD64(ldqc, LIR_ldc, Ld)    // non-volatile 64-bit load
+
+OPD64(fneg, LIR_neg, Op1)   // floating-point negation
+OPD64(fadd, LIR_add, Op2)   // floating-point addition
+OPD64(fsub, LIR_sub, Op2)   // floating-point subtraction
+OPD64(fmul, LIR_mul, Op2)   // floating-point multiplication
+OPD64(fdiv, LIR_div, Op2)   // floating-point division
+OPD64(fmod, LIR_mod, Op2)   // floating-point modulus(?)
+
+OPD64(qiand,    41, Op2)    // 64-bit bitwise AND
+OPD64(qior,     42, Op2)    // 64-bit bitwise OR
+OPD64(qxor,     43, Op2)    // 64-bit bitwise XOR
+OPD64(__44_64,  44, None)
+OPD64(qilsh,    45, Op2)    // 64-bit left shift
+OPD64(qirsh,    46, Op2)    // 64-bit signed right shift
+OPD64(qursh,    47, Op2)    // 64-bit unsigned right shift
+OPD64(qiadd,    48, Op2)    // 64-bit bitwise ADD
+
+OPD64(__49_64,  49, None)
+OPD64(qjoin,    50, Op2)    // join two 32-bit values (1st arg is low bits, 2nd is high)
+OPD64(__51_64,  51, None)
+OPD64(__52_64,  52, None)
+OPD64(__53_64,  53, None)
+OPD64(float,    54, I64)
+
+// 64bit equivalents for integer comparisons
+OPD64(qeq,  LIR_eq, Op2)    //          integer equality
+OPD64(qlt,  LIR_lt, Op2)    //   signed integer less-than             (0x78 0111 1000)
+OPD64(qgt,  LIR_gt, Op2)    //   signed integer greater-than          (0x79 0111 1001)
+OPD64(qle,  LIR_le, Op2)    //   signed integer less-than-or-equal    (0x7A 0111 1010)
+OPD64(qge,  LIR_ge, Op2)    //   signed integer greater-than-or-equal (0x7B 0111 1011)
+OPD64(qult, LIR_ult, Op2)   // unsigned integer less-than             (0x7C 0111 1100)
+OPD64(qugt, LIR_ugt, Op2)   // unsigned integer greater-than          (0x7D 0111 1101)
+OPD64(qule, LIR_ule, Op2)   // unsigned integer less-than-or-equal    (0x7E 0111 1110)
+OPD64(quge, LIR_uge, Op2)   // unsigned integer greater-than-or-equal (0x7F 0111 1111)
