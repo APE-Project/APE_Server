@@ -2116,7 +2116,7 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 	jsval params[2], rval;
 	myhandle->state = SQL_READY_FOR_QUERY;
 	
-	apemysql_shift_queue(myhandle);
+	
 	if (!code) {
 		MYSAC_ROW *row;
 		MYSAC_RES *myres = queue->res;
@@ -2163,6 +2163,7 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
 	}
 	
+	apemysql_shift_queue(myhandle);
 	JS_RemoveRoot(myhandle->cx, &queue->callback);
 	free(queue);
 
