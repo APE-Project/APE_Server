@@ -120,17 +120,17 @@ void rmchan(CHANNEL *chan, acetables *g_ape)
 void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 {
 	userslist *list, *ulist;
-	
+	RAW *newraw;
+	json_item *jlist;
 	CHANLIST *chanl;
 	
 	FIRE_EVENT_NULL(join, user, chan, g_ape);
 	
-	RAW *newraw;
-	json_item *jlist = json_new_object();
-	
 	if (isonchannel(user, chan)) {
 		return;
 	}
+	
+	jlist = json_new_object();
 	
 	list = xmalloc(sizeof(*list)); // TODO is it free ?
 	list->userinfo = user;

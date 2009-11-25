@@ -100,8 +100,6 @@ void hashtbl_append(HTBL *htbl, const char *key, void *structaddr)
 
 	hTmp->key = xmalloc(sizeof(char) * (key_len+1));
 	
-	htbl->first = hTmp;
-	
 	hTmp->addrs = (void *)structaddr;
 	
 	memcpy(hTmp->key, key, key_len+1);
@@ -121,6 +119,8 @@ void hashtbl_append(HTBL *htbl, const char *key, void *structaddr)
 		}
 		hTmp->next = htbl->table[key_hash];
 	}
+	
+	htbl->first = hTmp;
 	
 	htbl->table[key_hash] = hTmp;
 }
