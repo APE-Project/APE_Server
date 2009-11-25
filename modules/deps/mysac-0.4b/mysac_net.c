@@ -21,7 +21,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <mysql/errmsg.h>
-
+#include <stdio.h>
 #include "mysac.h"
 
 int mysac_socket_connect(const char *socket_name, int *fd) {
@@ -198,8 +198,10 @@ ssize_t mysac_read(int fd, void *buf, size_t count, int *err) {
 	}
 	
 	if (len == -1) {
-		if (errno == EAGAIN)
+		
+		if (errno == EAGAIN) {
 			*err = MYERR_WANT_READ;
+		}
 		else
 			*err = MYERR_SERVER_LOST;
 		return -1;

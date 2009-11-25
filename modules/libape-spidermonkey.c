@@ -111,7 +111,6 @@ struct _ape_sm_runtime {
 struct _ape_sock_callbacks {
 
 	JSObject *server_obj;
-	
 	ape_sm_compiled  *asc;
 	void *private;
 };
@@ -849,6 +848,19 @@ APE_JS_NATIVE(apemysql_sm_errorstring)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apemysql_sm_insert_id)
+//{
+	struct _ape_mysql_data *myhandle;
+	
+	if ((myhandle = JS_GetPrivate(cx, obj)) == NULL) {
+		return JS_TRUE;
+	}
+
+	*rval = INT_TO_JSVAL(mysac_insert_id(myhandle->my));
+	
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(apemysql_sm_query)
 //{
 	JSString *query;
@@ -920,6 +932,7 @@ static JSFunctionSpec apemysql_funcs[] = {
 	JS_FS("onError", ape_sm_stub, 0, 0, 0),
 	JS_FS("errorString", apemysql_sm_errorstring, 0, 0, 0),
 	JS_FS("query", apemysql_sm_query, 2, 0, 0),
+	JS_FS("insert_id", apemysql_sm_insert_id, 0, 0, 0),
 	JS_FS_END
 };
 
@@ -2018,7 +2031,6 @@ static void ape_mysql_handle_io(struct _ape_mysql_data *myhandle, acetables *g_a
 		case MYERR_WANT_READ:
 			break;
 		default:
-			
 			myhandle->my->call_it = NULL; /* prevent any extra IO call */
 			
 			if (myhandle->on_success != NULL) {
@@ -2038,11 +2050,9 @@ static void ape_mysql_io_read(ape_socket *client, ape_buffer *buf, size_t offset
 
 static void ape_mysql_io_write(ape_socket *client, acetables *g_ape)
 {
-	#if 0
 	struct _ape_mysql_data *myhandle = client->data;
 	
 	ape_mysql_handle_io(myhandle, g_ape);	
-	#endif
 }
 
 static void mysac_setdb_success(struct _ape_mysql_data *myhandle, int code)
@@ -2241,11 +2251,11 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	
 	co = g_ape->co;
 	myhandle = xmalloc(sizeof(*myhandle));
-	
+
 	my = mysac_new(1024*1024);
 	mysac_setup(my, host, login, pass, db, 0);
 	mysac_connect(my);
-	
+
 	myhandle->my = my;
 	myhandle->jsmysql = obj;
 	myhandle->cx = cx;

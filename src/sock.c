@@ -143,7 +143,7 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 	if (connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == 0 || errno != EINPROGRESS) {
 		return NULL;
 	}
-	
+
 	if (sock + 4 >= g_ape->basemem) {
 		/* Increase connection & events size */
 		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
@@ -317,7 +317,7 @@ unsigned int sockroutine(acetables *g_ape)
 						if (new_fd == -1) {
 							break;
 						}
-						printf("Accept : %i\n", new_fd);
+
 						if (new_fd + 4 >= g_ape->basemem) {
 							/* Increase connection & events size */
 							growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
@@ -370,7 +370,7 @@ unsigned int sockroutine(acetables *g_ape)
 					int bitev = events_revent(g_ape->events, i);
 						
 					if (bitev & EVENT_WRITE) {
-						
+
 						if (g_ape->co[active_fd].stream_type == STREAM_OUT && g_ape->co[active_fd].state == STREAM_PROGRESS) {
 							
 							int serror = 0, ret;

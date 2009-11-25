@@ -70,6 +70,9 @@ static inline void __list_del(struct mysac_list_head * prev,
  * in an undefined state.
  */
 static inline void list_del(struct mysac_list_head *entry) {
+	if (entry == NULL) {
+		return;
+	}
 	__list_del(entry->prev, entry->next);
 }
 

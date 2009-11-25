@@ -1162,6 +1162,9 @@ int mysac_send_query(MYSAC *mysac) {
 
 		/* EOF */
 		else if (err == MYSAC_RET_EOF) {
+			if (mysac->res->cr == NULL) {
+				return 0;
+			}
 			list_del(&mysac->res->cr->link);
 			mysac->res->cr = NULL;
 			return 0;
