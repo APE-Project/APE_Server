@@ -112,6 +112,7 @@ struct _ape_sock_callbacks {
 
 	JSObject *server_obj;
 	ape_sm_compiled  *asc;
+	short int state;
 	void *private;
 };
 
@@ -119,7 +120,6 @@ struct _ape_sock_js_obj {
 	ape_socket *client;
 	JSObject *client_obj;
 };
-
 
 struct _ape_mysql_queue {
 	struct _ape_mysql_queue	*next;
@@ -264,14 +264,15 @@ APE_JS_NATIVE(apesocket_write)
 //{
 	JSString *string;
 	struct _ape_sock_callbacks *cb = JS_GetPrivate(cx, obj);
+	ape_socket *client;
 	
 	if (cb == NULL) {
 		return JS_TRUE;
 	}
 	
-	ape_socket *client = ((struct _ape_sock_js_obj *)cb->private)->client;
+	client = ((struct _ape_sock_js_obj *)cb->private)->client;
 
-	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
+	if (client == NULL || !JS_ConvertArguments(cx, 1, argv, "S", &string)) {
 		return JS_TRUE;
 	}
 	
@@ -315,12 +316,17 @@ static JSBool apesocket_close(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 	ape_socket *client;
 	struct _ape_sock_callbacks *cb = JS_GetPrivate(cx, obj);
 	
-	if (cb == NULL) {
+	if (cb == NULL || !cb->state) {
 		return JS_TRUE;
 	}
 	
 	client = ((struct _ape_sock_js_obj *)cb->private)->client;
 	
+	if (client == NULL) {
+		return JS_TRUE;
+	}
+	
+	cb->state = 0;
 	shutdown(client->fd, 2);
 
 	return JS_TRUE;
@@ -1011,6 +1017,7 @@ static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
 		cbcopy->private = sock_obj;
 		cbcopy->asc = cb->asc;
 		cbcopy->server_obj = cb->server_obj;
+		cbcopy->state = 1;
 		
 		client->attach = cbcopy;	
 
@@ -1045,7 +1052,7 @@ static void sm_sock_ondisconnect(ape_socket *client, acetables *g_ape)
 	if (client->attach != NULL) {
 		struct _ape_sock_callbacks *cb = ((struct _ape_sock_callbacks *)client->attach);
 		JSObject *client_obj = ((struct _ape_sock_js_obj *)cb->private)->client_obj;
-
+		
 		//JS_SetContextThread(cb->asc->cx);
 		//JS_BeginRequest(cb->asc->cx);
 
@@ -1078,6 +1085,9 @@ static void sm_sock_onread_lf(ape_socket *client, char *data, acetables *g_ape)
 		struct _ape_sock_callbacks *cb = ((struct _ape_sock_callbacks *)client->attach);
 		JSObject *client_obj = ((struct _ape_sock_js_obj *)cb->private)->client_obj;
 		
+		if (!cb->state) {
+			return;
+		}
 		//JS_SetContextThread(cb->asc->cx);
 		//JS_BeginRequest(cb->asc->cx);
 			
@@ -1124,6 +1134,9 @@ static void sm_sock_onread(ape_socket *client, ape_buffer *buf, size_t offset, a
 		struct _ape_sock_callbacks *cb = ((struct _ape_sock_callbacks *)client->attach);
 		JSObject *client_obj = ((struct _ape_sock_js_obj *)cb->private)->client_obj;
 
+		if (!cb->state) {
+			return;
+		}
 		//JS_SetContextThread(cb->asc->cx);
 		//JS_BeginRequest(cb->asc->cx);
 			
@@ -1999,6 +2012,7 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	cbcopy->private = sock_obj;
 	cbcopy->asc = asc;
 	cbcopy->server_obj = obj;
+	cbcopy->state = 1;
 	
 	JS_AddRoot(cx, &cbcopy->server_obj);
 	
@@ -2349,6 +2363,7 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	((struct _ape_sock_callbacks *)server->attach)->asc 			= asc;
 	((struct _ape_sock_callbacks *)server->attach)->private 		= NULL;
 	((struct _ape_sock_callbacks *)server->attach)->server_obj 		= obj;
+	((struct _ape_sock_callbacks *)server->attach)->state 			= 1;
 	
 	JS_AddRoot(cx, &((struct _ape_sock_callbacks *)server->attach)->server_obj);
 
