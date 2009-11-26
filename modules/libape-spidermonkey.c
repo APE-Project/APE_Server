@@ -861,6 +861,28 @@ APE_JS_NATIVE(apemysql_sm_insert_id)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apemysql_escape)
+//{
+
+	char *input_c, *escaped;
+	unsigned long int len;
+	
+	if (!JS_ConvertArguments(cx, 1, argv, "s", &input_c)) {
+		return JS_TRUE;
+	}
+	
+	len = strlen(input_c);
+	escaped = xmalloc(sizeof(char) * (len*2+1));
+	
+	len = mysql_escape_string(escaped, input_c, len);
+	
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, escaped, len));
+	
+	free(escaped);
+	
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(apemysql_sm_query)
 //{
 	JSString *query;
@@ -933,6 +955,11 @@ static JSFunctionSpec apemysql_funcs[] = {
 	JS_FS("errorString", apemysql_sm_errorstring, 0, 0, 0),
 	JS_FS("query", apemysql_sm_query, 2, 0, 0),
 	JS_FS("insert_id", apemysql_sm_insert_id, 0, 0, 0),
+	JS_FS_END
+};
+
+static JSFunctionSpec apemysql_funcs_static[] = {
+	JS_FS("escape", apemysql_escape, 1, 0, 0),
 	JS_FS_END
 };
 
@@ -2441,7 +2468,7 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	custompipe = JS_InitClass(asc->cx, obj, NULL, &pipe_class, ape_sm_pipe_constructor, 0, NULL, NULL, NULL, NULL);
 	sockserver = JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
 	sockclient = JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
-	jsmysql = JS_InitClass(asc->cx, obj, NULL, &mysql_class, ape_sm_mysql_constructor, 2, NULL, NULL, NULL, NULL);
+	jsmysql = JS_InitClass(asc->cx, obj, NULL, &mysql_class, ape_sm_mysql_constructor, 2, NULL, NULL, NULL, apemysql_funcs_static);
 	JS_InitClass(asc->cx, obj, NULL, &raw_class, ape_sm_raw_constructor, 1, NULL, NULL, NULL, NULL); /* Not used */
 
 	JS_DefineFunctions(asc->cx, sockclient, apesocket_client_funcs);
