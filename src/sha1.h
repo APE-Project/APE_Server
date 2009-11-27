@@ -46,4 +46,7 @@ void sha1_hmac( uchar *key, uint keylen, uchar *buf, uint buflen,
                 uchar digest[20] );
 
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* sha1.h */

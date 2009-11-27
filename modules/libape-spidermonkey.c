@@ -906,7 +906,7 @@ APE_JS_NATIVE(apemysql_sm_query)
 		return JS_TRUE;
 	}
 	
-	apemysql_push_queue(myhandle, JS_GetStringBytes(query), JS_GetStringLength(query), callback);
+	apemysql_push_queue(myhandle, xstrdup(JS_GetStringBytes(query)), JS_GetStringLength(query), callback);
 	
 	return JS_TRUE;
 }
@@ -1027,11 +1027,10 @@ static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
 			obj = JS_NewObject(cb->asc->cx, &apesocket_class, NULL, NULL);
 			sock_obj->client_obj = obj;
 			JS_AddRoot(cb->asc->cx, &sock_obj->client_obj);
-
+			
 			JS_SetPrivate(cb->asc->cx, obj, cbcopy);
-			
+			JS_DefineFunctions(cb->asc->cx, obj, apesocket_funcs);
 			params[0] = OBJECT_TO_JSVAL(sock_obj->client_obj);
-			
 			
 			//JS_AddRoot(cb->asc->cx, &params[0]);
 			
@@ -2206,6 +2205,8 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 	
 	apemysql_shift_queue(myhandle);
 	JS_RemoveRoot(myhandle->cx, &queue->callback);
+	free(queue->query);
+	free(queue->res);
 	free(queue);
 
 }
