@@ -358,6 +358,17 @@ void http_headers_free(http_headers_response *headers)
 	free(headers);
 }
 
+void free_header_line(struct _http_header_line *line)
+{
+	struct _http_header_line *tline;
+	
+	while (line != NULL) {
+		tline = line->next;
+		free(line);
+		line = tline;
+	}
+}
+
 static void ape_http_connect(ape_socket *client, acetables *g_ape)
 {
 	struct _http_attach *ha = client->attach;

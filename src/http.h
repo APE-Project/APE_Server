@@ -83,6 +83,7 @@ http_headers_response *http_headers_init(int code, char *detail, int detail_len)
 void http_headers_set_field(http_headers_response *headers, const char *key, int keylen, const char *value, int valuelen);
 int http_send_headers(http_headers_response *headers, const char *default_h, unsigned int default_len, ape_socket *client, acetables *g_ape);
 void http_headers_free(http_headers_response *headers);
+void free_header_line(struct _http_header_line *line);
 
 #endif
 

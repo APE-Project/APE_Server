@@ -247,7 +247,7 @@ static void clear_buffer(ape_socket *co, int *tfd)
 	co->http.error = 0;
 	co->http.ready = 0;
 	co->http.read = 0;
-	free(co->http.hlines);
+	free_header_line(co->http.hlines);
 	co->http.hlines = NULL;
 	co->attach = NULL;
 	co->data = NULL;
