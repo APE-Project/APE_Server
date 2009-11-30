@@ -2155,17 +2155,18 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 	struct _ape_mysql_queue *queue = myhandle->data;
 	jsval params[2], rval;
 	myhandle->state = SQL_READY_FOR_QUERY;
+	myhandle->on_success = NULL;
 	
 	if (!code) {
 		MYSAC_ROW *row;
 		MYSAC_RES *myres = queue->res;
 		
-		unsigned int nfield = mysac_field_count(myres), nrow = mysac_num_rows(myres), pos = 0;;
+		unsigned int nfield = mysac_field_count(myres), nrow = mysac_num_rows(myres), pos = 0;
 		JSObject *res = JS_NewArrayObject(myhandle->cx, nrow, NULL); /* First param [{},{},{},] */
 		
 		JS_AddRoot(myhandle->cx, &res);
 		
-		while ((row = mysac_fetch_row(myres)) != NULL) {
+		while (nrow && (row = mysac_fetch_row(myres)) != NULL) {
 			unsigned int i;
 			jsval currentval;
 			JSObject *elem = JS_NewObject(myhandle->cx, NULL, NULL, res);
@@ -2239,7 +2240,7 @@ static void apemysql_shift_queue(struct _ape_mysql_data *myhandle)
 	}
 	mysac_b_set_query(myhandle->my, queue->res, queue->query, queue->query_len);
 	
-	switch(mysac_send_query(myhandle->my)) {
+	switch((ret = mysac_send_query(myhandle->my))) {
 		case MYERR_WANT_WRITE:
 		case MYERR_WANT_READ:
 			break;
