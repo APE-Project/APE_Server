@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# test if git is ok
+git >/dev/null 2>&1
+if test $? -ge 127; then
+	cat VERSION
+	exit 0
+fi
+
+# test if this archive is dev with git
+if test ! -d .git; then
+	cat VERSION
+	exit 0
+fi
+
+# get dev version
+ref=`(git describe --tags) 2>/dev/null`
+ref=${ref%-g*}
+echo "${ref#v}"

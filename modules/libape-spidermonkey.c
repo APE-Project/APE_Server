@@ -2202,13 +2202,12 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
 	}
 	
-	apemysql_shift_queue(myhandle);
-	JS_RemoveRoot(myhandle->cx, &queue->callback);
-	
 	free(queue->query);
-	free(queue->res->buffer);
 	free(queue->res);
 	free(queue);
+		
+	apemysql_shift_queue(myhandle);
+	JS_RemoveRoot(myhandle->cx, &queue->callback);
 
 }
 
@@ -2225,6 +2224,7 @@ static void apemysql_finalize(JSContext *cx, JSObject *jsmysql)
 static void apemysql_shift_queue(struct _ape_mysql_data *myhandle)
 {
 	struct _ape_mysql_queue *queue;
+	int ret;
 	
 	if (myhandle->queue.head == NULL || myhandle->state != SQL_READY_FOR_QUERY) {
 		return;
@@ -2238,7 +2238,18 @@ static void apemysql_shift_queue(struct _ape_mysql_data *myhandle)
 		myhandle->queue.foot = NULL;
 	}
 	mysac_b_set_query(myhandle->my, queue->res, queue->query, queue->query_len);
-	mysac_send_query(myhandle->my);
+	
+	switch(mysac_send_query(myhandle->my)) {
+		case MYERR_WANT_WRITE:
+		case MYERR_WANT_READ:
+			break;
+		default:
+			myhandle->on_success = NULL;
+			myhandle->my->call_it = NULL;
+			
+			mysac_query_success(myhandle, ret);
+			return;
+	}
 	
 	myhandle->on_success = mysac_query_success;
 	

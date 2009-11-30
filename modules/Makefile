@@ -8,7 +8,7 @@ all: modules
 
 modules: libape-spidermonkey.c
 
-	$(CC) -Wall -g -bundle -undefined suppress -flat_namespace -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../deps/js/src/dist/include/ -L../deps/js/src/ -ljs_static -lstdc++ -L./deps/mysac-0.4b/ -I./deps/mysac-0.4b/ -lmysac -L/opt/local/lib/mysql5/mysql/ -lmysqlclient_r
+	$(CC) -Wall -g -bundle -undefined suppress -flat_namespace -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../deps/js/src/dist/include/ -L../deps/js/src/ -ljs_static -lstdc++ -L./deps/mysac/ -I./deps/mysac/ -lmysac -L/opt/local/lib/mysql5/mysql/ -lmysqlclient_r
 
 endif
 ifdef LINUX_BUILD

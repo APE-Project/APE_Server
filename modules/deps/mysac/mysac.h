@@ -1,11 +1,19 @@
 /*
  * Copyright (c) 2009 Thierry FOURNIER
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version
- * 2 of the License.
+ * This file is part of MySAC.
  *
+ * MySAC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License
+ *
+ * MySAC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /** @file */ 
@@ -21,7 +29,6 @@
 #include <sys/time.h>
 #include <mysql/errmsg.h>
 #include <mysql/mysql.h>
-#include <stdio.h>
 
 /* def imported from: linux-2.6.24/include/linux/stddef.h */
 #define mysac_offset_of(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
@@ -94,8 +101,10 @@ enum my_query_st {
 
 	MYSAC_SEND_QUERY,
 	MYSAC_RECV_QUERY_COLNUM,
-	MYSAC_RECV_QUERY_COLDESC,
+	MYSAC_RECV_QUERY_COLDESC1,
+	MYSAC_RECV_QUERY_COLDESC2,
 	MYSAC_RECV_QUERY_EOF1,
+	MYSAC_RECV_QUERY_EOF2,
 	MYSAC_RECV_QUERY_DATA,
 
 	MYSAC_SEND_INIT_DB,
@@ -196,6 +205,16 @@ typedef struct {
 } MYSAC_RES;
 
 /**
+ * This contain list of values for statement binding
+ */
+typedef struct mysac_bind {
+	enum enum_field_types type;
+	void *value;
+	int value_len;
+	char is_null;
+} MYSAC_BIND;
+
+/**
  * This contain the necessary for one mysql connection
  */
 typedef struct mysac {
@@ -241,10 +260,15 @@ typedef struct mysac {
 	enum my_query_st qst;
 	int read_id;
 	MYSAC_RES *res;
+	unsigned long *stmt_id;
 
 	/* the buffer */
 	unsigned int bufsize;
 	char *buf;
+
+	/* special stmt */
+	int nb_cols;   /* number of columns in response */
+	int nb_plhold; /* number of placeholders in request */
 } MYSAC;
 
 /**
@@ -401,30 +425,6 @@ int mysac_set_database(MYSAC *mysac, const char *database);
 int mysac_send_database(MYSAC *mysac);
 
 /**
- * Prepare statement
- *
- * @param mysac Should be the address of an existing MYSAC structur.
- * @param fmt is the output format with the printf style
- *
- * @return 0: ok, -1 nok
- */
-int mysac_set_stmt_prepare(MYSAC *mysac, const char *fmt, ...);
-
-/**
- * Send sql query command
- * 
- * @param mysac Should be the address of an existing MYSAC structur.
- * @param stmt_id is pointer for storing the statement id
- *
- * @return
- *  0 => ok
- *  MYSAC_WANT_READ
- *  MYSAC_WANT_WRITE
- *  ...
- */
-int mysac_send_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id);
-
-/**
  * Initialize MYSAC_RES structur
  * This function can not allocate memory, just use your buffer.
  *
@@ -453,25 +453,14 @@ MYSAC_RES *mysac_init_res(char *buffer, int len) {
 	if (len < sizeof(MYSAC_RES))
 		return NULL;
 
-	res = malloc(sizeof(*res));
+	res = (MYSAC_RES *)buffer;
 	res->nb_cols = 0;
 	res->nb_lines = 0;
-	res->buffer = buffer;
-	res->buffer_len = len;
+	res->buffer = buffer + sizeof(MYSAC_RES);
+	res->buffer_len = len - sizeof(MYSAC_RES);
 
 	return res;
 }
-
-/**
- * Execute statement
- *
- * @param mysac Should be the address of an existing MYSAC structur.
- * @param res Should be the address of an existing MYSAC_RES structur.
- * @param stmt_id the statement id
- *
- * @return 0: ok, -1 nok
- */
-int mysac_set_stmt_execute(MYSAC *mysac, MYSAC_RES *res, unsigned long stmt_id);
 
 /**
  * Initialize query
@@ -543,6 +532,80 @@ MYSAC_RES *mysac_get_res(MYSAC *mysac) {
  *  ...
  */
 int mysac_send_query(MYSAC *mysac);
+
+/**
+ * Prepare statement
+ *
+ * @param mysac Should be the address of an existing MYSAC structur.
+ * @param stmt_id is the receiver of the statement id
+ * @param fmt is the output format with the printf style
+ *
+ * @return 0: ok, -1 nok
+ */
+int mysac_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *fmt, ...);
+
+/**
+ * Prepare statement
+ *
+ * @param mysac Should be the address of an existing MYSAC structur.
+ * @param stmt_id is the receiver of the statement id
+ * @param fmt is the output format with the printf style
+ * @param ap is the argument list on format vprintf
+ *
+ * @return 0: ok, -1 nok
+ */
+int mysac_v_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *fmt, va_list ap);
+
+/**
+ * Prepare statement
+ *
+ * @param mysac Should be the address of an existing MYSAC structur.
+ * @param stmt_id is the receiver of the statement id
+ * @param query is a string (terminated by \0) containing the query
+ *
+ * @return 0: ok, -1 nok
+ */
+int mysac_s_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *request);
+
+/**
+ * Prepare statement
+ *
+ * @param mysac Should be the address of an existing MYSAC structur.
+ * @param stmt_id is the receiver of the statement id
+ * @param request is a string containing the query
+ * @param len is the len of the query
+ *
+ * @return 0: ok, -1 nok
+ */
+int mysac_b_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *request, int len);
+
+/**
+ * Send sql query command
+ *
+ * @param mysac Should be the address of an existing MYSAC structur.
+ * @param stmt_id is pointer for storing the statement id
+ *
+ * @return
+ *  0 => ok
+ *  MYSAC_WANT_READ
+ *  MYSAC_WANT_WRITE
+ *  ...
+ */
+int mysac_send_stmt_prepare(MYSAC *mysac);
+
+/**
+ * Execute statement
+ *
+ * @param mysac Should be the address of an existing MYSAC structur.
+ * @param res Should be the address of an existing MYSAC_RES structur.
+ * @param stmt_id the statement id
+ * @param values is array of values send for the request
+ * @param nb is number of values
+ *
+ * @return 0: ok, -1 nok
+ */
+int mysac_set_stmt_execute(MYSAC *mysac, MYSAC_RES *res, unsigned long stmt_id,
+                           MYSAC_BIND *values, int nb);
 
 /**
  * send stmt execute command
@@ -629,9 +692,6 @@ MYSAC_ROW *mysac_fetch_row(MYSAC_RES *res) {
 	if (&res->data == &res->cr->link) {
 		res->cr = NULL;
 		return NULL;
-	}
-	if (res->cr == NULL) {
-		printf("trop NULL\n");
 	}
 	return res->cr->data;
 }

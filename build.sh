@@ -22,7 +22,7 @@ cd ../js/src/
 ./configure && make
 cd ../../../
 make
-cd modules/deps/mysac-0.4b/
+cd modules/deps/mysac/
 make
 cd ../../
 make

@@ -1,11 +1,19 @@
 /*
- * Copyright (c) 2008 Thierry FOURNIER
+ * Copyright (c) 2009 Thierry FOURNIER
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version
- * 2 of the License.
+ * This file is part of MySAC.
  *
+ * MySAC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License
+ *
+ * MySAC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <errno.h>
@@ -21,7 +29,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <mysql/errmsg.h>
-#include <stdio.h>
+
 #include "mysac.h"
 
 int mysac_socket_connect(const char *socket_name, int *fd) {
@@ -198,10 +206,8 @@ ssize_t mysac_read(int fd, void *buf, size_t count, int *err) {
 	}
 	
 	if (len == -1) {
-		
-		if (errno == EAGAIN) {
+		if (errno == EAGAIN)
 			*err = MYERR_WANT_READ;
-		}
 		else
 			*err = MYERR_SERVER_LOST;
 		return -1;
