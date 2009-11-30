@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 	close(random);
 
 	g_ape = xmalloc(sizeof(*g_ape));
-	g_ape->basemem = 512;
+	g_ape->basemem = 512000;
 	
 	#ifdef USE_EPOLL_HANDLER
 	fdev.handler = EVENT_EPOLL;

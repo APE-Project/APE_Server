@@ -2,7 +2,7 @@
 # get build version from the git tree in the form "lasttag-changes", and use "dev" if unknown
 BUILDVER := $(shell ref=`(git describe --tags) 2>/dev/null` && ref=$${ref%-g*} && echo "$${ref\#v}")
 
-CFLAGS = -DBUILDVER=$(BUILDVER) -I/usr/include/mysql -O0 -g -Wall -fPIC
+CFLAGS = -DBUILDVER=$(BUILDVER) -I/usr/include/mysql -O0 -g -Wall -fPIC -Wpadded
 LDFLAGS = -g -lmysqlclient_r
 
 OBJS = mysac.o mysac_net.o mysac_decode_field.o mysac_decode_row.o mysac_errors.o

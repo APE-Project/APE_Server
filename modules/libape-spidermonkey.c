@@ -960,7 +960,7 @@ static JSFunctionSpec apemysql_funcs[] = {
 	JS_FS("onError", ape_sm_stub, 0, 0, 0),
 	JS_FS("errorString", apemysql_sm_errorstring, 0, 0, 0),
 	JS_FS("query", apemysql_sm_query, 2, 0, 0),
-	JS_FS("insert_id", apemysql_sm_insert_id, 0, 0, 0),
+	JS_FS("getInsertId", apemysql_sm_insert_id, 0, 0, 0),
 	JS_FS_END
 };
 
@@ -2156,7 +2156,6 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 	jsval params[2], rval;
 	myhandle->state = SQL_READY_FOR_QUERY;
 	
-	
 	if (!code) {
 		MYSAC_ROW *row;
 		MYSAC_RES *myres = queue->res;
@@ -2205,7 +2204,9 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 	
 	apemysql_shift_queue(myhandle);
 	JS_RemoveRoot(myhandle->cx, &queue->callback);
+	
 	free(queue->query);
+	free(queue->res->buffer);
 	free(queue->res);
 	free(queue);
 
@@ -2433,6 +2434,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0, 0),
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0, 0),
 	JS_FS("clearTimeout", ape_sm_clear_timeout, 1, 0, 0),
+	JS_FS("clearInterval", ape_sm_clear_timeout, 1, 0, 0),
 	JS_FS("xorize", ape_sm_xorize, 2, 0, 0),
 	JS_FS("addUser", ape_sm_adduser, 1, 0, 0),
 	JS_FS("mkChan", ape_sm_mkchan, 1, 0, 0),

@@ -21,6 +21,7 @@
 #include <sys/time.h>
 #include <mysql/errmsg.h>
 #include <mysql/mysql.h>
+#include <stdio.h>
 
 /* def imported from: linux-2.6.24/include/linux/stddef.h */
 #define mysac_offset_of(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
@@ -452,11 +453,11 @@ MYSAC_RES *mysac_init_res(char *buffer, int len) {
 	if (len < sizeof(MYSAC_RES))
 		return NULL;
 
-	res = (MYSAC_RES *)buffer;
+	res = malloc(sizeof(*res));
 	res->nb_cols = 0;
 	res->nb_lines = 0;
-	res->buffer = buffer + sizeof(MYSAC_RES);
-	res->buffer_len = len - sizeof(MYSAC_RES);
+	res->buffer = buffer;
+	res->buffer_len = len;
 
 	return res;
 }
@@ -628,6 +629,9 @@ MYSAC_ROW *mysac_fetch_row(MYSAC_RES *res) {
 	if (&res->data == &res->cr->link) {
 		res->cr = NULL;
 		return NULL;
+	}
+	if (res->cr == NULL) {
+		printf("trop NULL\n");
 	}
 	return res->cr->data;
 }

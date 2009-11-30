@@ -401,14 +401,46 @@ unsigned int cmd_script(callbackp *callbacki)
 {
 	char *domain = CONFIG_VAL(Server, domain, callbacki->g_ape->srv);
 	char *script = NULL;
-	
+	int alloc = 0;
 	APE_PARAMS_INIT();
 	
 	if (domain == NULL) {
 		send_error(callbacki->call_user, "NO_DOMAIN", "201", callbacki->g_ape);
 	} else {
-		sendf(callbacki->client->fd, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER_DEFAULT, domain);
+		if (strcmp(domain, "auto") == 0) {
+			struct _http_header_line *hlines;
+			
+			for (hlines = callbacki->client->http.hlines; hlines != NULL; hlines = hlines->next) {
+				if (strcasecmp(hlines->key.val, "host") == 0) {
+					char *loc;
+					char *newdom = xmalloc(sizeof(char) * (hlines->value.len + 1));
+					memset(newdom, '\0', hlines->value.len + 1);
+					if ((loc = strrchr(hlines->value.val, '.')) != NULL) {
+						int i, pos = 0;
 
+						for (i = 0; i < hlines->value.len; i++, pos++) {
+							newdom[pos] = hlines->value.val[i];
+							if (newdom[pos] == ':') {
+								newdom[pos] = '\0';
+								break;
+							}
+							if (hlines->value.val[i] == '.' && &hlines->value.val[i] < loc) {
+								pos = -1;
+							}
+						}
+						newdom[pos] = '\0';
+						domain = newdom;
+						alloc = 1;
+					}
+				}
+			}	
+		}
+		sendf(callbacki->client->fd, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER_DEFAULT, domain);
+		
+		if (alloc) {
+			free(domain);
+		}
+		
 		JFOREACH(scripts, script) {
 			sendf(callbacki->client->fd, callbacki->g_ape, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", script);
 		}

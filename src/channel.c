@@ -36,6 +36,9 @@ unsigned int isvalidchan(char *name)
 
 	for (pName = (*name == '*' ? &name[1] : name ); *pName; pName++) {
 		*pName = tolower(*pName);
+		if (*pName == '_' || *pName == '|' || *pName == ':' || *pName == '.') {
+			continue;
+		}
 		if (!isalnum(*pName) || ispunct(*pName)) {
 			return 0;
 		}
