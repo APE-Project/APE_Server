@@ -128,6 +128,12 @@ typedef struct _acetables
 		unsigned int ntimers;
 	} timers;
 	
+	struct {
+		unsigned int lvl;
+		unsigned int use_syslog;
+		int fd;
+	} logs;
+	
 	struct _ape_transports transports;
 	
 	HTBL *hLogin;

@@ -24,6 +24,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "log.h"
+
 void *xmalloc(size_t size)
 {
 	void *r = malloc(size);

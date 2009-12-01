@@ -38,6 +38,7 @@
 
 #include "utils.h"
 #include "transports.h"
+#include "log.h"
 
 /* Checking whether the user is in a channel */
 unsigned int isonchannel(USERS *user, CHANNEL *chan)
@@ -174,7 +175,10 @@ USERS *adduser(ape_socket *client, char *host, char *ip, USERS *allocated, aceta
 		nuser = allocated;
 		nuser->istmp = 0;
 		
-		g_ape->nConnected++;		
+		g_ape->nConnected++;
+		
+		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
+			"New user - (ip : %s)", nuser->ip);
 	}
 
 	return nuser;

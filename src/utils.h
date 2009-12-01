@@ -41,6 +41,9 @@ int urldecode(char *string);
 int rand_n(int n);
 void s_tolower(char *upper, unsigned int len);
 
+/* CONST_STR_LEN from lighttpd */
+#define CONST_STR_LEN(x) x, x ? sizeof(x) - 1 : 0
+
 #define LENGTH_N(num) ((num<10 && num >= 0)?1:(long int)log10(fabs(num))+1);
 #ifndef MAX
   #define MAX(a,b) (((a) > (b)) ? (a) : (b))

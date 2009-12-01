@@ -37,6 +37,7 @@
 #include "transports.h"
 #include "handle_http.h"
 #include "dns.h"
+#include "log.h"
 
 static int sendqueue(int sock, acetables *g_ape);
 
@@ -65,7 +66,8 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
-		printf("ERREUR: socket().. (%s line: %i)\n",__FILE__, __LINE__);
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+			"ape_listen() - socket()");
 		return NULL;
 	}
 	
@@ -81,13 +83,16 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 
 	if (bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == -1)
 	{
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+			"ape_listen() - bind()");
 		printf("ERREUR: bind(%i) (non-root ?).. (%s line: %i)\n", port, __FILE__, __LINE__);
 		return NULL;
 	}
 
 	if (listen(sock, 2048) == -1)
 	{
-		printf("ERREUR: listen().. (%s line: %i)\n",__FILE__, __LINE__);
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+			"ape_listen() - listen()");
 		return NULL;
 	}
 	
@@ -129,7 +134,8 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 	ape_socket *co = g_ape->co;
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		printf("ERREUR: socket().. (%s line: %i) %s\n",__FILE__, __LINE__, strerror(errno));
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+			"ape_connect() - socket() : %s", strerror(errno));
 		return NULL;
 	}
 

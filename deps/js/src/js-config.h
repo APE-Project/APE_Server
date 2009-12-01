@@ -51,7 +51,7 @@
 
 /* Define to 1 if SpiderMonkey should support the ability to perform
    entirely too much GC.  */
-/* #undef JS_GC_ZEAL */
+#define JS_GC_ZEAL 1
 
 /* Define to 1 if the standard <stdint.h> header is present and
    useable.  See jstypes.h and jsstdint.h.  */

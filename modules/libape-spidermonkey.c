@@ -259,7 +259,6 @@ static JSClass cmdresponse_class = {
 };
 
 
-/* TODO : Add binary capabilities (remove strlen and use native JSString) */
 APE_JS_NATIVE(apesocket_write)
 //{
 	JSString *string;
@@ -905,7 +904,7 @@ APE_JS_NATIVE(apemysql_sm_query)
 	if (!JS_ConvertValue(cx, argv[1], JSTYPE_FUNCTION, &callback)) {
 		return JS_TRUE;
 	}
-	
+
 	apemysql_push_queue(myhandle, xstrdup(JS_GetStringBytes(query)), JS_GetStringLength(query), callback);
 	
 	return JS_TRUE;
@@ -2169,11 +2168,11 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 		while (nrow && (row = mysac_fetch_row(myres)) != NULL) {
 			unsigned int i;
 			jsval currentval;
-			JSObject *elem = JS_NewObject(myhandle->cx, NULL, NULL, res);
-			
+			JSObject *elem = JS_NewObject(myhandle->cx, NULL, NULL, NULL);
+			JS_AddRoot(myhandle->cx, &elem);
 			currentval = OBJECT_TO_JSVAL(elem);
 			JS_SetElement(myhandle->cx, res, pos, &currentval);
-			
+			JS_RemoveRoot(myhandle->cx, &elem);
 			for (i = 0; i < nfield; i++) {
 				int fieldlen, valuelen;
 				char *field, *val;
@@ -2192,24 +2191,22 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 		}
 		params[0] = OBJECT_TO_JSVAL(res);
 		params[1] = JSVAL_FALSE;
-		
-		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
-		
+
 		JS_RemoveRoot(myhandle->cx, &res);
+		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
 	} else {
 		params[0] = JSVAL_FALSE;
 		params[1] = INT_TO_JSVAL(code);
 
 		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
 	}
+	JS_RemoveRoot(myhandle->cx, &queue->callback);
 	
 	free(queue->query);
 	free(queue->res);
 	free(queue);
 		
 	apemysql_shift_queue(myhandle);
-	JS_RemoveRoot(myhandle->cx, &queue->callback);
-
 }
 
 static void apemysql_finalize(JSContext *cx, JSObject *jsmysql)
@@ -2247,7 +2244,6 @@ static void apemysql_shift_queue(struct _ape_mysql_data *myhandle)
 		default:
 			myhandle->on_success = NULL;
 			myhandle->my->call_it = NULL;
-			
 			mysac_query_success(myhandle, ret);
 			return;
 	}
@@ -2285,10 +2281,8 @@ static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myha
 	if (myhandle->queue.head->next == NULL && myhandle->state == SQL_READY_FOR_QUERY) {
 		
 		apemysql_shift_queue(myhandle);
-		
 		return NULL;
 	}
-	
 	return nqueue;
 }
 

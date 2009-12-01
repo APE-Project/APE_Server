@@ -40,6 +40,7 @@
 #include "transports.h"
 #include "servers.h"
 #include "dns.h"
+#include "log.h"
 
 #include <grp.h>
 #include <pwd.h>
@@ -150,6 +151,9 @@ int main(int argc, char **argv)
 
 	g_ape = xmalloc(sizeof(*g_ape));
 	g_ape->basemem = 512000;
+	g_ape->srv = srv;
+	
+	ape_log_init(g_ape);
 	
 	#ifdef USE_EPOLL_HANDLER
 	fdev.handler = EVENT_EPOLL;
@@ -166,8 +170,6 @@ int main(int argc, char **argv)
 	
 	g_ape->timers.timers = NULL;
 	g_ape->timers.ntimers = 0;
-	
-	g_ape->srv = srv;
 	g_ape->events = &fdev;
 	events_init(g_ape, &g_ape->basemem);
 	
@@ -175,31 +177,41 @@ int main(int argc, char **argv)
 	
 	servers_init(g_ape);
 	
+	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
+		"APE starting up - pid : %i", getpid());
+	
 	if (im_r00t) {
 		struct group *grp = NULL;
 		struct passwd *pwd = NULL;
 		
 		if (inc_rlimit(atoi(CONFIG_VAL(Server, rlimit_nofile, srv))) == -1) {
-			printf("[WARN] Cannot set the max filedescriptos limit (setrlimit) %s\n", strerror(errno));
+			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
+				"Cannot set the max filedescriptos limit (setrlimit) %s", strerror(errno));
 		}
 		
 		/* Get the user information (uid section) */
 		if ((pwd = getpwnam(CONFIG_VAL(uid, user, srv))) == NULL) {
-			printf("[ERR] Can\'t find username %s\n", CONFIG_VAL(uid, user, srv));
+			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+				"Can\'t find username %s", CONFIG_VAL(uid, user, srv));
 			return -1;
 		}
 		if (pwd->pw_uid == 0) {
-			printf("[ERR] %s uid can\'t be 0\n", CONFIG_VAL(uid, user, srv));
+			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+				"%s uid can\'t be 0", CONFIG_VAL(uid, user, srv));
 			return -1;			
 		}
 		
 		/* Get the group information (uid section) */
 		if ((grp = getgrnam(CONFIG_VAL(uid, group, srv))) == NULL) {
 			printf("[ERR] Can\'t find group %s\n", CONFIG_VAL(uid, group, srv));
+			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+				"Can\'t find group %s", CONFIG_VAL(uid, group, srv));
 			return -1;
 		}
+		
 		if (grp->gr_gid == 0) {
-			printf("[ERR] %s gid can\'t be 0\n", CONFIG_VAL(uid, group, srv));
+			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+				"%s gid can\'t be 0", CONFIG_VAL(uid, group, srv));
 			return -1;
 		}
 		
@@ -211,9 +223,13 @@ int main(int argc, char **argv)
 		setuid(pwd->pw_uid);
 	} else {
 		printf("[WARN] You have to run \'aped\' as root to increase r_limit\n");
+		ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
+			"You have to run \'aped\' as root to increase r_limit");
 	}
 	
 	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0) {
+		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
+			"Starting daemon");
 		ape_daemon();
 	}
 	signal(SIGPIPE, SIG_IGN);
@@ -251,8 +267,7 @@ int main(int argc, char **argv)
 
 	/* Starting Up */
 	sockroutine(g_ape); /* loop */
-	/* Shutdown */
-	
+	/* Shutdown */	
 	
 	hashtbl_free(g_ape->hLogin);
 	hashtbl_free(g_ape->hSessid);

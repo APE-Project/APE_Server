@@ -71,7 +71,7 @@ typedef struct USERS
 	struct _subuser *subuser;
 	json_item *cmdqueue;
 	
-	long int idle;
+	time_t idle;
 	int transport;
 	int nsub;
 	unsigned int nraw;
@@ -112,7 +112,7 @@ struct _subuser
 	struct _subuser *next;
 	ape_socket *client;
 	USERS *user;
-	long int idle;
+	time_t idle;
 	
 	int state;		
 	int need_update;	
