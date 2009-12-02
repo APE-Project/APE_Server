@@ -1,6 +1,0 @@
-mysac.o: mysac.c 
-mysac_decode_field.o: mysac_decode_field.c 
-mysac_decode_row.o: mysac_decode_row.c 
-mysac_encode_values.o: mysac_encode_values.c 
-mysac_errors.o: mysac_errors.c 
-mysac_net.o: mysac_net.c 
