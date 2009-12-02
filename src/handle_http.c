@@ -152,7 +152,6 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 	
 	clientget *cget = xmalloc(sizeof(*cget));
 
-
 	if (strlen(pSock) < 3 || (local && getqueryip(pSock, cget->ip_get) == 0)) {  // get query IP (from htaccess)
 		free(cget);
 		shutdown(client->fd, 2);

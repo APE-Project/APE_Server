@@ -103,7 +103,15 @@ CHANNEL *getchanbypubid(const char *pubid, acetables *g_ape)
 void rmchan(CHANNEL *chan, acetables *g_ape)
 {
 	if (chan->head != NULL) {
-		return;
+		struct userslist *head = chan->head;
+		chan->flags |= CHANNEL_NONINTERACTIVE; /* Force to be non interactive (don't send LEFT raw) */
+		chan->flags &= ~CHANNEL_AUTODESTROY; /* Don't destroy it */
+		
+		while(head != NULL) {
+			struct userslist *thead = head->next;
+			left(head->userinfo, chan, g_ape);
+			head = thead;
+		}
 	}
 	
 	FIRE_EVENT_NULL(rmchan, chan, g_ape);
@@ -249,7 +257,6 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 		ctmp = clist;
 		clist = clist->next;
 	}
-	
 	
 	while (list != NULL && list->userinfo != NULL) {
 		if (list->userinfo == user) {

@@ -1598,6 +1598,31 @@ APE_JS_NATIVE(ape_sm_mkchan)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(ape_sm_rmchan)
+//{
+	char *chan_name;
+	CHANNEL *chan;
+	JSObject *chan_obj;
+
+	if (JSVAL_IS_STRING(argv[0])) {
+		JS_ConvertArguments(cx, 1, argv, "s", &chan_name);
+		if ((chan = getchan(chan_name, g_ape)) == NULL) {
+			return JS_TRUE;
+		}
+	} else if (JSVAL_IS_OBJECT(argv[0])) {
+		JS_ConvertArguments(cx, 1, argv, "o", &chan_obj);
+		if (!JS_InstanceOf(cx, chan_obj, &channel_class, 0) || (chan = JS_GetPrivate(cx, chan_obj)) == NULL) {
+			return JS_TRUE;
+		}
+	} else {
+		return JS_TRUE;
+	}
+	
+	rmchan(chan, g_ape);
+	
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(ape_sm_adduser)
 //{
 	JSObject *user;
@@ -2444,6 +2469,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("xorize", ape_sm_xorize, 2, 0, 0),
 	JS_FS("addUser", ape_sm_adduser, 1, 0, 0),
 	JS_FS("mkChan", ape_sm_mkchan, 1, 0, 0),
+	JS_FS("rmChan", ape_sm_rmchan, 1, 0, 0),
     JS_FS_END
 };
 
