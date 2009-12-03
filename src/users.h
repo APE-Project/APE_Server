@@ -109,6 +109,7 @@ struct _subuser
 		int sent;
 	} headers;
 	
+	struct _extend *properties;
 	struct _subuser *next;
 	ape_socket *client;
 	USERS *user;
@@ -236,10 +237,10 @@ void sendback_session(USERS *user, session *sess, acetables *g_ape);
 
 subuser *addsubuser(ape_socket *client, const char *channel, USERS *user, acetables *g_ape);
 subuser *getsubuser(USERS *user, const char *channel);
-void delsubuser(subuser **current);
+void delsubuser(subuser **current, acetables *g_ape);
 void subuser_restor(subuser *sub, acetables *g_ape);
 
-void clear_subusers(USERS *user);
+void clear_subusers(USERS *user, acetables *g_ape);
 void ping_request(USERS *user, acetables *g_ape);
 
 void make_link(USERS *a, USERS *b);

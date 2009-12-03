@@ -407,9 +407,14 @@ unsigned int cmd_script(callbackp *callbacki)
 	if (domain == NULL) {
 		send_error(callbacki->call_user, "NO_DOMAIN", "201", callbacki->g_ape);
 	} else {
-		if (strcmp(domain, "auto") == 0) {
-			struct _http_header_line *hlines;
+		char *autodom;
+		if (strcmp(domain, "auto") == 0 && (autodom = JSTR(domain)) != NULL) {
+			domain = autodom;
+			#if 0
+			/* http://geekandpoke.typepad.com/.a/6a00d8341d3df553ef0120a6d65b8a970b-pi */
 			
+			struct _http_header_line *hlines;
+
 			for (hlines = callbacki->client->http.hlines; hlines != NULL; hlines = hlines->next) {
 				if (strcasecmp(hlines->key.val, "host") == 0) {
 					char *loc;
@@ -433,7 +438,8 @@ unsigned int cmd_script(callbackp *callbacki)
 						alloc = 1;
 					}
 				}
-			}	
+			}
+			#endif		
 		}
 		sendf(callbacki->client->fd, callbacki->g_ape, "%s<html>\n<head>\n\t<script>\n\t\tdocument.domain=\"%s\"\n\t</script>\n", HEADER_DEFAULT, domain);
 		

@@ -38,6 +38,8 @@
 
 #define APEUSER_TO_JSOBJ(apeuser) \
 		 (JSObject *)get_property(apeuser->properties, "jsobj")->val
+#define APESUBUSER_TO_JSOBJ(apeuser) \
+		 (JSObject *)get_property(apeuser->properties, "jsobj")->val
 #define APECHAN_TO_JSOBJ(apechan) \
 		 (JSObject *)get_property(apechan->properties, "jsobj")->val
 
@@ -225,6 +227,13 @@ static JSClass raw_class = {
 
 static JSClass user_class = {
 	"user", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
+static JSClass subuser_class = {
+	"subuser", JSCLASS_HAS_PRIVATE,
 	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
 	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
 	    JSCLASS_NO_OPTIONAL_MEMBERS
@@ -609,8 +618,14 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 			json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
 		}
 	}
+	if (to_pipe->type == USER_PIPE) {
+		if (options != NULL && JS_GetProperty(cx, options, "restrict", &vp) && JSVAL_IS_OBJECT(vp) && JS_InstanceOf(cx, JSVAL_TO_OBJECT(vp), &subuser_class, 0) == JS_TRUE) {
+			
+		}
+	}
 	
 	/* in the case of sendResponse */
+	/* TODO : May be borken if to_pipe->type == CHANNNEL and from == USER */
 	if (chl) {
 		json_set_property_intN(jstr, "chl", 3, chl);
 	}
@@ -1310,6 +1325,12 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 			jval = OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(callbacki->call_user));	
 			/* infos.user */
 			JS_SetProperty(cx, cb, "user", &jval);
+			
+			if (callbacki->call_subuser != NULL) {
+				jval = OBJECT_TO_JSVAL(APESUBUSER_TO_JSOBJ(callbacki->call_subuser));	
+				/* infos.subuser */
+				JS_SetProperty(cx, cb, "subuser", &jval);
+			}
 		}
 		
 		JS_RemoveRoot(cx, &obj);
@@ -1317,6 +1338,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		
 	//JS_EndRequest(cx);
 	//JS_ClearContextThread(cx);
+	
 	if (callbacki->data == NULL) {
 		return ape_fire_cmd(callbacki->cmd, obj, cb, callbacki, callbacki->g_ape);
 	} else {
@@ -2493,12 +2515,13 @@ static JSFunctionSpec sha1_funcs[] = {
 
 static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g_ape)
 {
-	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *pipe, *jsmysql;
+	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *pipe, *jsmysql, *subuser;
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
 	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
 	sha1 = JS_DefineObject(asc->cx, obj, "sha1", &sha1_class, NULL, 0);
 	user = JS_DefineObject(gcx, obj, "user", &user_class, NULL, 0);
+	subuser = JS_DefineObject(gcx, obj, "subuser", &subuser_class, NULL, 0);
 	channel = JS_DefineObject(gcx, obj, "channel", &channel_class, NULL, 0);
 	pipe = JS_DefineObject(gcx, obj, "pipe", &pipe_class, NULL, 0);
 	
@@ -2507,6 +2530,7 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	JS_DefineFunctions(gcx, pipe, apepipe_funcs);
 	
 	add_property(&g_ape->properties, "user_proto", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
+	add_property(&g_ape->properties, "subuser_proto", subuser, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	add_property(&g_ape->properties, "channel_proto", channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	add_property(&g_ape->properties, "pipe_proto", pipe, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	
@@ -2611,7 +2635,8 @@ static int ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, callbackp
 		for (cbk = asc->callbacks.head; cbk != NULL; cbk = cbk->next) {
 			if ((cbk->type == APE_CMD && strcasecmp(name, cbk->callbackname) == 0)) {
 				jsval rval;
-				if (JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), (cbk->func), 2, params, &rval) == JS_FALSE) {
+
+				if (JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), cbk->func, 2, params, &rval) == JS_FALSE) {
 					return (cbk->type == APE_CMD ? RETURN_BAD_PARAMS : RETURN_BAD_CMD);
 				}
 				
@@ -2930,6 +2955,37 @@ static void ape_cb_left(USERS *user, CHANNEL *chan, acetables *g_ape)
 
 }
 
+static void ape_cb_addsubuser(subuser *sub, acetables *g_ape)
+{
+	JSObject *subjs;
+	extend *jsobj;
+	JSContext *gcx = ASMC;
+	
+	subjs = JS_NewObject(gcx, &subuser_class, get_property(g_ape->properties, "subuser_proto")->val, NULL);
+	
+	if (subjs == NULL) {
+		return;
+	}
+	
+	jsobj = add_property(&sub->properties, "jsobj", subjs, EXTEND_POINTER, EXTEND_ISPRIVATE);
+	JS_AddRoot(gcx, &jsobj->val);
+	
+	JS_SetPrivate(gcx, subjs, sub);
+	
+}
+
+static void ape_cb_delsubuser(subuser *sub, acetables *g_ape)
+{
+	extend *jsobj;
+	JSContext *gcx = ASMC;
+	
+	jsobj = get_property(sub->properties, "jsobj");
+	
+	JS_SetPrivate(gcx, jsobj->val, (void *)NULL);
+	JS_RemoveRoot(gcx, &jsobj->val);
+	
+}
+
 static ace_callbacks callbacks = {
 	ape_cb_add_user,	/* Called when new user is added */
 	ape_cb_del_user,	/* Called when a user is disconnected */
@@ -2939,7 +2995,9 @@ static ace_callbacks callbacks = {
 	ape_cb_left,		/* Called when a user leave a channel */
 	NULL,
 	NULL,
-	ape_cb_allocateuser
+	ape_cb_allocateuser,
+	ape_cb_addsubuser,
+	ape_cb_delsubuser
 };
 
 APE_INIT_PLUGIN(MODULE_NAME, init_module, callbacks)

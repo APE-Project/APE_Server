@@ -198,7 +198,7 @@ void deluser(USERS *user, acetables *g_ape)
 
 	/* kill all users connections */
 	
-	clear_subusers(user);
+	clear_subusers(user, g_ape);
 
 	hashtbl_erase(g_ape->hSessid, user->sessid);
 	
@@ -252,7 +252,7 @@ void check_timeout(acetables *g_ape, int last)
 			subuser **n = &(list->subuser);
 			while (*n != NULL) {
 				if ((ctime - (*n)->idle) >= TIMEOUT_SEC) {
-					delsubuser(n);
+					delsubuser(n, g_ape);
 					continue;
 				}
 				if ((*n)->state == ALIVE && (*n)->raw_pools.nraw && !(*n)->need_update) {
@@ -444,6 +444,8 @@ subuser *addsubuser(ape_socket *client, const char *channel, USERS *user, acetab
 	sub->nraw = 0;
 	sub->wait_for_free = 0;
 	
+	sub->properties = NULL;
+	
 	sub->headers.sent = 0;
 	sub->headers.content = NULL;
 	
@@ -481,7 +483,9 @@ subuser *addsubuser(ape_socket *client, const char *channel, USERS *user, acetab
 		}
 
 	}
-
+	
+	FIRE_EVENT_NONSTOP(addsubuser, sub, g_ape);
+	
 	return sub;
 }
 
@@ -556,17 +560,20 @@ subuser *getsubuser(USERS *user, const char *channel)
 	return NULL;
 }
 
-void delsubuser(subuser **current)
+void delsubuser(subuser **current, acetables *g_ape)
 {
 	subuser *del = *current;
 	
+	FIRE_EVENT_NONSTOP(delsubuser, del, g_ape);
 	((*current)->user->nsub)--;
 	
-	*current = (*current)->next;
+	*current = (*current)->next;	
 	
 	destroy_raw_pool(del->raw_pools.low.rawhead);
 	destroy_raw_pool(del->raw_pools.high.rawhead);
-
+	
+	clear_properties(&del->properties);
+	
 	if (del->state == ALIVE) {
 		del->wait_for_free = 1;
 		do_died(del);
@@ -576,10 +583,10 @@ void delsubuser(subuser **current)
 	
 }
 
-void clear_subusers(USERS *user)
+void clear_subusers(USERS *user, acetables *g_ape)
 {
 	while (user->subuser != NULL) {
-		delsubuser(&(user->subuser));
+		delsubuser(&(user->subuser), g_ape);
 	}
 }
 

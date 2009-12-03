@@ -39,13 +39,13 @@
 #include "../src/base64.h"
 #include "../src/sha1.h"
 #include "../src/events.h"
+#include "../src/log.h"
 
 #include <stdarg.h>
 
 #define READ_CONF(key) plugin_get_conf(infos_module.conf, key)
 
 typedef struct _ace_callbacks ace_callbacks;
-
 
 struct _ace_callbacks
 {		
@@ -58,7 +58,8 @@ struct _ace_callbacks
 	void (*c_tickuser)(subuser *, acetables *);
 	void (*c_post_raw_sub)(RAW *, subuser *, acetables *);
 	USERS *(*c_allocateuser)(ape_socket *, char *, char *, acetables *);
-	// TODO : delchan
+	void (*c_addsubuser)(subuser *, acetables *);
+	void (*c_delsubuser)(subuser *, acetables *);
 };
 
 typedef struct _plug_config plug_config;

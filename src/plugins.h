@@ -46,15 +46,17 @@ struct _ace_plugin_infos
 struct _ace_plugins
 {
 	struct {
-		unsigned int c_adduser;
-		unsigned int c_deluser;
-		unsigned int c_mkchan;
-		unsigned int c_rmchan;
-		unsigned int c_join;
-		unsigned int c_left;
-		unsigned int c_tickuser;
-		unsigned int c_post_raw_sub;
-		unsigned int c_allocateuser;
+		unsigned short int c_adduser;
+		unsigned short int c_deluser;
+		unsigned short int c_mkchan;
+		unsigned short int c_rmchan;
+		unsigned short int c_join;
+		unsigned short int c_left;
+		unsigned short int c_tickuser;
+		unsigned short int c_post_raw_sub;
+		unsigned short int c_allocateuser;
+		unsigned short int c_addsubuser;
+		unsigned short int c_delsubuser;
 	} fire;
 	
 	/* Module Handle */
@@ -76,7 +78,6 @@ enum {
 };
 
 ace_plugins *loadplugin(char *file);
-void unfire(ace_plugins *plug);
 void findandloadplugin(acetables *g_ape);
 struct _plug_config *plugin_parse_conf(const char *file);
 void plugin_read_config(ace_plugins *plug);

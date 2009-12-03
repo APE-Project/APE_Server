@@ -54,26 +54,6 @@ ace_plugins *loadplugin(char *file)
 	return plug;
 }
 
-
-void unfire(ace_plugins *plug)
-{
-	plug->fire.c_adduser = 0;
-	plug->fire.c_deluser = 0;
-	
-	plug->fire.c_mkchan = 0;
-	plug->fire.c_rmchan = 0;
-	
-	plug->fire.c_join = 0;
-	plug->fire.c_left = 0;
-	
-	plug->fire.c_tickuser = 0;
-	
-	plug->fire.c_post_raw_sub = 0;
-	
-	plug->fire.c_allocateuser = 0;
-}
-
-
 void findandloadplugin(acetables *g_ape)
 {
 	int i;
@@ -98,7 +78,7 @@ void findandloadplugin(acetables *g_ape)
 				continue;
 			}
 			
-			unfire(pcurrent);
+			memset(&pcurrent->fire, 0, sizeof(pcurrent->fire)); /* unfire all events */
 			
 			/* Calling entry point load function */
 			load(pcurrent);

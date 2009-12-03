@@ -148,7 +148,7 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 	unsigned int isget = 0;
 	
 	subuser *user = NULL;
-	int local = (strcmp(ip_client, CONFIG_VAL(Server, ip_local, g_ape->srv)) == 0);
+	int local = /*(strcmp(ip_client, CONFIG_VAL(Server, ip_local, g_ape->srv)) == 0)*/ 0;
 	
 	clientget *cget = xmalloc(sizeof(*cget));
 
