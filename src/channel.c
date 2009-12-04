@@ -260,6 +260,14 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 	
 	while (list != NULL && list->userinfo != NULL) {
 		if (list->userinfo == user) {
+			jlist = json_new_object();
+			
+			json_set_property_objN(jlist, "user", 4, get_json_object_user(user));
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
+			
+			newraw = forge_raw(RAW_LEFT, jlist);
+			post_raw(newraw, user, g_ape);
+			
 			if (prev != NULL) {
 				prev->next = list->next;
 			} else {

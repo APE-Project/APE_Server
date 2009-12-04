@@ -124,7 +124,6 @@ var Http = new Class({
 		this.response = '';
 		this.socket.onRead = function(data) { 
 			this.response += data;
-
 			if (this.response.contains("\r\n\r\n")) {
 				if (!$defined(this.responseHeaders)) {
 					var tmp						= this.response.split("\r\n\r\n");
