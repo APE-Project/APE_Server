@@ -10,10 +10,10 @@ Exemple 1:
 
 Example 2:
 	var request = new Http('http://twitter.com:80/statuses/update.json');
-	request.options('action', 'POST');
+	request.set('action', 'POST');
 	
 	// GET or POST data
-	request.writeDate('status', 'Hello!');
+	request.writeData('status', 'Hello!');
 	
 	// HTTP Auth
 	request.set('auth', 'user:password');
@@ -28,7 +28,7 @@ Example 3:
 	request.finish(function(result) {
 		// {status:Integer, headers:Array, body:String}
 	});
- */
+*/
 
 var Http = new Class({
 	method:		'GET',
@@ -101,13 +101,15 @@ var Http = new Class({
 	
 	sockConnect: function() {
 		this.socket.onConnect = function() {
-			var getData = '';
+			if (this.body.length != 0 && this.method == 'GET') {
+				var getData = '';
 			
-			if (this.method == 'GET') {
-				getData = '?' + this.body.join('&');
+				if (this.method == 'GET') {
+					getData = '?' + this.body.join('&');
+				}
 			}
-			
-			var toWrite = this.method + " " + this.query + getData + " HTTP/1.0\r\nHost: " + this.host + "\r\n";
+
+			var toWrite = this.method + " " + this.query + " HTTP/1.0\r\nHost: " + this.host + "\r\n";
 			
 			for (var i in this.headers) {
 				if (this.headers.hasOwnProperty(i)) {
@@ -157,14 +159,16 @@ var Http = new Class({
 			this.response	  	 = this.response.join();
 			this.httpResponse 	 = {status:this.responseCode, headers:this.responseHeaders, body:this.response};
 			
-			if ($defined(this.responseHeaders['Location'])) {
-				var newRequest   = new Http(this.responseHeaders['Location']);
-				newRequest.setHeaders(this.headers);
-				newRequest.set('method', this.method);
-				newRequest.write(this.body.join('&'));
-				newRequest.finish(callback);
-			} else {
-				callback.run(this.httpResponse);
+			if ($defined(this.responseHeaders)) {
+				if ($defined(this.responseHeaders['Location'])) {
+					var newRequest   = new Http(this.responseHeaders['Location']);
+					newRequest.setHeaders(this.headers);
+					newRequest.set('method', this.method);
+					newRequest.write(this.body.join('&'));
+					newRequest.finish(callback);
+				} else {
+					callback.run(this.httpResponse);
+				}
 			}
 		}.bind(this, callback);
 	},
