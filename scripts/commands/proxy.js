@@ -2,6 +2,23 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 	if (!$defined(params.host) || !$defined(params.port)) {
 		return 0;
 	}
+	var allowed = Ape.config('proxy.conf', 'allowed_hosts');
+	
+	if (allowed != 'any') {
+		var hosts = allowed.split(',');
+		var isallowed = false;
+
+		for (var i = 0; i < hosts.length; i++) {
+			var parts = hosts[i].trim().split(':');
+			if (parts[0] == params.host) {
+				if (parts.length == 2 && parts[1] != params.port) continue;
+				isallowed = true;
+				break;
+			}
+		}
+		if (!isallowed) return [900, "NOT_ALLOWED"];
+	}
+	
 	var socket = new Ape.sockClient(params.port, params.host);
 	socket.chl = infos.chl;
 	/* TODO : Add socket to the user */
