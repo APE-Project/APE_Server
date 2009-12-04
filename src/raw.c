@@ -233,7 +233,7 @@ int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuse
 
 	}
 	
-	if (from != NULL && from->next != NULL) {
+	if (sender != NULL && sender->nsub > 1) {
 		jlist_copy = json_item_copy(jlist, NULL);
 	
 		json_set_property_objN(jlist_copy, "pipe", 4, get_json_object_pipe(recver));

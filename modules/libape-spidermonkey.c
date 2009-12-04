@@ -600,7 +600,7 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 		JSObject *js_pipe = JSVAL_TO_OBJECT(vp);
 		transpipe *from_pipe = JS_GetPrivate(cx, js_pipe);
 		
-		if (from_pipe->type == USER_PIPE) {
+		if (from_pipe != NULL && from_pipe->type == USER_PIPE) {
 			json_set_property_objN(jstr, "from", 4, get_json_object_pipe(from_pipe));
 			
 			if (to_pipe->type == USER_PIPE) {
@@ -614,16 +614,11 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 				}
 				return JS_TRUE;
 			}
-		} else if (from_pipe->type == CUSTOM_PIPE) {
+		} else if (from_pipe != NULL && from_pipe->type == CUSTOM_PIPE) {
 			json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
 		}
 	}
-	if (to_pipe->type == USER_PIPE) {
-		if (options != NULL && JS_GetProperty(cx, options, "restrict", &vp) && JSVAL_IS_OBJECT(vp) && JS_InstanceOf(cx, JSVAL_TO_OBJECT(vp), &subuser_class, 0) == JS_TRUE) {
-			
-		}
-	}
-	
+
 	/* in the case of sendResponse */
 	/* TODO : May be borken if to_pipe->type == CHANNNEL and from == USER */
 	if (chl) {
@@ -633,8 +628,36 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 	newraw = forge_raw(raw, jstr);
 	
 	if (to_pipe->type == CHANNEL_PIPE) {
+		if (options != NULL && JS_GetProperty(cx, options, "restrict", &vp) && JSVAL_IS_OBJECT(vp) && JS_InstanceOf(cx, JSVAL_TO_OBJECT(vp), &user_class, 0) == JS_TRUE) {
+			JSObject *userjs = JSVAL_TO_OBJECT(vp);
+			USERS *user = JS_GetPrivate(cx, userjs);
+			
+			if (user == NULL) {
+				free_raw(newraw);
+				
+				return JS_TRUE;
+			}
+			
+			post_raw_channel_restricted(newraw, to_pipe->pipe, user, g_ape);
+			
+			return JS_TRUE;
+		}
 		post_raw_channel(newraw, to_pipe->pipe, g_ape);
 	} else {
+		if (options != NULL && JS_GetProperty(cx, options, "restrict", &vp) && JSVAL_IS_OBJECT(vp) && JS_InstanceOf(cx, JSVAL_TO_OBJECT(vp), &subuser_class, 0) == JS_TRUE) {
+			JSObject *subjs = JSVAL_TO_OBJECT(vp);
+			subuser *sub = JS_GetPrivate(cx, subjs);
+			
+			if (sub == NULL || ((USERS *)to_pipe->pipe)->nsub < 2 || to_pipe->pipe != sub->user) {
+				free_raw(newraw);
+				return JS_TRUE;
+			}
+
+			post_raw_restricted(newraw, to_pipe->pipe, sub, g_ape);
+			
+			return JS_TRUE;
+
+		}
 		post_raw(newraw, to_pipe->pipe, g_ape);
 	}
 	

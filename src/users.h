@@ -52,7 +52,6 @@ struct _raw_pool {
 
 typedef struct USERS
 {
-	
 	struct {
 		struct _link_list *ulink;
 		int nlink;
@@ -69,6 +68,7 @@ typedef struct USERS
 	struct _transpipe *pipe;
 	struct _extend *properties;
 	struct _subuser *subuser;
+	
 	json_item *cmdqueue;
 	
 	time_t idle;
