@@ -29,7 +29,6 @@
 #include "plugins.h"
 #include "global_plugins.h"
 
-
 #define MODULE_NAME "spidermonkey"
 
 /* Return the global SpiderMonkey Runtime instance e.g. ASMR->runtime */
@@ -1877,12 +1876,14 @@ APE_JS_NATIVE(ape_sm_config)
 	char *file, *key, *value;
 	*rval = JSVAL_NULL;
 	plug_config *config;
+	char conf_file[1024];
 	
 	if (!JS_ConvertArguments(cx, 2, argv, "ss", &file, &key)) {
 		return JS_TRUE;
 	}
+	sprintf(conf_file, "%s%s", CONFIG_VAL(Config, modules_conf, g_ape->srv), file);
 	
-	config = plugin_parse_conf(file);
+	config = plugin_parse_conf(conf_file);
 	value = plugin_get_conf(config, key);
 	
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, value));
