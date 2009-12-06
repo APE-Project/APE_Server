@@ -295,7 +295,7 @@ unsigned int sockroutine(acetables *g_ape)
 	add_periodical(5, 0, check_idle, &sl, g_ape);
 	#endif
 	gettimeofday(&t_start, NULL);
-	while (1) {
+	while (server_is_running) {
 	//	int timeout_to_hang = MAX((1000/TICKS_RATE)-ticks, 1);
 		/* Linux 2.6.25 provides a fd-driven timer system. It could be usefull to implement */
 

@@ -193,7 +193,7 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 	if (isget) {
 		urldecode(cget->get);
 	}
-	
+
 	op = checkcmd(cget, gettransport(pSock), &user, g_ape);
 
 	switch (op) {

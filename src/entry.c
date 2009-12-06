@@ -52,7 +52,7 @@
 static void signal_handler(int sign)
 {
 	printf("\nShutdown...!\n\n");
-	exit(1);
+	server_is_running = 0;
 }
 
 static int inc_rlimit(int nofile)
@@ -65,7 +65,7 @@ static int inc_rlimit(int nofile)
 	return setrlimit(RLIMIT_NOFILE, &rl);
 }
 
-static void ape_daemon()
+static void ape_daemon(const char *pidfile, acetables *g_ape)
 {
 	if (0 != fork()) { 
 		exit(0);
@@ -80,6 +80,20 @@ static void ape_daemon()
 		exit(0);
 	}
 	printf("Starting daemon.... pid : %i\n\n", getpid());
+	if (pidfile != NULL) {
+		int pid;
+		if ((pid = open(pidfile, O_TRUNC | O_WRONLY | O_CREAT, 0644)) == -1) {
+			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
+				"Cant open pid file : %s", pidfile);
+		} else {
+			char pidstring[32];
+			int len;
+			
+			len = sprintf(pidstring, "%i", getpid());
+			write(pid, pidstring, len);
+			close(pid);
+		}
+	}
 }
 
 
@@ -89,7 +103,7 @@ int main(int argc, char **argv)
 	
 	int random, im_r00t = 0;
 	unsigned int getrandom = 0;
-	
+	const char *pidfile = NULL;
 	struct _fdevent fdev;
 	
 	char cfgfile[512] = APE_CONFIG_FILE;
@@ -134,6 +148,8 @@ int main(int argc, char **argv)
 	printf("Author  : Weelya (contact@weelya.com)\n\n");
 
 	signal(SIGINT, &signal_handler);
+	signal(SIGTERM, &signal_handler);
+	signal(SIGKILL, &signal_handler);
 	
 	if (TICKS_RATE < 1) {
 		printf("[ERR] TICKS_RATE cant be less than 1\n");
@@ -228,9 +244,10 @@ int main(int argc, char **argv)
 	}
 	
 	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0) {
+		pidfile = CONFIG_VAL(Server, pid_file, srv);
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 			"Starting daemon");
-		ape_daemon();
+		ape_daemon(pidfile, g_ape);
 	}
 	signal(SIGPIPE, SIG_IGN);
 	
@@ -259,15 +276,18 @@ int main(int argc, char **argv)
 	
 	do_register(g_ape);
 	
-	//proxy_init_from_conf(g_ape);
-	
 	transport_start(g_ape);	
 	
 	findandloadplugin(g_ape);
-
+	
+	server_is_running = 1;
 	/* Starting Up */
 	sockroutine(g_ape); /* loop */
 	/* Shutdown */	
+	
+	if (pidfile != NULL) {
+		unlink(pidfile);
+	}
 	
 	hashtbl_free(g_ape->hLogin);
 	hashtbl_free(g_ape->hSessid);
@@ -278,7 +298,7 @@ int main(int argc, char **argv)
 	free(g_ape->plugins);
 	//free(srv);
 	free(g_ape);
-	
+
 	return 0;
 }
 

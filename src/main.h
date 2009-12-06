@@ -46,6 +46,8 @@
 
 #define SERVER_NAME "APE.Server"
 
+int server_is_running;
+
 struct _transport_properties {
 	struct {
 		struct {
