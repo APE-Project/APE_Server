@@ -80,7 +80,7 @@ enum {
 ace_plugins *loadplugin(char *file);
 void findandloadplugin(acetables *g_ape);
 struct _plug_config *plugin_parse_conf(const char *file);
-void plugin_read_config(ace_plugins *plug);
+void plugin_read_config(ace_plugins *plug, const char *path);
 char *plugin_get_conf(struct _plug_config *conf, char *key);
 
 #endif

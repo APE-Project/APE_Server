@@ -153,6 +153,8 @@ typedef struct _acetables
 	struct _ape_socket *co;
 	struct _extend *properties;
 	
+	const char *confs_path;
+	
 	int basemem;
 	unsigned int nConnected;
 } acetables;

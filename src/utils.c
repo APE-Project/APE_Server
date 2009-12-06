@@ -188,6 +188,23 @@ char *xstrdup(const char *s)
 	return x;
 }
 
+char *get_path(const char *full_path)
+{
+	char *new_path;
+	char *last;
+	new_path = xstrdup(full_path);
+	
+	last = strrchr(new_path, '/');
+	if (last == NULL) {
+		free(new_path);
+		return NULL;
+	}
+	
+	last[1] = '\0';
+	
+	return new_path;
+}
+
 char hex2int(unsigned char hex)
 {
         hex = hex - '0';

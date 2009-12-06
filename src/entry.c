@@ -104,9 +104,11 @@ int main(int argc, char **argv)
 	int random, im_r00t = 0;
 	unsigned int getrandom = 0;
 	const char *pidfile = NULL;
+	char *confs_path = NULL;
+	
 	struct _fdevent fdev;
 	
-	char cfgfile[512] = APE_CONFIG_FILE;
+	char cfgfile[513] = APE_CONFIG_FILE;
 	
 	acetables *g_ape;
 	
@@ -120,9 +122,9 @@ int main(int argc, char **argv)
 		printf("   Options:\n     --help             : Display this help\n     --version          : Show version number\n     --cfg <config path>: Load a specific config file (default is %s)\n\n", cfgfile);
 		return 0;
 	} else if (argc > 2 && strcmp(argv[1], "--cfg") == 0) {
+		memset(cfgfile, 0, 513);
 		strncpy(cfgfile, argv[2], 512);
-		cfgfile[strlen(argv[2])] = '\0';
-		
+		confs_path = get_path(cfgfile);
 	} else if (argc > 1) {
 		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
 		printf("   Unknown parameters - check \"aped --help\"\n\n");
@@ -168,6 +170,7 @@ int main(int argc, char **argv)
 	g_ape = xmalloc(sizeof(*g_ape));
 	g_ape->basemem = 512000;
 	g_ape->srv = srv;
+	g_ape->confs_path = confs_path;
 	
 	ape_log_init(g_ape);
 	

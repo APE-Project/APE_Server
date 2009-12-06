@@ -40,6 +40,7 @@ char hex2int(unsigned char hex);
 int urldecode(char *string);
 int rand_n(int n);
 void s_tolower(char *upper, unsigned int len);
+char *get_path(const char *full_path);
 
 /* CONST_STR_LEN from lighttpd */
 #define CONST_STR_LEN(x) x, x ? sizeof(x) - 1 : 0
