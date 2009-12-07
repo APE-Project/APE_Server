@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "config.h"
 #include "cmd.h"
+#include "main.h"
 
 static unsigned int fixpacket(char *pSock, int type)
 {
@@ -168,7 +169,8 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 	if (strncasecmp(pSock, "GET", 3) == 0) {
 		if (!fixpacket(pSock, 0) || (cget->get = getfirstparam(pSock, (local ? '&' : '?'))) == NULL) {
 			free(cget);
-			
+			sendbin(client->fd, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);
+			sendbin(client->fd, CONST_STR_LEN(CONTENT_NOTFOUND), g_ape);
 			shutdown(client->fd, 2);
 			return NULL;			
 		} else {
@@ -183,7 +185,7 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 		}
 	} else {
 		free(cget);
-
+		
 		shutdown(client->fd, 2);
 		return NULL;		
 	}

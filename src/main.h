@@ -45,6 +45,7 @@
 #define TIMEOUT_SEC 45
 
 #define SERVER_NAME "APE.Server"
+#define _VERSION "1.0-BETA5"
 
 int server_is_running;
 
@@ -197,7 +198,7 @@ struct _ape_socket {
 #define HEADER_XHR "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: application/x-ape-event-stream\r\n\r\n                                                                                                                                                                                                                                                                "
 #define HEADER_XHR_LEN 421
 
-
+#define CONTENT_NOTFOUND "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"><html><head><title>APE Server</title></head><body><h1>APE Server</h1><p>No command given.</p><hr><address>http://www.ape-project.org/ - Server "_VERSION" (Build "__DATE__" "__TIME__")</address></body></html>"
 
 #define FIRE_EVENT(event, ret, arg...) \
 	if (g_ape->plugins != NULL) { \
