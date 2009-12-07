@@ -64,15 +64,8 @@ static int inc_rlimit(int nofile)
 	return setrlimit(RLIMIT_NOFILE, &rl);
 }
 
-static void ape_daemon(const char *pidfile, acetables *g_ape)
+static void ape_daemon(int pidfile, acetables *g_ape)
 {
-	int pid = 0;
-	if (pidfile != NULL) {
-		if ((pid = open(pidfile, O_TRUNC | O_WRONLY | O_CREAT, 0655)) == -1) {
-			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
-				"Cant open pid file : %s", pidfile);
-		}
-	}
 	
 	if (0 != fork()) { 
 		exit(0);
@@ -88,12 +81,12 @@ static void ape_daemon(const char *pidfile, acetables *g_ape)
 	
 	g_ape->is_daemon = 1;
 	
-	if (pid > 0) {
+	if (pidfile > 0) {
 		char pidstring[32];
 		int len;
 		len = sprintf(pidstring, "%i", getpid());
-		write(pid, pidstring, len);
-		close(pid);
+		write(pidfile, pidstring, len);
+		close(pidfile);
 	}
 }
 
@@ -102,7 +95,7 @@ int main(int argc, char **argv)
 {
 	apeconfig *srv;
 	
-	int random, im_r00t = 0;
+	int random, im_r00t = 0, pidfd = 0;
 	unsigned int getrandom = 0;
 	const char *pidfile = NULL;
 	char *confs_path = NULL;
@@ -191,6 +184,13 @@ int main(int argc, char **argv)
 	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 		"APE starting up - pid : %i", getpid());
 	
+	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0 && (pidfile = CONFIG_VAL(Server, pid_file, srv)) != NULL) {
+		if ((pidfd = open(pidfile, O_TRUNC | O_WRONLY | O_CREAT, 0655)) == -1) {
+			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
+				"Cant open pid file : %s", CONFIG_VAL(Server, pid_file, srv));
+		}
+	}
+	
 	if (im_r00t) {
 		struct group *grp = NULL;
 		struct passwd *pwd = NULL;
@@ -240,10 +240,9 @@ int main(int argc, char **argv)
 	}
 	
 	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0) {
-		pidfile = CONFIG_VAL(Server, pid_file, srv);
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 			"Starting daemon");
-		ape_daemon(pidfile, g_ape);
+		ape_daemon(pidfd, g_ape);
 	}
 	
 	if (!g_ape->is_daemon) {	
