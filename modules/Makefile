@@ -13,12 +13,12 @@ all: modules
 
 modules: libape-spidermonkey.c
 
-	$(CC) -Wall -g -bundle -undefined suppress -flat_namespace -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../deps/js/src/dist/include/ -L../deps/js/src/ -ljs_static -lstdc++ $(MYSQL_FLAGS)
+	$(CC) -Wall -O2 -bundle -undefined suppress -flat_namespace -o lib/libmod_spidermonkey.so libape-spidermonkey.c -I../deps/js/src/dist/include/ -L../deps/js/src/ -ljs_static -lstdc++ -L./deps/mysac/ -I./deps/mysac/ -lmysac -L/opt/local/lib/mysql5/mysql/ -lmysqlclient_r $(MYSQL_FLAGS)
 
 endif
 ifdef LINUX_BUILD
 
-CFLAGS=-Wall -g -shared -fPIC -rdynamic
+CFLAGS=-Wall -O2 -shared -fPIC -rdynamic
 
 all: modules
 

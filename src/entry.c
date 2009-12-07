@@ -51,7 +51,6 @@
 
 static void signal_handler(int sign)
 {
-	printf("\nShutdown...!\n\n");
 	server_is_running = 0;
 }
 
@@ -86,7 +85,8 @@ static void ape_daemon(const char *pidfile, acetables *g_ape)
 	if (0 != fork()) {
 		exit(0);
 	}
-	printf("Starting daemon.... pid : %i\n\n", getpid());
+	
+	g_ape->is_daemon = 1;
 	
 	if (pid > 0) {
 		char pidstring[32];
@@ -139,16 +139,6 @@ int main(int argc, char **argv)
 	if (getuid() == 0) {
 		im_r00t = 1;
 	}
-	
-	printf("   _   ___ ___ \n");
-	printf("  /_\\ | _ \\ __|\n");
-	printf(" / _ \\|  _/ _| \n");
-	printf("/_/ \\_\\_| |___|\nAJAX Push Engine\n\n");
-
-	printf("Bind on port %i\n\n", atoi(CONFIG_VAL(Server, port, srv)));
-	printf("Version : %s\n", _VERSION);
-	printf("Build   : %s %s\n", __DATE__, __TIME__);
-	printf("Author  : Weelya (contact@weelya.com)\n\n");
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);
@@ -172,6 +162,7 @@ int main(int argc, char **argv)
 	g_ape->basemem = 256000;
 	g_ape->srv = srv;
 	g_ape->confs_path = confs_path;
+	g_ape->is_daemon = 0;
 	
 	ape_log_init(g_ape);
 	
@@ -255,6 +246,17 @@ int main(int argc, char **argv)
 		ape_daemon(pidfile, g_ape);
 	}
 	
+	if (!g_ape->is_daemon) {	
+		printf("   _   ___ ___ \n");
+		printf("  /_\\ | _ \\ __|\n");
+		printf(" / _ \\|  _/ _| \n");
+		printf("/_/ \\_\\_| |___|\nAJAX Push Engine\n\n");
+
+		printf("Bind on port %i\n\n", atoi(CONFIG_VAL(Server, port, srv)));
+		printf("Version : %s\n", _VERSION);
+		printf("Build   : %s %s\n", __DATE__, __TIME__);
+		printf("Author  : Weelya (contact@weelya.com)\n\n");		
+	}
 	signal(SIGPIPE, SIG_IGN);
 	
 	g_ape->cmd_hook.head = NULL;

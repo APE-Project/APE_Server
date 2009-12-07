@@ -1525,8 +1525,9 @@ APE_JS_NATIVE(ape_sm_include)
 	strncpy(rpath, READ_CONF("scripts_path"), 255);
 	strncat(rpath, file, 255);
 	
-	printf("[JS] Loading script %s\n", rpath);
-	
+	if (!g_ape->is_daemon) {
+		printf("[JS] Loading script %s\n", rpath);
+	}
 	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), rpath);
 	
 	if (bytecode == NULL) {
@@ -2054,8 +2055,11 @@ APE_JS_NATIVE(ape_sm_echo)
 		return JS_TRUE;
 	}
 	
-	fwrite(JS_GetStringBytes(string), 1, JS_GetStringLength(string), stdout);
-	fwrite("\n", 1, 1, stdout);
+	if (!g_ape->is_daemon) {
+		fwrite(JS_GetStringBytes(string), 1, JS_GetStringLength(string), stdout);
+		fwrite("\n", 1, 1, stdout);
+	}
+	
 	return JS_TRUE;
 }
 

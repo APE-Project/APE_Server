@@ -155,6 +155,7 @@ typedef struct _acetables
 	
 	const char *confs_path;
 	
+	int is_daemon;
 	int basemem;
 	unsigned int nConnected;
 } acetables;

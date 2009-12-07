@@ -71,8 +71,6 @@ apeconfig *ape_config_load(const char *filename)
 	
 	int open_brace = 0, curline = 0;
 	
-	printf("\nReading Config...\n");
-	
 	if (fp == NULL) {
 		printf("NO (unable to open %s)\n", filename);
 		return NULL;

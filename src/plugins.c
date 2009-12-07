@@ -88,8 +88,10 @@ void findandloadplugin(acetables *g_ape)
 			load(pcurrent);
 				
 			plugin_read_config(pcurrent, CONFIG_VAL(Config, modules_conf, g_ape->srv));
-			printf("[Module] [%s] Loading module : %s (%s) - %s\n", pcurrent->modulename, pcurrent->infos->name, pcurrent->infos->version, pcurrent->infos->author);
-
+			
+			if (!g_ape->is_daemon) {
+				printf("[Module] [%s] Loading module : %s (%s) - %s\n", pcurrent->modulename, pcurrent->infos->name, pcurrent->infos->version, pcurrent->infos->author);
+			}
 			pcurrent->next = plist;
 			g_ape->plugins = pcurrent;
 			
