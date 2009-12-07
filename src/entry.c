@@ -79,7 +79,6 @@ static void ape_daemon(const char *pidfile, acetables *g_ape)
 		exit(0);
 	}
 	if (-1 == setsid()) {
-		
 		exit(0);
 	}
 	signal(SIGHUP, SIG_IGN);
@@ -130,7 +129,7 @@ int main(int argc, char **argv)
 	} else if (argc > 1) {
 		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
 		printf("   Unknown parameters - check \"aped --help\"\n\n");
-		return 0;		
+		return 0;
 	}
 	if (NULL == (srv = ape_config_load(cfgfile))) {
 		printf("\nExited...\n\n");
@@ -170,7 +169,7 @@ int main(int argc, char **argv)
 	close(random);
 
 	g_ape = xmalloc(sizeof(*g_ape));
-	g_ape->basemem = 512000;
+	g_ape->basemem = 256000;
 	g_ape->srv = srv;
 	g_ape->confs_path = confs_path;
 	
@@ -242,6 +241,7 @@ int main(int argc, char **argv)
 		initgroups(CONFIG_VAL(uid, user, srv), grp->gr_gid);
 		
 		setuid(pwd->pw_uid);
+		
 	} else {
 		printf("[WARN] You have to run \'aped\' as root to increase r_limit\n");
 		ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
@@ -254,6 +254,7 @@ int main(int argc, char **argv)
 			"Starting daemon");
 		ape_daemon(pidfile, g_ape);
 	}
+	
 	signal(SIGPIPE, SIG_IGN);
 	
 	g_ape->cmd_hook.head = NULL;

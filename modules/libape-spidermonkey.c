@@ -22,7 +22,10 @@
 
 #define XP_UNIX
 
+#include "../src/configure.h"
+#ifdef _USE_MYSQL
 #include <mysac.h>
+#endif
 #include <jsapi.h>
 #include <stdio.h>
 #include <glob.h>
@@ -57,9 +60,10 @@ static void ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root);
 		
 #define APE_JS_NATIVE_END(func_name) }
 
-
+#ifdef _USE_MYSQL
 static void apemysql_finalize(JSContext *cx, JSObject *jsmysql);
-	
+#endif
+
 static JSBool ape_sm_stub(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	return JS_TRUE;
@@ -122,6 +126,7 @@ struct _ape_sock_js_obj {
 	JSObject *client_obj;
 };
 
+#ifdef _USE_MYSQL
 struct _ape_mysql_queue {
 	struct _ape_mysql_queue	*next;
 	MYSAC_RES *res;
@@ -129,12 +134,14 @@ struct _ape_mysql_queue {
 	unsigned int query_len;
 	jsval callback;
 };
+#endif
 
 typedef enum {
 	SQL_READY_FOR_QUERY,
 	SQL_NEED_QUEUE
 } ape_mysql_state_t;
 
+#ifdef _USE_MYSQL
 struct _ape_mysql_data {
 	MYSAC *my;
 	void (*on_success)(struct _ape_mysql_data *, int);
@@ -151,11 +158,10 @@ struct _ape_mysql_data {
 	} queue;
 };
 
-
 static void mysac_query_success(struct _ape_mysql_data *myhandle, int code);
 static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myhandle, char *query, unsigned int query_len, jsval callback);
 static void apemysql_shift_queue(struct _ape_mysql_data *myhandle);
-
+#endif
 //static JSBool sockserver_addproperty(JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 static ace_plugin_infos infos_module = {
@@ -252,12 +258,14 @@ static JSClass pipe_class = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
+#ifdef _USE_MYSQL
 static JSClass mysql_class = {
 	"MySQL", JSCLASS_HAS_PRIVATE,
 	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
 	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, apemysql_finalize,
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
+#endif
 
 static JSClass cmdresponse_class = {
 	"cmdresponse", JSCLASS_HAS_PRIVATE,
@@ -877,6 +885,7 @@ APE_JS_NATIVE(apeuser_sm_set_property)
 	return JS_TRUE;
 }
 
+#ifdef _USE_MYSQL
 APE_JS_NATIVE(apemysql_sm_errorstring)
 //{
 	struct _ape_mysql_data *myhandle;
@@ -946,6 +955,7 @@ APE_JS_NATIVE(apemysql_sm_query)
 	
 	return JS_TRUE;
 }
+#endif
 
 static JSFunctionSpec apesocket_funcs[] = {
     JS_FS("write",   apesocket_write,	1, 0, 0),
@@ -991,6 +1001,7 @@ static JSFunctionSpec apepipe_funcs[] = {
 	JS_FS_END
 };
 
+#ifdef _USE_MYSQL
 static JSFunctionSpec apemysql_funcs[] = {
 	JS_FS("onConnect", ape_sm_stub, 0, 0, 0),
 	JS_FS("onError", ape_sm_stub, 0, 0, 0),
@@ -1004,6 +1015,8 @@ static JSFunctionSpec apemysql_funcs_static[] = {
 	JS_FS("escape", apemysql_escape, 1, 0, 0),
 	JS_FS_END
 };
+#endif
+
 
 static JSFunctionSpec cmdresponse_funcs[] = {
 	JS_FS("sendResponse", apepipe_sm_send_response, 3, 0, 0),
@@ -2127,6 +2140,7 @@ APE_JS_NATIVE(ape_sm_pipe_constructor)
 	return JS_TRUE;
 }
 
+#ifdef _USE_MYSQL
 static void ape_mysql_handle_io(struct _ape_mysql_data *myhandle, acetables *g_ape)
 {
 	int ret;
@@ -2418,6 +2432,7 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 
 	return JS_TRUE;
 }
+#endif
 
 APE_JS_NATIVE(ape_sm_sockserver_constructor)
 //{
@@ -2539,7 +2554,10 @@ static JSFunctionSpec sha1_funcs[] = {
 
 static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g_ape)
 {
-	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *pipe, *jsmysql, *subuser;
+	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *pipe, *subuser;
+	#ifdef _USE_MYSQL
+	JSObject *jsmysql;
+	#endif
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
 	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
@@ -2566,7 +2584,9 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	custompipe = JS_InitClass(asc->cx, obj, NULL, &pipe_class, ape_sm_pipe_constructor, 0, NULL, NULL, NULL, NULL);
 	sockserver = JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
 	sockclient = JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
+	#ifdef _USE_MYSQL
 	jsmysql = JS_InitClass(asc->cx, obj, NULL, &mysql_class, ape_sm_mysql_constructor, 2, NULL, NULL, NULL, apemysql_funcs_static);
+	#endif
 	JS_InitClass(asc->cx, obj, NULL, &raw_class, ape_sm_raw_constructor, 1, NULL, NULL, NULL, NULL); /* Not used */
 
 	JS_DefineFunctions(asc->cx, sockclient, apesocket_client_funcs);
@@ -2578,7 +2598,9 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	JS_DefineFunctions(asc->cx, custompipe, apepipe_funcs);
 	JS_DefineFunctions(asc->cx, custompipe, apepipecustom_funcs);
 	
+	#ifdef _USE_MYSQL
 	JS_DefineFunctions(asc->cx, jsmysql, apemysql_funcs);
+	#endif
 	
 	JS_SetContextPrivate(asc->cx, asc);
 }

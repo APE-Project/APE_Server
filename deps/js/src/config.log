@@ -181,8 +181,6 @@ configure:11039: checking for C++ dynamic_cast to void*
 configure:11090: checking whether C++ requires implementation of unused virtual methods
 configure:11125: checking for trouble comparing to zero near std::operator!=()
 configure:11173: checking for LC_MESSAGES
-configure:11518: checking for valid debug flags
-configure:11529: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -g  conftest.c 1>&5
 configure:11570: checking for valid optimization flags
 configure:11581: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -O3  conftest.c 1>&5
 configure:12148: checking for __cxa_demangle
