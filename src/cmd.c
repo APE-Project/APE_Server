@@ -534,7 +534,7 @@ unsigned int cmd_send(callbackp *callbacki)
 }
 unsigned int cmd_quit(callbackp *callbacki)
 {
-	QUIT(callbacki->client->fd, callbacki->g_ape);
+	
 	deluser(callbacki->call_user, callbacki->g_ape); // After that callbacki->call_user is free'd
 	
 	return (RETURN_NULL);

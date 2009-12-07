@@ -1905,6 +1905,22 @@ APE_JS_NATIVE(ape_sm_config)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(ape_sm_mainconfig)
+//{
+	char *key, *section, *value;
+	*rval = JSVAL_NULL;
+	
+	if (!JS_ConvertArguments(cx, 2, argv, "ss", &section, &key)) {
+		return JS_TRUE;
+	}
+
+	value = ape_config_get_key(ape_config_get_section(g_ape->srv, section), key);
+
+	*rval = (value != NULL ? STRING_TO_JSVAL(JS_NewStringCopyZ(cx, value)) : JSVAL_FALSE);
+
+	return JS_TRUE;
+}
+
 struct _ape_sm_timer
 {
 	JSContext *cx;
@@ -2527,6 +2543,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("getUserByPubid", ape_sm_get_user_by_pubid, 1, 0, 0),
 	JS_FS("getChannelByPubid", ape_sm_get_channel_by_pubid, 1, 0, 0),
 	JS_FS("config", ape_sm_config, 2, 0, 0),
+	JS_FS("mainConfig", ape_sm_mainconfig, 2, 0, 0),
 	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0, 0),
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0, 0),
 	JS_FS("clearTimeout", ape_sm_clear_timeout, 1, 0, 0),
