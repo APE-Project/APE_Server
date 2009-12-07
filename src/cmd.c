@@ -534,7 +534,15 @@ unsigned int cmd_send(callbackp *callbacki)
 }
 unsigned int cmd_quit(callbackp *callbacki)
 {
+	RAW *newraw;
+	json_item *jlist = json_new_object();
+
+	json_set_property_strZ(jlist, "value", "null");
+
+	newraw = forge_raw("QUIT", jlist);
 	
+	send_raw_inline(callbacki->client, callbacki->transport, newraw, callbacki->g_ape);
+		
 	deluser(callbacki->call_user, callbacki->g_ape); // After that callbacki->call_user is free'd
 	
 	return (RETURN_NULL);
