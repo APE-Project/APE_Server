@@ -67,6 +67,14 @@ static int inc_rlimit(int nofile)
 
 static void ape_daemon(const char *pidfile, acetables *g_ape)
 {
+	int pid = 0;
+	if (pidfile != NULL) {
+		if ((pid = open(pidfile, O_TRUNC | O_WRONLY | O_CREAT, 0655)) == -1) {
+			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
+				"Cant open pid file : %s", pidfile);
+		}
+	}
+	
 	if (0 != fork()) { 
 		exit(0);
 	}
@@ -80,19 +88,13 @@ static void ape_daemon(const char *pidfile, acetables *g_ape)
 		exit(0);
 	}
 	printf("Starting daemon.... pid : %i\n\n", getpid());
-	if (pidfile != NULL) {
-		int pid;
-		if ((pid = open(pidfile, O_TRUNC | O_WRONLY | O_CREAT, 0644)) == -1) {
-			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
-				"Cant open pid file : %s", pidfile);
-		} else {
-			char pidstring[32];
-			int len;
-			
-			len = sprintf(pidstring, "%i", getpid());
-			write(pid, pidstring, len);
-			close(pid);
-		}
+	
+	if (pid > 0) {
+		char pidstring[32];
+		int len;
+		len = sprintf(pidstring, "%i", getpid());
+		write(pid, pidstring, len);
+		close(pid);
 	}
 }
 
