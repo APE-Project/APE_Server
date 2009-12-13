@@ -131,7 +131,7 @@ plug_config *plugin_parse_conf(const char *file)
 			tmpconf = new_conf;
 		}
 	}
-	
+	fclose(fp);
 	return new_conf;
 }
 
