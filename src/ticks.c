@@ -91,6 +91,7 @@ struct _ticks_callback *add_timeout(unsigned int msec, void *callback, void *par
 
 	new_timer->prev = NULL;
 	new_timer->times = 1;
+	new_timer->protect = 1;
 	
 	new_timer->func = callback;
 	new_timer->params = params;

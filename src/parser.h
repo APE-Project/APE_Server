@@ -17,21 +17,14 @@
   Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-/* log.h */
+/* parser.h */
 
-#ifndef _LOG_H
-#define _LOG_H
+#ifndef _PARSER_H
+#define _PARSER_H
 
 #include "main.h"
 
-typedef enum {
-	APE_DEBUG 	= 0x01,
-	APE_WARN 	= 0x02,
-	APE_ERR 	= 0x04,
-	APE_INFO	= 0x08
-} ape_log_lvl_t;
-
-void ape_log_init(acetables *g_ape);
-void ape_log(ape_log_lvl_t lvl, const char *file, unsigned long int line, acetables *g_ape, char *buf, ...);
+ape_parser parser_init_http(ape_socket *co);
+void parser_destroy(ape_parser *parser);
 
 #endif

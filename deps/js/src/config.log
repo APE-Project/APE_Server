@@ -5,20 +5,17 @@ configure:718: checking host system type
 configure:739: checking target system type
 configure:757: checking build system type
 configure:817: checking for mawk
-configure:817: checking for gawk
 configure:1888: checking for gcc
 configure:2001: checking whether the C compiler (gcc-4.2  ) works
 configure:2017: gcc-4.2 -o conftest    conftest.c  1>&5
 configure:2043: checking whether the C compiler (gcc-4.2  ) is a cross-compiler
 configure:2048: checking whether we are using GNU C
-configure:2057: gcc-4.2 -E conftest.c
 configure:2076: checking whether gcc-4.2 accepts -g
 configure:2112: checking for c++
 configure:2144: checking whether the C++ compiler (g++-4.2  ) works
 configure:2160: g++-4.2 -o conftest    conftest.C  1>&5
 configure:2186: checking whether the C++ compiler (g++-4.2  ) is a cross-compiler
 configure:2191: checking whether we are using GNU C++
-configure:2200: g++-4.2 -E conftest.C
 configure:2219: checking whether g++-4.2 accepts -g
 configure:2253: checking for ranlib
 configure:2285: checking for as
@@ -27,15 +24,8 @@ configure:2374: checking for ld
 configure:2409: checking for strip
 configure:2444: checking for windres
 configure:2783: checking whether gcc-4.2 and cc understand -c and -o together
-configure:2798: gcc-4.2 -c conftest.c -o conftest.o 1>&5
-configure:2799: gcc-4.2 -c conftest.c -o conftest.o 1>&5
-configure:2804: cc -c conftest.c 1>&5
-configure:2806: cc -c conftest.c -o conftest.o 1>&5
-configure:2807: cc -c conftest.c -o conftest.o 1>&5
 configure:2843: checking how to run the C preprocessor
-configure:2864: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:2923: checking how to run the C++ preprocessor
-configure:2941: g++-4.2 -E  conftest.C >/dev/null 2>conftest.out
 configure:3041: checking for a BSD compatible install
 configure:3094: checking whether ln -s works
 configure:3119: checking for perl5
@@ -48,507 +38,91 @@ configure:3357: checking for autoconf
 configure:3406: checking for makedepend
 configure:3454: checking for xargs
 configure:3528: checking for pbbuild
-configure:3528: checking for xcodebuild
 configure:3591: checking for sdp
 configure:3812: checking for gmake
-configure:3812: checking for make
 configure:3872: checking for X
-configure:3939: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:4015: gcc-4.2 -o conftest    conftest.c -lXt  1>&5
-ld: library not found for -lXt
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 4008 "configure"
-#include "confdefs.h"
-
-int main() {
-XtMalloc()
-; return 0; }
 configure:5132: checking whether the compiler supports -Wno-invalid-offsetof
 configure:5155: g++-4.2 -c  -fno-strict-aliasing -Wno-invalid-offsetof  conftest.C 1>&5
 configure:5182: checking whether the compiler supports -Wno-variadic-macros
 configure:5205: g++-4.2 -c  -fno-strict-aliasing -Wno-variadic-macros  conftest.C 1>&5
 configure:5240: checking whether ld has archive extraction flags
-configure:5264: gcc-4.2 -o conftest  -fno-strict-aliasing  -Wl,--whole-archive conftest.c -Wl,--no-whole-archive 1>&5
-ld: unknown option: --whole-archive
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 5257 "configure"
-#include "confdefs.h"
-
-int main() {
-
-; return 0; }
-configure:5264: gcc-4.2 -o conftest  -fno-strict-aliasing  -Wl,-z -Wl,allextract conftest.c -Wl,-z -Wl,defaultextract 1>&5
-ld: unknown option: -z
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 5257 "configure"
-#include "confdefs.h"
-
-int main() {
-
-; return 0; }
-configure:5264: gcc-4.2 -o conftest  -fno-strict-aliasing  -Wl,-all conftest.c -Wl,-none 1>&5
-ld: unknown option: -all
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 5257 "configure"
-#include "confdefs.h"
-
-int main() {
-
-; return 0; }
 configure:5297: checking that static assertion macros used in autoconf tests work
-configure:5318: gcc-4.2 -c  -fno-strict-aliasing  conftest.c 1>&5
-configure:5335: gcc-4.2 -c  -fno-strict-aliasing  conftest.c 1>&5
-configure: In function 'main':
-configure:5336: error: size of array 'static_assert_line_5335' is negative
-configure: failed program was:
-#line 5328 "configure"
-#include "confdefs.h"
-
-#define CONFIGURE_STATIC_ASSERT(condition) CONFIGURE_STATIC_ASSERT_IMPL(condition, __LINE__)
-#define CONFIGURE_STATIC_ASSERT_IMPL(condition, line) CONFIGURE_STATIC_ASSERT_IMPL2(condition, line)
-#define CONFIGURE_STATIC_ASSERT_IMPL2(condition, line) typedef int static_assert_line_##line[(condition) ? 1 : -1]
-
-int main() {
-CONFIGURE_STATIC_ASSERT(0)
-; return 0; }
-configure:5358: g++-4.2 -c  -fno-strict-aliasing  conftest.C 1>&5
-configure:5375: g++-4.2 -c  -fno-strict-aliasing  conftest.C 1>&5
-configure: In function 'int main()':
-configure:5375: error: size of array 'static_assert_line_5375' is negative
-configure: failed program was:
-#line 5368 "configure"
-#include "confdefs.h"
-
-#define CONFIGURE_STATIC_ASSERT(condition) CONFIGURE_STATIC_ASSERT_IMPL(condition, __LINE__)
-#define CONFIGURE_STATIC_ASSERT_IMPL(condition, line) CONFIGURE_STATIC_ASSERT_IMPL2(condition, line)
-#define CONFIGURE_STATIC_ASSERT_IMPL2(condition, line) typedef int static_assert_line_##line[(condition) ? 1 : -1]
-
-int main() {
-CONFIGURE_STATIC_ASSERT(0)
-; return 0; }
 configure:5409: checking for 64-bit OS
 configure:5418: gcc-4.2 -c  -fno-strict-aliasing  conftest.c 1>&5
 configure:5799: checking for -dead_strip option to ld
 configure:5810: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common   -framework Cocoa -Wl,-dead_strip conftest.c  1>&5
 configure:7144: checking for ANSI C header files
-configure:7157: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:7224: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common   -framework Cocoa conftest.c  1>&5
-configure: In function 'main':
-configure:7219: warning: incompatible implicit declaration of built-in function 'exit'
 configure:7248: checking for working const
-configure:7302: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:7323: checking for mode_t
 configure:7356: checking for off_t
 configure:7389: checking for pid_t
 configure:7422: checking for size_t
 configure:7455: checking for st_blksize in struct stat
-configure:7468: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:7489: checking for siginfo_t
-configure:7502: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:7527: checking for stdint.h
-configure:7537: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:7773: checking for the size of void*
-configure:7791: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
-configure: In function 'main':
-configure:7785: error: size of array 'a' is negative
-configure: failed program was:
-#line 7781 "configure"
-#include "confdefs.h"
-
-int main() {
-
-                     int a[sizeof (void*) == 4 ? 1 : -1];
-                     return;
-                   
-; return 0; }
-configure:7791: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:7828: checking for the alignment of void*
-configure:7849: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
-configure: In function 'main':
-configure:7843: error: size of array 'a' is negative
-configure: failed program was:
-#line 7836 "configure"
-#include "confdefs.h"
-
-                     #include <stddef.h>
-                     struct aligner { char c; void* a; };
-                   
-int main() {
-
-                     int a[offsetof(struct aligner, a) == 2 ? 1 : -1];
-                     return;
-                   
-; return 0; }
-configure:7849: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
-configure: In function 'main':
-configure:7843: error: size of array 'a' is negative
-configure: failed program was:
-#line 7836 "configure"
-#include "confdefs.h"
-
-                     #include <stddef.h>
-                     struct aligner { char c; void* a; };
-                   
-int main() {
-
-                     int a[offsetof(struct aligner, a) == 4 ? 1 : -1];
-                     return;
-                   
-; return 0; }
-configure:7849: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:7872: checking for the size of double
-configure:7890: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
-configure: In function 'main':
-configure:7884: error: size of array 'a' is negative
-configure: failed program was:
-#line 7880 "configure"
-#include "confdefs.h"
-
-int main() {
-
-                     int a[sizeof (double) == 6 ? 1 : -1];
-                     return;
-                   
-; return 0; }
-configure:7890: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:7913: checking for int16_t
-configure:7926: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:7948: checking for int32_t
-configure:7961: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:7983: checking for int64_t
-configure:7996: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:8018: checking for int64
-configure:8031: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
-configure: In function 'main':
-configure:8027: error: 'int64' undeclared (first use in this function)
-configure:8027: error: (Each undeclared identifier is reported only once
-configure:8027: error: for each function it appears in.)
-configure:8027: error: expected ';' before 'foo'
-configure: failed program was:
-#line 8023 "configure"
-#include "confdefs.h"
-#include <stdio.h>
-                  #include <sys/types.h>
-int main() {
-int64 foo = 0;
-; return 0; }
 configure:8053: checking for uint
-configure:8066: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:8088: checking for uint_t
-configure:8101: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
-configure: In function 'main':
-configure:8097: error: 'uint_t' undeclared (first use in this function)
-configure:8097: error: (Each undeclared identifier is reported only once
-configure:8097: error: for each function it appears in.)
-configure:8097: error: expected ';' before 'foo'
-configure: failed program was:
-#line 8093 "configure"
-#include "confdefs.h"
-#include <stdio.h>
-                  #include <sys/types.h>
-int main() {
-uint_t foo = 0;
-; return 0; }
 configure:8123: checking for uint16_t
-configure:8136: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
-configure: In function 'main':
-configure:8132: error: 'uint16_t' undeclared (first use in this function)
-configure:8132: error: (Each undeclared identifier is reported only once
-configure:8132: error: for each function it appears in.)
-configure:8132: error: expected ';' before 'foo'
-configure: failed program was:
-#line 8128 "configure"
-#include "confdefs.h"
-#include <stdio.h>
-                  #include <sys/types.h>
-int main() {
-uint16_t foo = 0;
-; return 0; }
 configure:8167: checking for uname.domainname
-configure:8180: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.C 1>&5
-configure: In function 'int main()':
-configure:8176: error: 'struct utsname' has no member named 'domainname'
-configure: failed program was:
-#line 8172 "configure"
-#include "confdefs.h"
-#include <sys/utsname.h>
-int main() {
- struct utsname *res; char *domain; 
-            (void)uname(res);  if (res != 0) { domain = res->domainname; } 
-; return 0; }
 configure:8204: checking for uname.__domainname
-configure:8217: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.C 1>&5
-configure: In function 'int main()':
-configure:8213: error: 'struct utsname' has no member named '__domainname'
-configure: failed program was:
-#line 8209 "configure"
-#include "confdefs.h"
-#include <sys/utsname.h>
-int main() {
- struct utsname *res; char *domain; 
-            (void)uname(res);  if (res != 0) { domain = res->__domainname; } 
-; return 0; }
 configure:8250: checking for visibility(hidden) attribute
 configure:8275: checking for visibility(default) attribute
 configure:8300: checking for visibility pragma support
 configure:8325: checking For gcc visibility bug with class-level attributes (GCC bug 26905)
 configure:8353: checking For x86_64 gcc visibility bug with builtins (GCC bug 20297)
 configure:8406: checking for dirent.h that defines DIR
-configure:8419: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common  conftest.c 1>&5
 configure:8444: checking for opendir in -ldir
-configure:8463: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common   -framework Cocoa conftest.c -ldir   1>&5
-ld: library not found for -ldir
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 8452 "configure"
-#include "confdefs.h"
-/* Override any gcc2 internal prototype to avoid an error.  */
-/* We use char because int might match the return type of a gcc2
-    builtin and then its argument prototype would still apply.  */
-char opendir();
-
-int main() {
-opendir()
-; return 0; }
 configure:8536: checking for sys/byteorder.h
-configure:8546: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:8542:27: error: sys/byteorder.h: No such file or directory
-configure: failed program was:
-#line 8541 "configure"
-#include "confdefs.h"
-#include <sys/byteorder.h>
 configure:8536: checking for compat.h
-configure:8546: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:8542:20: error: compat.h: No such file or directory
-configure: failed program was:
-#line 8541 "configure"
-#include "confdefs.h"
-#include <compat.h>
 configure:8536: checking for getopt.h
-configure:8546: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8576: checking for sys/bitypes.h
-configure:8586: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:8582:25: error: sys/bitypes.h: No such file or directory
-configure: failed program was:
-#line 8581 "configure"
-#include "confdefs.h"
-#include <sys/bitypes.h>
 configure:8576: checking for memory.h
-configure:8586: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8576: checking for unistd.h
-configure:8586: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8616: checking for gnu/libc-version.h
-configure:8626: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:8622:30: error: gnu/libc-version.h: No such file or directory
-configure: failed program was:
-#line 8621 "configure"
-#include "confdefs.h"
-#include <gnu/libc-version.h>
 configure:8616: checking for nl_types.h
-configure:8626: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8656: checking for malloc.h
-configure:8666: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:8662:20: error: malloc.h: No such file or directory
-configure: failed program was:
-#line 8661 "configure"
-#include "confdefs.h"
-#include <malloc.h>
 configure:8696: checking for X11/XKBlib.h
-configure:8706: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8737: checking for sys/statvfs.h
-configure:8747: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8737: checking for sys/statfs.h
-configure:8747: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:8743:24: error: sys/statfs.h: No such file or directory
-configure: failed program was:
-#line 8742 "configure"
-#include "confdefs.h"
-#include <sys/statfs.h>
 configure:8737: checking for sys/vfs.h
-configure:8747: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
-configure:8743:21: error: sys/vfs.h: No such file or directory
-configure: failed program was:
-#line 8742 "configure"
-#include "confdefs.h"
-#include <sys/vfs.h>
 configure:8737: checking for sys/mount.h
-configure:8747: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8778: checking for mmintrin.h
-configure:8788: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8825: checking for new
-configure:8835: g++-4.2 -E  conftest.C >/dev/null 2>conftest.out
 configure:8927: checking for sys/cdefs.h
-configure:8937: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:8971: checking for gethostbyname_r in -lc_r
-configure:8990: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common   -framework Cocoa conftest.c -lc_r   1>&5
-ld: library not found for -lc_r
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 8979 "configure"
-#include "confdefs.h"
-/* Override any gcc2 internal prototype to avoid an error.  */
-/* We use char because int might match the return type of a gcc2
-    builtin and then its argument prototype would still apply.  */
-char gethostbyname_r();
-
-int main() {
-gethostbyname_r()
-; return 0; }
 configure:9159: checking for dladdr
-configure:9187: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -D_GNU_SOURCE   -framework Cocoa conftest.c  1>&5
 configure:9322: checking for socket in -lsocket
-configure:9341: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common   -framework Cocoa conftest.c -lsocket   1>&5
-ld: library not found for -lsocket
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 9330 "configure"
-#include "confdefs.h"
-/* Override any gcc2 internal prototype to avoid an error.  */
-/* We use char because int might match the return type of a gcc2
-    builtin and then its argument prototype would still apply.  */
-char socket();
-
-int main() {
-socket()
-; return 0; }
 configure:9505: checking whether gcc-4.2 accepts -pthread
 configure:9623: checking whether mmap() sees write()s
 configure:9666: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9691: checking whether gcc-4.2 needs -traditional
-configure:9716:20: error: termio.h: No such file or directory
 configure:9737: checking for 8-bit clean memcmp
-configure:9755: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-configure: In function 'main':
-configure:9750: warning: incompatible implicit declaration of built-in function 'exit'
 configure:9778: checking for fchmod
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for flockfile
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for getc_unlocked
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for _getc_nolock
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-Undefined symbols:
-  "__getc_nolock", referenced from:
-      _main in cc3dZtGp.o
-ld: symbol(s) not found
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 9783 "configure"
-#include "confdefs.h"
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char _getc_nolock(); below.  */
-#include <assert.h>
-/* Override any gcc2 internal prototype to avoid an error.  */
-/* We use char because int might match the return type of a gcc2
-    builtin and then its argument prototype would still apply.  */
-char _getc_nolock();
-
-int main() {
-
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub__getc_nolock) || defined (__stub____getc_nolock)
-choke me
-#else
-_getc_nolock();
-#endif
-
-; return 0; }
 configure:9778: checking for getpagesize
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for lchown
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for localtime_r
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for lstat64
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for memmove
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-configure:9790: warning: conflicting types for built-in function 'memmove'
 configure:9778: checking for random
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for rint
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-configure:9790: warning: conflicting types for built-in function 'rint'
 configure:9778: checking for sbrk
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for snprintf
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-configure:9790: warning: conflicting types for built-in function 'snprintf'
 configure:9778: checking for stat64
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for statvfs
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for statvfs64
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-Undefined symbols:
-  "_statvfs64", referenced from:
-      _main in ccZEKYJz.o
-ld: symbol(s) not found
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 9783 "configure"
-#include "confdefs.h"
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char statvfs64(); below.  */
-#include <assert.h>
-/* Override any gcc2 internal prototype to avoid an error.  */
-/* We use char because int might match the return type of a gcc2
-    builtin and then its argument prototype would still apply.  */
-char statvfs64();
-
-int main() {
-
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub_statvfs64) || defined (__stub___statvfs64)
-choke me
-#else
-statvfs64();
-#endif
-
-; return 0; }
 configure:9778: checking for strerror
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for strtok_r
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9778: checking for truncate64
-configure:9806: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-Undefined symbols:
-  "_truncate64", referenced from:
-      _main in ccgNsXcY.o
-ld: symbol(s) not found
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 9783 "configure"
-#include "confdefs.h"
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char truncate64(); below.  */
-#include <assert.h>
-/* Override any gcc2 internal prototype to avoid an error.  */
-/* We use char because int might match the return type of a gcc2
-    builtin and then its argument prototype would still apply.  */
-char truncate64();
-
-int main() {
-
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub_truncate64) || defined (__stub___truncate64)
-choke me
-#else
-truncate64();
-#endif
-
-; return 0; }
 configure:9839: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:9833:21: error: windows.h: No such file or directory
 configure: In function 'main':
@@ -583,137 +157,35 @@ int main() {
 FILETIME ft;GetSystemTimeAsFileTime(&ft);
 ; return 0; }
 configure:9890: checking for wcrtomb
-configure:9902: g++-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.C  1>&5
 configure:9922: checking for mbrtowc
-configure:9934: g++-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.C  1>&5
 configure:9963: checking for res_ninit()
-configure:9980: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-Undefined symbols:
-  "_res_9_ninit", referenced from:
-      _main in cc23fj0g.o
-ld: symbol(s) not found
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 9968 "configure"
-#include "confdefs.h"
-
-        #ifdef linux
-        #define _BSD_SOURCE 1
-        #endif
-        #include <resolv.h>
-        
-int main() {
-int foo = res_ninit(&_res);
-; return 0; }
 configure:10010: checking for gnu_get_libc_version()
-configure:10026: g++-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.C  1>&5
-configure: In function 'int main()':
-configure:10022: error: 'gnu_get_libc_version' was not declared in this scope
-configure: failed program was:
-#line 10015 "configure"
-#include "confdefs.h"
-
-        #ifdef HAVE_GNU_LIBC_VERSION_H
-        #include <gnu/libc-version.h>
-        #endif
-        
-int main() {
-const char *glibc_version = gnu_get_libc_version();
-; return 0; }
 configure:10285: checking for an implementation of va_copy()
-configure:10309: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-configure: In function 'f':
-configure:10303: warning: incompatible implicit declaration of built-in function 'exit'
 configure:10326: checking for an implementation of __va_copy()
-configure:10350: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-configure: In function 'f':
-configure:10344: warning: incompatible implicit declaration of built-in function 'exit'
 configure:10367: checking whether va_lists can be copied by value
-configure:10391: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
-configure: In function 'f':
-configure:10383: error: incompatible types in assignment
-configure:10385: warning: incompatible implicit declaration of built-in function 'exit'
-configure: failed program was:
-#line 10377 "configure"
-#include "confdefs.h"
-
-        #include <stdarg.h>
-        void f (int i, ...) {
-            va_list args1, args2;
-            va_start (args1, i);
-            args2 = args1;
-            if (va_arg (args2, int) != 42 || va_arg (args1, int) != 42)
-                exit (1);
-            va_end (args1); va_end (args2);
-        }
-        int main() { f (0, 42); return 0; }
 configure:10490: checking for C++ exceptions flag
 configure:10525: checking for gcc 3.0 ABI
-configure:10543: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10567: checking for C++ "explicit" keyword
-configure:10582: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10603: checking for C++ "typename" keyword
-configure:10627: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10648: checking for modern C++ template specialization syntax support
-configure:10663: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10685: checking whether partial template specialization works
-configure:10698: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10719: checking whether operators must be re-defined for templates derived from templates
-configure:10736: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10758: checking whether we need to cast a derived template to pass as its base class
-configure:10772: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10793: checking whether the compiler can resolve const ambiguities for templates
-configure:10819: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10841: checking whether the C++ "using" keyword can change access
-configure:10854: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
-configure:10865: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
-configure: In function 'int main()':
-configure:10858: error: 'int A::foo()' is inaccessible
-configure:10861: error: within this context
-configure: failed program was:
-#line 10857 "configure"
-#include "confdefs.h"
-class A { public: int foo() { return 1; } };
-                       class B : public A { private: using A::foo; };
-int main() {
-B b; return b.foo();
-; return 0; }
 configure:10893: checking whether the C++ "using" keyword resolves ambiguity
-configure:10914: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10935: checking for "std::" namespace
-configure:10947: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:10968: checking whether standard template operator!=() is ambiguous
-configure:10983: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:11005: checking for C++ reinterpret_cast
-configure:11018: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:11039: checking for C++ dynamic_cast to void*
-configure:11066: g++-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.C  1>&5
 configure:11090: checking whether C++ requires implementation of unused virtual methods
-configure:11102: g++-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.C  1>&5
-Undefined symbols:
-  "vtable for X", referenced from:
-      X::X()     in cc7atURx.o
-ld: symbol(s) not found
-collect2: ld returned 1 exit status
-configure: failed program was:
-#line 11095 "configure"
-#include "confdefs.h"
-class X {private: virtual void never_called();};
-int main() {
-X x;
-; return 0; }
 configure:11125: checking for trouble comparing to zero near std::operator!=()
-configure:11141: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.C 1>&5
 configure:11173: checking for LC_MESSAGES
-configure:11185: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread  conftest.c 1>&5
 configure:11570: checking for valid optimization flags
 configure:11581: gcc-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -O3  conftest.c 1>&5
 configure:12148: checking for __cxa_demangle
-configure:12179: g++-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.C  1>&5
 configure:12227: checking for unwind.h
-configure:12237: gcc-4.2 -E  conftest.c >/dev/null 2>conftest.out
 configure:12256: checking for _Unwind_Backtrace
-configure:12284: gcc-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno-common -pthread    -framework Cocoa conftest.c  1>&5
 configure:12333: checking for gcc -pipe support
 dummy-hello.c:2:21: warning: missing terminating " character
 dummy-hello.c: In function 'main':
@@ -733,6 +205,4 @@ configure:12612: g++-4.2 -o conftest  -fno-strict-aliasing -fpascal-strings -fno
 configure:12633: checking for correct overload resolution with const and templates
 configure:12668: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -pipe  -Wall -Wpointer-arith -Woverloaded-virtual -Wsynth -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor -Wcast-align -Wno-invalid-offsetof -Wno-variadic-macros -Wno-long-long  conftest.C 1>&5
 configure:12691: checking for tm_zone tm_gmtoff in struct tm
-configure:12703: g++-4.2 -c  -fno-strict-aliasing -fpascal-strings -fno-common -pthread -pipe  conftest.C 1>&5
 configure:13264: checking for setlocale
-configure:13292: gcc-4.2 -o conftest -Wall -W -Wno-unused -Wpointer-arith -Wcast-align -W -Wno-long-long -fno-strict-aliasing -fpascal-strings -fno-common -pthread -pipe    -framework Cocoa conftest.c  1>&5

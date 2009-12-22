@@ -26,19 +26,20 @@
 #include "http.h"
 #include "handle_http.h"
 #include "transports.h"
+#include "parser.h"
 #include "main.h"
 
 static void ape_read(ape_socket *co, ape_buffer *buffer, size_t offset, acetables *g_ape)
 {
-	process_http(&co->buffer_in, &co->http);
-
-	if (co->http.ready == 1) {
+	co->parser.parser_func(co);
+	
+	if (co->parser.ready == 1) {
 		co->attach = checkrecv(buffer->data, co, g_ape, co->ip_client);
 
 		co->buffer_in.length = 0;
-		co->http.ready = -1;
+		co->parser.ready = -1;
 
-	} else if (co->http.error == 1) {
+	} else if (((http_state *)co->parser.data)->error == 1) {
 		shutdown(co->fd, 2);
 	}
 }
@@ -76,6 +77,11 @@ static void ape_disconnect(ape_socket *co, acetables *g_ape)
 	}
 }
 
+static void ape_onaccept(ape_socket *co, acetables *g_ape)
+{
+	co->parser = parser_init_http(co);
+}
+
 int servers_init(acetables *g_ape)
 {
 	ape_socket *main_server;
@@ -86,7 +92,8 @@ int servers_init(acetables *g_ape)
 	main_server->callbacks.on_read = ape_read;
 	main_server->callbacks.on_disconnect = ape_disconnect;
 	main_server->callbacks.on_data_completly_sent = ape_sent;
+	main_server->callbacks.on_accept = ape_onaccept;
 	
-	return 1;
+	return main_server->fd;
 }
 

@@ -307,9 +307,10 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 				return (CONNECT_KEEPALIVE);
 			}
 			
-		} else {
+		} else if (flag & RETURN_HANG) {
 			/* Doesn't need sessid */
-
+			return (CONNECT_KEEPALIVE);
+		} else {
 			return (CONNECT_SHUTDOWN);
 		}
 	} else {

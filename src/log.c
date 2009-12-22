@@ -68,7 +68,7 @@ void ape_log(ape_log_lvl_t lvl, const char *file, unsigned long int line, acetab
 		if (g_ape->logs.lvl&APE_DEBUG) {
 			char *debug_file;
 			int dlen;
-			dlen = asprintf(&debug_file, "%s:%i - ", file, line);
+			dlen = asprintf(&debug_file, "%s:%li - ", file, line);
 			write(g_ape->logs.fd, debug_file, dlen);
 			free(debug_file);
 		}

@@ -51,6 +51,7 @@
 static void signal_handler(int sign)
 {
 	server_is_running = 0;
+
 }
 
 static int inc_rlimit(int nofile)
@@ -94,7 +95,7 @@ int main(int argc, char **argv)
 {
 	apeconfig *srv;
 	
-	int random, im_r00t = 0, pidfd = 0;
+	int random, im_r00t = 0, pidfd = 0, serverfd;
 	unsigned int getrandom = 0;
 	const char *pidfile = NULL;
 	char *confs_path = NULL;
@@ -176,9 +177,7 @@ int main(int argc, char **argv)
 	g_ape->events = &fdev;
 	events_init(g_ape, &g_ape->basemem);
 	
-	ape_dns_init(g_ape);
-	
-	servers_init(g_ape);
+	serverfd = servers_init(g_ape);
 	
 	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 		"APE starting up - pid : %i", getpid());
@@ -242,6 +241,9 @@ int main(int argc, char **argv)
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 			"Starting daemon");
 		ape_daemon(pidfd, g_ape);
+
+		events_reload(g_ape->events);
+		events_add(g_ape->events, serverfd, EVENT_READ);
 	}
 	
 	if (!g_ape->is_daemon) {	
@@ -256,6 +258,8 @@ int main(int argc, char **argv)
 		printf("Author  : Weelya (contact@weelya.com)\n\n");		
 	}
 	signal(SIGPIPE, SIG_IGN);
+
+	ape_dns_init(g_ape);
 	
 	g_ape->cmd_hook.head = NULL;
 	g_ape->cmd_hook.foot = NULL;
@@ -285,8 +289,9 @@ int main(int argc, char **argv)
 	transport_start(g_ape);	
 	
 	findandloadplugin(g_ape);
-	
+
 	server_is_running = 1;
+
 	/* Starting Up */
 	sockroutine(g_ape); /* loop */
 	/* Shutdown */	
@@ -304,7 +309,7 @@ int main(int argc, char **argv)
 	free(g_ape->plugins);
 	//free(srv);
 	free(g_ape);
-
+	
 	return 0;
 }
 

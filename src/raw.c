@@ -278,7 +278,9 @@ int send_raw_inline(ape_socket *client, transport_t transport, RAW *raw, acetabl
 			break;
 		case TRANSPORT_SSE_LONGPOLLING:
 			finish &= http_send_headers(NULL, HEADER_SSE, HEADER_SSE_LEN, client, g_ape);
-			break;	
+			break;
+		case TRANSPORT_WEBSOCKET:
+			break;
 		default:
 			finish &= http_send_headers(NULL, HEADER_DEFAULT, HEADER_DEFAULT_LEN, client, g_ape);
 			break;

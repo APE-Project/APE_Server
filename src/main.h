@@ -88,7 +88,6 @@ struct _http_state
 	unsigned short int step;
 	unsigned short int type; /* HTTP_GET or HTTP_POST */
 	unsigned short int error;
-	unsigned short int ready;
 };
 
 typedef enum {
@@ -161,6 +160,16 @@ typedef struct _acetables
 	unsigned int nConnected;
 } acetables;
 
+
+typedef struct _ape_parser ape_parser;
+struct _ape_parser {
+	void (*parser_func)(struct _ape_socket *);
+	void (*destroy)(struct _ape_parser *);
+	void *data;
+	struct _ape_socket *socket;
+	short int ready;
+};
+
 typedef struct _ape_socket ape_socket;
 struct _ape_socket {
 	struct {
@@ -173,10 +182,11 @@ struct _ape_socket {
 		void (*on_write)(struct _ape_socket *client, acetables *g_ape);
 	} callbacks;
 
+	ape_parser parser;
+
 	ape_buffer buffer_in;
 	ape_buffer buffer_out;
-		
-	http_state http;
+
 	char ip_client[16];
 	long int idle;
 

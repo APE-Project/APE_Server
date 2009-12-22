@@ -82,6 +82,21 @@ static int event_epoll_revent(struct _fdevent *ev, int i)
 	return bitret;
 }
 
+
+int event_epoll_reload(struct _fdevent *ev)
+{
+	int nfd;
+	if ((nfd = dup(ev->epoll_fd)) != -1) {
+		close(nfd);
+		close(ev->epoll_fd);
+	}
+	if ((ev->epoll_fd = epoll_create(1)) == -1) {
+		return 0;
+	}
+	
+	return 1;	
+}
+
 int event_epoll_init(struct _fdevent *ev)
 {
 	if ((ev->epoll_fd = epoll_create(1)) == -1) {
@@ -95,9 +110,11 @@ int event_epoll_init(struct _fdevent *ev)
 	ev->get_current_fd = event_epoll_get_fd;
 	ev->growup = event_epoll_growup;
 	ev->revent = event_epoll_revent;
+	ev->reload = event_epoll_reload;
 	
 	return 1;
 }
+
 #else
 int event_epoll_init(struct _fdevent *ev)
 {

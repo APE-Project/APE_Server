@@ -38,6 +38,7 @@
 #include "handle_http.h"
 #include "dns.h"
 #include "log.h"
+#include "parser.h"
 
 static int sendqueue(int sock, acetables *g_ape);
 
@@ -245,16 +246,9 @@ static void clear_buffer(ape_socket *co, int *tfd)
 	co->buffer_in.islot = 0;
 	
 	co->ip_client[0] = '\0';
+
+	parser_destroy(&co->parser);
 	
-	co->http.step = 0;
-	co->http.type = HTTP_NULL;
-	co->http.contentlength = -1;
-	co->http.pos = 0;
-	co->http.error = 0;
-	co->http.ready = 0;
-	co->http.read = 0;
-	free_header_line(co->http.hlines);
-	co->http.hlines = NULL;
 	co->attach = NULL;
 	co->data = NULL;
 	(*tfd)--;
@@ -298,10 +292,11 @@ unsigned int sockroutine(acetables *g_ape)
 	while (server_is_running) {
 	//	int timeout_to_hang = MAX((1000/TICKS_RATE)-ticks, 1);
 		/* Linux 2.6.25 provides a fd-driven timer system. It could be usefull to implement */
-
 		nfds = events_poll(g_ape->events, 1);
 		
 		if (nfds < 0) {
+			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+				"events_poll() : %s", strerror(errno));
 			continue;
 		}
 		
@@ -314,16 +309,16 @@ unsigned int sockroutine(acetables *g_ape)
 				
 					while (1) {
 
-						http_state http = {NULL, 0, -1, 0, 0, HTTP_NULL, 0, 0};
+						//http_state http = {NULL, 0, -1, 0, 0, HTTP_NULL, 0, 0};
 					
 						new_fd = accept(active_fd, 
 							(struct sockaddr *)&their_addr,
 							(unsigned int *)&sin_size);
-					
+
 						if (new_fd == -1) {
 							break;
 						}
-
+						
 						if (new_fd + 4 >= g_ape->basemem) {
 							/* Increase connection & events size */
 							growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
@@ -337,7 +332,7 @@ unsigned int sockroutine(acetables *g_ape)
 						g_ape->co[new_fd].buffer_in.slot = NULL;
 						g_ape->co[new_fd].buffer_in.islot = 0;
 
-						g_ape->co[new_fd].http = http;
+						//g_ape->co[new_fd].http = http;
 						g_ape->co[new_fd].attach = NULL;
 						g_ape->co[new_fd].data = NULL;
 						g_ape->co[new_fd].idle = time(NULL);
@@ -434,11 +429,7 @@ unsigned int sockroutine(acetables *g_ape)
 						
 						
 							if (readb == -1 && errno == EAGAIN) {
-							
-								/*
-									Nothing to read again
-								*/
-								
+
 								if (g_ape->co[active_fd].stream_type == STREAM_OUT) {
 									
 										//proxy_process_eol(&co[active_fd], g_ape);
@@ -454,29 +445,6 @@ unsigned int sockroutine(acetables *g_ape)
 										g_ape->co[active_fd].callbacks.on_disconnect(&g_ape->co[active_fd], g_ape);
 									}
 									
-									#if 0
-									if (co[active_fd].stream_type == STREAM_IN && co[active_fd].attach != NULL) {
-										
-										if (active_fd == ((subuser *)(co[active_fd].attach))->fd) {
-											((subuser *)(co[active_fd].attach))->headers_sent = 0;
-											((subuser *)(co[active_fd].attach))->state = ADIED;
-										}
-										if (((subuser *)(co[active_fd].attach))->wait_for_free == 1) {
-											free(co[active_fd].attach);
-											co[active_fd].attach = NULL;						
-										}
-									} else if (co[active_fd].stream_type == STREAM_OUT) {
-									
-										if (((ape_proxy *)(co[active_fd].attach))->state == PROXY_TOFREE) {
-											free(co[active_fd].attach);
-											co[active_fd].attach = NULL;								
-										} else {
-									
-											((ape_proxy *)(co[active_fd].attach))->state = PROXY_THROTTLED;
-											proxy_onevent((ape_proxy *)(co[active_fd].attach), "DISCONNECT", g_ape);
-										}
-									}
-									#endif
 									clear_buffer(&g_ape->co[active_fd], &tfd);
 								
 									if (g_ape->bufout[active_fd].buf != NULL) {

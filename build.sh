@@ -15,7 +15,7 @@ case "$OS_TARGET" in
         HOST_IS=Linux;;
 esac
 
-if [ -a "/usr/include/mysql/mysql.h" ]
+if [ -e "/usr/include/mysql/mysql.h" ]
 then
     echo "HAS_MYSQL = yes" > ./modules/mysql.mk
 	echo "#define _USE_MYSQL 1" >> ./src/configure.h

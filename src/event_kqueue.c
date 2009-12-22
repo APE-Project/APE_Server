@@ -101,6 +101,22 @@ static int event_kqueue_revent(struct _fdevent *ev, int i)
 	return bitret;
 }
 
+
+int event_kqueue_reload(struct _fdevent *ev)
+{
+	int nfd;
+	if ((nfd = dup(ev->kq_fd)) != -1) {
+		close(nfd);
+		close(ev->kq_fd);
+	}
+
+	if ((ev->kq_fd = kqueue()) == -1) {
+		return 0;
+	}
+	
+	return 1;	
+}
+
 int event_kqueue_init(struct _fdevent *ev)
 {
 	if ((ev->kq_fd = kqueue()) == -1) {
@@ -116,9 +132,11 @@ int event_kqueue_init(struct _fdevent *ev)
 	ev->get_current_fd = event_kqueue_get_fd;
 	ev->growup = event_kqueue_growup;
 	ev->revent = event_kqueue_revent;
+	ev->reload = event_kqueue_reload;
 	
 	return 1;
 }
+
 #else
 int event_kqueue_init(struct _fdevent *ev)
 {

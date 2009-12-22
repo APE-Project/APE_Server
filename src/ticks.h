@@ -34,6 +34,7 @@ struct _ticks_callback
 	int ticks_left;
 	int times;
 	unsigned int identifier;
+	unsigned int protect;
 
 	void *func;
 	void *params;

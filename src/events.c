@@ -72,3 +72,8 @@ int events_revent(struct _fdevent *ev, int i)
 {
 	return ev->revent(ev, i);
 }
+
+int events_reload(struct _fdevent *ev)
+{
+	return ev->reload(ev);
+}

@@ -56,6 +56,7 @@ struct _fdevent {
 	int (*get_current_fd)(struct _fdevent *, int);
 	void (*growup)(struct _fdevent *);
 	int (*revent)(struct _fdevent *, int);
+	int (*reload)(struct _fdevent *);
 	
 	/* Specifics values */
 	#ifdef USE_KQUEUE_HANDLER
@@ -76,6 +77,7 @@ int events_poll(struct _fdevent *ev, int timeout_ms);
 int events_get_current_fd(struct _fdevent *ev, int i);
 void events_growup(struct _fdevent *ev);
 int events_revent(struct _fdevent *ev, int i);
+int events_reload(struct _fdevent *ev);
 
 int event_kqueue_init(struct _fdevent *ev);
 int event_epoll_init(struct _fdevent *ev);

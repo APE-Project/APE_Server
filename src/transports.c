@@ -30,6 +30,7 @@ struct _transport_open_same_host_p transport_open_same_host(subuser *sub, ape_so
 	switch(transport) {
 		case TRANSPORT_LONGPOLLING:
 		case TRANSPORT_JSONP:
+		case TRANSPORT_WEBSOCKET:
 		default:
 			ret.client_close = sub->client;
 			ret.client_listener = client;
@@ -60,6 +61,7 @@ void transport_data_completly_sent(subuser *sub, transport_t transport)
 		case TRANSPORT_PERSISTANT:
 		case TRANSPORT_XHRSTREAMING:
 		case TRANSPORT_SSE_LONGPOLLING:
+		case TRANSPORT_WEBSOCKET:
 			break;
 	}	
 }
@@ -69,6 +71,7 @@ struct _transport_properties *transport_get_properties(transport_t transport, ac
 	switch(transport) {
 		case TRANSPORT_LONGPOLLING:
 		case TRANSPORT_PERSISTANT:
+		case TRANSPORT_WEBSOCKET:
 		default:
 			break;
 		case TRANSPORT_XHRSTREAMING:

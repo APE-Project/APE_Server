@@ -77,8 +77,7 @@ struct _http_header_line
 	struct _http_header_line *next;
 };
 
-void process_http(struct _ape_buffer *buffer, struct _http_state *http);
-void ape_http_request(char *url, const char *post, acetables *g_ape);
+void process_http(ape_socket *co);
 http_headers_response *http_headers_init(int code, char *detail, int detail_len);
 void http_headers_set_field(http_headers_response *headers, const char *key, int keylen, const char *value, int valuelen);
 int http_send_headers(http_headers_response *headers, const char *default_h, unsigned int default_len, ape_socket *client, acetables *g_ape);

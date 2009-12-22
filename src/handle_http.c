@@ -135,7 +135,7 @@ static int gettransport(char *input)
 {
 	char *start = strchr(input, '/');
 
-	if (start != NULL && start[1] >= 48 && start[1] <= 53 && start[2] == '/') {
+	if (start != NULL && start[1] >= 48 && start[1] <= 54 && start[2] == '/') {
 		return start[1]-48;
 	}
 	
@@ -152,7 +152,7 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 	int local = /*(strcmp(ip_client, CONFIG_VAL(Server, ip_local, g_ape->srv)) == 0)*/ 0;
 	
 	clientget *cget = xmalloc(sizeof(*cget));
-
+	
 	if (strlen(pSock) < 3 || (local && getqueryip(pSock, cget->ip_get) == 0)) {  // get query IP (from htaccess)
 		free(cget);
 		shutdown(client->fd, 2);

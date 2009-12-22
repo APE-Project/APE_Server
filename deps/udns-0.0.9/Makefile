@@ -51,7 +51,7 @@ SOUTILS = $(USRCS:.c=_s)
 NAMEPFX = $(NAME)-$(VERS)
 
 CC = gcc
-CFLAGS = -m32
+CFLAGS = -Wall -W -O2 -pipe
 CDEFS = -DHAVE_CONFIG_H
 PICFLAGS = -fPIC
 AWK = awk

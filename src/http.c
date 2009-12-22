@@ -77,15 +77,19 @@ static struct _http_header_line *parse_header_line(const char *line)
 }
 
 /* Just a lightweight http request processor */
-void process_http(ape_buffer *buffer, http_state *http)
+void process_http(ape_socket *co)
 {
+	ape_buffer *buffer = &co->buffer_in;
+	http_state *http = co->parser.data;
+	ape_parser *parser = &co->parser;
+	
 	char *data = buffer->data;
 	int pos, read;
 	
-	if (buffer->length == 0 || http->ready == 1 || http->error == 1) {
+	if (buffer->length == 0 || parser->ready == 1 || http->error == 1) {
 		return;
 	}
-	
+
 	/* 0 will be erased by the next read()'ing loop */
 	data[buffer->length] = '\0';
 	
@@ -101,8 +105,7 @@ void process_http(ape_buffer *buffer, http_state *http)
 			if (pos == -1) {
 				return;
 			}
-
-			switch(*(int *)data) {
+			switch(*(unsigned int *)data) {
 				case 542393671: /* GET + space */
 					http->type = HTTP_GET;
 					break;
@@ -117,7 +120,7 @@ void process_http(ape_buffer *buffer, http_state *http)
 			http->pos = pos;
 			http->step = 1;
 			
-			process_http(buffer, http);
+			process_http(co);
 			break;
 		case 1:
 			pos = seof(data);
@@ -130,9 +133,9 @@ void process_http(ape_buffer *buffer, http_state *http)
 
 				if (http->type == HTTP_GET) {
 					/* Ok, at this point we have a blank line. Ready for GET */
-					http->ready = 1;
+					parser->ready = 1;
 					buffer->data[http->pos] = '\0';
-
+					
 					return;
 				} else {
 					/* Content-Length is mandatory in case of POST */
@@ -167,7 +170,7 @@ void process_http(ape_buffer *buffer, http_state *http)
 				}
 			}
 			http->pos += pos;
-			process_http(buffer, http);
+			process_http(co);
 			break;
 		case 2:
 			read = buffer->length - http->pos; // data length
@@ -176,7 +179,7 @@ void process_http(ape_buffer *buffer, http_state *http)
 			http->read += read;
 
 			if (http->read >= http->contentlength) {
-				http->ready = 1;
+				parser->ready = 1;
 				
 				/* no more than content-length */
 				buffer->data[http->pos - (http->read - http->contentlength)] = '\0';
@@ -369,57 +372,3 @@ void free_header_line(struct _http_header_line *line)
 	}
 }
 
-static void ape_http_connect(ape_socket *client, acetables *g_ape)
-{
-	struct _http_attach *ha = client->attach;
-	char *method = (ha->post != NULL ? "POST" : "GET");
-	
-	sendf(client->fd, g_ape, "%s %s HTTP/1.1\r\nHost: %s\r\n", method, ha->file, ha->host);
-	
-	if (ha->post != NULL) {
-		int plen = strlen(ha->post);
-		sendf(client->fd, g_ape, "Content-Type: application/x-www-form-urlencoded\r\n");
-		sendf(client->fd, g_ape, "Content-Length: %i\r\n\r\n", plen);
-		sendbin(client->fd, (char *)ha->post, plen, g_ape);
-	} else {
-		sendbin(client->fd, "\r\n", 2, g_ape);
-	}
-	printf("Data posted\n");
-}
-
-static void ape_http_disconnect(ape_socket *client, acetables *g_ape)
-{
-	free(client->attach);
-}
-
-/*static void ape_http_read()
-{
-	
-}*/
-
-void ape_http_request(char *url, const char *post, acetables *g_ape)
-{
-	ape_socket *pattern;
-	
-	struct _http_attach *ha = xmalloc(sizeof(*ha));
-	
-	if (parse_uri(url, ha->host, &ha->port, ha->file) == -1) {
-		free(ha);
-		return;
-	}
-	ha->post = post;
-	
-	pattern = xmalloc(sizeof(*pattern));
-	pattern->callbacks.on_accept = NULL;
-	pattern->callbacks.on_connect = ape_http_connect;
-	pattern->callbacks.on_disconnect = ape_http_disconnect;
-	pattern->callbacks.on_read = NULL;
-	pattern->callbacks.on_read_lf = NULL;
-	pattern->callbacks.on_data_completly_sent = NULL;
-	pattern->callbacks.on_write = NULL;
-	pattern->attach = (void *)ha;
-	
-	ape_connect_name(ha->host, ha->port, pattern, g_ape);
-	
-	
-}
