@@ -1362,7 +1362,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		
 		hl = JS_DefineObject(cx, cb, "http", NULL, NULL, 0);		
 		
-		for (hlines = callbacki->client->http.hlines; hlines != NULL; hlines = hlines->next) {
+		for (hlines = ((http_state *)callbacki->client->parser.data)->hlines; hlines != NULL; hlines = hlines->next) {
 			s_tolower(hlines->key.val, hlines->key.len);
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, hlines->value.val, hlines->value.len));
 			JS_SetProperty(cx, hl, hlines->key.val, &jval);
