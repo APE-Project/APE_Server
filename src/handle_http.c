@@ -50,6 +50,14 @@ subuser *checkrecv(ape_parser *parser, ape_socket *client, acetables *g_ape, cha
 		return NULL;
 	}
 	
+	if (http->data == NULL) {
+		sendbin(client->fd, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);
+		sendbin(client->fd, CONST_STR_LEN(CONTENT_NOTFOUND), g_ape);
+		
+		shutdown(client->fd, 2);
+		return NULL;
+	}
+	
 	cget.client = client;
 	cget.ip_get = ip_client;
 	cget.get = http->data;
