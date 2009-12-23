@@ -32,9 +32,10 @@
 static void ape_read(ape_socket *co, ape_buffer *buffer, size_t offset, acetables *g_ape)
 {
 	co->parser.parser_func(co);
-	
+
 	if (co->parser.ready == 1) {
-		co->attach = checkrecv(buffer->data, co, g_ape, co->ip_client);
+
+		co->attach = checkrecv(&co->parser, co, g_ape, co->ip_client);
 
 		co->buffer_in.length = 0;
 		co->parser.ready = -1;

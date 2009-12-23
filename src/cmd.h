@@ -74,9 +74,9 @@ struct _callbackp
 
 	struct USERS *call_user;
 	
-	char *ip;
-	char *host;
-	char *cmd;
+	const char *ip;
+	const char *host;
+	const char *cmd;
 	void *data;
 	
 	subuser *call_subuser;
@@ -111,8 +111,8 @@ struct _cmd_process {
 	USERS *guser;
 	subuser *sub;
 	ape_socket *client;
-	char *host;
-	char *ip;
+	const char *host;
+	const char *ip;
 	transport_t transport;
 };
 

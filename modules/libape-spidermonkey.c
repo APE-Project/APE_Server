@@ -1362,7 +1362,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		
 		hl = JS_DefineObject(cx, cb, "http", NULL, NULL, 0);		
 		
-		for (hlines = callbacki->client->http.hlines; hlines != NULL; hlines = hlines->next) {
+		for (hlines = ((http_state *)callbacki->client->parser.data)->hlines; hlines != NULL; hlines = hlines->next) {
 			s_tolower(hlines->key.val, hlines->key.len);
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, hlines->value.val, hlines->value.len));
 			JS_SetProperty(cx, hl, hlines->key.val, &jval);
@@ -2901,7 +2901,7 @@ static USERS *ape_cb_add_user(USERS *allocated, acetables *g_ape)
 	return u;	
 }
 
-static USERS *ape_cb_allocateuser(ape_socket *client, char *host, char *ip, acetables *g_ape)
+static USERS *ape_cb_allocateuser(ape_socket *client, const char *host, const char *ip, acetables *g_ape)
 {
 	JSObject *user;
 	extend *jsobj;

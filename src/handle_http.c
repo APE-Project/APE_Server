@@ -27,110 +27,6 @@
 #include "cmd.h"
 #include "main.h"
 
-static unsigned int fixpacket(char *pSock, int type)
-{
-	size_t i, pLen;
-	
-	pLen = strlen(pSock);
-	
-	for (i = 0; i < pLen; i++) {
-			if (type == 0 && (pSock[i] == '\n' || pSock[i] == '\r')) {
-				pSock[i] = '\0';
-			
-				return 1;
-			} else if (type == 1 && pSock[i] == ' ') {
-				pSock[i] = '\0';
-			
-				return 1;				
-			}
-		
-	}
-	return 0;
-}
-
-/* Reading the host http header */
-static int gethost(char *base, char *output) // Catch the host HTTP header
-{
-	char *pBase;
-	int i;
-	
-	output[0] = '\0';
-	
-	for (pBase = base; *pBase && strncasecmp(pBase, "Host:", 5) != 0; pBase++);
-	
-	if (!*pBase || !pBase[6]) {
-		return 0;
-	}
-	
-	pBase = &pBase[6];
-	
-	for (i = 0; pBase[i] && pBase[i] != '\n' && i < (MAX_HOST_LENGTH-1); i++) {
-		output[i] = pBase[i];
-	}
-	
-	output[i] = '\0';
-	
-	return 1;
-}
-
-/* Reading post data from the HTTP streaming incoming */
-static char *getpost(char *input)
-{
-	char *pInput;
-	
-	for (pInput = input; *pInput && strncmp(pInput, "\r\n\r\n", 4) != 0; pInput++);
-	
-	if (!*pInput || !pInput[4]) {
-		return NULL;
-	} else {
-		return &pInput[4];
-	}
-}
-
-static int getqueryip(char *base, char *output)
-{
-	int i, size = strlen(base), step, x = 0;
-	
-	if (size < 16) {
-		return 0;
-	}
-	
-	for (i = 0, step = 0; i < size; i++) {
-		if (base[i] == '\n') {
-			output[0] = '\0';
-			return 0;
-		}
-		if (step == 1 && (base[i] == '&' || base[i] == ' ') && x < 16) {
-			output[x] = '\0';
-			return 1;
-		} else if (step == 1 && x < 16) {
-			output[x] = base[i];
-			x++;
-		} else if (base[i] == '?') {
-			step = 1;
-		}
-	}
-	output[0] = '\0';
-	return 0;
-	
-}
-
-static char *getfirstparam(char *input, char sep)
-{
-
-	char *pInput;
-	/*
-		Should be replaced by a simple strchr
-	*/	
-	for (pInput = input; *pInput && *pInput != sep; pInput++);
-	
-	if (!*pInput || !pInput[1]) {
-		return NULL;
-	} else {
-		return &pInput[1];
-	}	
-}
-
 static int gettransport(char *input)
 {
 	char *start = strchr(input, '/');
@@ -142,61 +38,24 @@ static int gettransport(char *input)
 	return 0;
 }
 
-subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_client)
+subuser *checkrecv(ape_parser *parser, ape_socket *client, acetables *g_ape, char *ip_client)
 {
-
 	unsigned int op;
-	unsigned int isget = 0;
-	
+	http_state *http = parser->data;
 	subuser *user = NULL;
-	int local = /*(strcmp(ip_client, CONFIG_VAL(Server, ip_local, g_ape->srv)) == 0)*/ 0;
+	clientget cget;
 	
-	clientget *cget = xmalloc(sizeof(*cget));
-	
-	if (strlen(pSock) < 3 || (local && getqueryip(pSock, cget->ip_get) == 0)) {  // get query IP (from htaccess)
-		free(cget);
+	if (http->host == NULL) {
 		shutdown(client->fd, 2);
-		return NULL;		
-	}
-	if (!local) {
-		strncpy(cget->ip_get, ip_client, 16); // get real IP (from socket)
+		return NULL;
 	}
 	
-	cget->client = client;
+	cget.client = client;
+	cget.ip_get = ip_client;
+	cget.get = http->data;
+	cget.host = http->host;
 	
-	gethost(pSock, cget->host);
-	
-	if (strncasecmp(pSock, "GET", 3) == 0) {
-		if (!fixpacket(pSock, 0) || (cget->get = getfirstparam(pSock, (local ? '&' : '?'))) == NULL) {
-			free(cget);
-			sendbin(client->fd, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);
-			sendbin(client->fd, CONST_STR_LEN(CONTENT_NOTFOUND), g_ape);
-			shutdown(client->fd, 2);
-			return NULL;			
-		} else {
-			isget = 1;
-		}
-	} else if (strncasecmp(pSock, "POST", 4) == 0) {
-		if ((cget->get = getpost(pSock)) == NULL) {
-			free(cget);
-			
-			shutdown(client->fd, 2);
-			return NULL;			
-		}
-	} else {
-		free(cget);
-		
-		shutdown(client->fd, 2);
-		return NULL;		
-	}
-	
-	fixpacket(cget->get, 1);
-
-	if (isget) {
-		urldecode(cget->get);
-	}
-
-	op = checkcmd(cget, gettransport(pSock), &user, g_ape);
+	op = checkcmd(&cget, gettransport(http->uri), &user, g_ape);
 
 	switch (op) {
 		case CONNECT_SHUTDOWN:
@@ -205,10 +64,7 @@ subuser *checkrecv(char *pSock, ape_socket *client, acetables *g_ape, char *ip_c
 		case CONNECT_KEEPALIVE:
 			break;
 	}
-
-	free(cget);
 	
 	return user;
-
 }
 

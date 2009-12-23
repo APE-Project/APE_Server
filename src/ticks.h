@@ -25,7 +25,6 @@
 #include "main.h"
 
 /* Ticks/secondes */
-#define TICKS_RATE 100 // ~1ms
 #define VTICKS_RATE 50 // 50 ms
 
 struct _ticks_callback

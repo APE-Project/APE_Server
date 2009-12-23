@@ -45,7 +45,7 @@
 #define TIMEOUT_SEC 45
 
 #define SERVER_NAME "APE.Server"
-#define _VERSION "1.00"
+#define _VERSION "1.01dev"
 
 int server_is_running;
 
@@ -80,6 +80,10 @@ typedef struct _http_state http_state;
 struct _http_state
 {
 	struct _http_header_line *hlines;
+	
+	char *uri;
+	const char *data;
+	const char *host;
 	
 	int pos;
 	int contentlength;

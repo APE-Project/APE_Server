@@ -150,7 +150,7 @@ USERS *init_user(acetables *g_ape)
 	return nuser;
 }
 
-USERS *adduser(ape_socket *client, char *host, char *ip, USERS *allocated, acetables *g_ape)
+USERS *adduser(ape_socket *client, const char *host, const char *ip, USERS *allocated, acetables *g_ape)
 {
 	USERS *nuser = NULL;
 

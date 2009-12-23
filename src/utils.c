@@ -207,57 +207,57 @@ char *get_path(const char *full_path)
 
 char hex2int(unsigned char hex)
 {
-        hex = hex - '0';
-        if (hex > 9) {
-                hex = (hex + '0' - 1) | 0x20;
-                hex = hex - 'a' + 11;
-        }
-        if (hex > 15) {
-                hex = 0xFF;
-		}
+	hex = hex - '0';
+	if (hex > 9) {
+		hex = (hex + '0' - 1) | 0x20;
+		hex = hex - 'a' + 11;
+	}
+	if (hex > 15) {
+		hex = 0xFF;
+	}
 
-        return hex;
+	return hex;
 }
 
 /* taken from lighttp */
 int urldecode(char *string)
 {
-        unsigned char high, low;
-        const char *src;
-        char *dst;
+	unsigned char high, low;
+	const char *src;
+	char *dst;
 
-        if (string == NULL || !string) return -1;
+	if (string == NULL || !string) return -1;
 
-        src = (const char *) string;
-        dst = (char *) string;
+	src = (const char *) string;
+	dst = (char *) string;
 
-        while ((*src) != '\0') {
+	while ((*src) != '\0') {
 		if (*src == '%') {
-                        *dst = '%';
+			*dst = '%';
 
-                        high = hex2int(*(src + 1));
-                        if (high != 0xFF) {
-                                low = hex2int(*(src + 2));
-                                if (low != 0xFF) {
-                                        high = (high << 4) | low;
+			high = hex2int(*(src + 1));
+			if (high != 0xFF) {
+				low = hex2int(*(src + 2));
+				if (low != 0xFF) {
+					high = (high << 4) | low;
 
-                                        if (high < 32 || high == 127) high = '_';
-			
-                                        *dst = high;
-                                        src += 2;
-                                }
-                        }
-                } else {
-                        *dst = *src;
-                }
+					if (high < 32 || high == 127) high = '_';
 
-                dst++;
-                src++;
-        }
+					*dst = high;
+					src += 2;
+				}
+			}
+		} else {
+			*dst = *src;
+		}
 
-        *dst = '\0';
+		dst++;
+		src++;
+	}
 
-        return 1;
+	*dst = '\0';
+
+	return 1;
 }
 
 

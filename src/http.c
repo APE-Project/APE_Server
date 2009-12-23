@@ -84,7 +84,7 @@ void process_http(ape_socket *co)
 	ape_parser *parser = &co->parser;
 	
 	char *data = buffer->data;
-	int pos, read;
+	int pos, read, p = 0;
 	
 	if (buffer->length == 0 || parser->ready == 1 || http->error == 1) {
 		return;
@@ -105,22 +105,49 @@ void process_http(ape_socket *co)
 			if (pos == -1) {
 				return;
 			}
+			
+			/* TODO : endieness */
 			switch(*(unsigned int *)data) {
 				case 542393671: /* GET + space */
 					http->type = HTTP_GET;
+					p = 4;
 					break;
 				case 1414745936: /* POST */
 					http->type = HTTP_POST;
+					p = 5;
 					break;
 				default:
 					http->error = 1;
 					return;
 			}
-
-			http->pos = pos;
-			http->step = 1;
 			
-			process_http(co);
+			if (data[p] != '/') {
+				http->error = 1;
+				return;
+			} else {
+				int i = p;
+				while (p++) {
+					switch(data[p]) {
+						case ' ':
+							http->pos = pos;
+							http->step = 1;
+							http->uri = &data[i];
+							data[p] = '\0';
+							process_http(co);
+							return;
+						case '?':
+							if (data[p+1] != ' ' && data[p+1] != '\r' && data[p+1] != '\n') {
+								http->data = &data[p+1];
+							}
+							break;
+						case '\r':
+						case '\n':
+						case '\0':
+							http->error = 1;
+							return;
+					}
+				}
+			}
 			break;
 		case 1:
 			pos = seof(data);
@@ -135,7 +162,7 @@ void process_http(ape_socket *co)
 					/* Ok, at this point we have a blank line. Ready for GET */
 					parser->ready = 1;
 					buffer->data[http->pos] = '\0';
-					
+					urldecode(http->uri);
 					return;
 				} else {
 					/* Content-Length is mandatory in case of POST */
@@ -144,29 +171,34 @@ void process_http(ape_socket *co)
 									
 						return;
 					} else {
+						http->data = &buffer->data[http->pos+(pos)];
 						http->step = 2;
 					}
 				}
-			} else if (http->type == HTTP_POST) {
-				/* looking for content-length instruction */
-				if (pos <= 25 && strncasecmp("content-length: ", data, 16) == 0) {
-					int cl = atoi(&data[16]);
-					
-					/* Content-length can't be negative... */
-					if (cl < 1 || cl > MAX_CONTENT_LENGTH) {
-						http->error = 1;
-						return;
-					}
-					/* At this time we are ready to read "cl" bytes contents */
-					http->contentlength = cl;
-					
-				}
 			} else {
 				struct _http_header_line *hl;
-				
+
 				if ((hl = parse_header_line(data)) != NULL) {
 					hl->next = http->hlines;
 					http->hlines = hl;
+					if (strcasecmp(hl->key.val, "host") == 0) {
+						http->host = hl->value.val;
+					}
+				}
+				else if (http->type == HTTP_POST) {
+					/* looking for content-length instruction */
+					if (pos <= 25 && strncasecmp("content-length: ", data, 16) == 0) {
+						int cl = atoi(&data[16]);
+
+						/* Content-length can't be negative... */
+						if (cl < 1 || cl > MAX_CONTENT_LENGTH) {
+							http->error = 1;
+							return;
+						}
+						/* At this time we are ready to read "cl" bytes contents */
+						http->contentlength = cl;
+
+					}
 				}
 			}
 			http->pos += pos;
@@ -180,7 +212,7 @@ void process_http(ape_socket *co)
 
 			if (http->read >= http->contentlength) {
 				parser->ready = 1;
-				
+				urldecode(http->uri);
 				/* no more than content-length */
 				buffer->data[http->pos - (http->read - http->contentlength)] = '\0';
 			}

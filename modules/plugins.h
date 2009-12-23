@@ -58,7 +58,7 @@ struct _ace_callbacks
 	void (*c_left)(USERS *, CHANNEL *, acetables *);
 	void (*c_tickuser)(subuser *, acetables *);
 	void (*c_post_raw_sub)(RAW *, subuser *, acetables *);
-	USERS *(*c_allocateuser)(ape_socket *, char *, char *, acetables *);
+	USERS *(*c_allocateuser)(ape_socket *, const char *, const char *, acetables *);
 	void (*c_addsubuser)(subuser *, acetables *);
 	void (*c_delsubuser)(subuser *, acetables *);
 };

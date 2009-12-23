@@ -24,13 +24,6 @@
 #include "utils.h"
 
 
-void parser_destroy(ape_parser *parser)
-{
-	if (parser != NULL && parser->destroy != NULL) {
-		parser->destroy(parser);
-	}
-}
-
 static void parser_destroy_http(ape_parser *http_parser)
 {
 	free_header_line(((http_state *)http_parser->data)->hlines);
@@ -59,12 +52,45 @@ ape_parser parser_init_http(ape_socket *co)
 	http->step = 0;
 	http->type = HTTP_NULL;
 	http->error = 0;
+	http->uri = NULL;
+	http->data = NULL;
+	http->host = NULL;
 
 	http_parser.parser_func = process_http;
 	http_parser.destroy = parser_destroy_http;
 	http_parser.socket = co;
 	
 	return http_parser;
+}
+
+static void parser_destroy_stream(ape_parser *stream_parser)
+{
+	stream_parser->data = NULL;
+	stream_parser->ready = 0;
+	stream_parser->parser_func = NULL;
+	stream_parser->destroy = NULL;
+	stream_parser->socket = NULL;	
+}
+
+ape_parser parser_init_stream(ape_socket *co)
+{
+	ape_parser stream_parser;
+	
+	stream_parser.ready = 0;
+	stream_parser.data = NULL;
+	
+	stream_parser.parser_func = NULL;
+	stream_parser.destroy = parser_destroy_stream;
+	stream_parser.socket = co;
+	
+	return stream_parser;	
+}
+
+void parser_destroy(ape_parser *parser)
+{
+	if (parser != NULL && parser->destroy != NULL) {
+		parser->destroy(parser);
+	}
 }
 
 void parser_run(ape_parser *parser)

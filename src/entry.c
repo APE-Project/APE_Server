@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 	signal(SIGTERM, &signal_handler);
 	signal(SIGKILL, &signal_handler);
 	
-	if (TICKS_RATE < 1) {
+	if (VTICKS_RATE < 1) {
 		printf("[ERR] TICKS_RATE cant be less than 1\n");
 		return 0;
 	}
