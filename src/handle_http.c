@@ -26,6 +26,7 @@
 #include "config.h"
 #include "cmd.h"
 #include "main.h"
+#include "sock.h"
 
 static int gettransport(char *input)
 {
@@ -38,28 +39,28 @@ static int gettransport(char *input)
 	return 0;
 }
 
-subuser *checkrecv(ape_parser *parser, ape_socket *client, acetables *g_ape, char *ip_client)
+subuser *checkrecv(ape_socket *co, acetables *g_ape)
 {
 	unsigned int op;
-	http_state *http = parser->data;
+	http_state *http = co->parser.data;
 	subuser *user = NULL;
 	clientget cget;
 	
 	if (http->host == NULL) {
-		shutdown(client->fd, 2);
+		shutdown(co->fd, 2);
 		return NULL;
 	}
 	
 	if (http->data == NULL) {
-		sendbin(client->fd, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);
-		sendbin(client->fd, CONST_STR_LEN(CONTENT_NOTFOUND), g_ape);
+		sendbin(co->fd, HEADER_DEFAULT, HEADER_DEFAULT_LEN, 0, g_ape);
+		sendbin(co->fd, CONST_STR_LEN(CONTENT_NOTFOUND), 0, g_ape);
 		
-		shutdown(client->fd, 2);
+		safe_shutdown(co->fd, g_ape);
 		return NULL;
 	}
 	
-	cget.client = client;
-	cget.ip_get = ip_client;
+	cget.client = co;
+	cget.ip_get = co->ip_client;
 	cget.get = http->data;
 	cget.host = http->host;
 	
@@ -67,7 +68,7 @@ subuser *checkrecv(ape_parser *parser, ape_socket *client, acetables *g_ape, cha
 
 	switch (op) {
 		case CONNECT_SHUTDOWN:
-			shutdown(client->fd, 2);			
+			safe_shutdown(co->fd, g_ape);			
 			break;
 		case CONNECT_KEEPALIVE:
 			break;

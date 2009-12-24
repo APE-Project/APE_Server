@@ -198,6 +198,7 @@ struct _ape_socket {
 	void *data;
 	
 	int fd;
+	int burn_after_writing;
 	
 	ape_socket_state_t state;
 	ape_socket_t stream_type;

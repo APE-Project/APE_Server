@@ -278,6 +278,7 @@ static JSClass cmdresponse_class = {
 APE_JS_NATIVE(apesocket_write)
 //{
 	JSString *string;
+	JSBool burn = JS_FALSE;
 	struct _ape_sock_callbacks *cb = JS_GetPrivate(cx, obj);
 	ape_socket *client;
 	
@@ -287,11 +288,11 @@ APE_JS_NATIVE(apesocket_write)
 	
 	client = ((struct _ape_sock_js_obj *)cb->private)->client;
 
-	if (client == NULL || !JS_ConvertArguments(cx, 1, argv, "S", &string)) {
+	if (client == NULL || !JS_ConvertArguments(cx, argc, argv, "S/b", &string, &burn)) {
 		return JS_TRUE;
 	}
-	
-	sendbin(client->fd, JS_GetStringBytes(string), JS_GetStringLength(string), g_ape);
+
+	sendbin(client->fd, JS_GetStringBytes(string), JS_GetStringLength(string), (burn == JS_TRUE ? 1 : 0), g_ape);
 	
 	return JS_TRUE;
 }
@@ -299,17 +300,18 @@ APE_JS_NATIVE(apesocket_write)
 APE_JS_NATIVE(apesocketclient_write)
 //{
 	JSString *string;
+	JSBool burn = JS_FALSE;
 	ape_socket *client = JS_GetPrivate(cx, obj);
 	
 	if (client == NULL) {
 		return JS_TRUE;
 	}
 
-	if (!JS_ConvertArguments(cx, 1, argv, "S", &string)) {
+	if (!JS_ConvertArguments(cx, argc, argv, "S/b", &string)) {
 		return JS_TRUE;
 	}
 
-	sendbin(client->fd, JS_GetStringBytes(string), JS_GetStringLength(string), g_ape);
+	sendbin(client->fd, JS_GetStringBytes(string), JS_GetStringLength(string), (burn == JS_TRUE ? 1 : 0), g_ape);
 	
 	return JS_TRUE;
 }
@@ -326,9 +328,12 @@ static JSBool apesocketclient_close(JSContext *cx, JSObject *obj, uintN argc, js
 
 	return JS_TRUE;
 }
-static JSBool apesocket_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
+
+APE_JS_NATIVE(apesocket_close)
+//{
 	ape_socket *client;
+	JSBool safe = JS_FALSE;
+	
 	struct _ape_sock_callbacks *cb = JS_GetPrivate(cx, obj);
 	
 	if (cb == NULL || !cb->state) {
@@ -340,10 +345,18 @@ static JSBool apesocket_close(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 	if (client == NULL) {
 		return JS_TRUE;
 	}
+
+	if (!JS_ConvertArguments(cx, argc, argv, "/b", &safe)) {
+		return JS_TRUE;
+	}
 	
 	cb->state = 0;
-	shutdown(client->fd, 2);
-
+	
+	if (safe == JS_TRUE) {
+		shutdown(client->fd, 2);
+	} else {
+		safe_shutdown(client->fd, g_ape);
+	}
 	return JS_TRUE;
 }
 
@@ -2443,6 +2456,7 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 
 	co[fd].attach = NULL;
 	co[fd].idle = 0;
+	co[fd].burn_after_writing = 0;
 	co[fd].fd = fd;
 
 	co[fd].stream_type = STREAM_DELEGATE;

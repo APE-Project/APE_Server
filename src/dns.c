@@ -201,6 +201,7 @@ void ape_dns_init(acetables *g_ape)
 
 	co[dns_fd].attach = NULL;
 	co[dns_fd].idle = 0;
+	co[dns_fd].burn_after_writing = 0;
 	co[dns_fd].fd = dns_fd;
 
 	co[dns_fd].stream_type = STREAM_DELEGATE;

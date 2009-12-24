@@ -25,7 +25,7 @@
 #include "main.h"
 #include "users.h"
 
-subuser *checkrecv(ape_parser *parser, ape_socket *client, acetables *g_ape, char *ip_client);
+subuser *checkrecv(ape_socket *co, acetables *g_ape);
 
 
 typedef struct clientget

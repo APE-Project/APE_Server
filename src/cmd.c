@@ -451,7 +451,7 @@ unsigned int cmd_script(callbackp *callbacki)
 		JFOREACH(scripts, script) {
 			sendf(callbacki->client->fd, callbacki->g_ape, "\t<script type=\"text/javascript\" src=\"%s\"></script>\n", script);
 		}
-		sendbin(callbacki->client->fd, "</head>\n<body>\n</body>\n</html>", 30, callbacki->g_ape);
+		sendbin(callbacki->client->fd, "</head>\n<body>\n</body>\n</html>", 30, 0, callbacki->g_ape);
 	}
 	
 	return (RETURN_NOTHING);

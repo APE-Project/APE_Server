@@ -35,7 +35,7 @@ static void ape_read(ape_socket *co, ape_buffer *buffer, size_t offset, acetable
 
 	if (co->parser.ready == 1) {
 
-		co->attach = checkrecv(&co->parser, co, g_ape, co->ip_client);
+		co->attach = checkrecv(co, g_ape);
 
 		co->buffer_in.length = 0;
 		co->parser.ready = -1;
@@ -50,7 +50,7 @@ static void ape_sent(ape_socket *co, acetables *g_ape)
 	if (co->attach != NULL && ((subuser *)(co->attach))->burn_after_writing) {
 		transport_data_completly_sent((subuser *)(co->attach), ((subuser *)(co->attach))->user->transport);
 		((subuser *)(co->attach))->burn_after_writing = 0;
-	}	
+	}
 }
 
 static void ape_disconnect(ape_socket *co, acetables *g_ape)

@@ -365,10 +365,9 @@ void proxy_write(ape_proxy *proxy, char *data, acetables *g_ape)
 	b64 = xmalloc(strlen(data)+1);
 	len = base64_decode(b64, data, strlen(data)+1);
 	
-	sendbin(proxy->sock.fd, b64, len, g_ape);
+	sendbin(proxy->sock.fd, b64, len, 0, g_ape);
 	free(b64);
 }
-
 
 
 json_item *get_json_object_proxy(ape_proxy *proxy)

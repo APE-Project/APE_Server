@@ -60,18 +60,19 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape);
 void ape_connect_name(char *name, int port, ape_socket *pattern, acetables *g_ape);
 void setnonblocking(int fd);
 int sendf(int sock, acetables *g_ape, char *buf, ...);
-int sendbin(int sock, char *bin, int len, acetables *g_ape);
+int sendbin(int sock, const char *bin, unsigned int len, unsigned int burn_after_writing, acetables *g_ape);
+void safe_shutdown(int sock, acetables *g_ape);
 unsigned int sockroutine(acetables *g_ape);
 
 
 #define SENDH(x, y, g_ape) \
-	sendbin(x, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);\
-	sendbin(x, y, strlen(y), g_ape)
+	sendbin(x, HEADER_DEFAULT, HEADER_DEFAULT_LEN, 0, g_ape);\
+	sendbin(x, y, strlen(y), 0, g_ape)
 
 
 #define QUIT(x, g_ape) \
-	sendbin(x, HEADER_DEFAULT, HEADER_DEFAULT_LEN, g_ape);\
-	sendbin(x, "QUIT", 4, g_ape)
+	sendbin(x, HEADER_DEFAULT, HEADER_DEFAULT_LEN, 0, g_ape);\
+	sendbin(x, "QUIT", 4, 0, g_ape)
 	
 #ifdef TCP_CORK
 	#define PACK_TCP(fd) \

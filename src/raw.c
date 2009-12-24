@@ -287,17 +287,17 @@ int send_raw_inline(ape_socket *client, transport_t transport, RAW *raw, acetabl
 	}
 	
 	if (properties != NULL && properties->padding.left.val != NULL) {
-		finish &= sendbin(client->fd, properties->padding.left.val, properties->padding.left.len, g_ape);
+		finish &= sendbin(client->fd, properties->padding.left.val, properties->padding.left.len, 0, g_ape);
 	}	
 	
-	finish &= sendbin(client->fd, "[", 1, g_ape);
+	finish &= sendbin(client->fd, "[", 1, 0, g_ape);
 	
-	finish &= sendbin(client->fd, raw->data, raw->len, g_ape);
+	finish &= sendbin(client->fd, raw->data, raw->len, 0, g_ape);
 	
-	finish &= sendbin(client->fd, "]", 1, g_ape);
+	finish &= sendbin(client->fd, "]", 1, 0, g_ape);
 	
 	if (properties != NULL && properties->padding.right.val != NULL) {
-		finish &= sendbin(client->fd, properties->padding.right.val, properties->padding.right.len, g_ape);
+		finish &= sendbin(client->fd, properties->padding.right.val, properties->padding.right.len, 0, g_ape);
 	}
 	
 	free_raw(raw);
@@ -340,10 +340,10 @@ int send_raws(subuser *user, acetables *g_ape)
 	}
 	
 	if (properties != NULL && properties->padding.left.val != NULL) {
-		finish &= sendbin(user->client->fd, properties->padding.left.val, properties->padding.left.len, g_ape);
+		finish &= sendbin(user->client->fd, properties->padding.left.val, properties->padding.left.len, 0, g_ape);
 	}
 	
-	finish &= sendbin(user->client->fd, "[", 1, g_ape);
+	finish &= sendbin(user->client->fd, "[", 1, 0, g_ape);
 	
 	if (user->raw_pools.high.nraw) {
 		pool = user->raw_pools.high.rawfoot->prev;
@@ -355,15 +355,15 @@ int send_raws(subuser *user, acetables *g_ape)
 	while (pool->raw != NULL) {
 		struct _raw_pool *pool_next = (state ? pool->next : pool->prev);
 		
-		finish &= sendbin(user->client->fd, pool->raw->data, pool->raw->len, g_ape);
+		finish &= sendbin(user->client->fd, pool->raw->data, pool->raw->len, 0, g_ape);
 		
 		if ((pool_next != NULL && pool_next->raw != NULL) || (!state && user->raw_pools.low.nraw)) {
-			finish &= sendbin(user->client->fd, ",", 1, g_ape);
+			finish &= sendbin(user->client->fd, ",", 1, 0, g_ape);
 		} else {
-			finish &= sendbin(user->client->fd, "]", 1, g_ape);
+			finish &= sendbin(user->client->fd, "]", 1, 0, g_ape);
 			
 			if (properties != NULL && properties->padding.right.val != NULL) {
-				finish &= sendbin(user->client->fd, properties->padding.right.val, properties->padding.right.len, g_ape);
+				finish &= sendbin(user->client->fd, properties->padding.right.val, properties->padding.right.len, 0, g_ape);
 			}
 		}
 		
