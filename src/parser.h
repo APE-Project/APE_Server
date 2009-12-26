@@ -25,6 +25,7 @@
 #include "main.h"
 
 ape_parser parser_init_http(ape_socket *co);
+ape_parser parser_init_stream(ape_socket *co);
 void parser_destroy(ape_parser *parser);
 
 #endif

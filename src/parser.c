@@ -22,7 +22,7 @@
 #include "parser.h"
 #include "http.h"
 #include "utils.h"
-
+#include "handle_http.h"
 
 static void parser_destroy_http(ape_parser *http_parser)
 {
@@ -31,8 +31,23 @@ static void parser_destroy_http(ape_parser *http_parser)
 	http_parser->data = NULL;
 	http_parser->ready = 0;
 	http_parser->parser_func = NULL;
+	http_parser->onready = NULL;
 	http_parser->destroy = NULL;
 	http_parser->socket = NULL;
+}
+
+static void parser_ready_http(ape_parser *http_parser, acetables *g_ape)
+{
+	ape_socket *co = http_parser->socket;
+	
+	co->attach = checkrecv(co, g_ape);
+}
+
+static void parser_ready_websocket(ape_parser *websocket_parser, acetables *g_ape)
+{
+	ape_socket *co = websocket_parser->socket;
+	
+	co->attach = checkrecv_websocket(co, g_ape);
 }
 
 ape_parser parser_init_http(ape_socket *co)
@@ -58,10 +73,12 @@ ape_parser parser_init_http(ape_socket *co)
 
 	http_parser.parser_func = process_http;
 	http_parser.destroy = parser_destroy_http;
+	http_parser.onready = parser_ready_http;
 	http_parser.socket = co;
 	
 	return http_parser;
 }
+
 
 static void parser_destroy_stream(ape_parser *stream_parser)
 {
@@ -75,11 +92,18 @@ static void parser_destroy_stream(ape_parser *stream_parser)
 ape_parser parser_init_stream(ape_socket *co)
 {
 	ape_parser stream_parser;
+	websocket_state *websocket;
 	
 	stream_parser.ready = 0;
-	stream_parser.data = NULL;
+	stream_parser.data = xmalloc(sizeof(struct _websocket_state));
 	
-	stream_parser.parser_func = NULL;
+	websocket = stream_parser.data;
+	websocket->offset = 0;
+	websocket->data = NULL;
+	websocket->error = 0;
+	
+	stream_parser.parser_func = process_websocket;
+	stream_parser.onready = parser_ready_websocket;
 	stream_parser.destroy = parser_destroy_stream;
 	stream_parser.socket = co;
 	
@@ -93,7 +117,3 @@ void parser_destroy(ape_parser *parser)
 	}
 }
 
-void parser_run(ape_parser *parser)
-{
-	parser->parser_func(parser->socket);
-}

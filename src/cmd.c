@@ -150,6 +150,8 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 		cp.client = NULL;
 		cp.cmd 	= rjson->jval.vu.str.value;
 		cp.data = NULL;
+		cp.hlines = NULL;
+		
 		json_item *jsid;
 		
 		if ((cmdback = (callback *)hashtbl_seek(g_ape->hCallback, rjson->jval.vu.str.value)) == NULL) {
@@ -234,6 +236,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 		cp.ip = pc->ip;
 		cp.chl = (sub != NULL ? sub->current_chl : 0);
 		cp.transport = pc->transport;
+		cp.hlines = pc->hlines;
 		
 		/* Little hack to access user object on connect hook callback (preallocate an user) */
 		if (strncasecmp(cp.cmd, "CONNECT", 7) == 0 && cp.cmd[7] == '\0') {
@@ -334,14 +337,13 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 
 unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, acetables *g_ape)
 {	
-	struct _cmd_process pc = {NULL, NULL, cget->client, cget->host, cget->ip_get, transport};
+	struct _cmd_process pc = {cget->hlines, NULL, NULL, cget->client, cget->host, cget->ip_get, transport};
 	
 	json_item *ijson, *ojson;
 	
 	unsigned int ret;
 
 	ijson = ojson = init_json_parser(cget->get);
-	
 	if (ijson == NULL || ijson->jchild.child == NULL) {
 		RAW *newraw;
 		json_item *jlist = json_new_object();

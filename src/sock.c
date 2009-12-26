@@ -589,7 +589,7 @@ int sendbin(int sock, const char *bin, unsigned int len, unsigned int burn_after
 	int t_bytes = 0, r_bytes, n = 0;
 
 	r_bytes = len;
-	
+
 	if (sock != 0) {
 		while(t_bytes < len) {
 			if (g_ape->bufout[sock].buf == NULL) {

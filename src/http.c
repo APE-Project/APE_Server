@@ -76,8 +76,73 @@ static struct _http_header_line *parse_header_line(const char *line)
 	return hline;
 }
 
+char *get_header_line(struct _http_header_line *lines, const char *key)
+{
+	while (lines != NULL) {
+		if (strcasecmp(lines->key.val, key) == 0) {
+			return lines->value.val;
+		}
+		
+		lines = lines->next;
+	}
+	
+	return NULL;
+}
+
+void process_websocket(ape_socket *co, acetables *g_ape)
+{
+	char *pData;
+	ape_buffer *buffer = &co->buffer_in;
+	websocket_state *websocket = co->parser.data;
+	ape_parser *parser = &co->parser;
+	
+	char *data = pData = &buffer->data[websocket->offset];
+	
+	if (buffer->length == 0 || parser->ready == 1) {
+		return;
+	}
+	
+	if (buffer->length > 502400) {
+		shutdown(co->fd, 2);
+		return;
+	}
+
+	data[buffer->length] = '\0';
+	
+	if (*data == '\0') {
+		data = &data[1];
+	}
+
+	while(data++ != &buffer->data[buffer->length]) {
+	
+		if ((unsigned char)*data == 0xFF) {
+			*data = '\0';
+			
+			websocket->data = &pData[1];
+			
+			parser->onready(parser, g_ape);
+
+			websocket->offset += (data - pData)+1;
+			
+			if (websocket->offset == buffer->length) {
+				parser->ready = -1;
+				buffer->length = 0;
+				websocket->offset = 0;
+				
+				return;
+			}
+			
+			break;
+		}
+	}
+	
+	if (websocket->offset != buffer->length && data != &buffer->data[buffer->length+1]) {
+		process_websocket(co, g_ape);
+	}
+}
+
 /* Just a lightweight http request processor */
-void process_http(ape_socket *co)
+void process_http(ape_socket *co, acetables *g_ape)
 {
 	ape_buffer *buffer = &co->buffer_in;
 	http_state *http = co->parser.data;
@@ -101,7 +166,7 @@ void process_http(ape_socket *co)
 	
 	switch(http->step) {
 		case 0:
-			pos = seof(data);
+			pos = seof(data, '\n');
 			if (pos == -1) {
 				return;
 			}
@@ -118,11 +183,13 @@ void process_http(ape_socket *co)
 					break;
 				default:
 					http->error = 1;
+					shutdown(co->fd, 2);
 					return;
 			}
 			
 			if (data[p] != '/') {
 				http->error = 1;
+				shutdown(co->fd, 2);
 				return;
 			} else {
 				int i = p;
@@ -133,7 +200,7 @@ void process_http(ape_socket *co)
 							http->step = 1;
 							http->uri = &data[i];
 							data[p] = '\0';
-							process_http(co);
+							process_http(co, g_ape);
 							return;
 						case '?':
 							if (data[p+1] != ' ' && data[p+1] != '\r' && data[p+1] != '\n') {
@@ -144,13 +211,14 @@ void process_http(ape_socket *co)
 						case '\n':
 						case '\0':
 							http->error = 1;
+							shutdown(co->fd, 2);
 							return;
 					}
 				}
 			}
 			break;
 		case 1:
-			pos = seof(data);
+			pos = seof(data, '\n');
 			if (pos == -1) {
 
 				return;
@@ -160,15 +228,18 @@ void process_http(ape_socket *co)
 
 				if (http->type == HTTP_GET) {
 					/* Ok, at this point we have a blank line. Ready for GET */
-					parser->ready = 1;
 					buffer->data[http->pos] = '\0';
 					urldecode(http->uri);
+					
+					parser->onready(parser, g_ape);
+					parser->ready = -1;
+					buffer->length = 0;
 					return;
 				} else {
 					/* Content-Length is mandatory in case of POST */
 					if (http->contentlength == 0) {
 						http->error = 1;
-									
+						shutdown(co->fd, 2);
 						return;
 					} else {
 						http->data = &buffer->data[http->pos+(pos)];
@@ -193,6 +264,7 @@ void process_http(ape_socket *co)
 						/* Content-length can't be negative... */
 						if (cl < 1 || cl > MAX_CONTENT_LENGTH) {
 							http->error = 1;
+							shutdown(co->fd, 2);
 							return;
 						}
 						/* At this time we are ready to read "cl" bytes contents */
@@ -202,7 +274,7 @@ void process_http(ape_socket *co)
 				}
 			}
 			http->pos += pos;
-			process_http(co);
+			process_http(co, g_ape);
 			break;
 		case 2:
 			read = buffer->length - http->pos; // data length
@@ -215,6 +287,10 @@ void process_http(ape_socket *co)
 				urldecode(http->uri);
 				/* no more than content-length */
 				buffer->data[http->pos - (http->read - http->contentlength)] = '\0';
+				
+				parser->onready(parser, g_ape);
+				parser->ready = -1;
+				buffer->length = 0;
 			}
 			break;
 		default:

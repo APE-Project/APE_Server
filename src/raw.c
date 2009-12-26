@@ -331,7 +331,9 @@ int send_raws(subuser *user, acetables *g_ape)
 				break;
 			case TRANSPORT_SSE_LONGPOLLING:
 				finish &= http_send_headers(user->headers.content, HEADER_SSE, HEADER_SSE_LEN, user->client, g_ape);
-				break;	
+				break;
+			case TRANSPORT_WEBSOCKET:
+				break;
 			default:
 				finish &= http_send_headers(user->headers.content, HEADER_DEFAULT, HEADER_DEFAULT_LEN, user->client, g_ape);
 				break;

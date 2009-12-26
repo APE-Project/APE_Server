@@ -30,7 +30,7 @@ void *xmalloc(size_t size);
 void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *s);
 
-int seof(char *buf);
+int seof(char *buf, unsigned short int stop);
 int sneof(char *buf, size_t len, size_t max);
 long int itos(long int input, char *output, long int len);
 char *trim(char *s);

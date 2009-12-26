@@ -26,10 +26,11 @@
 #include "users.h"
 
 subuser *checkrecv(ape_socket *co, acetables *g_ape);
-
+subuser *checkrecv_websocket(ape_socket *co, acetables *g_ape);
 
 typedef struct clientget
 {
+	struct _http_header_line *hlines;
 	ape_socket *client;
 	const char *ip_get;
 	const char *get;

@@ -74,6 +74,10 @@ struct _ape_transports {
 	struct {
 		struct _transport_properties properties;
 	} sse;
+	
+	struct {
+		struct _transport_properties properties;
+	} websocket;
 };
 
 typedef struct _http_state http_state;
@@ -91,6 +95,15 @@ struct _http_state
 	
 	unsigned short int step;
 	unsigned short int type; /* HTTP_GET or HTTP_POST */
+	unsigned short int error;
+};
+
+typedef struct _websocket_state websocket_state;
+struct _websocket_state
+{
+	struct _http_state *http;
+	const char *data;
+	unsigned short int offset;
 	unsigned short int error;
 };
 
@@ -167,8 +180,9 @@ typedef struct _acetables
 
 typedef struct _ape_parser ape_parser;
 struct _ape_parser {
-	void (*parser_func)(struct _ape_socket *);
+	void (*parser_func)(struct _ape_socket *, acetables *);
 	void (*destroy)(struct _ape_parser *);
+	void (*onready)(struct _ape_parser *, acetables *);
 	void *data;
 	struct _ape_socket *socket;
 	short int ready;
@@ -214,6 +228,9 @@ struct _ape_socket {
 #define HEADER_XHR_LEN 421
 
 #define CONTENT_NOTFOUND "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"><html><head><title>APE Server</title></head><body><h1>APE Server</h1><p>No command given.</p><hr><address>http://www.ape-project.org/ - Server "_VERSION" (Build "__DATE__" "__TIME__")</address></body></html>"
+
+/* http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-55 : The first three lines in each case are hard-coded (the exact case and order matters); */
+#define WEBSOCKET_HARDCODED_HEADERS "HTTP/1.1 101 Web Socket Protocol Handshake\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\n"
 
 #define FIRE_EVENT(event, ret, arg...) \
 	if (g_ape->plugins != NULL) { \

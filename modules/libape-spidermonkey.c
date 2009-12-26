@@ -1375,7 +1375,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		
 		hl = JS_DefineObject(cx, cb, "http", NULL, NULL, 0);		
 		
-		for (hlines = ((http_state *)callbacki->client->parser.data)->hlines; hlines != NULL; hlines = hlines->next) {
+		for (hlines = callbacki->hlines; hlines != NULL; hlines = hlines->next) {
 			s_tolower(hlines->key.val, hlines->key.len);
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, hlines->value.val, hlines->value.len));
 			JS_SetProperty(cx, hl, hlines->key.val, &jval);
@@ -1753,7 +1753,7 @@ APE_JS_NATIVE(ape_sm_adduser)
 	if (u->cmdqueue != NULL) {
 		unsigned int ret;
 		json_item *queue;
-		struct _cmd_process pc = {u, u->subuser, u->subuser->client, NULL, NULL, 0};
+		struct _cmd_process pc = {NULL, u, u->subuser, u->subuser->client, NULL, NULL, 0};
 		
 		for (queue = u->cmdqueue; queue != NULL; queue = queue->next) {
 			if ((ret = process_cmd(queue, &pc, NULL, g_ape)) != -1) {

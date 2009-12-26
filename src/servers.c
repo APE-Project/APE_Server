@@ -31,18 +31,7 @@
 
 static void ape_read(ape_socket *co, ape_buffer *buffer, size_t offset, acetables *g_ape)
 {
-	co->parser.parser_func(co);
-
-	if (co->parser.ready == 1) {
-
-		co->attach = checkrecv(co, g_ape);
-
-		co->buffer_in.length = 0;
-		co->parser.ready = -1;
-
-	} else if (((http_state *)co->parser.data)->error == 1) {
-		shutdown(co->fd, 2);
-	}
+	co->parser.parser_func(co, g_ape);
 }
 
 static void ape_sent(ape_socket *co, acetables *g_ape)

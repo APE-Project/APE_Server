@@ -112,7 +112,7 @@ char *removelast(char *input, unsigned int n)
 	return input;
 }
 
-int seof(char *buf)
+int seof(char *buf, unsigned short int stop)
 {
 	char *pBuf;
 	int pos = 0;
@@ -121,7 +121,7 @@ int seof(char *buf)
 		/*if (pos == 4096) {
 			return -1;
 		}*/
-		if (pBuf[pos] == '\n') {
+		if (pBuf[pos] == stop) {
 			return pos+1;
 		}
 	}
