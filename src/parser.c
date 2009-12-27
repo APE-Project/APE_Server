@@ -82,11 +82,18 @@ ape_parser parser_init_http(ape_socket *co)
 
 static void parser_destroy_stream(ape_parser *stream_parser)
 {
+	websocket_state *websocket = stream_parser->data;
+	
+	free_header_line(websocket->http->hlines);
+
 	stream_parser->data = NULL;
 	stream_parser->ready = 0;
 	stream_parser->parser_func = NULL;
 	stream_parser->destroy = NULL;
-	stream_parser->socket = NULL;	
+	stream_parser->socket = NULL;
+	
+	free(websocket->http);
+	free(websocket);	
 }
 
 ape_parser parser_init_stream(ape_socket *co)
