@@ -256,7 +256,7 @@ void process_http(ape_socket *co, acetables *g_ape)
 						http->host = hl->value.val;
 					}
 				}
-				else if (http->type == HTTP_POST) {
+				if (http->type == HTTP_POST) {
 					/* looking for content-length instruction */
 					if (pos <= 25 && strncasecmp("content-length: ", data, 16) == 0) {
 						int cl = atoi(&data[16]);
