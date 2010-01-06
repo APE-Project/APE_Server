@@ -164,6 +164,7 @@ void process_http(ape_socket *co, acetables *g_ape)
 		return;
 	}
 	
+	/* Update the address of http->data and http->uri if buffer->data has changed (realloc) */
 	if (http->buffer_addr != NULL && buffer->data != http->buffer_addr) {
 		http->data = &buffer->data[(void *)http->data - (void *)http->buffer_addr];
 		http->uri = &buffer->data[(void *)http->uri - (void *)http->buffer_addr];

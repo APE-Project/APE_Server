@@ -2099,6 +2099,9 @@ APE_JS_NATIVE(ape_sm_echo)
 	if (!g_ape->is_daemon) {
 		fwrite(JS_GetStringBytes(string), 1, JS_GetStringLength(string), stdout);
 		fwrite("\n", 1, 1, stdout);
+	} else {
+		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
+			"Javascript : %s", JS_GetStringBytes(string));
 	}
 	
 	return JS_TRUE;
