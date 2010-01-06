@@ -101,7 +101,7 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		
 		return NULL;
 	}
-	
+
 	if (http->data == NULL) {
 		sendbin(co->fd, HEADER_DEFAULT, HEADER_DEFAULT_LEN, 0, g_ape);
 		sendbin(co->fd, CONST_STR_LEN(CONTENT_NOTFOUND), 0, g_ape);

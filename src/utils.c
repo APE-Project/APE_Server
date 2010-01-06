@@ -35,6 +35,7 @@ void *xmalloc(size_t size)
 	}
 	return r;
 }
+
 void *xrealloc(void *ptr, size_t size)
 {
 	void *r = realloc(ptr, size);

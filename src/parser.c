@@ -70,6 +70,7 @@ ape_parser parser_init_http(ape_socket *co)
 	http->uri = NULL;
 	http->data = NULL;
 	http->host = NULL;
+	http->buffer_addr = NULL;
 
 	http_parser.parser_func = process_http;
 	http_parser.destroy = parser_destroy_http;

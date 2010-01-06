@@ -86,6 +86,8 @@ struct _http_state
 	struct _http_header_line *hlines;
 	
 	char *uri;
+	
+	void *buffer_addr;
 	const char *data;
 	const char *host;
 	

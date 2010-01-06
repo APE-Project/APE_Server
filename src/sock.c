@@ -477,7 +477,7 @@ unsigned int sockroutine(acetables *g_ape)
 
 										g_ape->co[active_fd].buffer_in.data = xrealloc(g_ape->co[active_fd].buffer_in.data, 
 																sizeof(char) * (g_ape->co[active_fd].buffer_in.size + 1));
-									
+
 									}
 									if (g_ape->co[active_fd].callbacks.on_read_lf != NULL) {
 										int eol, len = g_ape->co[active_fd].buffer_in.length;
