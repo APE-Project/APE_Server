@@ -1263,7 +1263,7 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 		} else if (head->key.val == NULL && head->jchild.child == NULL) {
 			jsuint rval;
 			jsval jval;
-			
+
 			if (root == NULL) {
 				root = JS_NewArrayObject(cx, 0, NULL);
 			}
@@ -1279,48 +1279,47 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 			if (JS_GetArrayLength(cx, root, &rval)) {
 				JS_SetElement(cx, root, rval, &jval);
 			}			
-		}
-		
-		if (head->jchild.child != NULL) {
+		} else if (head->jchild.child != NULL) {
 			JSObject *cobj = NULL;
 			
 			switch(head->jchild.type) {
 				case JSON_C_T_OBJ:
-					cobj = JS_NewObject(cx, NULL, NULL, root);
+					root = JS_NewObject(cx, NULL, NULL, NULL);
 					break;
 				case JSON_C_T_ARR:
-					cobj = JS_NewArrayObject(cx, 0, NULL);
+					root = JS_NewArrayObject(cx, 0, NULL);
 					break;
 				default:
 					break;
 			}
-			
-			if (cobj != NULL) {
-				ape_json_to_jsobj(cx, head->jchild.child, cobj);
+			JS_AddRoot(cx, &root);
 
-				JS_AddRoot(cx, &cobj);
-				if (head->key.val != NULL) {
-					jsval jval;
-					jval = OBJECT_TO_JSVAL(cobj);
-					JS_SetProperty(cx, root, head->key.val, &jval);
-				} else {
-					jsval jval;
-					jsuint rval;
-					jval = OBJECT_TO_JSVAL(cobj);
-				
-					if (JS_GetArrayLength(cx, root, &rval)) {
-						JS_SetElement(cx, root, rval, &jval);
-					}								
-				}
-				JS_RemoveRoot(cx, &cobj);
+			cobj = ape_json_to_jsobj(cx, head->jchild.child, NULL);
+			JS_AddRoot(cx, &cobj);
+
+			if (head->key.val != NULL) {
+				jsval jval;
+				jval = OBJECT_TO_JSVAL(cobj);
+				JS_SetProperty(cx, root, head->key.val, &jval);
+			} else {
+				jsval jval;
+				jsuint rval;
+				jval = OBJECT_TO_JSVAL(cobj);
+				if (JS_GetArrayLength(cx, root, &rval)) {
+					JS_SetElement(cx, root, rval, &jval);
+				}								
 			}
+
+			JS_RemoveRoot(cx, &cobj);
 			
 		}
 		head = head->next;
 	}
+
 	if (root != NULL) {
 		JS_RemoveRoot(cx, &root);
 	}
+	
 	return root;
 }
 
@@ -2101,7 +2100,7 @@ APE_JS_NATIVE(ape_sm_echo)
 		fwrite("\n", 1, 1, stdout);
 	} else {
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
-			"Javascript : %s", JS_GetStringBytes(string));
+			"JavaScript : %s", JS_GetStringBytes(string));
 	}
 	
 	return JS_TRUE;
