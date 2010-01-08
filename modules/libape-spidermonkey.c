@@ -1247,7 +1247,7 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 	while (head != NULL) {
 		if (head->jchild.child == NULL && head->key.val != NULL) {
 			jsval jval;
-			
+
 			if (root == NULL) {
 				root = JS_NewObject(cx, NULL, NULL, NULL);
 			}
@@ -1281,29 +1281,41 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 			}			
 		} else if (head->jchild.child != NULL) {
 			JSObject *cobj = NULL;
-			
+
 			switch(head->jchild.type) {
 				case JSON_C_T_OBJ:
-					root = JS_NewObject(cx, NULL, NULL, NULL);
+					cobj = JS_NewObject(cx, NULL, NULL, NULL);
 					break;
 				case JSON_C_T_ARR:
-					root = JS_NewArrayObject(cx, 0, NULL);
+					cobj = JS_NewArrayObject(cx, 0, NULL);
 					break;
 				default:
 					break;
 			}
-			JS_AddRoot(cx, &root);
+			
+			ape_json_to_jsobj(cx, head->jchild.child, cobj);
 
-			cobj = ape_json_to_jsobj(cx, head->jchild.child, NULL);
 			JS_AddRoot(cx, &cobj);
 
 			if (head->key.val != NULL) {
 				jsval jval;
+
+				if (root == NULL) {
+					root = JS_NewObject(cx, NULL, NULL, NULL);
+					JS_AddRoot(cx, &root);
+				}
+				
 				jval = OBJECT_TO_JSVAL(cobj);
 				JS_SetProperty(cx, root, head->key.val, &jval);
 			} else {
 				jsval jval;
 				jsuint rval;
+
+				if (root == NULL) {
+					root = JS_NewArrayObject(cx, 0, NULL);
+					JS_AddRoot(cx, &root);
+				}
+				
 				jval = OBJECT_TO_JSVAL(cobj);
 				if (JS_GetArrayLength(cx, root, &rval)) {
 					JS_SetElement(cx, root, rval, &jval);
@@ -1319,7 +1331,7 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 	if (root != NULL) {
 		JS_RemoveRoot(cx, &root);
 	}
-	
+
 	return root;
 }
 
@@ -2732,7 +2744,7 @@ static int ape_fire_cmd(const char *name, JSObject *obj, JSObject *cb, callbackp
 		for (cbk = asc->callbacks.head; cbk != NULL; cbk = cbk->next) {
 			if ((cbk->type == APE_CMD && strcasecmp(name, cbk->callbackname) == 0)) {
 				jsval rval;
-
+				
 				if (JS_CallFunctionValue(cbk->cx, JS_GetGlobalObject(cbk->cx), cbk->func, 2, params, &rval) == JS_FALSE) {
 					return (cbk->type == APE_CMD ? RETURN_BAD_PARAMS : RETURN_BAD_CMD);
 				}
