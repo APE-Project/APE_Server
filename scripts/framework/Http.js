@@ -10,7 +10,7 @@ Exemple 1:
 
 Example 2:
 	var request = new Http('http://twitter.com:80/statuses/update.json');
-	request.set('action', 'POST');
+	request.set('method', 'POST');
 	
 	// GET or POST data
 	request.writeData('status', 'Hello!');
