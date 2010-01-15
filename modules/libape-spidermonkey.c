@@ -845,6 +845,19 @@ APE_JS_NATIVE(apeuser_sm_get_property)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apeuser_sm_quit)
+//{
+	USERS *user = JS_GetPrivate(cx, obj);
+
+	if (user == NULL) {
+		return JS_TRUE;
+	}
+	
+	deluser(user, g_ape);
+	
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(apeuser_sm_join)
 //{
 	CHANNEL *chan;
@@ -1006,6 +1019,7 @@ static JSFunctionSpec apeuser_funcs[] = {
 	JS_FS("getProperty", apeuser_sm_get_property, 1, 0, 0),
 	JS_FS("setProperty", apeuser_sm_set_property, 2, 0, 0),
 	JS_FS("join", apeuser_sm_join, 1, 0, 0),
+	JS_FS("quit", apeuser_sm_quit, 0, 0, 0),
 	JS_FS_END
 };
 
