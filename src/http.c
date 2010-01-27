@@ -107,7 +107,7 @@ void process_websocket(ape_socket *co, acetables *g_ape)
 		return;
 	}
 
-	data[buffer->length] = '\0';
+	data[buffer->length - websocket->offset] = '\0';
 	
 	if (*data == '\0') {
 		data = &data[1];
