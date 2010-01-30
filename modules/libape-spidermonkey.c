@@ -891,6 +891,39 @@ APE_JS_NATIVE(apeuser_sm_join)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apeuser_sm_left)
+//{
+	CHANNEL *chan;
+	char *chan_name;
+	JSObject *chan_obj;
+	USERS *user = JS_GetPrivate(cx, obj);
+	
+	*rval = JSVAL_FALSE;
+		
+	if (user == NULL) {
+		return JS_TRUE;
+	}
+	
+	if (JSVAL_IS_STRING(argv[0])) {
+		JS_ConvertArguments(cx, 1, argv, "s", &chan_name);
+		if ((chan = getchan(chan_name, g_ape)) == NULL) {
+			return JS_TRUE;
+		}
+	} else if (JSVAL_IS_OBJECT(argv[0])) {
+		JS_ConvertArguments(cx, 1, argv, "o", &chan_obj);
+		if (!JS_InstanceOf(cx, chan_obj, &channel_class, 0) || (chan = JS_GetPrivate(cx, chan_obj)) == NULL) {
+			return JS_TRUE;
+		}
+	} else {
+		return JS_TRUE;
+	}
+	
+	left(user, chan, g_ape);
+	
+	*rval = JSVAL_TRUE;
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(apeuser_sm_set_property)
 //{
 	char *key;
@@ -1019,6 +1052,7 @@ static JSFunctionSpec apeuser_funcs[] = {
 	JS_FS("getProperty", apeuser_sm_get_property, 1, 0, 0),
 	JS_FS("setProperty", apeuser_sm_set_property, 2, 0, 0),
 	JS_FS("join", apeuser_sm_join, 1, 0, 0),
+	JS_FS("left", apeuser_sm_left, 1, 0, 0),
 	JS_FS("quit", apeuser_sm_quit, 0, 0, 0),
 	JS_FS_END
 };
