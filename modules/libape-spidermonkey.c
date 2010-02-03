@@ -2557,6 +2557,7 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	server = ape_listen(port, ip, g_ape);
 	
 	if (server == NULL) {
+		*rval = JSVAL_FALSE;
 		return JS_TRUE;
 	}
 	
