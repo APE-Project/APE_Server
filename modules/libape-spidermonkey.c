@@ -333,7 +333,7 @@ APE_JS_NATIVE(apesocket_close)
 //{
 	ape_socket *client;
 	JSBool safe = JS_FALSE;
-	
+
 	struct _ape_sock_callbacks *cb = JS_GetPrivate(cx, obj);
 	
 	if (cb == NULL || !cb->state) {
@@ -357,6 +357,21 @@ APE_JS_NATIVE(apesocket_close)
 	} else {
 		safe_shutdown(client->fd, g_ape);
 	}
+	return JS_TRUE;
+}
+
+APE_JS_NATIVE(apesocketserver_close)
+//{
+	ape_socket *server;
+	
+	server = JS_GetPrivate(cx, obj);
+	
+	if (server == NULL) {
+		return JS_TRUE;
+	}
+
+	shutdown(server->fd, 2);
+	
 	return JS_TRUE;
 }
 
@@ -1029,15 +1044,20 @@ APE_JS_NATIVE(apemysql_sm_query)
 #endif
 
 static JSFunctionSpec apesocket_funcs[] = {
-    JS_FS("write",   apesocket_write,	1, 0, 0),
+    	JS_FS("write",   apesocket_write,	1, 0, 0),
 	JS_FS("close",   apesocket_close,	0, 0, 0),
-    JS_FS_END
+    	JS_FS_END
+};
+
+static JSFunctionSpec apesocketserver_funcs[] = {
+	JS_FS("close",   apesocketserver_close,	0, 0, 0),
+    	JS_FS_END
 };
 
 static JSFunctionSpec apesocketclient_funcs[] = {
-    JS_FS("write",   apesocketclient_write,	1, 0, 0),
+    	JS_FS("write",   apesocketclient_write,	1, 0, 0),
 	JS_FS("close",   apesocketclient_close,	0, 0, 0),
-    JS_FS_END
+    	JS_FS_END
 };
 
 static JSFunctionSpec apesocket_client_funcs[] = {
@@ -2702,7 +2722,7 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	JS_DefineFunctions(asc->cx, sockclient, apesocket_funcs);
 
 	JS_DefineFunctions(asc->cx, sockserver, apesocket_client_funcs);
-	JS_DefineFunctions(asc->cx, sockserver, apesocket_funcs);
+	JS_DefineFunctions(asc->cx, sockserver, apesocketserver_funcs);
 
 	JS_DefineFunctions(asc->cx, custompipe, apepipe_funcs);
 	JS_DefineFunctions(asc->cx, custompipe, apepipecustom_funcs);

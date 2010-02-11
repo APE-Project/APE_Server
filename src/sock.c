@@ -310,7 +310,22 @@ unsigned int sockroutine(acetables *g_ape)
 				int active_fd = events_get_current_fd(g_ape->events, i);
 				
 				if (g_ape->co[active_fd].stream_type == STREAM_SERVER) {
-				
+					int bitev = events_revent(g_ape->events, i);
+					
+					if (!(bitev & EVENT_READ)) {
+					
+						if (g_ape->bufout[active_fd].buf != NULL) {
+							free(g_ape->bufout[active_fd].buf);
+							g_ape->bufout[active_fd].buflen = 0;
+							g_ape->bufout[active_fd].buf = NULL;
+							g_ape->bufout[active_fd].allocsize = 0;
+						}
+						
+						close(active_fd);
+
+						continue;
+					}
+					
 					while (1) {
 
 						//http_state http = {NULL, 0, -1, 0, 0, HTTP_NULL, 0, 0};
@@ -360,7 +375,7 @@ unsigned int sockroutine(acetables *g_ape)
 						g_ape->co[new_fd].attach = g_ape->co[active_fd].attach;
 						
 						setnonblocking(new_fd);
-									
+						
 						events_add(g_ape->events, new_fd, EVENT_READ|EVENT_WRITE);
 						
 						tfd++;
