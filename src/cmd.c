@@ -360,13 +360,14 @@ unsigned int checkcmd(clientget *cget, transport_t transport, subuser **iuser, a
 			if (pc.guser != NULL && pc.guser->istmp) { /* if "CONNECT" was delayed, push other cmd to the queue and stop execution */
 				pc.guser->cmdqueue = json_item_copy(ijson, NULL);
 				break;
-			}
-			
+			}		
 			if ((ret = process_cmd(ijson, &pc, iuser, g_ape)) != -1) {
 				free_json_item(ojson);
 				return ret;
 			}
-		
+			if (*iuser != NULL) {
+				pc.sub = *iuser;
+			}					
 		}
 		free_json_item(ojson);
 
