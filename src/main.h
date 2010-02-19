@@ -42,7 +42,7 @@
 #define MAX_MSG_LEN 	1024
 #define MAX_RAW_LEN 	1024
 
-#define TIMEOUT_SEC 10
+#define TIMEOUT_SEC 45
 
 #define SERVER_NAME "APE.Server"
 #define _VERSION "1.01dev"

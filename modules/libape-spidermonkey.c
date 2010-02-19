@@ -2932,7 +2932,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 		asc->filename = (void *)xstrdup(globbuf.gl_pathv[i]);
 
 		asc->cx = JS_NewContext(rt, 8192);
-		JS_SetGCZeal(asc->cx, 2);
+		//JS_SetGCZeal(asc->cx, 2);
 		
 		if (asc->cx == NULL) {
 			free(asc->filename);
