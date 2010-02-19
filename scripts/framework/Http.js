@@ -44,9 +44,10 @@ var Http = new Class({
 	},
 	
 	parseURL: function() {
-		var result	= this.url.match("^.*?://(.*?)((/.*)|)$");
-		this.host	= result[1];
-		this.query	= result[2];
+		var result  = this.url.match("^.*?://(.*?)(:([0-9]+))?((/.*)|)$");
+		this.host   = result[1];
+		this.port   = result[3] || 80;
+		this.query  = result[4];
 	},
 	
 	set: function(key, value) {
