@@ -47,7 +47,7 @@ RAW *forge_raw(const char *raw, json_item *jlist)
 	string = json_to_string(jstruct, NULL, 1);
 
 	new_raw = xmalloc(sizeof(*new_raw));
-    new_raw->len = string->len;
+    	new_raw->len = string->len;
 	new_raw->next = NULL;
 	new_raw->priority = RAW_PRI_LO;
 	new_raw->refcount = 0;
@@ -79,9 +79,9 @@ RAW *copy_raw(RAW *input)
 	new_raw->next = input->next;
 	new_raw->priority = input->priority;
 	new_raw->refcount = 0;
-    new_raw->data = xmalloc(sizeof(char) * (new_raw->len + 1));
+    	new_raw->data = xmalloc(sizeof(char) * (new_raw->len + 1));
 
-    memcpy(new_raw->data, input->data, new_raw->len + 1);	
+    	memcpy(new_raw->data, input->data, new_raw->len + 1);	
 
 	return new_raw;	
 }

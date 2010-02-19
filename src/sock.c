@@ -414,7 +414,7 @@ unsigned int sockroutine(acetables *g_ape)
 								clear_buffer(&g_ape->co[active_fd], &tfd);
 								close(active_fd);
 							}							
-						} else if (g_ape->co[active_fd].stream_type == STREAM_IN && g_ape->bufout[active_fd].buf != NULL) {
+						} else if (g_ape->bufout[active_fd].buf != NULL) {
 
 							if (sendqueue(active_fd, g_ape) == 1) {
 								

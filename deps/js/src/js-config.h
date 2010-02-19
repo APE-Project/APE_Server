@@ -76,7 +76,7 @@
 /* #undef JS_INT32_TYPE */
 /* #undef JS_INT64_TYPE */
 /* #undef JS_INTPTR_TYPE */
-#define JS_BYTES_PER_WORD 8
+#define JS_BYTES_PER_WORD 4
 
 /* Some mozilla code uses JS-friend APIs that depend on JS_TRACER being
    correct. */

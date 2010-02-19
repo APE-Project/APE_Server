@@ -235,7 +235,7 @@ void do_died(subuser *sub)
 	}
 }
 
-void check_timeout(acetables *g_ape, int last)
+void check_timeout(acetables *g_ape, int *last)
 {
 	USERS *list, *wait;
 	long int ctime = time(NULL);

@@ -47,7 +47,6 @@
 
 #include <errno.h>
 
-
 static void signal_handler(int sign)
 {
 	server_is_running = 0;
@@ -258,7 +257,7 @@ int main(int argc, char **argv)
 		printf("Author  : Weelya (contact@weelya.com)\n\n");		
 	}
 	signal(SIGPIPE, SIG_IGN);
-
+	
 	ape_dns_init(g_ape);
 	
 	g_ape->cmd_hook.head = NULL;

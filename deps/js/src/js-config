@@ -4,7 +4,7 @@ prefix='/usr/local'
 mozilla_version=''
 LIBRARY_NAME='mozjs'
 NSPR_CFLAGS=''
-JS_CONFIG_LIBS=' -dynamiclib -install_name @executable_path/libmozjs.dylib -compatibility_version 1 -current_version 1 -single_module  -lm '
+JS_CONFIG_LIBS=' -ldl -lm  -lm -ldl '
 MOZ_JS_LIBS='-L/usr/local/lib -lmozjs'
 
 usage()

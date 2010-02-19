@@ -218,7 +218,7 @@ void deluser(USERS *user, acetables *g_ape);
 
 void do_died(subuser *user);
 
-void check_timeout(acetables *g_ape, int last);
+void check_timeout(acetables *g_ape, int *last);
 void grant_aceop(USERS *user);
 
 void send_error(USERS *user, const char *msg, const char *code, acetables *g_ape);
