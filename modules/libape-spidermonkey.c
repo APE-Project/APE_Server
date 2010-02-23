@@ -1312,6 +1312,7 @@ static void reportError(JSContext *cx, const char *message, JSErrorReport *repor
 
 static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
 {
+	JS_EnterLocalRootScope(cx);
 	while (head != NULL) {
 		if (head->jchild.child == NULL && head->key.val != NULL) {
 			jsval jval;
@@ -1319,7 +1320,6 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 			if (root == NULL) {
 				root = JS_NewObject(cx, NULL, NULL, NULL);
 			}
-			JS_AddRoot(cx, &root);
 			
 			if (head->jval.vu.str.value != NULL) {
 				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
@@ -1334,8 +1334,7 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 
 			if (root == NULL) {
 				root = JS_NewArrayObject(cx, 0, NULL);
-			}
-			JS_AddRoot(cx, &root);			
+			}			
 			
 			if (head->jval.vu.str.value != NULL) {	
 				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
@@ -1343,7 +1342,7 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 				jsdouble dp = (head->jval.vu.integer_value ? head->jval.vu.integer_value : head->jval.vu.float_value);
 				JS_NewNumberValue(cx, dp, &jval);
 			}
-			/* TODO : jsdouble can be garbaged in the next call */
+
 			if (JS_GetArrayLength(cx, root, &rval)) {
 				JS_SetElement(cx, root, rval, &jval);
 			}			
@@ -1363,14 +1362,12 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 			
 			ape_json_to_jsobj(cx, head->jchild.child, cobj);
 
-			JS_AddRoot(cx, &cobj);
 
 			if (head->key.val != NULL) {
 				jsval jval;
 
 				if (root == NULL) {
 					root = JS_NewObject(cx, NULL, NULL, NULL);
-					JS_AddRoot(cx, &root);
 				}
 				
 				jval = OBJECT_TO_JSVAL(cobj);
@@ -1381,25 +1378,21 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 
 				if (root == NULL) {
 					root = JS_NewArrayObject(cx, 0, NULL);
-					JS_AddRoot(cx, &root);
 				}
 				
 				jval = OBJECT_TO_JSVAL(cobj);
+				
 				if (JS_GetArrayLength(cx, root, &rval)) {
 					JS_SetElement(cx, root, rval, &jval);
 				}								
 			}
 
-			JS_RemoveRoot(cx, &cobj);
 			
 		}
 		head = head->next;
 	}
 
-	if (root != NULL) {
-		JS_RemoveRoot(cx, &root);
-	}
-
+	JS_LeaveLocalRootScope(cx);
 	return root;
 }
 
