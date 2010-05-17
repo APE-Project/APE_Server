@@ -479,6 +479,9 @@ subuser *addsubuser(ape_socket *client, const char *channel, USERS *user, acetab
 	if (sub->next != NULL && sub->next->raw_pools.low.nraw) {
 		struct _raw_pool *rTmp;
 		for (rTmp = sub->next->raw_pools.low.rawhead; rTmp->raw != NULL; rTmp = rTmp->next) {
+			if (rTmp->raw->refcount == 0) {
+				rTmp->raw->refcount = 1;
+			}			
 			post_raw_sub(copy_raw_z(rTmp->raw), sub, g_ape);
 		}
 
