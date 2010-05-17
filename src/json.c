@@ -282,6 +282,25 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 			
 			string->len += ((l+2)-1)-offset;
 			
+		} else if (head->jval.vu.float_value) {
+			int length;
+
+			/* TODO: check for -1 */
+			/* TODO: fix max length 16 together with json_evaluate_string_size() */
+			length = snprintf(string->jstring + string->len, 16 + 1, "%Lf", head->jval.vu.float_value);
+			if(length > 16) /* cut-off number */
+				length = 16;
+
+			string->len += length;
+		} else if (head->type == JSON_T_TRUE) {
+			memcpy(string->jstring + string->len, "true", 4);
+			string->len += 4;
+		} else if (head->type == JSON_T_FALSE) {
+			memcpy(string->jstring + string->len, "false", 5);
+			string->len += 5;
+		} else if (head->type == JSON_T_NULL) {
+			memcpy(string->jstring + string->len, "null", 4);
+			string->len += 4;
 		} else if (head->jchild.child == NULL) {
 			memcpy(string->jstring + string->len, "0", 1);
 			string->len++;
@@ -386,6 +405,8 @@ json_item *json_item_copy(json_item *cx, json_item *father)
 		if (return_item == NULL) {
 			return_item = new_item;
 		}
+
+		new_item->type = cx->type;
 		new_item->jchild.type = cx->jchild.type;
 		
 		if (temp_item != NULL) {
@@ -474,6 +495,7 @@ void json_set_property_intN(json_item *obj, const char *key, int keylen, long in
 	}
 	new_item->father = obj;
 	new_item->jval.vu.integer_value = value;
+	new_item->type = JSON_T_INTEGER;
 	
 	if (obj->jchild.child == NULL) {
 		obj->jchild.child = new_item;
@@ -491,6 +513,73 @@ void json_set_property_intZ(json_item *obj, const char *key, long int value)
 	json_set_property_intN(obj, key, len, value);
 }
 
+void json_set_property_floatN(json_item *obj, const char *key, int keylen, long double value)
+{
+	json_item *new_item = init_json_item();
+
+	if (key != NULL) {
+		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
+		memcpy(new_item->key.val, key, keylen + 1);
+		new_item->key.len = keylen;
+	}
+	new_item->father = obj;
+	new_item->jval.vu.float_value = value;
+	new_item->type = JSON_T_FLOAT;
+	
+	if (obj->jchild.child == NULL) {
+		obj->jchild.child = new_item;
+	} else {
+		obj->jchild.head->next = new_item;
+	}
+	
+	obj->jchild.head = new_item;	
+}
+
+void json_set_property_boolean(json_item *obj, const char *key, int keylen, int value)
+{
+	json_item *new_item = init_json_item();
+
+	if (key != NULL) {
+		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
+		memcpy(new_item->key.val, key, keylen + 1);
+		new_item->key.len = keylen;
+	}
+	new_item->father = obj;
+	if(value)
+		new_item->type = JSON_T_TRUE;
+	else
+		new_item->type = JSON_T_FALSE;
+	
+	if (obj->jchild.child == NULL) {
+		obj->jchild.child = new_item;
+	} else {
+		obj->jchild.head->next = new_item;
+	}
+	
+	obj->jchild.head = new_item;	
+}
+
+void json_set_property_null(json_item *obj, const char *key, int keylen)
+{
+	json_item *new_item = init_json_item();
+
+	if (key != NULL) {
+		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
+		memcpy(new_item->key.val, key, keylen + 1);
+		new_item->key.len = keylen;
+	}
+	new_item->father = obj;
+	new_item->type = JSON_T_NULL;
+	
+	if (obj->jchild.child == NULL) {
+		obj->jchild.child = new_item;
+	} else {
+		obj->jchild.head->next = new_item;
+	}
+	
+	obj->jchild.head = new_item;	
+}
+
 
 void json_set_property_strN(json_item *obj, const char *key, int keylen, const char *value, int valuelen)
 {
@@ -505,6 +594,7 @@ void json_set_property_strN(json_item *obj, const char *key, int keylen, const c
 	new_item->jval.vu.str.value = xmalloc(sizeof(char) * (valuelen + 1));
 	memcpy(new_item->jval.vu.str.value, value, valuelen + 1);
 	new_item->jval.vu.str.length = valuelen;
+	new_item->type = JSON_T_STRING;
 	
 	new_item->father = obj;
 	
@@ -542,6 +632,21 @@ void json_set_element_obj(json_item *obj, json_item *value)
 void json_set_element_int(json_item *obj, long int value)
 {
 	json_set_property_intN(obj, NULL, 0, value);
+}
+
+void json_set_element_float(json_item *obj, long double value)
+{
+	json_set_property_floatN(obj, NULL, 0, value);
+}
+
+void json_set_element_boolean(json_item *obj, int value)
+{
+	json_set_property_boolean(obj, NULL, 0, value);
+}
+
+void json_set_element_null(json_item *obj)
+{
+	json_set_property_null(obj, NULL, 0);
 }
 
 void json_merge(json_item *obj_out, json_item *obj_in)

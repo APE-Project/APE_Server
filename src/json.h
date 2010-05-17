@@ -123,10 +123,16 @@ void json_set_property_strZ(json_item *obj, const char *key, const char *value);
 void json_set_element_strN(json_item *obj, const char *value, int valuelen);
 void json_set_element_strZ(json_item *obj, const char *value);
 void json_set_element_int(json_item *obj, long int value);
+void json_set_element_float(json_item *obj, long double value);
+void json_set_element_boolean(json_item *obj, int value);
+void json_set_element_null(json_item *obj);
 void json_set_element_obj(json_item *obj, json_item *value);
 
 void json_set_property_intN(json_item *obj, const char *key, int keylen, long int value);
 void json_set_property_intZ(json_item *obj, const char *key, long int value);
+void json_set_property_floatN(json_item *obj, const char *key, int keylen, long double value);
+void json_set_property_boolean(json_item *obj, const char *key, int keylen, int value);
+void json_set_property_null(json_item *obj, const char *key, int keylen);
 struct jsontring *json_to_string(json_item *head, struct jsontring *string, int free_tree);
 json_item *json_item_copy(json_item *cx, json_item *father);
 
