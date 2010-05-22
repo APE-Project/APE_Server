@@ -197,39 +197,43 @@ int main(int argc, char **argv)
 				"Cannot set the max filedescriptos limit (setrlimit) %s", strerror(errno));
 		}
 		
-		/* Get the user information (uid section) */
-		if ((pwd = getpwnam(CONFIG_VAL(uid, user, srv))) == NULL) {
-			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-				"Can\'t find username %s", CONFIG_VAL(uid, user, srv));
-			return -1;
-		}
-		if (pwd->pw_uid == 0) {
-			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-				"%s uid can\'t be 0", CONFIG_VAL(uid, user, srv));
-			return -1;			
-		}
-		
-		/* Get the group information (uid section) */
-		if ((grp = getgrnam(CONFIG_VAL(uid, group, srv))) == NULL) {
-			printf("[ERR] Can\'t find group %s\n", CONFIG_VAL(uid, group, srv));
-			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-				"Can\'t find group %s", CONFIG_VAL(uid, group, srv));
-			return -1;
-		}
-		
-		if (grp->gr_gid == 0) {
-			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+		/* Set uid when uid section exists */
+		if (ape_config_get_section (srv, "uid")) {
+
+			/* Get the user information (uid section) */
+			if ((pwd = getpwnam(CONFIG_VAL(uid, user, srv))) == NULL) {
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+					"Can\'t find username %s", CONFIG_VAL(uid, user, srv));
+				return -1;
+			}
+			if (pwd->pw_uid == 0) {
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+					"%s uid can\'t be 0", CONFIG_VAL(uid, user, srv));
+				return -1;			
+			}
+			
+			/* Get the group information (uid section) */
+			if ((grp = getgrnam(CONFIG_VAL(uid, group, srv))) == NULL) {
+				printf("[ERR] Can\'t find group %s\n", CONFIG_VAL(uid, group, srv));
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+					"Can\'t find group %s", CONFIG_VAL(uid, group, srv));
+				return -1;
+			}
+			
+			if (grp->gr_gid == 0) {
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
 				"%s gid can\'t be 0", CONFIG_VAL(uid, group, srv));
 			return -1;
-		}
+			}
 		
-		setgid(grp->gr_gid);
-		setgroups(0, NULL);
+			setgid(grp->gr_gid);
+			setgroups(0, NULL);
 
-		initgroups(CONFIG_VAL(uid, user, srv), grp->gr_gid);
+			initgroups(CONFIG_VAL(uid, user, srv), grp->gr_gid);
 		
-		setuid(pwd->pw_uid);
-		
+			setuid(pwd->pw_uid);
+		}
+
 	} else {
 		printf("[WARN] You have to run \'aped\' as root to increase r_limit\n");
 		ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
