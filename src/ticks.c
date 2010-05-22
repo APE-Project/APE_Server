@@ -26,88 +26,67 @@
 #include <sys/time.h>
 #include <time.h>
 
-/* This routine is called by epoll() loop (sock.c) */
-/* TICKS_RATE define how many times this routine is called each seconde */
-
-#if 0
-void process_tick(acetables *g_ape)
-{
-	struct _ticks_callback **timers = &(g_ape->timers);
-	
-	while (*timers != NULL) {
-		(*timers)->ticks_left--;
-		
-		if ((*timers)->ticks_left <= 0) {
-			int lastcall = ((*timers)->times > 0 && --(*timers)->times == 0);
-			
-			void (*func_timer)(void *param, int) = (*timers)->func;
-			func_timer((*timers)->params, lastcall);
-			
-			if (lastcall) {
-				del_timer(timers);
-				continue;
-			}
-			
-			(*timers)->ticks_left = (*timers)->ticks_need;
-		}
-		timers = &(*timers)->next;
-	}
-}
-#endif
-
 inline void process_tick(acetables *g_ape)
 {
 	struct _ticks_callback *timers = g_ape->timers.timers;
 	
-	while (timers != NULL) {
-		timers->ticks_left--;
-		
-		if (timers->ticks_left <= 0) {
-			int lastcall = (timers->times > 0 && --timers->times == 0);
-			void (*func_timer)(void *param, int *) = timers->func;
-			func_timer(timers->params, &lastcall);
-			
-			if (lastcall) {
-				struct _ticks_callback *tmpTimers = timers->next;
+	while (timers != NULL && --timers->delta <= 0) {
+		int lastcall = (timers->times > 0 && --timers->times == 0);
+		void (*func_timer)(void *param, int *) = timers->func;
+		func_timer(timers->params, &lastcall);
 
-				del_timer(timers, g_ape);
-				timers = tmpTimers;
-				continue;
-			}
-			
-			timers->ticks_left = timers->ticks_need;
+		g_ape->timers.timers = timers->next;
+
+		if (!lastcall) {
+			struct _ticks_callback *new_timer = add_timeout(timers->ticks_need, timers->func, timers->params, g_ape);
+			g_ape->timers.ntimers--;
+			new_timer->identifier = timers->identifier;
+			new_timer->times = timers->times;
 		}
-		timers = timers->next;
+
+		free(timers);
+
+		if ((timers = g_ape->timers.timers) != NULL)
+			timers->delta++;
 	}
 }
 
 struct _ticks_callback *add_timeout(unsigned int msec, void *callback, void *params, acetables *g_ape)
 {
+	struct _ticks_callback *timers = g_ape->timers.timers;
+	struct _ticks_callback *prev = NULL;
+
 	struct _ticks_callback *new_timer;
-	
 	new_timer = xmalloc(sizeof(*new_timer));
 	
 	new_timer->ticks_need = msec;
-	new_timer->ticks_left = new_timer->ticks_need;
-
-	new_timer->prev = NULL;
+	new_timer->delta = msec;
 	new_timer->times = 1;
+	new_timer->identifier = g_ape->timers.ntimers;
 	new_timer->protect = 1;
-	
 	new_timer->func = callback;
 	new_timer->params = params;
-	
-	if (g_ape->timers.timers != NULL) {
-		g_ape->timers.timers->prev = new_timer;
-		g_ape->timers.ntimers++;
-	} else {
-		g_ape->timers.ntimers = 0;
-	}
-	new_timer->next = g_ape->timers.timers;
-	new_timer->identifier = g_ape->timers.ntimers;
+	new_timer->next = NULL;
 
-	g_ape->timers.timers = new_timer;
+	while (timers != NULL) {
+		if (new_timer->delta <= timers->delta) {
+			new_timer->next = timers;
+			timers->delta -= new_timer->delta;
+			break;
+		}
+
+		new_timer->delta -= timers->delta;
+		prev = timers;
+		timers = timers->next;
+	}
+
+	if (prev != NULL)
+		prev->next = new_timer;
+	else
+		g_ape->timers.timers = new_timer;
 	
+	g_ape->timers.ntimers++;
+
 	return new_timer;
 }
 
@@ -121,21 +100,6 @@ struct _ticks_callback *add_periodical(unsigned int msec, int times, void *callb
 	new_timer->times = times;
 	
 	return new_timer;
-}
-
-void del_timer(struct _ticks_callback *timer, acetables *g_ape)
-{
-	if (timer->prev != NULL) {
-		timer->prev->next = timer->next;
-	} else {
-		g_ape->timers.timers = timer->next;
-	}
-	if (timer->next != NULL) {
-		timer->next->prev = timer->prev;
-	}
-	//g_ape->timers.ntimers--;
-	
-	free(timer);
 }
 
 struct _ticks_callback *get_timer_identifier(unsigned int identifier, acetables *g_ape)
@@ -155,23 +119,21 @@ struct _ticks_callback *get_timer_identifier(unsigned int identifier, acetables 
 void del_timer_identifier(unsigned int identifier, acetables *g_ape)
 {
 	struct _ticks_callback *timers = g_ape->timers.timers;
+	struct _ticks_callback *prev = NULL;
 	
 	while (timers != NULL) {
 		if (timers->identifier == identifier) {
-			del_timer(timers, g_ape);
+			if (prev != NULL)
+				prev->next = timers->next;
+			else
+				g_ape->timers.timers = timers->next;
+
+			free(timers);
 			break;
 		}
+
+		prev = timers;
 		timers = timers->next;
 	}
 }
 
-#if 0
-void del_timer(struct _ticks_callback **timer)
-{
-	struct _ticks_callback *del = *timer;
-
-	*timer = (*timer)->next;
-
-	free(del);
-}
-#endif
