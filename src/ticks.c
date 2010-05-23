@@ -143,3 +143,15 @@ void del_timer_identifier(unsigned int identifier, acetables *g_ape)
 	}
 }
 
+/* Returns closest timer execution time (in ms) */
+int get_first_timer_ms (acetables *g_ape)
+{
+	struct _ticks_callback *timers = g_ape->timers.timers;
+
+	if (timers != NULL) {
+		return timers->delta;
+	}
+
+	return -1;
+}
+
