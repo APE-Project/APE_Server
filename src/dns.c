@@ -191,8 +191,7 @@ void ape_dns_init(acetables *g_ape)
 {
 	int sock = dns_init(NULL, 1);
 
-	g_ape->co[sock] = xmalloc(sizeof(*g_ape->co[sock]));
-	memset(g_ape->co[sock], 0, sizeof(*g_ape->co[sock]));
+	prepare_ape_socket (sock, g_ape);
 	
 	g_ape->co[sock]->fd = sock;
 	g_ape->co[sock]->stream_type = STREAM_DELEGATE;

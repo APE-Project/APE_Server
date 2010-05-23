@@ -2509,13 +2509,11 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	MYSAC *my;
 	int fd;
 	struct _ape_mysql_data *myhandle;
-	ape_socket *co;
 	
 	if (!JS_ConvertArguments(cx, argc, argv, "ssss", &host, &login, &pass, &db)) {
 		return JS_TRUE;
 	}
 	
-	co = g_ape->co;
 	myhandle = xmalloc(sizeof(*myhandle));
 
 	my = mysac_new(1024*1024);
@@ -2535,27 +2533,15 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	JS_SetPrivate(cx, obj, myhandle);
 	
 	fd = mysac_get_fd(my);
-	
-	co[fd].buffer_in.data = NULL;
-	co[fd].buffer_in.size = 0;
-	co[fd].buffer_in.length = 0;
 
-	co[fd].attach = NULL;
-	co[fd].idle = 0;
-	co[fd].burn_after_writing = 0;
-	co[fd].fd = fd;
+	prepare_ape_socket (fd, g_ape);
 
-	co[fd].stream_type = STREAM_DELEGATE;
+	g_ape->co[fd]->fd = fd;
+	g_ape->co[fd]->stream_type = STREAM_DELEGATE;
 
-	co[fd].callbacks.on_accept = NULL;
-	co[fd].callbacks.on_connect = NULL;
-	co[fd].callbacks.on_disconnect = NULL;
-	co[fd].callbacks.on_read_lf = NULL;
-	co[fd].callbacks.on_data_completly_sent = NULL;
-
-	co[fd].callbacks.on_read = ape_mysql_io_read;
-	co[fd].callbacks.on_write = ape_mysql_io_write;
-	co[fd].data = myhandle;
+	g_ape->co[fd]->callbacks.on_read = ape_mysql_io_read;
+	g_ape->co[fd]->callbacks.on_write = ape_mysql_io_write;
+	g_ape->co[fd]->data = myhandle;
 
 	events_add(g_ape->events, fd, EVENT_READ|EVENT_WRITE);
 	

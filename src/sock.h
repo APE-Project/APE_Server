@@ -58,6 +58,7 @@ struct _ape_sock_connect_async
 ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape);
 ape_socket *ape_connect(char *ip, int port, acetables *g_ape);
 void ape_connect_name(char *name, int port, ape_socket *pattern, acetables *g_ape);
+void prepare_ape_socket(int fd, acetables *g_ape);
 void setnonblocking(int fd);
 int sendf(int sock, acetables *g_ape, char *buf, ...);
 int sendbin(int sock, const char *bin, unsigned int len, unsigned int burn_after_writing, acetables *g_ape);

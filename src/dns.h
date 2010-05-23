@@ -23,6 +23,7 @@
 #define _DNS_H
 
 #include "main.h"
+#include "sock.h"
 #include <udns.h>
 
 struct query {

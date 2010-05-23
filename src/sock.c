@@ -94,13 +94,7 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 	
 	setnonblocking(sock);
 
-	while (sock + 4 >= g_ape->basemem) {
-		/* Increase connection & events size */
-		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
-	}
-	
-	g_ape->co[sock] = xmalloc(sizeof(*g_ape->co[sock]));
-	memset(g_ape->co[sock], 0, sizeof(*g_ape->co[sock]));
+	prepare_ape_socket (sock, g_ape);
 
 	g_ape->co[sock]->fd = sock;
 	g_ape->co[sock]->state = STREAM_ONLINE;
@@ -133,13 +127,7 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 		return NULL;
 	}
 
-	while (sock + 4 >= g_ape->basemem) {
-		/* Increase connection & events size */
-		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
-	}
-
-	g_ape->co[sock] = xmalloc(sizeof(*g_ape->co[sock]));
-	memset(g_ape->co[sock], 0, sizeof(*g_ape->co[sock]));
+	prepare_ape_socket (sock, g_ape);
 	
 	g_ape->co[sock]->buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
 	g_ape->co[sock]->buffer_in.size = DEFAULT_BUFFER_SIZE;
@@ -204,6 +192,7 @@ void setnonblocking(int fd)
 	fcntl(fd, F_SETFL, old_flags);	
 }
 
+/* Close socket but preserve ape_socket struct */
 void close_socket(int fd, acetables *g_ape)
 {
 	ape_socket *co = g_ape->co[fd];
@@ -223,10 +212,22 @@ void close_socket(int fd, acetables *g_ape)
 		parser_destroy(&co->parser);
 	}
 
-	free(co);
-	g_ape->co[fd] = NULL;
-
 	close(fd);
+}
+
+/* Create socket struct if not exists */
+void prepare_ape_socket(int fd, acetables *g_ape)
+{
+	while (fd >= g_ape->basemem) {
+		/* Increase connection & events size */
+		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
+	}
+	
+	if (g_ape->co[fd] == NULL) {
+		g_ape->co[fd] = xmalloc(sizeof(*g_ape->co[fd]));
+	}
+	
+	memset(g_ape->co[fd], 0, sizeof(*g_ape->co[fd]));
 }
 
 #if 0
@@ -301,13 +302,7 @@ unsigned int sockroutine(acetables *g_ape)
 							break;
 						}
 						
-						while (new_fd + 4 >= g_ape->basemem) {
-							/* Increase connection & events size */
-							growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
-						}
-
-						g_ape->co[new_fd] = xmalloc(sizeof(*g_ape->co[new_fd]));
-						memset(g_ape->co[new_fd], 0, sizeof(*g_ape->co[new_fd]));
+						prepare_ape_socket (new_fd, g_ape);
 	
 						strncpy(g_ape->co[new_fd]->ip_client, inet_ntoa(their_addr.sin_addr), 16);
 						
