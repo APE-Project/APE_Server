@@ -189,34 +189,18 @@ static void ape_dns_timeout(void *params, int *last)
 
 void ape_dns_init(acetables *g_ape)
 {
-	int dns_fd;
-	
-	ape_socket *co = g_ape->co;
-	
-	dns_fd = dns_init(NULL, 1);
-	
-	co[dns_fd].buffer_in.data = NULL;
-	co[dns_fd].buffer_in.size = 0;
-	co[dns_fd].buffer_in.length = 0;
+	int sock = dns_init(NULL, 1);
 
-	co[dns_fd].attach = NULL;
-	co[dns_fd].idle = 0;
-	co[dns_fd].burn_after_writing = 0;
-	co[dns_fd].fd = dns_fd;
-
-	co[dns_fd].stream_type = STREAM_DELEGATE;
-
-	co[dns_fd].callbacks.on_accept = NULL;
-	co[dns_fd].callbacks.on_connect = NULL;
-	co[dns_fd].callbacks.on_disconnect = NULL;
-	co[dns_fd].callbacks.on_read_lf = NULL;
-	co[dns_fd].callbacks.on_data_completly_sent = NULL;
+	g_ape->co[sock] = xmalloc(sizeof(*g_ape->co[sock]));
+	memset(g_ape->co[sock], 0, sizeof(*g_ape->co[sock]));
 	
-	co[dns_fd].callbacks.on_read = ape_dns_read;
-	co[dns_fd].callbacks.on_write = ape_dns_write;
+	g_ape->co[sock]->fd = sock;
+	g_ape->co[sock]->stream_type = STREAM_DELEGATE;
 
-	events_add(g_ape->events, dns_fd, EVENT_READ|EVENT_WRITE);
+	g_ape->co[sock]->callbacks.on_read = ape_dns_read;
+	g_ape->co[sock]->callbacks.on_write = ape_dns_write;
+
+	events_add(g_ape->events, sock, EVENT_READ|EVENT_WRITE);
 
 	add_periodical(50, 0, ape_dns_timeout, NULL, g_ape);
-
 }

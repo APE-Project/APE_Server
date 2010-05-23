@@ -43,19 +43,15 @@
 static int sendqueue(int sock, acetables *g_ape);
 
 
-static void growup(int *basemem, ape_socket **conn_list, struct _fdevent *ev, struct _socks_bufout **bufout)
+static void growup(int *basemem, ape_socket ***conn_ptr, struct _fdevent *ev, struct _socks_bufout **bufout)
 {
 	*basemem *= 2;
 	
 	events_growup(ev);
 	
-	*conn_list = xrealloc(*conn_list, 
-			sizeof(ape_socket) * (*basemem));
+	*conn_ptr = xrealloc(*conn_ptr,	sizeof(ape_socket) * (*basemem));
 	
-	//memset(*conn_list, 0, sizeof(ape_socket) * *basemem);
-	
-	*bufout = xrealloc(*bufout, 
-			sizeof(struct _socks_bufout) * (*basemem));
+	*bufout = xrealloc(*bufout, sizeof(struct _socks_bufout) * (*basemem));
 }
 
 ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
@@ -63,7 +59,6 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 	int sock;
 	struct sockaddr_in addr;
 	int reuse_addr = 1;
-	ape_socket *co = g_ape->co;
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
@@ -98,42 +93,28 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 	}
 	
 	setnonblocking(sock);
-	if (sock + 4 >= g_ape->basemem) {
+
+	while (sock + 4 >= g_ape->basemem) {
 		/* Increase connection & events size */
 		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
-		co = g_ape->co;
 	}
 	
-	co[sock].buffer_in.data = NULL;
-	co[sock].buffer_in.size = 0;
-	co[sock].buffer_in.length = 0;
+	g_ape->co[sock] = xmalloc(sizeof(*g_ape->co[sock]));
+	memset(g_ape->co[sock], 0, sizeof(*g_ape->co[sock]));
 
-	co[sock].attach = NULL;
-	co[sock].idle = 0;
-	co[sock].burn_after_writing = 0;
-	co[sock].fd = sock;
-	
-	co[sock].stream_type = STREAM_SERVER;
-	co[sock].state = STREAM_ONLINE;
-	
-	co[sock].callbacks.on_accept = NULL;
-	co[sock].callbacks.on_connect = NULL;
-	co[sock].callbacks.on_disconnect = NULL;
-	co[sock].callbacks.on_read = NULL;
-	co[sock].callbacks.on_read_lf = NULL;
-	co[sock].callbacks.on_data_completly_sent = NULL;
-	co[sock].callbacks.on_write = NULL;
+	g_ape->co[sock]->fd = sock;
+	g_ape->co[sock]->state = STREAM_ONLINE;
+	g_ape->co[sock]->stream_type = STREAM_SERVER;
 	
 	events_add(g_ape->events, sock, EVENT_READ);
 	
-	return &co[sock];
+	return g_ape->co[sock];
 }
 
 ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 {
 	int sock, ret;
 	struct sockaddr_in addr;
-	ape_socket *co = g_ape->co;
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
@@ -152,44 +133,29 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 		return NULL;
 	}
 
-	if (sock + 4 >= g_ape->basemem) {
+	while (sock + 4 >= g_ape->basemem) {
 		/* Increase connection & events size */
 		growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
-		co = g_ape->co;
 	}
 
-	ret = events_add(g_ape->events, sock, EVENT_READ|EVENT_WRITE);
+	g_ape->co[sock] = xmalloc(sizeof(*g_ape->co[sock]));
+	memset(g_ape->co[sock], 0, sizeof(*g_ape->co[sock]));
 	
-	co[sock].buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
-	co[sock].buffer_in.size = DEFAULT_BUFFER_SIZE;
-	co[sock].buffer_in.length = 0;
+	g_ape->co[sock]->buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
+	g_ape->co[sock]->buffer_in.size = DEFAULT_BUFFER_SIZE;
 
-	co[sock].buffer_in.slot = NULL;
-	co[sock].buffer_in.islot = 0;
-
-	co[sock].attach = NULL;
-	co[sock].idle = 0;
-	co[sock].burn_after_writing = 0;
-	co[sock].fd = sock;
+	g_ape->co[sock]->fd = sock;
+	g_ape->co[sock]->state = STREAM_PROGRESS;
+	g_ape->co[sock]->stream_type = STREAM_OUT;
 	
-	co[sock].stream_type = STREAM_OUT;
-	co[sock].state = STREAM_PROGRESS;
-	
-	co[sock].callbacks.on_accept = NULL;
-	co[sock].callbacks.on_connect = NULL;
-	co[sock].callbacks.on_disconnect = NULL;
-	co[sock].callbacks.on_read = NULL;
-	co[sock].callbacks.on_read_lf = NULL;
-	co[sock].callbacks.on_data_completly_sent = NULL;
-	co[sock].callbacks.on_write = NULL;		
-
 	g_ape->bufout[sock].fd = sock;
 	g_ape->bufout[sock].buf = NULL;
 	g_ape->bufout[sock].buflen = 0;
 	g_ape->bufout[sock].allocsize = 0;
 
+	ret = events_add(g_ape->events, sock, EVENT_READ|EVENT_WRITE);
 	
-	return &co[sock];	
+	return g_ape->co[sock];	
 }
 
 static void ape_connect_name_cb(char *ip, void *data, acetables *g_ape)
@@ -238,24 +204,29 @@ void setnonblocking(int fd)
 	fcntl(fd, F_SETFL, old_flags);	
 }
 
-static void clear_buffer(ape_socket *co, int *tfd)
+void close_socket(int fd, acetables *g_ape)
 {
-	free(co->buffer_in.data);
-	co->buffer_in.size = 0;
-	co->buffer_in.length = 0;
-	co->buffer_in.data = NULL;
-	co->buffer_in.slot = NULL;
-	co->buffer_in.islot = 0;
-	
-	co->ip_client[0] = '\0';
+	ape_socket *co = g_ape->co[fd];
 
-	parser_destroy(&co->parser);
-	
-	co->attach = NULL;
-	co->data = NULL;
-	co->burn_after_writing = 0;
-	
-	(*tfd)--;
+	if (g_ape->bufout[fd].buf != NULL) {
+		free(g_ape->bufout[fd].buf);
+		g_ape->bufout[fd].buflen = 0;
+		g_ape->bufout[fd].buf = NULL;
+		g_ape->bufout[fd].allocsize = 0;
+	}
+
+	if (co->buffer_in.data != NULL) {
+		free(co->buffer_in.data);
+	}
+
+	if (co->parser.data != NULL) {
+		parser_destroy(&co->parser);
+	}
+
+	free(co);
+	g_ape->co[fd] = NULL;
+
+	close(fd);
 }
 
 #if 0
@@ -309,20 +280,12 @@ unsigned int sockroutine(acetables *g_ape)
 
 				int active_fd = events_get_current_fd(g_ape->events, i);
 				
-				if (g_ape->co[active_fd].stream_type == STREAM_SERVER) {
+				if (g_ape->co[active_fd]->stream_type == STREAM_SERVER) {
 					int bitev = events_revent(g_ape->events, i);
 					
 					if (!(bitev & EVENT_READ)) {
-					
-						if (g_ape->bufout[active_fd].buf != NULL) {
-							free(g_ape->bufout[active_fd].buf);
-							g_ape->bufout[active_fd].buflen = 0;
-							g_ape->bufout[active_fd].buf = NULL;
-							g_ape->bufout[active_fd].allocsize = 0;
-						}
-						
-						close(active_fd);
-
+						/* Close server socket */
+						close_socket(active_fd, g_ape);
 						continue;
 					}
 					
@@ -338,41 +301,37 @@ unsigned int sockroutine(acetables *g_ape)
 							break;
 						}
 						
-						if (new_fd + 4 >= g_ape->basemem) {
+						while (new_fd + 4 >= g_ape->basemem) {
 							/* Increase connection & events size */
 							growup(&g_ape->basemem, &g_ape->co, g_ape->events, &g_ape->bufout);
 						}
 
-						strncpy(g_ape->co[new_fd].ip_client, inet_ntoa(their_addr.sin_addr), 16);
+						g_ape->co[new_fd] = xmalloc(sizeof(*g_ape->co[new_fd]));
+						memset(g_ape->co[new_fd], 0, sizeof(*g_ape->co[new_fd]));
+	
+						strncpy(g_ape->co[new_fd]->ip_client, inet_ntoa(their_addr.sin_addr), 16);
 						
-						g_ape->co[new_fd].buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
-						g_ape->co[new_fd].buffer_in.size = DEFAULT_BUFFER_SIZE;
-						g_ape->co[new_fd].buffer_in.length = 0;
-						g_ape->co[new_fd].buffer_in.slot = NULL;
-						g_ape->co[new_fd].buffer_in.islot = 0;
+						g_ape->co[new_fd]->buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
+						g_ape->co[new_fd]->buffer_in.size = DEFAULT_BUFFER_SIZE;
 
-						//g_ape->co[new_fd].http = http;
-						g_ape->co[new_fd].attach = NULL;
-						g_ape->co[new_fd].data = NULL;
-						g_ape->co[new_fd].idle = time(NULL);
-						g_ape->co[new_fd].burn_after_writing = 0;
-						g_ape->co[new_fd].fd = new_fd;
+						g_ape->co[new_fd]->idle = time(NULL);
+						g_ape->co[new_fd]->fd = new_fd;
 
-						g_ape->co[new_fd].stream_type = STREAM_IN;
-						g_ape->co[new_fd].state = STREAM_ONLINE;
+						g_ape->co[new_fd]->state = STREAM_ONLINE;
+						g_ape->co[new_fd]->stream_type = STREAM_IN;
 					
 						g_ape->bufout[new_fd].fd = new_fd;
 						g_ape->bufout[new_fd].buf = NULL;
 						g_ape->bufout[new_fd].buflen = 0;
 						g_ape->bufout[new_fd].allocsize = 0;
 						
-						g_ape->co[new_fd].callbacks.on_disconnect = g_ape->co[active_fd].callbacks.on_disconnect;
-						g_ape->co[new_fd].callbacks.on_read = g_ape->co[active_fd].callbacks.on_read;
-						g_ape->co[new_fd].callbacks.on_read_lf = g_ape->co[active_fd].callbacks.on_read_lf;
-						g_ape->co[new_fd].callbacks.on_data_completly_sent = g_ape->co[active_fd].callbacks.on_data_completly_sent;
-						g_ape->co[new_fd].callbacks.on_write = g_ape->co[active_fd].callbacks.on_write;
+						g_ape->co[new_fd]->callbacks.on_disconnect = g_ape->co[active_fd]->callbacks.on_disconnect;
+						g_ape->co[new_fd]->callbacks.on_read = g_ape->co[active_fd]->callbacks.on_read;
+						g_ape->co[new_fd]->callbacks.on_read_lf = g_ape->co[active_fd]->callbacks.on_read_lf;
+						g_ape->co[new_fd]->callbacks.on_data_completly_sent = g_ape->co[active_fd]->callbacks.on_data_completly_sent;
+						g_ape->co[new_fd]->callbacks.on_write = g_ape->co[active_fd]->callbacks.on_write;
 						
-						g_ape->co[new_fd].attach = g_ape->co[active_fd].attach;
+						g_ape->co[new_fd]->attach = g_ape->co[active_fd]->attach;
 						
 						setnonblocking(new_fd);
 						
@@ -380,8 +339,8 @@ unsigned int sockroutine(acetables *g_ape)
 						
 						tfd++;
 						
-						if (g_ape->co[active_fd].callbacks.on_accept != NULL) {
-							g_ape->co[active_fd].callbacks.on_accept(&g_ape->co[new_fd], g_ape);
+						if (g_ape->co[active_fd]->callbacks.on_accept != NULL) {
+							g_ape->co[active_fd]->callbacks.on_accept(g_ape->co[new_fd], g_ape);
 						}
 					
 					}
@@ -392,7 +351,7 @@ unsigned int sockroutine(acetables *g_ape)
 						
 					if (bitev & EVENT_WRITE) {
 
-						if (g_ape->co[active_fd].stream_type == STREAM_OUT && g_ape->co[active_fd].state == STREAM_PROGRESS) {
+						if (g_ape->co[active_fd]->stream_type == STREAM_OUT && g_ape->co[active_fd]->state == STREAM_PROGRESS) {
 							
 							int serror = 0, ret;
 							socklen_t serror_len = sizeof(serror);
@@ -401,45 +360,46 @@ unsigned int sockroutine(acetables *g_ape)
 							
 							if (ret == 0 && serror == 0) {
 
-								g_ape->co[active_fd].state = STREAM_ONLINE;
-								if (g_ape->co[active_fd].callbacks.on_connect != NULL) {
+								g_ape->co[active_fd]->state = STREAM_ONLINE;
+								if (g_ape->co[active_fd]->callbacks.on_connect != NULL) {
 
-									g_ape->co[active_fd].callbacks.on_connect(&g_ape->co[active_fd], g_ape);
+									g_ape->co[active_fd]->callbacks.on_connect(g_ape->co[active_fd], g_ape);
 								}
 							} else { /* This can happen ? epoll seems set EPOLLIN as if the host is disconnecting */
 
-								if (g_ape->co[active_fd].callbacks.on_disconnect != NULL) {
-									g_ape->co[active_fd].callbacks.on_disconnect(&g_ape->co[active_fd], g_ape);
+								if (g_ape->co[active_fd]->callbacks.on_disconnect != NULL) {
+									g_ape->co[active_fd]->callbacks.on_disconnect(g_ape->co[active_fd], g_ape);
 								}
-								clear_buffer(&g_ape->co[active_fd], &tfd);
-								close(active_fd);
+
+								close_socket(active_fd, g_ape);
+								tfd--;
 							}							
 						} else if (g_ape->bufout[active_fd].buf != NULL) {
 
 							if (sendqueue(active_fd, g_ape) == 1) {
 								
-								if (g_ape->co[active_fd].callbacks.on_data_completly_sent != NULL) {
-									g_ape->co[active_fd].callbacks.on_data_completly_sent(&g_ape->co[active_fd], g_ape);
+								if (g_ape->co[active_fd]->callbacks.on_data_completly_sent != NULL) {
+									g_ape->co[active_fd]->callbacks.on_data_completly_sent(g_ape->co[active_fd], g_ape);
 								}
 								
-								if (g_ape->co[active_fd].burn_after_writing) {
+								if (g_ape->co[active_fd]->burn_after_writing) {
 									shutdown(active_fd, 2);
-									g_ape->co[active_fd].burn_after_writing = 0;
+									g_ape->co[active_fd]->burn_after_writing = 0;
 								}
 
 							}
-						} else if (g_ape->co[active_fd].stream_type == STREAM_DELEGATE) {
-							if (g_ape->co[active_fd].callbacks.on_write != NULL) {
-								g_ape->co[active_fd].callbacks.on_write(&g_ape->co[active_fd], g_ape);
+						} else if (g_ape->co[active_fd]->stream_type == STREAM_DELEGATE) {
+							if (g_ape->co[active_fd]->callbacks.on_write != NULL) {
+								g_ape->co[active_fd]->callbacks.on_write(g_ape->co[active_fd], g_ape);
 
 							}							
 						}
 					}
 
 					if (bitev & EVENT_READ) {
-						if (g_ape->co[active_fd].stream_type == STREAM_DELEGATE) {
-							if (g_ape->co[active_fd].callbacks.on_read != NULL) {
-								g_ape->co[active_fd].callbacks.on_read(&g_ape->co[active_fd], NULL, 0, g_ape);
+						if (g_ape->co[active_fd]->stream_type == STREAM_DELEGATE) {
+							if (g_ape->co[active_fd]->callbacks.on_read != NULL) {
+								g_ape->co[active_fd]->callbacks.on_read(g_ape->co[active_fd], NULL, 0, g_ape);
 								continue;
 							}							
 						}
@@ -449,13 +409,13 @@ unsigned int sockroutine(acetables *g_ape)
 								Huge data may attempt to increase third parameter
 							*/
 							readb = read(active_fd, 
-										g_ape->co[active_fd].buffer_in.data + g_ape->co[active_fd].buffer_in.length, 
-										g_ape->co[active_fd].buffer_in.size - g_ape->co[active_fd].buffer_in.length);
+										g_ape->co[active_fd]->buffer_in.data + g_ape->co[active_fd]->buffer_in.length, 
+										g_ape->co[active_fd]->buffer_in.size - g_ape->co[active_fd]->buffer_in.length);
 						
 						
 							if (readb == -1 && errno == EAGAIN) {
 
-								if (g_ape->co[active_fd].stream_type == STREAM_OUT) {
+								if (g_ape->co[active_fd]->stream_type == STREAM_OUT) {
 									
 										//proxy_process_eol(&co[active_fd], g_ape);
 										//co[active_fd].buffer_in.length = 0;
@@ -466,56 +426,48 @@ unsigned int sockroutine(acetables *g_ape)
 							} else {
 								if (readb < 1) {
 
-									if (g_ape->co[active_fd].callbacks.on_disconnect != NULL) {
-										g_ape->co[active_fd].callbacks.on_disconnect(&g_ape->co[active_fd], g_ape);
+									if (g_ape->co[active_fd]->callbacks.on_disconnect != NULL) {
+										g_ape->co[active_fd]->callbacks.on_disconnect(g_ape->co[active_fd], g_ape);
 									}
 									
-									clear_buffer(&g_ape->co[active_fd], &tfd);
-								
-									if (g_ape->bufout[active_fd].buf != NULL) {
-										free(g_ape->bufout[active_fd].buf);
-										g_ape->bufout[active_fd].buflen = 0;
-										g_ape->bufout[active_fd].buf = NULL;
-										g_ape->bufout[active_fd].allocsize = 0;
-									}
-									
-									close(active_fd);
+									close_socket(active_fd, g_ape);
+									tfd--;
 									
 									break;
 								} else {
 									
-									g_ape->co[active_fd].buffer_in.length += readb;
+									g_ape->co[active_fd]->buffer_in.length += readb;
 									
 									/* realloc the buffer for the next read (x2) */
-									if (g_ape->co[active_fd].buffer_in.length == g_ape->co[active_fd].buffer_in.size) {
-										g_ape->co[active_fd].buffer_in.size *= 2;
+									if (g_ape->co[active_fd]->buffer_in.length == g_ape->co[active_fd]->buffer_in.size) {
+										g_ape->co[active_fd]->buffer_in.size *= 2;
 
-										g_ape->co[active_fd].buffer_in.data = xrealloc(g_ape->co[active_fd].buffer_in.data, 
-																sizeof(char) * (g_ape->co[active_fd].buffer_in.size + 1));
+										g_ape->co[active_fd]->buffer_in.data = xrealloc(g_ape->co[active_fd]->buffer_in.data, 
+																sizeof(char) * (g_ape->co[active_fd]->buffer_in.size + 1));
 
 									}
-									if (g_ape->co[active_fd].callbacks.on_read_lf != NULL) {
-										int eol, len = g_ape->co[active_fd].buffer_in.length;
-										char *pBuf = g_ape->co[active_fd].buffer_in.data;
+									if (g_ape->co[active_fd]->callbacks.on_read_lf != NULL) {
+										int eol, len = g_ape->co[active_fd]->buffer_in.length;
+										char *pBuf = g_ape->co[active_fd]->buffer_in.data;
 
 										while ((eol = sneof(pBuf, len, 4096)) != -1) {
 											pBuf[eol-1] = '\0';
-											g_ape->co[active_fd].callbacks.on_read_lf(&g_ape->co[active_fd], pBuf, g_ape);
+											g_ape->co[active_fd]->callbacks.on_read_lf(g_ape->co[active_fd], pBuf, g_ape);
 											pBuf = &pBuf[eol];
 											len -= eol;
 										}
 										if (len > 4096 || !len) {
-											g_ape->co[active_fd].buffer_in.length = 0;
+											g_ape->co[active_fd]->buffer_in.length = 0;
 										} else if (len) {
-											memmove(g_ape->co[active_fd].buffer_in.data, &g_ape->co[active_fd].buffer_in.data[g_ape->co[active_fd].buffer_in.length - len], len);
-											g_ape->co[active_fd].buffer_in.length = len;
+											memmove(g_ape->co[active_fd]->buffer_in.data, &g_ape->co[active_fd]->buffer_in.data[g_ape->co[active_fd]->buffer_in.length - len], len);
+											g_ape->co[active_fd]->buffer_in.length = len;
 										}
 
 									}
 									
 									/* on_read can't get along with on_read_lf */
-									if (g_ape->co[active_fd].callbacks.on_read != NULL && g_ape->co[active_fd].callbacks.on_read_lf == NULL) {
-										g_ape->co[active_fd].callbacks.on_read(&g_ape->co[active_fd], &g_ape->co[active_fd].buffer_in, g_ape->co[active_fd].buffer_in.length - readb, g_ape);
+									if (g_ape->co[active_fd]->callbacks.on_read != NULL && g_ape->co[active_fd]->callbacks.on_read_lf == NULL) {
+										g_ape->co[active_fd]->callbacks.on_read(g_ape->co[active_fd], &g_ape->co[active_fd]->buffer_in, g_ape->co[active_fd]->buffer_in.length - readb, g_ape);
 									}
 								} 
 							}
@@ -629,7 +581,7 @@ int sendbin(int sock, const char *bin, unsigned int len, unsigned int burn_after
 					memcpy(g_ape->bufout[sock].buf + (g_ape->bufout[sock].buflen - r_bytes), bin + t_bytes, r_bytes);
 					
 					if (burn_after_writing) {
-						g_ape->co[sock].burn_after_writing = 1;
+						g_ape->co[sock]->burn_after_writing = 1;
 					}
 					
 					return 0;
@@ -654,6 +606,6 @@ void safe_shutdown(int sock, acetables *g_ape)
 	if (g_ape->bufout[sock].buf == NULL) {
 		shutdown(sock, 2);
 	} else {
-		g_ape->co[sock].burn_after_writing = 1;
+		g_ape->co[sock]->burn_after_writing = 1;
 	}
 }

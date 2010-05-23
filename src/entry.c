@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 	close(random);
 
 	g_ape = xmalloc(sizeof(*g_ape));
-	g_ape->basemem = 256000;
+	g_ape->basemem = 1; // set 1 for testing if growup works
 	g_ape->srv = srv;
 	g_ape->confs_path = confs_path;
 	g_ape->is_daemon = 0;

@@ -169,7 +169,7 @@ typedef struct _acetables
 	struct _socks_bufout *bufout;
 	struct _ace_plugins *plugins;
 	struct _fdevent *events;
-	struct _ape_socket *co;
+	struct _ape_socket **co;
 	struct _extend *properties;
 	
 	const char *confs_path;
@@ -205,7 +205,6 @@ struct _ape_socket {
 	ape_parser parser;
 
 	ape_buffer buffer_in;
-	ape_buffer buffer_out;
 
 	char ip_client[16];
 	long int idle;
