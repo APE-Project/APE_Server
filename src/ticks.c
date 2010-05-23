@@ -33,12 +33,14 @@ inline void process_tick(acetables *g_ape)
 	while (timers != NULL && --timers->delta <= 0) {
 		int lastcall = (timers->times > 0 && --timers->times == 0);
 		void (*func_timer)(void *param, int *) = timers->func;
+		
 		func_timer(timers->params, &lastcall);
 
 		g_ape->timers.timers = timers->next;
 
 		if (!lastcall) {
 			struct _ticks_callback *new_timer = add_timeout(timers->ticks_need, timers->func, timers->params, g_ape);
+			
 			g_ape->timers.ntimers--;
 			new_timer->identifier = timers->identifier;
 			new_timer->times = timers->times;
@@ -46,8 +48,9 @@ inline void process_tick(acetables *g_ape)
 
 		free(timers);
 
-		if ((timers = g_ape->timers.timers) != NULL)
+		if ((timers = g_ape->timers.timers) != NULL) {
 			timers->delta++;
+		}
 	}
 }
 
@@ -80,10 +83,11 @@ struct _ticks_callback *add_timeout(unsigned int msec, void *callback, void *par
 		timers = timers->next;
 	}
 
-	if (prev != NULL)
+	if (prev != NULL) {
 		prev->next = new_timer;
-	else
+	} else {
 		g_ape->timers.timers = new_timer;
+	}
 	
 	g_ape->timers.ntimers++;
 
@@ -123,10 +127,11 @@ void del_timer_identifier(unsigned int identifier, acetables *g_ape)
 	
 	while (timers != NULL) {
 		if (timers->identifier == identifier) {
-			if (prev != NULL)
+			if (prev != NULL) {
 				prev->next = timers->next;
-			else
+			} else {
 				g_ape->timers.timers = timers->next;
+			}
 
 			free(timers);
 			break;
