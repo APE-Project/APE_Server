@@ -295,7 +295,7 @@ unsigned int sockroutine(acetables *g_ape)
 	gettimeofday(&t_start, NULL);
 	while (server_is_running) {
 		/* Linux 2.6.25 provides a fd-driven timer system. It could be usefull to implement */
-		int timeout_to_hang = get_first_timer_ms (g_ape);
+		int timeout_to_hang = get_first_timer_ms(g_ape);
 		nfds = events_poll(g_ape->events, timeout_to_hang);
 		
 		if (nfds < 0) {

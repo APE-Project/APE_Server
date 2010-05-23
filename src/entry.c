@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 		}
 		
 		/* Set uid when uid section exists */
-		if (ape_config_get_section (srv, "uid")) {
+		if (ape_config_get_section(srv, "uid")) {
 
 			/* Get the user information (uid section) */
 			if ((pwd = getpwnam(CONFIG_VAL(uid, user, srv))) == NULL) {
