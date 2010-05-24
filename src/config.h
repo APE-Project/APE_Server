@@ -26,14 +26,14 @@
 #define APE_CONFIG_FILE "ape.conf"
 
 
-struct _apeconfig_def {
+typedef struct _apeconfig_def {
 	char *val;
 	struct _apeconfig_def *next;
 	char key[33];
-};
+} apeconfig_def;
 
 typedef struct apeconfig {
-	struct _apeconfig_def *def;
+	apeconfig_def *def;
 	struct apeconfig *next;
 	char section[33];
 } apeconfig;
@@ -42,6 +42,7 @@ typedef struct apeconfig {
 apeconfig *ape_config_load(const char *filename);
 char *ape_config_get_key(apeconfig *conf, const char *key);
 apeconfig *ape_config_get_section(apeconfig *conf, const char *section);
+void ape_config_free(apeconfig *conf);
 
 #define CONFIG_VAL(section, key, srv) \
 	(ape_config_get_key(ape_config_get_section(srv, #section), #key) == NULL ? "" : ape_config_get_key(ape_config_get_section(srv, #section), #key))

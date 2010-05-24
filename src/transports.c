@@ -126,3 +126,17 @@ void transport_start(acetables *g_ape)
 	g_ape->transports.websocket.properties.padding.right.len = 1;	
 	
 }
+
+void transport_free(acetables *g_ape)
+{
+	free(g_ape->transports.websocket.properties.padding.right.val);
+	free(g_ape->transports.websocket.properties.padding.left.val);
+	free(g_ape->transports.sse.properties.padding.right.val);
+	free(g_ape->transports.sse.properties.padding.left.val);
+	free(g_ape->transports.xhrstreaming.properties.padding.right.val);
+
+	if (g_ape->transports.jsonp.properties.padding.left.val != NULL) {
+		free(g_ape->transports.jsonp.properties.padding.left.val);
+		free(g_ape->transports.jsonp.properties.padding.right.val);
+	}
+}

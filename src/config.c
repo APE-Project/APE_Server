@@ -152,3 +152,21 @@ apeconfig *ape_config_load(const char *filename)
 	return conf;
 }
 
+void ape_config_free(apeconfig *conf)
+{
+	apeconfig *tmp_s;
+	apeconfig_def *tmp_d;
+
+	while (conf != NULL) {
+		while (conf->def != NULL) {
+			tmp_d = conf->def->next;
+			free(conf->def->val);
+			free(conf->def);
+			conf->def = tmp_d;
+		}
+		tmp_s = conf->next;
+		free(conf);
+		conf = tmp_s;
+	}
+}
+

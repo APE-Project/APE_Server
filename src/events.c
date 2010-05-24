@@ -39,6 +39,13 @@ int events_init(acetables *g_ape, int *basemem)
 	return -1;
 }
 
+void events_free(acetables *g_ape)
+{
+	if (g_ape->events->handler != EVENT_UNKNOWN) {
+		free(g_ape->events->events);
+	}
+}
+
 int events_add(struct _fdevent *ev, int fd, int bitadd)
 {
 	if (ev->add(ev, fd, bitadd) == -1) {

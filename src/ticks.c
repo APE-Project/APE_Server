@@ -155,3 +155,15 @@ int get_first_timer_ms(acetables *g_ape)
 	return -1;
 }
 
+/* Delete all timers and deallocate memory */
+void timers_free(acetables *g_ape)
+{
+	struct _ticks_callback *timers = g_ape->timers.timers;
+	struct _ticks_callback *prev;
+
+	while (timers != NULL) {
+		prev = timers;
+		timers = timers->next;
+		free(prev);
+	}
+}

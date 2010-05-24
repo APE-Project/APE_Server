@@ -40,6 +40,7 @@
 
 /* Events handler */
 typedef enum {
+	EVENT_UNKNOWN,
 	EVENT_EPOLL, 	/* Linux */
 	EVENT_KQUEUE, 	/* BSD */
 	EVENT_DEVPOLL,	/* Solaris */
@@ -72,6 +73,7 @@ struct _fdevent {
 };
 
 int events_init(acetables *g_ape, int *basemem);
+void events_free(acetables *g_ape);
 int events_add(struct _fdevent *ev, int fd, int bitadd);
 int events_poll(struct _fdevent *ev, int timeout_ms);
 int events_get_current_fd(struct _fdevent *ev, int i);

@@ -134,7 +134,6 @@ int main(int argc, char **argv)
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);
-	signal(SIGKILL, &signal_handler);
 	
 	if (VTICKS_RATE < 1) {
 		printf("[ERR] TICKS_RATE cant be less than 1\n");
@@ -158,6 +157,8 @@ int main(int argc, char **argv)
 	
 	ape_log_init(g_ape);
 	
+	fdev.handler = EVENT_UNKNOWN;
+
 	#ifdef USE_EPOLL_HANDLER
 	fdev.handler = EVENT_EPOLL;
 	#endif
@@ -174,7 +175,10 @@ int main(int argc, char **argv)
 	g_ape->timers.timers = NULL;
 	g_ape->timers.ntimers = 0;
 	g_ape->events = &fdev;
-	events_init(g_ape, &g_ape->basemem);
+	if (events_init(g_ape, &g_ape->basemem) == -1) {
+		printf("Fatal error: APE compiled without an event handler... exiting\n");
+		return 0;
+	};
 	
 	serverfd = servers_init(g_ape);
 	
@@ -303,14 +307,34 @@ int main(int argc, char **argv)
 		unlink(pidfile);
 	}
 	
+	free(confs_path);
+
+	timers_free(g_ape);
+
+	events_free(g_ape);
+
+	transport_free(g_ape);
+
 	hashtbl_free(g_ape->hLogin);
 	hashtbl_free(g_ape->hSessid);
 	hashtbl_free(g_ape->hLusers);
+	hashtbl_free(g_ape->hPubid);
 	
 	hashtbl_free(g_ape->hCallback);
 	
+	free(g_ape->bufout);
+
+	ape_config_free(srv);
+
+	int i;
+	for (i = 0; i < g_ape->basemem; i++) {
+		if (g_ape->co[i] != NULL) {
+			free(g_ape->co[i]);
+		}
+	}
+	free(g_ape->co);
+
 	free(g_ape->plugins);
-	//free(srv);
 	free(g_ape);
 	
 	return 0;

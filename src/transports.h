@@ -47,6 +47,7 @@ typedef enum {
 struct _transport_open_same_host_p transport_open_same_host(subuser *sub, ape_socket *client, transport_t transport);
 void transport_data_completly_sent(subuser *sub, transport_t transport);
 void transport_start(acetables *g_ape);
+void transport_free(acetables *g_ape);
 struct _transport_properties *transport_get_properties(transport_t transport, acetables *g_ape);
 
 #endif
