@@ -2973,6 +2973,27 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 }
 
+static void free_module(acetables *g_ape) // Called when module is unloaded
+{
+	// TODO free other allocated objects
+
+	ape_sm_compiled *asc = ASMR->scripts;
+	ape_sm_compiled *prev_asc;
+
+	while (asc != NULL) {
+		free(asc->filename);
+		JS_DestroyContext(asc->cx);
+		prev_asc = asc;
+		asc = asc->next;
+		free(prev_asc);
+	}
+
+	JS_DestroyContext(ASMC);
+	JS_DestroyRuntime(ASMR->runtime);
+
+	free(ASMR);
+}
+
 static USERS *ape_cb_add_user(USERS *allocated, acetables *g_ape)
 {
 	jsval params[1];	
@@ -3168,5 +3189,5 @@ static ace_callbacks callbacks = {
 	ape_cb_delsubuser
 };
 
-APE_INIT_PLUGIN(MODULE_NAME, init_module, callbacks)
+APE_INIT_PLUGIN(MODULE_NAME, init_module, free_module, callbacks)
 

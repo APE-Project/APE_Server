@@ -334,7 +334,8 @@ int main(int argc, char **argv)
 	}
 	free(g_ape->co);
 
-	free(g_ape->plugins);
+	free_all_plugins(g_ape);
+
 	free(g_ape);
 	
 	return 0;

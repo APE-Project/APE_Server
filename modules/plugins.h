@@ -77,13 +77,14 @@ struct _plug_config
 #define APE_PLUGIN_ENTRY_POINT
 #endif
 
-#define APE_INIT_PLUGIN(modname, initfunc, modcallbacks) \
+#define APE_INIT_PLUGIN(modname, initfunc, freefunc, modcallbacks) \
 	APE_PLUGIN_ENTRY_POINT void ape_module_init(ace_plugins *module) \
 	{ \
 		 infos_module.conf = NULL; \
 		 module->cb = &modcallbacks; \
 		 module->infos = &infos_module; \
 		 module->loader = initfunc; \
+		 module->unloader = freefunc; \
 		 module->modulename = modname; \
 	}
 

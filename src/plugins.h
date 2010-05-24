@@ -62,6 +62,7 @@ struct _ace_plugins
 	/* Module Handle */
 	void *hPlug;
 	void (*loader)(acetables *g_ape);
+	void (*unloader)(acetables *g_ape);
 	
 	const char *modulename;
 	
@@ -79,6 +80,7 @@ enum {
 
 ace_plugins *loadplugin(char *file);
 void findandloadplugin(acetables *g_ape);
+void free_all_plugins(acetables *g_ape);
 struct _plug_config *plugin_parse_conf(const char *file);
 void plugin_read_config(ace_plugins *plug, const char *path);
 char *plugin_get_conf(struct _plug_config *conf, char *key);

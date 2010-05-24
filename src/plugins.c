@@ -105,6 +105,20 @@ void findandloadplugin(acetables *g_ape)
 
 }
 
+void free_all_plugins(acetables *g_ape)
+{
+	ace_plugins *prev;
+
+	while (g_ape->plugins != NULL) {
+		g_ape->plugins->unloader(g_ape);
+//		dlclose(g_ape->plugins->hPlug);
+
+		prev = g_ape->plugins;
+		g_ape->plugins = g_ape->plugins->next;
+		free(g_ape->plugins);
+	}
+}
+
 plug_config *plugin_parse_conf(const char *file)
 {
 	char lines[2048], *tkn[2];
