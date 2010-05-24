@@ -38,6 +38,8 @@ static int event_epoll_add(struct _fdevent *ev, int fd, int bitadd)
 		kev.events |= EPOLLOUT;
 	}
 	
+	memset(&kev.data, 0, sizeof(kev.data));
+
 	kev.data.fd = fd;
 		
 	if (epoll_ctl(ev->epoll_fd, EPOLL_CTL_ADD, fd, &kev) == -1) {

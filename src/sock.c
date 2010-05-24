@@ -45,13 +45,16 @@ static int sendqueue(int sock, acetables *g_ape);
 
 static void growup(int *basemem, ape_socket ***conn_ptr, struct _fdevent *ev, struct _socks_bufout **bufout)
 {
+	int old_basemem = *basemem;
 	*basemem *= 2;
 	
 	events_growup(ev);
 	
 	*conn_ptr = xrealloc(*conn_ptr,	sizeof(ape_socket) * (*basemem));
+	memset(&((*conn_ptr)[*basemem - old_basemem]), 0, sizeof(**conn_ptr) * (*basemem - old_basemem));
 	
 	*bufout = xrealloc(*bufout, sizeof(struct _socks_bufout) * (*basemem));
+	memset(&((*bufout)[*basemem - old_basemem]), 0, sizeof(**bufout) * (*basemem - old_basemem));
 }
 
 ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
@@ -94,7 +97,7 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 	
 	setnonblocking(sock);
 
-	prepare_ape_socket (sock, g_ape);
+	prepare_ape_socket(sock, g_ape);
 
 	g_ape->co[sock]->fd = sock;
 	g_ape->co[sock]->state = STREAM_ONLINE;
@@ -127,7 +130,7 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 		return NULL;
 	}
 
-	prepare_ape_socket (sock, g_ape);
+	prepare_ape_socket(sock, g_ape);
 	
 	g_ape->co[sock]->buffer_in.data = xmalloc(sizeof(char) * (DEFAULT_BUFFER_SIZE + 1));
 	g_ape->co[sock]->buffer_in.size = DEFAULT_BUFFER_SIZE;
@@ -302,7 +305,7 @@ unsigned int sockroutine(acetables *g_ape)
 							break;
 						}
 						
-						prepare_ape_socket (new_fd, g_ape);
+						prepare_ape_socket(new_fd, g_ape);
 	
 						strncpy(g_ape->co[new_fd]->ip_client, inet_ntoa(their_addr.sin_addr), 16);
 						
