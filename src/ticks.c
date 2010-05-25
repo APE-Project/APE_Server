@@ -44,6 +44,7 @@ inline void process_tick(acetables *g_ape)
 			g_ape->timers.ntimers--;
 			new_timer->identifier = timers->identifier;
 			new_timer->times = timers->times;
+			new_timer->protect = timers->protect;
 		}
 
 		free(timers);
