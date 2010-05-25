@@ -420,14 +420,14 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 			case JSTYPE_OBJECT:
 				
 				/* hmm "null" is an empty object */
-	            if (JSVAL_TO_OBJECT(vp) == NULL) {
-		            if (!isarray) {
-		                    json_set_property_null(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key));
-		            } else {
-		                    json_set_element_null(ape_json);
-		            }
-		            break;
-	            }			
+				if (JSVAL_TO_OBJECT(vp) == NULL) {
+				    if (!isarray) {
+					    json_set_property_null(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key));
+				    } else {
+					    json_set_element_null(ape_json);
+				    }
+				    break;
+				}			
 				if ((val_obj = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(vp))) != NULL) {
 					if (!isarray) {
 						json_set_property_objN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), val_obj);
@@ -476,6 +476,10 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				break;
 		}
 	}
+	if (!isarray) {
+		JS_DestroyIdArray(cx, enumjson);
+	}
+	
 	return ape_json;
 }
 
