@@ -132,7 +132,7 @@ var Http = new Class({
 					var tmp						= this.response.split("\r\n\r\n");
 					this.responseHeadersLength 	= tmp[0].length;
 					tmp 						= tmp[0].split("\r\n");
-					this.responseHeaders 		= [];
+					this.responseHeaders 		= {};
 					this.responseCode			= tmp[0].split(" ");
 					this.responseCode			= this.responseCode[1].toInt();
 
