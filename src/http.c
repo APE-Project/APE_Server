@@ -28,6 +28,7 @@
 #include "dns.h"
 
 #define HTTP_PREFIX		"http://"
+#define WS_MAGIC_VALUE 0x00003600
 
 struct _http_attach {
 	char host[1024];
@@ -181,7 +182,7 @@ void process_http(ape_socket *co, acetables *g_ape)
 			/* TODO : endieness */
 			switch(*(unsigned int *)data) {
 				case 542393671: /* GET + space */
-					http->type = HTTP_GET;
+					http->type = (*(unsigned int *)&data[4] == (0x202F002F | WS_MAGIC_VALUE) ? HTTP_GET_WS : HTTP_GET); /* hack : check for WebSockets URI (/6/) */
 					p = 4;
 					break;
 				case 1414745936: /* POST */
@@ -237,11 +238,16 @@ void process_http(ape_socket *co, acetables *g_ape)
 					/* Ok, at this point we have a blank line. Ready for GET */
 					buffer->data[http->pos] = '\0';
 					urldecode(http->uri);
-					
 					parser->onready(parser, g_ape);
 					parser->ready = -1;
 					buffer->length = 0;
 					return;
+				} else if (http->type == HTTP_GET_WS) { /* WebSockets handshake needs to read 8 bytes */
+					//urldecode(http->uri);
+					http->contentlength = 8;
+					http->buffer_addr = buffer->data;
+					http->data = &buffer->data[http->pos+(pos)];
+					http->step = 2;
 				} else {
 					/* Content-Length is mandatory in case of POST */
 					if (http->contentlength == 0) {

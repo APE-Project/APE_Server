@@ -29,6 +29,7 @@
 #include "sock.h"
 #include "http.h"
 #include "parser.h"
+#include "md5.h"
 
 static int gettransport(char *input)
 {
@@ -65,6 +66,30 @@ subuser *checkrecv_websocket(ape_socket *co, acetables *g_ape)
 	return user;
 }
 
+/* 
+	WebSockets protocol rev 76 (Opening handshake)
+	http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76 
+*/
+static unsigned int ws_compute_key(const char *value)
+{
+	const char *pValue;
+	long int val = 0;
+	int spaces = 0;
+	
+	for (pValue = value; *pValue != '\0'; pValue++) {
+		if (*pValue >= 48 && *pValue <= 57) {
+			val = (val * 10) + (*pValue-48);
+		} else if (*pValue == ' ') {
+			spaces++;
+		}
+	}
+	if (spaces == 0) {
+		return 0;
+	}
+
+	return val / spaces;
+}
+
 subuser *checkrecv(ape_socket *co, acetables *g_ape)
 {
 	unsigned int op;
@@ -78,22 +103,55 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 	}
 	
 	if (gettransport(http->uri) == TRANSPORT_WEBSOCKET) {
+		int is_rev_76 = 0;
 		char *origin = get_header_line(http->hlines, "Origin");
+		char *key1 = get_header_line(http->hlines, "Sec-WebSocket-Key1");
+		char *key2 = get_header_line(http->hlines, "Sec-WebSocket-Key2");
+		
 		websocket_state *websocket;
+		unsigned char md5sum[16];
+		
 		if (origin == NULL) {
 			shutdown(co->fd, 2);
 			return NULL;
 		}
-		
+
+		if (key1 != NULL && key2 != NULL) {
+			md5_context ctx;
+			
+			long int ckey1 = htonl(ws_compute_key(key1));
+			long int ckey2 = htonl(ws_compute_key(key2));
+			
+			is_rev_76 = 1; /* draft rev 76 detected (used in Firefox 4.0 alpha2) */
+			
+			md5_starts(&ctx);
+			
+			md5_update(&ctx, (uint8 *)&ckey1, 4);
+			md5_update(&ctx, (uint8 *)&ckey2, 4);
+			md5_update(&ctx, (uint8 *)http->data, 8);
+			
+			md5_finish(&ctx, md5sum);
+		}
+
 		PACK_TCP(co->fd);
-		sendbin(co->fd, CONST_STR_LEN(WEBSOCKET_HARDCODED_HEADERS), 0, g_ape);
-		sendbin(co->fd, CONST_STR_LEN("WebSocket-Origin: "), 0, g_ape);
-		sendbin(co->fd, origin, strlen(origin), 0, g_ape);
-		sendbin(co->fd, CONST_STR_LEN("\r\nWebSocket-Location: ws://"), 0, g_ape);
+		
+		if (is_rev_76) {
+			sendbin(co->fd, CONST_STR_LEN(WEBSOCKET_HARDCODED_HEADERS_NEW), 0, g_ape);
+			sendbin(co->fd, CONST_STR_LEN("Sec-WebSocket-Origin: "), 0, g_ape);
+			sendbin(co->fd, origin, strlen(origin), 0, g_ape);
+			sendbin(co->fd, CONST_STR_LEN("\r\nSec-WebSocket-Location: ws://"), 0, g_ape);			
+		} else {
+			sendbin(co->fd, CONST_STR_LEN(WEBSOCKET_HARDCODED_HEADERS_OLD), 0, g_ape);
+			sendbin(co->fd, CONST_STR_LEN("WebSocket-Origin: "), 0, g_ape);
+			sendbin(co->fd, origin, strlen(origin), 0, g_ape);
+			sendbin(co->fd, CONST_STR_LEN("\r\nWebSocket-Location: ws://"), 0, g_ape);			
+		}
 		sendbin(co->fd, http->host, strlen(http->host), 0, g_ape);
 		sendbin(co->fd, http->uri, strlen(http->uri), 0, g_ape);
 		sendbin(co->fd, CONST_STR_LEN("\r\n\r\n"), 0, g_ape);
+		sendbin(co->fd, (char *)md5sum, 16, 0, g_ape);
 		FLUSH_TCP(co->fd);
+		
 		
 		co->parser = parser_init_stream(co);
 		websocket = co->parser.data;

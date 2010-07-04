@@ -57,6 +57,7 @@ struct _http_headers_response
 typedef enum {
 	HTTP_NULL = 0,
 	HTTP_GET,
+	HTTP_GET_WS,
 	HTTP_POST,
 	HTTP_OPTIONS
 } http_method;
