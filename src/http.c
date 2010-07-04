@@ -182,7 +182,7 @@ void process_http(ape_socket *co, acetables *g_ape)
 			/* TODO : endieness */
 			switch(*(unsigned int *)data) {
 				case 542393671: /* GET + space */
-					http->type = (*(unsigned int *)&data[4] == (0x202F002F | WS_MAGIC_VALUE) ? HTTP_GET_WS : HTTP_GET); /* hack : check for WebSockets URI (/6/) */
+					http->type = HTTP_GET;
 					p = 4;
 					break;
 				case 1414745936: /* POST */
@@ -284,6 +284,10 @@ void process_http(ape_socket *co, acetables *g_ape)
 						/* At this time we are ready to read "cl" bytes contents */
 						http->contentlength = cl;
 
+					}
+				} else if (http->type == HTTP_GET) {
+					if (strncasecmp("Sec-WebSocket-Key1: ", data, 20) == 0) {
+						http->type = HTTP_GET_WS;
 					}
 				}
 			}

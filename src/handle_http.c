@@ -149,7 +149,9 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		sendbin(co->fd, http->host, strlen(http->host), 0, g_ape);
 		sendbin(co->fd, http->uri, strlen(http->uri), 0, g_ape);
 		sendbin(co->fd, CONST_STR_LEN("\r\n\r\n"), 0, g_ape);
-		sendbin(co->fd, (char *)md5sum, 16, 0, g_ape);
+		if (is_rev_76) {
+			sendbin(co->fd, (char *)md5sum, 16, 0, g_ape);
+		}
 		FLUSH_TCP(co->fd);
 		
 		
