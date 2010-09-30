@@ -70,10 +70,10 @@ subuser *checkrecv_websocket(ape_socket *co, acetables *g_ape)
 	WebSockets protocol rev 76 (Opening handshake)
 	http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76 
 */
-static unsigned int ws_compute_key(const char *value)
+static long int ws_compute_key(const char *value)
 {
 	const char *pValue;
-	long int val = 0;
+	long long int val = 0;
 	int spaces = 0;
 	
 	for (pValue = value; *pValue != '\0'; pValue++) {
