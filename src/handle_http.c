@@ -70,10 +70,10 @@ subuser *checkrecv_websocket(ape_socket *co, acetables *g_ape)
 	WebSockets protocol rev 76 (Opening handshake)
 	http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76 
 */
-static long int ws_compute_key(const char *value)
+static unsigned long int ws_compute_key(const char *value)
 {
 	const char *pValue;
-	long long int val = 0;
+	unsigned long int val = 0;
 	int spaces = 0;
 	
 	for (pValue = value; *pValue != '\0'; pValue++) {
@@ -119,8 +119,8 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		if (key1 != NULL && key2 != NULL) {
 			md5_context ctx;
 			
-			long int ckey1 = htonl(ws_compute_key(key1));
-			long int ckey2 = htonl(ws_compute_key(key2));
+			unsigned long int ckey1 = htonl(ws_compute_key(key1));
+			unsigned long int ckey2 = htonl(ws_compute_key(key2));
 			
 			is_rev_76 = 1; /* draft rev 76 detected (used in Firefox 4.0 alpha2) */
 			
