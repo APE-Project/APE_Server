@@ -42,6 +42,48 @@ void ape_log_init(acetables *g_ape)
 		if ((g_ape->logs.fd = open(CONFIG_VAL(Log, logfile, g_ape->srv), O_APPEND | O_WRONLY | O_CREAT, 0644)) == -1) {
 			g_ape->logs.fd = STDERR_FILENO;
 		}
+	} else {
+		char *facility = CONFIG_VAL(Log, syslog_facility, g_ape->srv);
+		int facility_num = LOG_LOCAL2;
+
+		/* decode the facility requested in the config file */
+		if (!strncasecmp(facility, "local", 5)) {
+			int local = 0;
+			facility += 5;
+			local = atoi(facility);
+
+			if (!local && !strncmp("0", facility, 1)) {
+				facility_num = LOG_LOCAL0;
+			} else if (local < 8 && local > 0) {
+				facility_num = ((local + 16)<<3);
+			}
+		} else if (!strncasecmp("kern", facility, 4)) {
+			facility_num = LOG_KERN;
+		} else if (!strncasecmp("user", facility, 4)) {
+			facility_num = LOG_USER;
+		} else if (!strncasecmp("mail", facility, 4)) {
+			facility_num = LOG_MAIL;
+		} else if (!strncasecmp("daemon", facility, 6)) {
+			facility_num = LOG_DAEMON;
+		} else if (!strncasecmp("auth", facility, 4)) {
+			facility_num = LOG_AUTH;
+		} else if (!strncasecmp("syslog", facility, 6)) {
+			facility_num = LOG_SYSLOG;
+		} else if (!strncasecmp("lpr", facility, 3)) {
+			facility_num = LOG_LPR;
+		} else if (!strncasecmp("news", facility, 4)) {
+			facility_num = LOG_NEWS;
+		} else if (!strncasecmp("uucp", facility, 4)) {
+			facility_num = LOG_UUCP;
+		} else if (!strncasecmp("cron", facility, 4)) {
+			facility_num = LOG_CRON;
+		} else if (!strncasecmp("authpriv", facility, 8)) {
+			facility_num = LOG_AUTHPRIV;
+		} else if (!strncasecmp("ftp", facility, 3)) {
+			facility_num = LOG_FTP;
+		}
+
+		openlog("APE", LOG_CONS | LOG_PID, facility_num);
 	}
 }
 
@@ -50,31 +92,51 @@ void ape_log(ape_log_lvl_t lvl, const char *file, unsigned long int line, acetab
 	if (lvl == APE_DEBUG && !g_ape->logs.lvl&APE_DEBUG) {
 		return;
 	} else {
-		time_t log_ts;
 		char *buff;
-		char date[32];
-		
-		int len, datelen;
+		int len;
 		va_list val;
-		log_ts = time(NULL);
 		
 		va_start(val, buf);
 		len = vasprintf(&buff, buf, val);
 		va_end(val);
-		
-		datelen = strftime(date, 32, "%Y-%m-%d %H:%M:%S - ", localtime(&log_ts));
-		
-		write(g_ape->logs.fd, date, datelen);
-		if (g_ape->logs.lvl&APE_DEBUG) {
-			char *debug_file;
-			int dlen;
-			dlen = asprintf(&debug_file, "%s:%li - ", file, line);
-			write(g_ape->logs.fd, debug_file, dlen);
-			free(debug_file);
+
+		if (g_ape->logs.use_syslog) {
+			int level = LOG_ERR;
+			switch (lvl) {
+				case APE_DEBUG:
+					level = LOG_DEBUG;
+					break;
+				case APE_WARN:
+					level = LOG_WARNING;
+					break;
+				case APE_ERR:
+					level = LOG_ERR;
+					break;
+				case APE_INFO:
+					level = LOG_INFO;
+					break;
+			}
+			syslog(level, "%s:%li - %s", file, line, buff);
+		} else {
+			int datelen;
+			char date[32];
+			time_t log_ts;
+			log_ts = time(NULL);
+
+			datelen = strftime(date, 32, "%Y-%m-%d %H:%M:%S - ", localtime(&log_ts));
+
+			write(g_ape->logs.fd, date, datelen);
+			if (g_ape->logs.lvl&APE_DEBUG) {
+				char *debug_file;
+				int dlen;
+				dlen = asprintf(&debug_file, "%s:%li - ", file, line);
+				write(g_ape->logs.fd, debug_file, dlen);
+				free(debug_file);
+			}
+			write(g_ape->logs.fd, buff, len);
+			write(g_ape->logs.fd, "\n", 1);
+
+			free(buff);
 		}
-		write(g_ape->logs.fd, buff, len);
-		write(g_ape->logs.fd, "\n", 1);
-		
-		free(buff);
 	}
 }
