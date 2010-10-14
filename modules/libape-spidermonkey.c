@@ -2839,7 +2839,7 @@ static int ape_fire_hook(ape_sm_callback *cbk, JSObject *obj, JSObject *cb, call
 	
 	flagret = process_cmd_return(cbk->cx, rval, callbacki, g_ape);
 
-	return (cbk->type == APE_BADCMD && flagret == RETURN_CONTINUE ? RETURN_BAD_CMD : flagret);
+	return (cbk->type == APE_BADCMD && flagret == RETURN_BAD_PARAMS ? RETURN_BAD_CMD : flagret);
 }
 
 static void ape_fire_callback(const char *name, uintN argc, jsval *argv, acetables *g_ape)
