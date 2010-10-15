@@ -107,15 +107,15 @@ void findandloadplugin(acetables *g_ape)
 
 void free_all_plugins(acetables *g_ape)
 {
-	ace_plugins *prev;
+	ace_plugins *next;
 
 	while (g_ape->plugins != NULL) {
 		g_ape->plugins->unloader(g_ape);
 //		dlclose(g_ape->plugins->hPlug);
 
-		prev = g_ape->plugins;
-		g_ape->plugins = g_ape->plugins->next;
+		next = g_ape->plugins->next;
 		free(g_ape->plugins);
+		g_ape->plugins = next;
 	}
 }
 
