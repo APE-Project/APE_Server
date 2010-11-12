@@ -445,20 +445,23 @@ unsigned int sockroutine(acetables *g_ape)
 
 									}
 									if (g_ape->co[active_fd]->callbacks.on_read_lf != NULL) {
-										int eol, len = g_ape->co[active_fd]->buffer_in.length;
+										unsigned int eol, *len = &g_ape->co[active_fd]->buffer_in.length;
 										char *pBuf = g_ape->co[active_fd]->buffer_in.data;
 
-										while ((eol = sneof(pBuf, len, 4096)) != -1) {
+										while ((eol = sneof(pBuf, *len, 4096)) != -1) {
 											pBuf[eol-1] = '\0';
 											g_ape->co[active_fd]->callbacks.on_read_lf(g_ape->co[active_fd], pBuf, g_ape);
 											pBuf = &pBuf[eol];
-											len -= eol;
+											*len -= eol;
 										}
-										if (len > 4096 || !len) {
+										if (*len > 4096 || !*len) {
 											g_ape->co[active_fd]->buffer_in.length = 0;
-										} else if (len) {
-											memmove(g_ape->co[active_fd]->buffer_in.data, &g_ape->co[active_fd]->buffer_in.data[g_ape->co[active_fd]->buffer_in.length - len], len);
-											g_ape->co[active_fd]->buffer_in.length = len;
+										} else if (*len && pBuf != g_ape->co[active_fd]->buffer_in.data) {
+											
+											memmove(g_ape->co[active_fd]->buffer_in.data, 
+												pBuf, 
+												*len);
+
 										}
 
 									}
