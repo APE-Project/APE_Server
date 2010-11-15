@@ -44,43 +44,52 @@ void ape_log_init(acetables *g_ape)
 		}
 	} else {
 		char *facility = CONFIG_VAL(Log, syslog_facility, g_ape->srv);
-		int facility_num = LOG_LOCAL2;
+		int facility_num = -1;
+		struct _syslog_facilities {
+			int facility;
+			char str[12];
+		} syslog_facilities[] = {
+			{LOG_KERN,     "kern"},
+			{LOG_USER,     "user"},
+			{LOG_MAIL,     "mail"},
+			{LOG_DAEMON,   "daemon"},
+			{LOG_AUTH,     "auth"},
+			{LOG_SYSLOG,   "syslog"},
+			{LOG_LPR,      "lpr"},
+			{LOG_NEWS,     "news"},
+			{LOG_UUCP,     "uucp"},
+			{LOG_CRON,     "cron"},
+			/*{LOG_AUTHPRIV, "authpriv"}, private facility */
+			{LOG_FTP,      "ftp"}
+		};
+		size_t syslog_max_facilities = sizeof(syslog_facilities) / sizeof(struct _syslog_facilities);
 
 		/* decode the facility requested in the config file */
-		if (!strncasecmp(facility, "local", 5)) {
+		if (!strncasecmp(facility, "local", 5) && strlen(facility) == 6) {
 			int local = 0;
-			facility += 5;
-			local = atoi(facility);
+			char *localnum;
+			// increment the facility pointer by 5 to move past "local"
+			localnum = &facility[5];
+			local = atoi(localnum);
 
-			if (!local && !strncmp("0", facility, 1)) {
+			if (!local && !strncmp("0", localnum, 2)) {
 				facility_num = LOG_LOCAL0;
 			} else if (local < 8 && local > 0) {
 				facility_num = ((local + 16)<<3);
 			}
-		} else if (!strncasecmp("kern", facility, 4)) {
-			facility_num = LOG_KERN;
-		} else if (!strncasecmp("user", facility, 4)) {
-			facility_num = LOG_USER;
-		} else if (!strncasecmp("mail", facility, 4)) {
-			facility_num = LOG_MAIL;
-		} else if (!strncasecmp("daemon", facility, 6)) {
-			facility_num = LOG_DAEMON;
-		} else if (!strncasecmp("auth", facility, 4)) {
-			facility_num = LOG_AUTH;
-		} else if (!strncasecmp("syslog", facility, 6)) {
-			facility_num = LOG_SYSLOG;
-		} else if (!strncasecmp("lpr", facility, 3)) {
-			facility_num = LOG_LPR;
-		} else if (!strncasecmp("news", facility, 4)) {
-			facility_num = LOG_NEWS;
-		} else if (!strncasecmp("uucp", facility, 4)) {
-			facility_num = LOG_UUCP;
-		} else if (!strncasecmp("cron", facility, 4)) {
-			facility_num = LOG_CRON;
-		} else if (!strncasecmp("authpriv", facility, 8)) {
-			facility_num = LOG_AUTHPRIV;
-		} else if (!strncasecmp("ftp", facility, 3)) {
-			facility_num = LOG_FTP;
+		} else {
+			int i;
+			for(i = 0; i < syslog_max_facilities; i++) {
+				if (!strncasecmp(syslog_facilities[i].str, facility, strlen(syslog_facilities[i].str) + 1)) {
+					facility_num = syslog_facilities[i].facility;
+					break;
+				}
+			}
+		}
+
+		if (facility_num == -1) {
+			printf("[WARN] Invalid facility '%s' requested, defaulting to LOCAL2\n", facility);
+			facility_num = LOG_LOCAL2;
 		}
 
 		openlog("APE", LOG_CONS | LOG_PID, facility_num);
