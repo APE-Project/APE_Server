@@ -2219,6 +2219,7 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 
 	sock_obj = xmalloc(sizeof(*sock_obj));
 	sock_obj->client_obj = NULL;
+	sock_obj->client = NULL;
 	
 	cbcopy = xmalloc(sizeof(struct _ape_sock_callbacks));
 	
