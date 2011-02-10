@@ -452,15 +452,23 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 				break;
 			case JSTYPE_NUMBER:
 				{
-					jsdouble dp;
-					JS_ValueToNumber(cx, vp, &dp);
-				
-					if (!isarray) {
-						/* json_set_property_intN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), (long int)dp); */
-						json_set_property_floatN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), dp);
+					if (JSVAL_IS_INT(vp) ) {
+						jsint di = JSVAL_TO_INT(vp);
+
+						if (!isarray) {
+							json_set_property_intN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), di);
+						} else {
+							json_set_element_int(ape_json, di);
+						}
 					} else {
-						/* json_set_element_int(ape_json, (long int)dp); */
-						json_set_element_float(ape_json, dp);
+						jsdouble dp;
+						JS_ValueToNumber(cx, vp, &dp);
+				
+						if (!isarray) {
+							json_set_property_floatN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), dp);
+						} else {
+							json_set_element_float(ape_json, dp);
+						}
 					}
 				}
 				break;
