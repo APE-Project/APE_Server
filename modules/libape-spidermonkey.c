@@ -463,11 +463,20 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 					} else {
 						jsdouble dp;
 						JS_ValueToNumber(cx, vp, &dp);
-				
-						if (!isarray) {
-							json_set_property_floatN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), dp);
+						
+						long long ll = (long long)trunc(dp);
+						if ( ll != dp) { // 
+							if (!isarray) {
+								json_set_property_floatN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), dp);
+							} else {
+								json_set_element_float(ape_json, dp);
+							}
 						} else {
-							json_set_element_float(ape_json, dp);
+							if (!isarray) {
+								json_set_property_intN(ape_json, JS_GetStringBytes(key), JS_GetStringLength(key), ll);
+							} else {
+								json_set_element_int(ape_json, ll);
+							}
 						}
 					}
 				}
