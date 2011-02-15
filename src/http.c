@@ -26,6 +26,22 @@
 #include "main.h"
 #include "utils.h"
 #include "dns.h"
+#include "log.h"
+#include <stdlib.h> /* endian macros */
+
+#if !defined(_BIG_ENDIAN) && !defined(_LITTLE_ENDIAN)
+# if defined(__i386) || defined(__amd64) || defined(__arm)
+#  define _LITTLE_ENDIAN 1
+# else
+#  if defined(__sparc) || defined(__mips)
+#   define _BIG_ENDIAN 1
+#  endif
+# endif
+#endif
+
+#if !defined(_BIG_ENDIAN) && !defined(_LITTLE_ENDIAN)
+# error "Unable to determine platform endianness"
+#endif
 
 #define HTTP_PREFIX		"http://"
 #define WS_MAGIC_VALUE 0x00003600
@@ -179,17 +195,27 @@ void process_http(ape_socket *co, acetables *g_ape)
 				return;
 			}
 			
-			/* TODO : endieness */
 			switch(*(unsigned int *)data) {
-				case 542393671: /* GET + space */
+#ifdef _LITTLE_ENDIAN
+				case 0x20544547: /* GET + space */
+#endif
+#ifdef _BIG_ENDIAN
+				case 0x47455420: /* GET + space */
+#endif
 					http->type = HTTP_GET;
 					p = 4;
 					break;
-				case 1414745936: /* POST */
+#ifdef _LITTLE_ENDIAN
+				case 0x54534F50: /* POST */
+#endif
+#ifdef _BIG_ENDIAN
+				case 0x504F5354: /* POST */
+#endif
 					http->type = HTTP_POST;
 					p = 5;
 					break;
 				default:
+					ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "Invalid HTTP method in request: %s", data);
 					http->error = 1;
 					shutdown(co->fd, 2);
 					return;
@@ -220,6 +246,7 @@ void process_http(ape_socket *co, acetables *g_ape)
 						case '\r':
 						case '\n':
 						case '\0':
+							ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "Invalid line ending in request: %s", data);
 							http->error = 1;
 							shutdown(co->fd, 2);
 							return;
