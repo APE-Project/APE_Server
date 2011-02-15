@@ -33,6 +33,10 @@
 #ifdef USE_EPOLL_HANDLER
 #include <sys/epoll.h>
 #endif
+#ifdef USE_SELECT_HANDLER
+#include <sys/time.h>
+#define MAX_SELECT_FDS	1024
+#endif
 
 /* Generics flags */
 #define EVENT_READ 0x01
@@ -44,15 +48,24 @@ typedef enum {
 	EVENT_EPOLL, 	/* Linux */
 	EVENT_KQUEUE, 	/* BSD */
 	EVENT_DEVPOLL,	/* Solaris */
-	EVENT_POLL,		/* POSIX */
-	EVENT_SELECT	/* Generic (Windows) */
+	EVENT_POLL,	/* POSIX */
+	EVENT_SELECT	/* Generic */
 } fdevent_handler_t;
+
+#ifdef USE_SELECT_HANDLER
+typedef struct {
+  int  fd;
+  char read:2;		/* First bit: 	in use */
+  char write:2;		/* Second bit: 	pending data */
+} select_fd_t;
+#endif
 
 struct _fdevent {
 	/* Common values */
 	int *basemem;
 	/* Interface */
 	int (*add)(struct _fdevent *, int, int);
+	int (*remove)(struct _fdevent *, int);
 	int (*poll)(struct _fdevent *, int);
 	int (*get_current_fd)(struct _fdevent *, int);
 	void (*growup)(struct _fdevent *);
@@ -68,13 +81,18 @@ struct _fdevent {
 	struct epoll_event *events;
 	int epoll_fd;
 	#endif
-	
+        #ifdef USE_SELECT_HANDLER
+        select_fd_t fds[MAX_SELECT_FDS];
+        select_fd_t **events; /* Pointers into fds */
+        #endif
+
 	fdevent_handler_t handler;
 };
 
 int events_init(acetables *g_ape, int *basemem);
 void events_free(acetables *g_ape);
 int events_add(struct _fdevent *ev, int fd, int bitadd);
+int events_remove(struct _fdevent *ev, int fd);
 int events_poll(struct _fdevent *ev, int timeout_ms);
 int events_get_current_fd(struct _fdevent *ev, int i);
 void events_growup(struct _fdevent *ev);
@@ -83,5 +101,6 @@ int events_reload(struct _fdevent *ev);
 
 int event_kqueue_init(struct _fdevent *ev);
 int event_epoll_init(struct _fdevent *ev);
+int event_select_init(struct _fdevent *ev);
 
 #endif

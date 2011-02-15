@@ -63,6 +63,11 @@ static int event_kqueue_add(struct _fdevent *ev, int fd, int bitadd)
 	return 1;
 }
 
+static int event_kqueue_remove(struct _fdevent *ev, int fd)
+{
+  return 1;
+}
+
 static int event_kqueue_poll(struct _fdevent *ev, int timeout_ms)
 {
 	int nfds;
@@ -128,6 +133,7 @@ int event_kqueue_init(struct _fdevent *ev)
 	memset(ev->events, 0, sizeof(struct kevent) * (*ev->basemem * 2));
 	
 	ev->add = event_kqueue_add;
+	ev->remove = event_kqueue_remove;
 	ev->poll = event_kqueue_poll;
 	ev->get_current_fd = event_kqueue_get_fd;
 	ev->growup = event_kqueue_growup;

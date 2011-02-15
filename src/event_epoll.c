@@ -49,6 +49,11 @@ static int event_epoll_add(struct _fdevent *ev, int fd, int bitadd)
 	return 1;
 }
 
+static int event_epoll_remove(struct _fdevent *ev, int fd)
+{
+  return 1;
+}
+
 static int event_epoll_poll(struct _fdevent *ev, int timeout_ms)
 {
 	int nfds;
@@ -108,6 +113,7 @@ int event_epoll_init(struct _fdevent *ev)
 	ev->events = xmalloc(sizeof(struct epoll_event) * (*ev->basemem));
 	
 	ev->add = event_epoll_add;
+	ev->remove = event_epoll_remove;
 	ev->poll = event_epoll_poll;
 	ev->get_current_fd = event_epoll_get_fd;
 	ev->growup = event_epoll_growup;
