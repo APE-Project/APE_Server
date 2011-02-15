@@ -83,7 +83,7 @@ static void ape_daemon(int pidfile, acetables *g_ape)
 	if (pidfile > 0) {
 		char pidstring[32];
 		int len;
-		len = sprintf(pidstring, "%i", getpid());
+		len = sprintf(pidstring, "%i", (int)getpid());
 		write(pidfile, pidstring, len);
 		close(pidfile);
 	}
@@ -164,6 +164,9 @@ int main(int argc, char **argv)
 	#endif
 	#ifdef USE_KQUEUE_HANDLER
 	fdev.handler = EVENT_KQUEUE;
+	#endif
+	#ifdef USE_SELECT_HANDLER
+	fdev.handler = EVENT_SELECT;
 	#endif
 
 	g_ape->co = xmalloc(sizeof(*g_ape->co) * g_ape->basemem);
