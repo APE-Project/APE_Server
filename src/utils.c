@@ -55,7 +55,7 @@ void s_tolower(char *upper, unsigned int len)
 	}
 }
 
-long int itos(long int input, char *output, long int len)
+long int itos(long long int input, char *output, long int len)
 {
 	int sign = 0, i = 1;
 

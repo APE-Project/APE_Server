@@ -271,7 +271,7 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 				free(head->jval.vu.str.value);
 			}
 		} else if (head->jval.vu.integer_value) {
-			
+
 			long int l = LENGTH_N(head->jval.vu.integer_value);
 			long int offset;
 			char integer_str[l+2];
@@ -287,7 +287,7 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 
 			/* TODO: check for -1 */
 			/* TODO: fix max length 16 together with json_evaluate_string_size() */
-			length = snprintf(string->jstring + string->len, 16 + 1, "%Lf", head->jval.vu.float_value);
+			length = snprintf(string->jstring + string->len, 16 + 1, "%f", head->jval.vu.float_value);
 			if(length > 16) /* cut-off number */
 				length = 16;
 
@@ -484,7 +484,7 @@ void json_set_property_objZ(json_item *obj, const char *key, json_item *value)
 	json_set_property_objN(obj, key, strlen(key), value);
 }
 
-void json_set_property_intN(json_item *obj, const char *key, int keylen, long int value)
+void json_set_property_intN(json_item *obj, const char *key, int keylen, JSON_int_t value)
 {
 	json_item *new_item = init_json_item();
 	
@@ -506,7 +506,7 @@ void json_set_property_intN(json_item *obj, const char *key, int keylen, long in
 	obj->jchild.head = new_item;	
 }
 
-void json_set_property_intZ(json_item *obj, const char *key, long int value)
+void json_set_property_intZ(json_item *obj, const char *key, JSON_int_t value)
 {
 	int len = (key != NULL ? strlen(key) : 0);
 	

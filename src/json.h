@@ -128,8 +128,8 @@ void json_set_element_boolean(json_item *obj, int value);
 void json_set_element_null(json_item *obj);
 void json_set_element_obj(json_item *obj, json_item *value);
 
-void json_set_property_intN(json_item *obj, const char *key, int keylen, long int value);
-void json_set_property_intZ(json_item *obj, const char *key, long int value);
+void json_set_property_intN(json_item *obj, const char *key, int keylen, JSON_int_t value);
+void json_set_property_intZ(json_item *obj, const char *key, JSON_int_t value);
 void json_set_property_floatN(json_item *obj, const char *key, int keylen, long double value);
 void json_set_property_boolean(json_item *obj, const char *key, int keylen, int value);
 void json_set_property_null(json_item *obj, const char *key, int keylen);

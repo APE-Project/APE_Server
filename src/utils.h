@@ -32,7 +32,7 @@ char *xstrdup(const char *s);
 
 int seof(char *buf, unsigned short int stop);
 int sneof(char *buf, size_t len, size_t max);
-long int itos(long int input, char *output, long int len);
+long int itos(long long int input, char *output, long int len);
 char *trim(char *s);
 char *removelast(char *input, unsigned int n);
 size_t explode(const char split, char *input, char **tP, unsigned int limit);

@@ -1,7 +1,3 @@
-/* json_parser.c */
-
-/* 2007-08-24 */
-
 /*
 Copyright (c) 2005 JSON.org
 
@@ -27,11 +23,24 @@ SOFTWARE.
 */
 
 /*
-    Callbacks, comments, Unicode handling by Jean Gressmann (jean@0x42.de), 2007-2009.
+    Callbacks, comments, Unicode handling by Jean Gressmann (jean@0x42.de), 2007-2010.
     
-    For the added features the license above applies also.
     
     Changelog:
+        2010-11-25
+            Support for custom memory allocation (sgbeal@googlemail.com).
+                        
+        2010-05-07
+            Added error handling for memory allocation failure (sgbeal@googlemail.com). 
+            Added diagnosis errors for invalid JSON.
+            
+        2010-03-25
+            Fixed buffer overrun in grow_parse_buffer & cleaned up code.
+            
+        2009-10-19
+            Replaced long double in JSON_value_struct with double after reports 
+            of strtold being broken on some platforms (charles@transmissionbt.com).
+            
         2009-05-17 
             Incorporated benrudiak@googlemail.com fix for UTF16 decoding.
             
@@ -58,7 +67,6 @@ SOFTWARE.
 
 
 
-#define _ISOC99_SOURCE
 #include <assert.h>
 #include <ctype.h>
 #include <float.h>
@@ -72,7 +80,8 @@ SOFTWARE.
 
 #ifdef _MSC_VER
 #   if _MSC_VER >= 1400 /* Visual Studio 2005 and up */
-#      pragma warning(disable:4996) // unsecure sscanf
+#      pragma warning(disable:4996) /* unsecure sscanf */
+#      pragma warning(disable:4127) /* conditional expression is constant */
 #   endif
 #endif
 
@@ -90,25 +99,34 @@ SOFTWARE.
 #   define JSON_PARSER_PARSE_BUFFER_SIZE 3500
 #endif
 
+typedef void* (*JSON_debug_malloc_t)(size_t bytes, const char* reason);
+
+#ifdef JSON_PARSER_DEBUG_MALLOC
+#   define JSON_parser_malloc(func, bytes, reason) ((JSON_debug_malloc_t)func)(bytes, reason)
+#else
+#   define JSON_parser_malloc(func, bytes, reason) func(bytes)
+#endif
 
 typedef unsigned short UTF16;
 
 struct JSON_parser_struct {
     JSON_parser_callback callback;
     void* ctx;
-    signed char state, before_comment_state, type, escaped, comment, allow_comments, handle_floats_manually;
-    UTF16 utf16_high_surrogate;
-    long depth;
-    long top;
-    signed char* stack;
-    long stack_capacity;
+    signed char state, before_comment_state, type, escaped, comment, allow_comments, handle_floats_manually, error;
     char decimal_point;
+    UTF16 utf16_high_surrogate;
+    int current_char;
+    int depth;
+    int top;
+    int stack_capacity;
+    signed char* stack;
     char* parse_buffer;
     size_t parse_buffer_capacity;
     size_t parse_buffer_count;
-    size_t comment_begin_offset;
     signed char static_stack[JSON_PARSER_STACK_SIZE];
     char static_parse_buffer[JSON_PARSER_PARSE_BUFFER_SIZE];
+    JSON_malloc_t malloc;
+    JSON_free_t free;
 };
 
 #define COUNTOF(x) (sizeof(x)/sizeof(x[0])) 
@@ -156,7 +174,7 @@ enum classes {
     NR_CLASSES
 };
 
-static int ascii_class[128] = {
+static const signed char ascii_class[128] = {
 /*
     This array maps the 128 ASCII characters into character classes.
     The remaining Unicode characters should be mapped to C_ETC.
@@ -245,7 +263,7 @@ enum actions
 };
 
 
-static int state_transition_table[NR_STATES][NR_CLASSES] = {
+static const signed char state_transition_table[NR_STATES][NR_CLASSES] = {
 /*
     The state transition table takes the current state and the current symbol,
     and returns either a new state or an action. An action is represented as a
@@ -303,32 +321,81 @@ enum modes {
     MODE_OBJECT = 4
 };
 
+static void set_error(JSON_parser jc)
+{
+    switch (jc->state) {
+        case GO:
+            switch (jc->current_char) {
+            case '{': case '}': case '[': case ']': 
+                jc->error = JSON_E_UNBALANCED_COLLECTION;
+                break;
+            default:
+                jc->error = JSON_E_INVALID_CHAR;
+                break;    
+            }
+            break;
+        case OB:
+            jc->error = JSON_E_EXPECTED_KEY;
+            break;
+        case AR:
+            jc->error = JSON_E_UNBALANCED_COLLECTION;
+            break;
+        case CO:
+            jc->error = JSON_E_EXPECTED_COLON;
+            break;
+        case KE:
+            jc->error = JSON_E_EXPECTED_KEY;
+            break;
+        /* \uXXXX\uYYYY */
+        case U1: case U2: case U3: case U4: case D1: case D2:
+            jc->error = JSON_E_INVALID_UNICODE_SEQUENCE;
+            break;
+        /* true, false, null */
+        case T1: case T2: case T3: case F1: case F2: case F3: case F4: case N1: case N2: case N3:
+            jc->error = JSON_E_INVALID_KEYWORD;
+            break;
+        /* minus, integer, fraction, exponent */
+        case MI: case ZE: case IT: case FR: case E1: case E2: case E3:
+            jc->error = JSON_E_INVALID_NUMBER;
+            break;
+        default:
+            jc->error = JSON_E_INVALID_CHAR;
+            break;
+    }
+}
+
 static int
 push(JSON_parser jc, int mode)
 {
 /*
     Push a mode onto the stack. Return false if there is overflow.
 */
-    jc->top += 1;
+    assert(jc->top <= jc->stack_capacity);
+    
     if (jc->depth < 0) {
-        if (jc->top >= jc->stack_capacity) {
-            size_t bytes_to_allocate;
-            jc->stack_capacity *= 2;
-            bytes_to_allocate = jc->stack_capacity * sizeof(jc->static_stack[0]);
-            if (jc->stack == &jc->static_stack[0]) {
-                jc->stack = (signed char*)malloc(bytes_to_allocate);
-                memcpy(jc->stack, jc->static_stack, sizeof(jc->static_stack));
-            } else {
-                jc->stack = (signed char*)realloc(jc->stack, bytes_to_allocate);
+        if (jc->top == jc->stack_capacity) {
+            const size_t bytes_to_copy = jc->stack_capacity * sizeof(jc->stack[0]);
+            const size_t new_capacity = jc->stack_capacity * 2;
+            const size_t bytes_to_allocate = new_capacity * sizeof(jc->stack[0]);
+            void* mem = JSON_parser_malloc(jc->malloc, bytes_to_allocate, "stack");
+            if (!mem) {
+                jc->error = JSON_E_OUT_OF_MEMORY;
+                return false;
             }
+            jc->stack_capacity = (int)new_capacity;
+            memcpy(mem, jc->stack, bytes_to_copy);
+            if (jc->stack != &jc->static_stack[0]) {
+                jc->free(jc->stack);
+            }
+            jc->stack = (signed char*)mem;
         }
     } else {
-        if (jc->top >= jc->depth) {
+        if (jc->top == jc->depth) {
+            jc->error = JSON_E_NESTING_DEPTH_REACHED;
             return false;
         }
     }
-    
-    jc->stack[jc->top] = mode;
+    jc->stack[++jc->top] = (signed char)mode;
     return true;
 }
 
@@ -360,23 +427,66 @@ pop(JSON_parser jc, int mode)
         --jc->parse_buffer_count;\
         jc->parse_buffer[jc->parse_buffer_count] = 0;\
     } while (0)    
-    
+
+
+
 void delete_JSON_parser(JSON_parser jc)
 {
     if (jc) {
         if (jc->stack != &jc->static_stack[0]) {
-            free((void*)jc->stack);
+            jc->free((void*)jc->stack);
         }
         if (jc->parse_buffer != &jc->static_parse_buffer[0]) {
-            free((void*)jc->parse_buffer);
+            jc->free((void*)jc->parse_buffer);
         }
-        free((void*)jc);
+        jc->free((void*)jc);
      }   
 }
 
+int JSON_parser_reset(JSON_parser jc)
+{
+    if (NULL == jc) {
+        return false;
+    }
+    
+    jc->state = GO;
+    jc->top = -1;
+
+    /* parser has been used previously? */
+    if (NULL == jc->parse_buffer) {
+    
+        /* Do we want non-bound stack? */
+        if (jc->depth > 0) {
+            jc->stack_capacity = jc->depth;
+            if (jc->depth <= (int)COUNTOF(jc->static_stack)) {
+                jc->stack = &jc->static_stack[0];
+            } else {
+                const size_t bytes_to_alloc = jc->stack_capacity * sizeof(jc->stack[0]);
+                jc->stack = (signed char*)JSON_parser_malloc(jc->malloc, bytes_to_alloc, "stack");
+                if (jc->stack == NULL) {
+                    return false;
+                }
+            }
+        } else {
+            jc->stack_capacity = (int)COUNTOF(jc->static_stack);
+            jc->depth = -1;
+            jc->stack = &jc->static_stack[0];
+        }
+        
+        /* set up the parse buffer */
+        jc->parse_buffer = &jc->static_parse_buffer[0];
+        jc->parse_buffer_capacity = COUNTOF(jc->static_parse_buffer);
+    }
+    
+    /* set parser to start */
+    push(jc, MODE_DONE);
+    parse_buffer_clear(jc);
+    
+    return true;
+}
 
 JSON_parser
-new_JSON_parser(JSON_config* config)
+new_JSON_parser(JSON_config const * config)
 {
 /*
     new_JSON_parser starts the checking process by constructing a JSON_parser
@@ -388,83 +498,93 @@ new_JSON_parser(JSON_config* config)
     These functions are fully reentrant.
 */
 
-    int depth = 0;
+    int use_std_malloc = false;
     JSON_config default_config;
-    
-    JSON_parser jc = malloc(sizeof(struct JSON_parser_struct));
-    
-    memset(jc, 0, sizeof(*jc));
-    
-    
-    /* initialize configuration */
-    init_JSON_config(&default_config);
+    JSON_parser jc;
+    JSON_malloc_t alloc;
     
     /* set to default configuration if none was provided */
-    if (config == NULL) {
+    if (NULL == config) {
+        /* initialize configuration */
+        init_JSON_config(&default_config);
         config = &default_config;
     }
-
-    depth = config->depth;
     
-    /* We need to be able to push at least one object */
-    if (depth == 0) {
-        depth = 1;
+    /* use std malloc if either the allocator or deallocator function isn't set */
+    use_std_malloc = NULL == config->malloc || NULL == config->free;
+    
+    alloc = use_std_malloc ? malloc : config->malloc;
+    
+    jc = (JSON_parser)JSON_parser_malloc(alloc, sizeof(*jc), "parser");    
+    
+    if (NULL == jc) {
+        return NULL;
     }
     
-    jc->state = GO;
-    jc->top = -1;
-    
-    /* Do we want non-bound stack? */
-    if (depth > 0) {
-        jc->stack_capacity = depth;
-        jc->depth = depth;
-        if (depth <= (int)COUNTOF(jc->static_stack)) {
-            jc->stack = &jc->static_stack[0];
-        } else {
-            jc->stack = (signed char*)malloc(jc->stack_capacity * sizeof(jc->static_stack[0]));
-        }
-    } else {
-        jc->stack_capacity = COUNTOF(jc->static_stack);
-        jc->depth = -1;
-        jc->stack = &jc->static_stack[0];
-    }
-    
-    /* set parser to start */
-    push(jc, MODE_DONE);
-    
-    /* set up the parse buffer */
-    jc->parse_buffer = &jc->static_parse_buffer[0];
-    jc->parse_buffer_capacity = COUNTOF(jc->static_parse_buffer);
-    parse_buffer_clear(jc);
-    
-    /* set up callback, comment & float handling */
+    /* configure the parser */
+    memset(jc, 0, sizeof(*jc));
+    jc->malloc = alloc;
+    jc->free = use_std_malloc ? free : config->free;
     jc->callback = config->callback;
     jc->ctx = config->callback_ctx;
-    jc->allow_comments = config->allow_comments != 0;
-    jc->handle_floats_manually = config->handle_floats_manually != 0;
-    
-    /* set up decimal point */
+    jc->allow_comments = (signed char)(config->allow_comments != 0);
+    jc->handle_floats_manually = (signed char)(config->handle_floats_manually != 0);
     jc->decimal_point = *localeconv()->decimal_point;
+    /* We need to be able to push at least one object */
+    jc->depth = config->depth == 0 ? 1 : config->depth;
+    
+    /* reset the parser */
+    if (!JSON_parser_reset(jc)) {
+        jc->free(jc);
+        return NULL;
+    }
     
     return jc;
 }
 
-static void grow_parse_buffer(JSON_parser jc)
+static int parse_buffer_grow(JSON_parser jc)
 {
-    size_t bytes_to_allocate;
-    jc->parse_buffer_capacity *= 2;
-    bytes_to_allocate = jc->parse_buffer_capacity * sizeof(jc->parse_buffer[0]);
-    if (jc->parse_buffer == &jc->static_parse_buffer[0]) {
-        jc->parse_buffer = (char*)malloc(bytes_to_allocate);
-        memcpy(jc->parse_buffer, jc->static_parse_buffer, jc->parse_buffer_count);
-    } else {
-        jc->parse_buffer = (char*)realloc(jc->parse_buffer, bytes_to_allocate);
+    const size_t bytes_to_copy = jc->parse_buffer_count * sizeof(jc->parse_buffer[0]);
+    const size_t new_capacity = jc->parse_buffer_capacity * 2;
+    const size_t bytes_to_allocate = new_capacity * sizeof(jc->parse_buffer[0]);
+    void* mem = JSON_parser_malloc(jc->malloc, bytes_to_allocate, "parse buffer");
+    
+    if (mem == NULL) {
+        jc->error = JSON_E_OUT_OF_MEMORY;
+        return false;
     }
+    
+    assert(new_capacity > 0);
+    memcpy(mem, jc->parse_buffer, bytes_to_copy);
+    
+    if (jc->parse_buffer != &jc->static_parse_buffer[0]) {
+        jc->free(jc->parse_buffer);
+    }
+    
+    jc->parse_buffer = (char*)mem;
+    jc->parse_buffer_capacity = new_capacity;
+    
+    return true;
 }
+
+static int parse_buffer_reserve_for(JSON_parser jc, unsigned chars)
+{
+    while (jc->parse_buffer_count + chars + 1 > jc->parse_buffer_capacity) {
+        if (!parse_buffer_grow(jc)) {
+            assert(jc->error == JSON_E_OUT_OF_MEMORY);
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+#define parse_buffer_has_space_for(jc, count) \
+    (jc->parse_buffer_count + (count) + 1 <= jc->parse_buffer_capacity)
 
 #define parse_buffer_push_back_char(jc, c)\
     do {\
-        if (jc->parse_buffer_count + 1 >= jc->parse_buffer_capacity) grow_parse_buffer(jc);\
+        assert(parse_buffer_has_space_for(jc, 1)); \
         jc->parse_buffer[jc->parse_buffer_count++] = c;\
         jc->parse_buffer[jc->parse_buffer_count]   = 0;\
     } while (0)
@@ -494,10 +614,8 @@ static int parse_parse_buffer(JSON_parser jc)
                         value.vu.str.value = jc->parse_buffer;
                         value.vu.str.length = jc->parse_buffer_count;
                     } else { 
-                        /*sscanf(jc->parse_buffer, "%Lf", &value.vu.float_value);*/
-                        
                         /* not checking with end pointer b/c there may be trailing ws */
-                        value.vu.float_value = strtold(jc->parse_buffer, NULL);
+                        value.vu.float_value = strtod(jc->parse_buffer, NULL);
                     }
                     break;
                 case JSON_T_INTEGER:
@@ -525,7 +643,7 @@ static int parse_parse_buffer(JSON_parser jc)
 #define IS_HIGH_SURROGATE(uc) (((uc) & 0xFC00) == 0xD800)
 #define IS_LOW_SURROGATE(uc)  (((uc) & 0xFC00) == 0xDC00)
 #define DECODE_SURROGATE_PAIR(hi,lo) ((((hi) & 0x3FF) << 10) + ((lo) & 0x3FF) + 0x10000)
-static unsigned char utf8_lead_bits[4] = { 0x00, 0xC0, 0xE0, 0xF0 };
+static const unsigned char utf8_lead_bits[4] = { 0x00, 0xC0, 0xE0, 0xF0 };
 
 static int decode_unicode_char(JSON_parser jc)
 {
@@ -575,7 +693,7 @@ static int decode_unicode_char(JSON_parser jc)
             trail_bytes = 1;
         } else if (IS_HIGH_SURROGATE(uc)) {
             /* save the high surrogate and wait for the low surrogate */
-            jc->utf16_high_surrogate = uc;
+            jc->utf16_high_surrogate = (UTF16)uc;
             return true;
         } else if (IS_LOW_SURROGATE(uc)) {
             /* low surrogate without a preceding high surrogate */
@@ -598,6 +716,8 @@ static int decode_unicode_char(JSON_parser jc)
 
 static int add_escaped_char_to_parse_buffer(JSON_parser jc, int next_char)
 {
+    assert(parse_buffer_has_space_for(jc, 1));
+    
     jc->escaped = 0;
     /* remove the backslash */
     parse_buffer_pop_back_char(jc);
@@ -637,18 +757,26 @@ static int add_escaped_char_to_parse_buffer(JSON_parser jc, int next_char)
     return true;
 }
 
-#define add_char_to_parse_buffer(jc, next_char, next_class) \
-    do { \
-        if (jc->escaped) { \
-            if (!add_escaped_char_to_parse_buffer(jc, next_char)) \
-                return false; \
-        } else if (!jc->comment) { \
-            if ((jc->type != JSON_T_NONE) | !((next_class == C_SPACE) | (next_class == C_WHITE)) /* non-white-space */) { \
-                parse_buffer_push_back_char(jc, (char)next_char); \
-            } \
-        } \
-    } while (0)
+static int add_char_to_parse_buffer(JSON_parser jc, int next_char, int next_class)
+{
+    if (!parse_buffer_reserve_for(jc, 1)) {
+        assert(JSON_E_OUT_OF_MEMORY == jc->error);
+        return false;
+    }
     
+    if (jc->escaped) {
+        if (!add_escaped_char_to_parse_buffer(jc, next_char)) {
+            jc->error = JSON_E_INVALID_ESCAPE_SEQUENCE;
+            return false; 
+        }
+    } else if (!jc->comment) {
+        if ((jc->type != JSON_T_NONE) | !((next_class == C_SPACE) | (next_class == C_WHITE)) /* non-white-space */) {
+            parse_buffer_push_back_char(jc, (char)next_char);
+        }
+    }
+    
+    return true;
+}
 
 #define assert_type_isnt_string_null_or_bool(jc) \
     assert(jc->type != JSON_T_FALSE); \
@@ -667,11 +795,17 @@ JSON_parser_char(JSON_parser jc, int next_char)
     text, it returns false.
 */
     int next_class, next_state;
+
+/*
+    Store the current char for error handling
+*/    
+    jc->current_char = next_char;
     
 /*
     Determine the character's class.
 */
     if (next_char < 0) {
+        jc->error = JSON_E_INVALID_CHAR;
         return false;
     }
     if (next_char >= 128) {
@@ -679,11 +813,14 @@ JSON_parser_char(JSON_parser jc, int next_char)
     } else {
         next_class = ascii_class[next_char];
         if (next_class <= __) {
+            set_error(jc);
             return false;
         }
     }
     
-    add_char_to_parse_buffer(jc, next_char, next_class);
+    if (!add_char_to_parse_buffer(jc, next_char, next_class)) {
+        return false;
+    }
     
 /*
     Get the next state from the state transition table.
@@ -693,7 +830,7 @@ JSON_parser_char(JSON_parser jc, int next_char)
 /*
     Change the state.
 */
-        jc->state = next_state;
+        jc->state = (signed char)next_state;
     } else {
 /*
     Or perform one of the actions.
@@ -702,6 +839,7 @@ JSON_parser_char(JSON_parser jc, int next_char)
 /* Unicode character */        
         case UC:
             if(!decode_unicode_char(jc)) {
+                jc->error = JSON_E_INVALID_UNICODE_SEQUENCE;
                 return false;
             }
             /* check if we need to read a second UTF-16 char */
@@ -841,6 +979,7 @@ JSON_parser_char(JSON_parser jc, int next_char)
                 return false;
             }
             if (!pop(jc, MODE_OBJECT)) {
+                jc->error = JSON_E_UNBALANCED_COLLECTION;
                 return false;
             }
             jc->type = JSON_T_NONE;
@@ -856,6 +995,7 @@ JSON_parser_char(JSON_parser jc, int next_char)
                 return false;
             }
             if (!pop(jc, MODE_ARRAY)) {
+                jc->error = JSON_E_UNBALANCED_COLLECTION;
                 return false;
             }
             
@@ -961,19 +1101,23 @@ JSON_parser_char(JSON_parser jc, int next_char)
     Bad action.
 */
         default:
+            set_error(jc);
             return false;
         }
     }
     return true;
 }
 
-
 int
 JSON_parser_done(JSON_parser jc)
 {
-    const int result = jc->state == OK && pop(jc, MODE_DONE);
+    if ((jc->state == OK || jc->state == GO) && pop(jc, MODE_DONE))
+    {
+        return true;
+    }
 
-    return result;
+    jc->error = JSON_E_UNBALANCED_COLLECTION;
+    return false;
 }
 
 
@@ -1002,6 +1146,10 @@ int JSON_parser_is_legal_white_space_string(const char* s)
     return true;
 }
 
+int JSON_parser_get_last_error(JSON_parser jc)
+{
+    return jc->error;
+}
 
 
 void init_JSON_config(JSON_config* config)
@@ -1010,6 +1158,7 @@ void init_JSON_config(JSON_config* config)
         memset(config, 0, sizeof(*config));
         
         config->depth = JSON_PARSER_STACK_SIZE - 1;
+        config->malloc = malloc;
+        config->free = free;
     }
 }
-
