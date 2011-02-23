@@ -2252,6 +2252,8 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	pattern = xmalloc(sizeof(*pattern));
 	pattern->callbacks.on_connect = sm_sock_onconnect;
 	pattern->callbacks.on_disconnect = sm_sock_ondisconnect;
+	pattern->callbacks.on_data_completly_sent = NULL;
+
 	if (options != NULL && JS_GetProperty(cx, options, "flushlf", &vp) && JSVAL_IS_BOOLEAN(vp) && vp == JSVAL_TRUE) {
 		pattern->callbacks.on_read_lf = sm_sock_onread_lf;
 		pattern->callbacks.on_read = NULL;
