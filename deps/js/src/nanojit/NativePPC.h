@@ -54,9 +54,13 @@
 
 namespace nanojit
 {
-#define NJ_MAX_STACK_ENTRY              256
+#define NJ_MAX_STACK_ENTRY              4096
 #define NJ_ALIGN_STACK                  16
+
 #define NJ_JTBL_SUPPORTED               1
+#define NJ_EXPANDED_LOADSTORE_SUPPORTED 0
+#define NJ_F2I_SUPPORTED                0
+#define NJ_SOFTFLOAT_SUPPORTED          0
 
     enum ConditionRegister {
         CR0 = 0,
@@ -158,7 +162,7 @@ namespace nanojit
         Rlr  = 8,
         Rctr = 9,
 
-        UnknownReg = 127,
+        deprecated_UnknownReg = 127,    // XXX: remove eventually, see bug 538924
         FirstReg = R0,
         LastReg = F31
     };
@@ -191,10 +195,13 @@ namespace nanojit
         PPC_fneg    = 0xFC000050, // floating negate
         PPC_fsub    = 0xFC000028, // floating subtract (double precision)
         PPC_lbz     = 0x88000000, // load byte and zero
+        PPC_lbzx    = 0x7C0000AE, // load byte and zero indexed
         PPC_ld      = 0xE8000000, // load doubleword
         PPC_ldx     = 0x7C00002A, // load doubleword indexed
         PPC_lfd     = 0xC8000000, // load floating point double
         PPC_lfdx    = 0x7C0004AE, // load floating-point double indexed
+        PPC_lhz     = 0xA0000000, // load halfword and zero
+        PPC_lhzx    = 0x7C00022E, // load halfword and zero indexed
         PPC_lwz     = 0x80000000, // load word and zero
         PPC_lwzx    = 0x7C00002E, // load word and zero indexed
         PPC_mfcr    = 0x7C000026, // move from condition register
@@ -219,6 +226,8 @@ namespace nanojit
         PPC_srawi   = 0x7C000670, // shift right algebraic word immediate
         PPC_srd     = 0x7C000436, // shift right doubleword (zero ext)
         PPC_srw     = 0x7C000430, // shift right word (zero ext)
+        PPC_stb     = 0x98000000, // store byte
+        PPC_stbx    = 0x7C0001AE, // store byte indexed
         PPC_std     = 0xF8000000, // store doubleword
         PPC_stdu    = 0xF8000001, // store doubleword with update
         PPC_stdux   = 0x7C00016A, // store doubleword with update indexed
@@ -254,8 +263,8 @@ namespace nanojit
     static const int NumSavedRegs = 18; // R13-R30
 #endif
 
-    static inline bool isValidDisplacement(LOpcode, int32_t) {
-        return true;
+    static inline bool IsGpReg(Register r) {
+        return r <= R31;
     }
     static inline bool IsFpReg(Register r) {
         return r >= F0;
@@ -280,7 +289,7 @@ namespace nanojit
         void nativePageSetup();                                             \
         void br(NIns *addr, int link);                                      \
         void br_far(NIns *addr, int link);                                  \
-        void asm_regarg(ArgSize, LIns*, Register);                          \
+        void asm_regarg(ArgType, LIns*, Register);                          \
         void asm_li(Register r, int32_t imm);                               \
         void asm_li32(Register r, int32_t imm);                             \
         void asm_li64(Register r, uint64_t imm);                            \
@@ -430,7 +439,7 @@ namespace nanojit
     #define MFCTR(r) MFSPR(r, ctr)
 
     #define MEMd(op, r, d, a) do {\
-        NanoAssert(isS16(d) && (d&3)==0);\
+        NanoAssert(isS16(d));\
         EMIT1(PPC_##op | GPR(r)<<21 | GPR(a)<<16 | uint16_t(d), "%s %s,%d(%s)", #op, gpn(r), int16_t(d), gpn(a));\
         } while(0) /* no addr */
 
@@ -448,16 +457,25 @@ namespace nanojit
                 "%s %s,%s,%s", #op, gpn(rs), gpn(ra), gpn(rb))
 
     #define LBZ(r,  d, b) MEMd(lbz,  r, d, b)
+    #define LHZ(r,  d, b) MEMd(lhz,  r, d, b)
     #define LWZ(r,  d, b) MEMd(lwz,  r, d, b)
     #define LD(r,   d, b) MEMd(ld,   r, d, b)
+    #define LBZX(r, a, b) MEMx(lbzx, r, a, b)
+    #define LHZX(r, a, b) MEMx(lhzx, r, a, b)
     #define LWZX(r, a, b) MEMx(lwzx, r, a, b)
     #define LDX(r,  a, b) MEMx(ldx,  r, a, b)
 
+    // store word (32-bit integer)
     #define STW(r,  d, b)     MEMd(stw,    r, d, b)
     #define STWU(r, d, b)     MEMd(stwu,   r, d, b)
     #define STWX(s, a, b)     MEMx(stwx,   s, a, b)
     #define STWUX(s, a, b)    MEMux(stwux, s, a, b)
 
+    // store byte
+    #define STB(r,  d, b)     MEMd(stb,    r, d, b)
+    #define STBX(s, a, b)     MEMx(stbx,   s, a, b)
+
+    // store double (64-bit float)
     #define STD(r,  d, b)     MEMd(std,    r, d, b)
     #define STDU(r, d, b)     MEMd(stdu,   r, d, b)
     #define STDX(s, a, b)     MEMx(stdx,   s, a, b)

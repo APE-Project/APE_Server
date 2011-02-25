@@ -44,6 +44,7 @@
 #ifndef jsutil_h___
 #define jsutil_h___
 
+#include "jstypes.h"
 #include <stdlib.h>
 
 JS_BEGIN_EXTERN_C
@@ -66,11 +67,14 @@ JS_Assert(const char *s, const char *file, JSIntn ln);
 #define JS_NOT_REACHED(reason)                                                \
     JS_Assert(reason, __FILE__, __LINE__)
 
+#define JS_ALWAYS_TRUE(expr) JS_ASSERT(expr)
+
 #else
 
 #define JS_ASSERT(expr)         ((void) 0)
 #define JS_ASSERT_IF(cond,expr) ((void) 0)
 #define JS_NOT_REACHED(reason)
+#define JS_ALWAYS_TRUE(expr)    ((void) (expr))
 
 #endif /* defined(DEBUG) */
 
@@ -108,13 +112,12 @@ JS_Assert(const char *s, const char *file, JSIntn ln);
  */
 extern JS_PUBLIC_API(void) JS_Abort(void);
 
-#if 0
+#ifdef DEBUG
 # define JS_BASIC_STATS 1
-# define JS_SCOPE_DEPTH_METER 1
 #endif
 
-#if defined DEBUG && !defined JS_BASIC_STATS
-# define JS_BASIC_STATS 1
+#ifdef DEBUG_brendan
+# define JS_SCOPE_DEPTH_METER 1
 #endif
 
 #ifdef JS_BASIC_STATS
@@ -180,27 +183,28 @@ extern JS_FRIEND_API(void)
 JS_DumpBacktrace(JSCallsite *trace);
 #endif
 
+#if defined JS_USE_CUSTOM_ALLOCATOR
+
+#include "jscustomallocator.h"
+
+#else
+
 static JS_INLINE void* js_malloc(size_t bytes) {
-    if (bytes < sizeof(void*)) /* for asyncFree */
-        bytes = sizeof(void*);
     return malloc(bytes);
 }
 
 static JS_INLINE void* js_calloc(size_t bytes) {
-    if (bytes < sizeof(void*)) /* for asyncFree */
-        bytes = sizeof(void*);
     return calloc(bytes, 1);
 }
 
 static JS_INLINE void* js_realloc(void* p, size_t bytes) {
-    if (bytes < sizeof(void*)) /* for asyncFree */
-        bytes = sizeof(void*);
     return realloc(p, bytes);
 }
 
 static JS_INLINE void js_free(void* p) {
     free(p);
 }
+#endif/* JS_USE_CUSTOM_ALLOCATOR */
 
 JS_END_EXTERN_C
 

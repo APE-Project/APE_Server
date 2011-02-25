@@ -58,9 +58,13 @@
 
 namespace nanojit
 {
-#define NJ_MAX_STACK_ENTRY              256
+#define NJ_MAX_STACK_ENTRY              4096
 #define NJ_ALIGN_STACK                  16
+
 #define NJ_JTBL_SUPPORTED               1
+#define NJ_EXPANDED_LOADSTORE_SUPPORTED 1
+#define NJ_F2I_SUPPORTED                1
+#define NJ_SOFTFLOAT_SUPPORTED          0
 
     enum Register {
         RAX = 0, // 1st int return, # of sse varargs
@@ -98,9 +102,12 @@ namespace nanojit
         XMM15 = 31, // scratch
 
         FP = RBP,
-        UnknownReg = 32,
+
         FirstReg = RAX,
-        LastReg = XMM15
+        LastReg = XMM15,
+
+        deprecated_UnknownReg = 32,        // XXX: remove eventually, see bug 538924
+        UnspecifiedReg = 32
     };
 
 /*
@@ -125,7 +132,7 @@ namespace nanojit
  * to emitrr() is 0.  In a few cases, a whole instruction is encoded
  * this way (eg callrax).
  *
- * when a disp32, imm32, or imm64 suffix can't fit in an 8-byte
+ * when a disp32, immI, or imm64 suffix can't fit in an 8-byte
  * opcode, then it is written into the code separately and not counted
  * in the opcode length.
  */
@@ -139,23 +146,23 @@ namespace nanojit
         // 64bit opcode constants
         //              msb        lsb len
         X64_addqrr  = 0xC003480000000003LL, // 64bit add r += b
-        X64_addqri  = 0xC081480000000003LL, // 64bit add r += int64(imm32)
+        X64_addqri  = 0xC081480000000003LL, // 64bit add r += int64(immI)
         X64_addqr8  = 0x00C0834800000004LL, // 64bit add r += int64(imm8)
-        X64_andqri  = 0xE081480000000003LL, // 64bit and r &= int64(imm32)
+        X64_andqri  = 0xE081480000000003LL, // 64bit and r &= int64(immI)
         X64_andqr8  = 0x00E0834800000004LL, // 64bit and r &= int64(imm8)
-        X64_orqri   = 0xC881480000000003LL, // 64bit or  r |= int64(imm32)
+        X64_orqri   = 0xC881480000000003LL, // 64bit or  r |= int64(immI)
         X64_orqr8   = 0x00C8834800000004LL, // 64bit or  r |= int64(imm8)
-        X64_xorqri  = 0xF081480000000003LL, // 64bit xor r ^= int64(imm32)
+        X64_xorqri  = 0xF081480000000003LL, // 64bit xor r ^= int64(immI)
         X64_xorqr8  = 0x00F0834800000004LL, // 64bit xor r ^= int64(imm8)
-        X64_addlri  = 0xC081400000000003LL, // 32bit add r += imm32
+        X64_addlri  = 0xC081400000000003LL, // 32bit add r += immI
         X64_addlr8  = 0x00C0834000000004LL, // 32bit add r += imm8
-        X64_andlri  = 0xE081400000000003LL, // 32bit and r &= imm32
+        X64_andlri  = 0xE081400000000003LL, // 32bit and r &= immI
         X64_andlr8  = 0x00E0834000000004LL, // 32bit and r &= imm8
-        X64_orlri   = 0xC881400000000003LL, // 32bit or  r |= imm32
+        X64_orlri   = 0xC881400000000003LL, // 32bit or  r |= immI
         X64_orlr8   = 0x00C8834000000004LL, // 32bit or  r |= imm8
-        X64_sublri  = 0xE881400000000003LL, // 32bit sub r -= imm32
+        X64_sublri  = 0xE881400000000003LL, // 32bit sub r -= immI
         X64_sublr8  = 0x00E8834000000004LL, // 32bit sub r -= imm8
-        X64_xorlri  = 0xF081400000000003LL, // 32bit xor r ^= imm32
+        X64_xorlri  = 0xF081400000000003LL, // 32bit xor r ^= immI
         X64_xorlr8  = 0x00F0834000000004LL, // 32bit xor r ^= imm8
         X64_addrr   = 0xC003400000000003LL, // 32bit add r += b
         X64_andqrr  = 0xC023480000000003LL, // 64bit and r &= b
@@ -184,19 +191,23 @@ namespace nanojit
         X64_cmovnle = 0xC04F0F4000000004LL, // 32bit conditional mov if (int >)   r = b
         X64_cmplr   = 0xC03B400000000003LL, // 32bit compare r,b
         X64_cmpqr   = 0xC03B480000000003LL, // 64bit compare r,b
-        X64_cmplri  = 0xF881400000000003LL, // 32bit compare r,imm32
-        X64_cmpqri  = 0xF881480000000003LL, // 64bit compare r,int64(imm32)
+        X64_cmplri  = 0xF881400000000003LL, // 32bit compare r,immI
+        X64_cmpqri  = 0xF881480000000003LL, // 64bit compare r,int64(immI)
         X64_cmplr8  = 0x00F8834000000004LL, // 32bit compare r,imm8
         X64_cmpqr8  = 0x00F8834800000004LL, // 64bit compare r,int64(imm8)
         X64_cvtsi2sd= 0xC02A0F40F2000005LL, // convert int32 to double r = (double) b
         X64_cvtsq2sd= 0xC02A0F48F2000005LL, // convert int64 to double r = (double) b
+        X64_cvtss2sd= 0xC05A0F40F3000005LL, // convert float to double r = (double) b
+        X64_cvtsd2ss= 0xC05A0F40F2000005LL, // convert double to float r = (float) b
+        X64_cvtsd2si= 0xC02D0F40F2000005LL, // convert double to int32 r = (int32) b
         X64_divsd   = 0xC05E0F40F2000005LL, // divide scalar double r /= b
         X64_mulsd   = 0xC0590F40F2000005LL, // multiply scalar double r *= b
         X64_addsd   = 0xC0580F40F2000005LL, // add scalar double r += b
         X64_idiv    = 0xF8F7400000000003LL, // 32bit signed div (rax = rdx:rax/r, rdx=rdx:rax%r)
         X64_imul    = 0xC0AF0F4000000004LL, // 32bit signed mul r *= b
-        X64_imuli   = 0xC069400000000003LL, // 32bit signed mul r = b * imm32
+        X64_imuli   = 0xC069400000000003LL, // 32bit signed mul r = b * immI
         X64_imul8   = 0x00C06B4000000004LL, // 32bit signed mul r = b * imm8
+        X64_jmpi    = 0x0000000025FF0006LL, // jump *0(rip)
         X64_jmp     = 0x00000000E9000005LL, // jump near rel32
         X64_jmp8    = 0x00EB000000000002LL, // jump near rel8
         X64_jo      = 0x00000000800F0006LL, // jump near if overflow
@@ -226,17 +237,19 @@ namespace nanojit
         X64_jnp8    = 0x007B000000000002LL, // jump near if not parity (PF == 0)
         X64_jneg8   = 0x0001000000000000LL, // xor with this mask to negate the condition
         X64_leaqrm  = 0x00000000808D4807LL, // 64bit load effective addr reg <- disp32+base
-        X64_learm   = 0x00000000808D4007LL, // 32bit load effective addr reg <- disp32+base
+        X64_lealrm  = 0x00000000808D4007LL, // 32bit load effective addr reg <- disp32+base
         X64_learip  = 0x00000000058D4807LL, // 64bit RIP-relative lea. reg <- disp32+rip (modrm = 00rrr101 = 05)
         X64_movlr   = 0xC08B400000000003LL, // 32bit mov r <- b
+        X64_movbmr  = 0x0000000080884007LL, // 8bit store r -> [b+d32]
+        X64_movsmr  = 0x8089406600000004LL, // 16bit store r -> [b+d32]
         X64_movlmr  = 0x0000000080894007LL, // 32bit store r -> [b+d32]
         X64_movlrm  = 0x00000000808B4007LL, // 32bit load r <- [b+d32]
         X64_movqmr  = 0x0000000080894807LL, // 64bit store gpr -> [b+d32]
         X64_movqspr = 0x0024448948000005LL, // 64bit store gpr -> [rsp+d32] (sib required)
         X64_movqr   = 0xC08B480000000003LL, // 64bit mov r <- b
         X64_movqi   = 0xB848000000000002LL, // 64bit mov r <- imm64
-        X64_movi    = 0xB840000000000002LL, // 32bit mov r <- imm32
-        X64_movqi32 = 0xC0C7480000000003LL, // 64bit mov r <- int64(imm32)
+        X64_movi    = 0xB840000000000002LL, // 32bit mov r <- immI
+        X64_movqi32 = 0xC0C7480000000003LL, // 64bit mov r <- int64(immI)
         X64_movapsr = 0xC0280F4000000004LL, // 128bit mov xmm <- xmm
         X64_movqrx  = 0xC07E0F4866000005LL, // 64bit mov b <- xmm-r (reverses the usual r/b order)
         X64_movqxr  = 0xC06E0F4866000005LL, // 64bit mov b -> xmm-r
@@ -244,10 +257,14 @@ namespace nanojit
         X64_movsdrr = 0xC0100F40F2000005LL, // 64bit mov xmm-r <- xmm-b (upper 64bits unchanged)
         X64_movsdrm = 0x80100F40F2000005LL, // 64bit load xmm-r <- [b+d32] (upper 64 cleared)
         X64_movsdmr = 0x80110F40F2000005LL, // 64bit store xmm-r -> [b+d32]
+        X64_movssrm = 0x80100F40F3000005LL, // 32bit load xmm-r <- [b+d32] (upper 96 cleared)
+        X64_movssmr = 0x80110F40F3000005LL, // 32bit store xmm-r -> [b+d32]
         X64_movsxdr = 0xC063480000000003LL, // sign extend i32 to i64 r = (int64)(int32) b
         X64_movzx8  = 0xC0B60F4000000004LL, // zero extend i8 to i64 r = (uint64)(uint8) b
         X64_movzx8m = 0x80B60F4000000004LL, // zero extend i8 load to i32 r <- [b+d32]
         X64_movzx16m= 0x80B70F4000000004LL, // zero extend i16 load to i32 r <- [b+d32]
+        X64_movsx8m = 0x80BE0F4000000004LL, // sign extend i8 load to i32 r <- [b+d32]
+        X64_movsx16m= 0x80BF0F4000000004LL, // sign extend i16 load to i32 r <- [b+d32]
         X64_neg     = 0xD8F7400000000003LL, // 32bit two's compliment b = -b
         X64_nop1    = 0x9000000000000001LL, // one byte NOP
         X64_nop2    = 0x9066000000000002LL, // two byte NOP
@@ -289,7 +306,7 @@ namespace nanojit
         X64_shrqi   = 0x00E8C14800000004LL, // 64bit uint right shift r >>= imm8
         X64_subqrr  = 0xC02B480000000003LL, // 64bit sub r -= b
         X64_subrr   = 0xC02B400000000003LL, // 32bit sub r -= b
-        X64_subqri  = 0xE881480000000003LL, // 64bit sub r -= int64(imm32)
+        X64_subqri  = 0xE881480000000003LL, // 64bit sub r -= int64(immI)
         X64_subqr8  = 0x00E8834800000004LL, // 64bit sub r -= int64(imm8)
         X64_ucomisd = 0xC02E0F4066000005LL, // unordered compare scalar double
         X64_xorqrr  = 0xC033480000000003LL, // 64bit xor r &= b
@@ -298,6 +315,7 @@ namespace nanojit
         X64_xorps   = 0xC0570F4000000004LL, // 128bit xor xmm (four packed singles), one byte shorter
         X64_xorpsm  = 0x05570F4000000004LL, // 128bit xor xmm, [rip+disp32]
         X64_xorpsa  = 0x2504570F40000005LL, // 128bit xor xmm, [disp32]
+        X64_inclmRAX= 0x00FF000000000002LL, // incl (%rax)
         X64_jmpx    = 0xC524ff4000000004LL, // jmp [d32+x*8]
         X64_jmpxb   = 0xC024ff4000000004LL, // jmp [b+x*8]
 
@@ -319,10 +337,11 @@ namespace nanojit
     static const int NumSavedRegs = 5; // rbx, r12-15
     static const int NumArgRegs = 6;
 #endif
+    // Warning:  when talking about single byte registers, RSP/RBP/RSI/RDI are
+    // actually synonyms for AH/CH/DH/BH.  So this value means "any
+    // single-byte GpReg except AH/CH/DH/BH".
+    static const int SingleByteStoreRegs = GpRegs & ~(1<<RSP | 1<<RBP | 1<<RSI | 1<<RDI);
 
-    static inline bool isValidDisplacement(LOpcode, int32_t) {
-        return true;
-    }
     static inline bool IsFpReg(Register r) {
         return ((1<<r) & FpRegs) != 0;
     }
@@ -351,6 +370,7 @@ namespace nanojit
         void emit8(uint64_t op, int64_t val);\
         void emit_target8(size_t underrun, uint64_t op, NIns* target);\
         void emit_target32(size_t underrun, uint64_t op, NIns* target);\
+        void emit_target64(size_t underrun, uint64_t op, NIns* target); \
         void emitrr(uint64_t op, Register r, Register b);\
         void emitrxb(uint64_t op, Register r, Register x, Register b);\
         void emitxb(uint64_t op, Register x, Register b) { emitrxb(op, (Register)0, x, b); }\
@@ -358,6 +378,7 @@ namespace nanojit
         void emitr(uint64_t op, Register b) { emitrr(op, (Register)0, b); }\
         void emitr8(uint64_t op, Register b) { emitrr8(op, (Register)0, b); }\
         void emitprr(uint64_t op, Register r, Register b);\
+        void emitrm8(uint64_t op, Register r, int32_t d, Register b);\
         void emitrm(uint64_t op, Register r, int32_t d, Register b);\
         void emitrm_wide(uint64_t op, Register r, int32_t d, Register b);\
         uint64_t emit_disp32(uint64_t op, int32_t d);\
@@ -371,21 +392,26 @@ namespace nanojit
         void emitxm_rel(uint64_t op, Register r, NIns* addr64);\
         bool isTargetWithinS8(NIns* target);\
         bool isTargetWithinS32(NIns* target);\
-        void asm_quad(Register r, uint64_t v);\
-        void asm_regarg(ArgSize, LIns*, Register);\
-        void asm_stkarg(ArgSize, LIns*, int);\
+        void asm_immi(Register r, int32_t v, bool canClobberCCs);\
+        void asm_immq(Register r, uint64_t v, bool canClobberCCs);\
+        void asm_immd(Register r, uint64_t v, bool canClobberCCs);\
+        void asm_regarg(ArgType, LIns*, Register);\
+        void asm_stkarg(ArgType, LIns*, int);\
         void asm_shift(LIns*);\
         void asm_shift_imm(LIns*);\
         void asm_arith_imm(LIns*);\
-        void regalloc_unary(LIns *ins, RegisterMask allow, Register &rr, Register &ra);\
-        void regalloc_binary(LIns *ins, RegisterMask allow, Register &rr, Register &ra, Register &rb);\
-        void regalloc_load(LIns *ins, Register &rr, int32_t &d, Register &rb);\
+        void beginOp1Regs(LIns *ins, RegisterMask allow, Register &rr, Register &ra);\
+        void beginOp2Regs(LIns *ins, RegisterMask allow, Register &rr, Register &ra, Register &rb);\
+        void endOpRegs(LIns *ins, Register rr, Register ra);\
+        void beginLoadRegs(LIns *ins, RegisterMask allow, Register &rr, int32_t &d, Register &rb);\
+        void endLoadRegs(LIns *ins);\
         void dis(NIns *p, int bytes);\
         void asm_cmp(LIns*);\
         void asm_cmp_imm(LIns*);\
-        void fcmp(LIns*, LIns*);\
-        NIns* asm_fbranch(bool, LIns*, NIns*);\
-        void asm_div_mod(LIns *i);\
+        void asm_cmpd(LIns*, LIns*);\
+        NIns* asm_branchd(bool, LIns*, NIns*);\
+        void asm_div(LIns *ins);\
+        void asm_div_mod(LIns *ins);\
         int max_stk_used;\
         void PUSHR(Register r);\
         void POPR(Register r);\
@@ -453,12 +479,16 @@ namespace nanojit
         void MOVSXDR(Register l, Register r);\
         void MOVZX8(Register l, Register r);\
         void XORPS(Register r);\
+        void XORPS(Register l, Register r);\
         void DIVSD(Register l, Register r);\
         void MULSD(Register l, Register r);\
         void ADDSD(Register l, Register r);\
         void SUBSD(Register l, Register r);\
         void CVTSQ2SD(Register l, Register r);\
         void CVTSI2SD(Register l, Register r);\
+        void CVTSS2SD(Register l, Register r);\
+        void CVTSD2SS(Register l, Register r);\
+        void CVTSD2SI(Register l, Register r);\
         void UCOMISD(Register l, Register r);\
         void MOVQRX(Register l, Register r);\
         void MOVQXR(Register l, Register r);\
@@ -491,17 +521,25 @@ namespace nanojit
         void IMULI(Register l, Register r, int32_t i32);\
         void MOVQI(Register r, uint64_t u64);\
         void LEARIP(Register r, int32_t d);\
-        void LEAQRM(Register r1, int d, Register r2);\
-        void MOVLRM(Register r1, int d, Register r2);\
-        void MOVQRM(Register r1, int d, Register r2);\
-        void MOVLMR(Register r1, int d, Register r2);\
-        void MOVQMR(Register r1, int d, Register r2);\
-        void MOVZX8M(Register r1, int d, Register r2);\
-        void MOVZX16M(Register r1, int d, Register r2);\
-        void MOVSDRM(Register r1, int d, Register r2);\
-        void MOVSDMR(Register r1, int d, Register r2);\
+        void LEALRM(Register r, int d, Register b);\
+        void LEAQRM(Register r, int d, Register b);\
+        void MOVLRM(Register r, int d, Register b);\
+        void MOVQRM(Register r, int d, Register b);\
+        void MOVBMR(Register r, int d, Register b);\
+        void MOVSMR(Register r, int d, Register b);\
+        void MOVLMR(Register r, int d, Register b);\
+        void MOVQMR(Register r, int d, Register b);\
+        void MOVZX8M(Register r, int d, Register b);\
+        void MOVZX16M(Register r, int d, Register b);\
+        void MOVSX8M(Register r, int d, Register b);\
+        void MOVSX16M(Register r, int d, Register b);\
+        void MOVSDRM(Register r, int d, Register b);\
+        void MOVSDMR(Register r, int d, Register b);\
+        void MOVSSMR(Register r, int d, Register b);\
+        void MOVSSRM(Register r, int d, Register b);\
         void JMP8(size_t n, NIns* t);\
         void JMP32(size_t n, NIns* t);\
+        void JMP64(size_t n, NIns* t);\
         void JMPX(Register indexreg, NIns** table);\
         void JMPXB(Register indexreg, Register tablereg);\
         void JO(size_t n, NIns* t);\

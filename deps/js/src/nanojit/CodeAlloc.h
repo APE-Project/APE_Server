@@ -42,11 +42,6 @@
 
 namespace nanojit
 {
-    /** return true if ptr is in the range [start, end] */
-    inline bool containsPtr(const NIns* start, const NIns* end, const NIns* ptr) {
-        return ptr >= start && ptr <= end;
-    }
-
     /**
      * CodeList is a linked list of non-contigous blocks of code.  Clients use CodeList*
      * to point to a list, and each CodeList instance tracks a single contiguous
@@ -64,8 +59,16 @@ namespace nanojit
             for splitting and coalescing blocks. */
         CodeList* lower;
 
+        /** pointer to the heapblock terminal that represents the code chunk containing this block */
+        CodeList* terminator;
+
         /** true if block is free, false otherwise */
         bool isFree;
+
+        /** (only valid for terminator blocks).  Set true just before calling
+         * markCodeChunkExec() and false just after markCodeChunkWrite() */
+        bool isExec;
+
         union {
             // this union is used in leu of pointer punning in code
             // the end of this block is always the address of the next higher block
@@ -85,9 +88,6 @@ namespace nanojit
 
         /** return the whole size of this block including overhead */
         size_t blockSize() const { return uintptr_t(end) - uintptr_t(this); }
-
-        /** return true if just this block contains p */
-        bool contains(NIns* p) const  { return containsPtr(&code[0], end, p); }
     };
 
     /**
@@ -113,6 +113,12 @@ namespace nanojit
         CodeList* availblocks;
         size_t totalAllocated;
 
+        /** Cached value of VMPI_getVMPageSize */
+        const size_t bytesPerPage;
+
+        /** Number of bytes to request from VMPI layer, always a multiple of the page size */
+        const size_t bytesPerAlloc;
+
         /** remove one block from a list */
         static CodeList* removeBlock(CodeList* &list);
 
@@ -129,7 +135,7 @@ namespace nanojit
         void sanity_check();
 
         /** find the beginning of the heapblock terminated by term */
-        static CodeList* firstBlock(CodeList* term);
+        CodeList* firstBlock(CodeList* term);
 
         //
         // CodeAlloc's SPI.  Implementations must be defined by nanojit embedder.
@@ -142,8 +148,16 @@ namespace nanojit
 
         /** free a block previously allocated by allocCodeMem.  nbytes will
          * match the previous allocCodeMem, but is provided here as well
-         * to mirror the mmap()/munmap() api. */
+         * to mirror the mmap()/munmap() api.  markCodeChunkWrite() will have
+         * been called if necessary, so it is not necessary for freeCodeChunk()
+         * to do it again. */
         void freeCodeChunk(void* addr, size_t nbytes);
+
+        /** make this specific extent ready to execute (might remove write) */
+        void markCodeChunkExec(void* addr, size_t nbytes);
+
+        /** make this extent ready to modify (might remove exec) */
+        void markCodeChunkWrite(void* addr, size_t nbytes);
 
     public:
         CodeAlloc();
@@ -174,14 +188,10 @@ namespace nanojit
         /** add a block previously returned by alloc(), to code */
         static void add(CodeList* &code, NIns* start, NIns* end);
 
-        /** move all the code in list "from" to list "to", and leave from empty. */
-        static void moveAll(CodeList* &to, CodeList* &from);
-
-        /** return true if any block in list "code" contains the code pointer p */
-        static bool contains(const CodeList* code, NIns* p);
-
         /** return the number of bytes in all the code blocks in "code", including block overhead */
+#ifdef PERFM
         static size_t size(const CodeList* code);
+#endif
 
         /** return the total number of bytes held by this CodeAlloc. */
         size_t size();
@@ -189,15 +199,11 @@ namespace nanojit
         /** print out stats about heap usage */
         void logStats();
 
-        enum CodePointerKind {
-            kUnknown, kFree, kUsed
-        };
+        /** protect all code in this code alloc */
+        void markAllExec();
 
-        /** determine whether the given address is not code, or is allocated or free */
-        CodePointerKind classifyPtr(NIns *p);
-
-        /** return any completely empty pages */
-        void sweep();
+        /** unprotect the code chunk containing just this one block */
+        void markBlockWrite(CodeList* b);
     };
 }
 

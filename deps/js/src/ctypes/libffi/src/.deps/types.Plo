@@ -1,0 +1,63 @@
+src/types.lo: src/types.c include/ffi.h include/ffitarget.h \
+  /usr/lib/gcc/x86_64-linux-gnu/4.3.2/include/stddef.h \
+  /usr/lib/gcc/x86_64-linux-gnu/4.3.2/include-fixed/limits.h \
+  /usr/lib/gcc/x86_64-linux-gnu/4.3.2/include-fixed/syslimits.h \
+  /usr/include/limits.h /usr/include/features.h /usr/include/sys/cdefs.h \
+  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
+  /usr/include/gnu/stubs-64.h /usr/include/bits/posix1_lim.h \
+  /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
+  /usr/include/bits/posix2_lim.h include/ffi_common.h fficonfig.h \
+  /usr/include/string.h /usr/include/bits/string.h \
+  /usr/include/bits/string2.h /usr/include/endian.h \
+  /usr/include/bits/endian.h /usr/include/bits/types.h \
+  /usr/include/bits/typesizes.h /usr/include/stdlib.h
+
+include/ffi.h:
+
+include/ffitarget.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.3.2/include/stddef.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.3.2/include-fixed/limits.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.3.2/include-fixed/syslimits.h:
+
+/usr/include/limits.h:
+
+/usr/include/features.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/bits/wordsize.h:
+
+/usr/include/gnu/stubs.h:
+
+/usr/include/gnu/stubs-64.h:
+
+/usr/include/bits/posix1_lim.h:
+
+/usr/include/bits/local_lim.h:
+
+/usr/include/linux/limits.h:
+
+/usr/include/bits/posix2_lim.h:
+
+include/ffi_common.h:
+
+fficonfig.h:
+
+/usr/include/string.h:
+
+/usr/include/bits/string.h:
+
+/usr/include/bits/string2.h:
+
+/usr/include/endian.h:
+
+/usr/include/bits/endian.h:
+
+/usr/include/bits/types.h:
+
+/usr/include/bits/typesizes.h:
+
+/usr/include/stdlib.h:

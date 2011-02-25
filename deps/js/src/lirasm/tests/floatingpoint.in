@@ -1,0 +1,4 @@
+pi = immd 3.14
+two = immd 2.0
+TwoPi = muld pi two
+retd two

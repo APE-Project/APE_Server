@@ -1,0 +1,8 @@
+src/x86/unix64.lo: src/x86/unix64.S fficonfig.h include/ffi.h \
+  include/ffitarget.h
+
+fficonfig.h:
+
+include/ffi.h:
+
+include/ffitarget.h:

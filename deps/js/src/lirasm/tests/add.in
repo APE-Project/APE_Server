@@ -1,0 +1,4 @@
+two = immi 2
+three = immi 3
+res = addi two three
+reti res

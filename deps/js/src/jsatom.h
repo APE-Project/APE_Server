@@ -87,7 +87,7 @@ struct JSAtomListElement {
 };
 
 #define ALE_ATOM(ale)   ((JSAtom *) (ale)->entry.key)
-#define ALE_INDEX(ale)  ((jsatomid) JS_PTR_TO_UINT32((ale)->entry.value))
+#define ALE_INDEX(ale)  (jsatomid(uintptr_t((ale)->entry.value)))
 #define ALE_VALUE(ale)  ((jsval) (ale)->entry.value)
 #define ALE_NEXT(ale)   ((JSAtomListElement *) (ale)->entry.next)
 
@@ -99,7 +99,7 @@ struct JSAtomListElement {
 #define ALE_DEFN(ale)   ((JSDefinition *) (ale)->entry.value)
 
 #define ALE_SET_ATOM(ale,atom)  ((ale)->entry.key = (const void *)(atom))
-#define ALE_SET_INDEX(ale,index)((ale)->entry.value = JS_UINT32_TO_PTR(index))
+#define ALE_SET_INDEX(ale,index)((ale)->entry.value = (void *)(index))
 #define ALE_SET_DEFN(ale, dn)   ((ale)->entry.value = (void *)(dn))
 #define ALE_SET_VALUE(ale, v)   ((ale)->entry.value = (void *)(v))
 #define ALE_SET_NEXT(ale,nxt)   ((ale)->entry.next = (JSHashEntry *)(nxt))
@@ -152,16 +152,16 @@ struct JSAtomList : public JSAtomSet
 
     enum AddHow { UNIQUE, SHADOW, HOIST };
 
-    JSAtomListElement *add(JSCompiler *jsc, JSAtom *atom, AddHow how = UNIQUE);
+    JSAtomListElement *add(js::Parser *parser, JSAtom *atom, AddHow how = UNIQUE);
 
-    void remove(JSCompiler *jsc, JSAtom *atom) {
+    void remove(js::Parser *parser, JSAtom *atom) {
         JSHashEntry **hep;
         JSAtomListElement *ale = rawLookup(atom, hep);
         if (ale)
-            rawRemove(jsc, ale, hep);
+            rawRemove(parser, ale, hep);
     }
 
-    void rawRemove(JSCompiler *jsc, JSAtomListElement *ale, JSHashEntry **hep);
+    void rawRemove(js::Parser *parser, JSAtomListElement *ale, JSHashEntry **hep);
 };
 
 /*
@@ -170,10 +170,10 @@ struct JSAtomList : public JSAtomSet
  */
 struct JSAutoAtomList: public JSAtomList
 {
-    JSAutoAtomList(JSCompiler *c): compiler(c) {}
+    JSAutoAtomList(js::Parser *p): parser(p) {}
     ~JSAutoAtomList();
   private:
-    JSCompiler *compiler;       /* For freeing list entries. */
+    js::Parser *parser;         /* For freeing list entries. */
 };
 
 /*
@@ -246,29 +246,33 @@ struct JSAtomState {
     JSAtom              *callerAtom;
     JSAtom              *classPrototypeAtom;
     JSAtom              *constructorAtom;
-    JSAtom              *countAtom;
     JSAtom              *eachAtom;
     JSAtom              *evalAtom;
     JSAtom              *fileNameAtom;
     JSAtom              *getAtom;
-    JSAtom              *getterAtom;
+    JSAtom              *globalAtom;
+    JSAtom              *ignoreCaseAtom;
     JSAtom              *indexAtom;
     JSAtom              *inputAtom;
     JSAtom              *iteratorAtom;
+    JSAtom              *lastIndexAtom;
     JSAtom              *lengthAtom;
     JSAtom              *lineNumberAtom;
     JSAtom              *messageAtom;
+    JSAtom              *multilineAtom;
     JSAtom              *nameAtom;
     JSAtom              *nextAtom;
     JSAtom              *noSuchMethodAtom;
-    JSAtom              *parentAtom;
     JSAtom              *protoAtom;
     JSAtom              *setAtom;
-    JSAtom              *setterAtom;
+    JSAtom              *sourceAtom;
     JSAtom              *stackAtom;
+    JSAtom              *stickyAtom;
+    JSAtom              *toGMTStringAtom;
     JSAtom              *toLocaleStringAtom;
     JSAtom              *toSourceAtom;
     JSAtom              *toStringAtom;
+    JSAtom              *toUTCStringAtom;
     JSAtom              *valueOfAtom;
     JSAtom              *toJSONAtom;
     JSAtom              *void0Atom;
@@ -299,6 +303,21 @@ struct JSAtomState {
     JSAtom              *currentAtom;
 #endif
 
+    JSAtom              *ProxyAtom;
+
+    JSAtom              *getOwnPropertyDescriptorAtom;
+    JSAtom              *getPropertyDescriptorAtom;
+    JSAtom              *definePropertyAtom;
+    JSAtom              *deleteAtom;
+    JSAtom              *getOwnPropertyNamesAtom;
+    JSAtom              *enumerateAtom;
+    JSAtom              *fixAtom;
+
+    JSAtom              *hasAtom;
+    JSAtom              *hasOwnAtom;
+    JSAtom              *enumerateOwnAtom;
+    JSAtom              *iterateAtom;
+
     /* Less frequently used atoms, pinned lazily by JS_ResolveStandardClass. */
     struct {
         JSAtom          *InfinityAtom;
@@ -328,6 +347,8 @@ struct JSAtomState {
         JSAtom          *watchAtom;
     } lazy;
 };
+
+#define ATOM(name) cx->runtime->atomState.name##Atom
 
 #define ATOM_OFFSET_START       offsetof(JSAtomState, emptyAtom)
 #define LAZY_ATOM_OFFSET_START  offsetof(JSAtomState, lazy)
@@ -380,33 +401,40 @@ extern const char   js_eval_str[];
 extern const char   js_fileName_str[];
 extern const char   js_get_str[];
 extern const char   js_getter_str[];
+extern const char   js_global_str[];
+extern const char   js_ignoreCase_str[];
 extern const char   js_index_str[];
 extern const char   js_input_str[];
 extern const char   js_iterator_str[];
+extern const char   js_lastIndex_str[];
 extern const char   js_length_str[];
 extern const char   js_lineNumber_str[];
 extern const char   js_message_str[];
+extern const char   js_multiline_str[];
 extern const char   js_name_str[];
 extern const char   js_namespace_str[];
 extern const char   js_next_str[];
 extern const char   js_noSuchMethod_str[];
 extern const char   js_object_str[];
-extern const char   js_parent_str[];
 extern const char   js_proto_str[];
 extern const char   js_ptagc_str[];
 extern const char   js_qualifier_str[];
 extern const char   js_send_str[];
 extern const char   js_setter_str[];
 extern const char   js_set_str[];
+extern const char   js_source_str[];
 extern const char   js_space_str[];
 extern const char   js_stack_str[];
+extern const char   js_sticky_str[];
 extern const char   js_stago_str[];
 extern const char   js_star_str[];
 extern const char   js_starQualifier_str[];
 extern const char   js_tagc_str[];
+extern const char   js_toGMTString_str[];
+extern const char   js_toLocaleString_str[];
 extern const char   js_toSource_str[];
 extern const char   js_toString_str[];
-extern const char   js_toLocaleString_str[];
+extern const char   js_toUTCString_str[];
 extern const char   js_undefined_str[];
 extern const char   js_valueOf_str[];
 extern const char   js_toJSON_str[];
@@ -444,7 +472,7 @@ js_FinishAtomState(JSRuntime *rt);
  */
 
 extern void
-js_TraceAtomState(JSTracer *trc, JSBool allAtoms);
+js_TraceAtomState(JSTracer *trc);
 
 extern void
 js_SweepAtomState(JSContext *cx);

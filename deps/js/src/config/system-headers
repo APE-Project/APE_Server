@@ -76,6 +76,7 @@ byteswap.h
 #define WRAP_CAIRO_HEADERS
 #endif
 #ifdef WRAP_CAIRO_HEADERS
+pixman.h
 cairo.h
 cairo-atsui.h
 cairo-beos.h
@@ -211,6 +212,7 @@ dbus/dbus-glib.h
 dbus/dbus-glib-lowlevel.h
 ddeml.h
 Debug.h
+deque
 dem.h
 descrip.h
 Devices.h
@@ -273,6 +275,7 @@ freetype/tttables.h
 freetype/t1tables.h
 fribidi/fribidi.h
 FSp_fopen.h
+fstream
 fstream.h
 ft2build.h
 fts.h
@@ -328,6 +331,7 @@ IOKit/pwr_mgt/IOPMLib.h
 iomanip
 iostream
 iostream.h
+iterator
 jar.h
 JavaControl.h
 JavaEmbedding/JavaControl.h
@@ -606,6 +610,7 @@ pthread.h
 pwd.h
 Python.h
 QDOffscreen.h
+queue
 Quickdraw.h
 QuickDraw.h
 QuickTimeComponents.h
@@ -640,6 +645,7 @@ security.h
 secutil.h
 semaphore.h
 servprov.h
+set
 setjmp.h
 SFNTLayoutTypes.h
 SFNTTypes.h
@@ -833,6 +839,7 @@ UReanimator.h
 URegions.h
 URegistrar.h
 UResourceMgr.h
+utility
 urlhist.h
 urlmon.h
 UScrap.h
@@ -1008,13 +1015,21 @@ hunspell.hxx
 #if MOZ_NATIVE_BZ2==1
 bzlib.h
 #endif
-#ifdef MOZ_PLATFORM_HILDON
+#if MOZ_PLATFORM_MAEMO==5
 hildon-uri.h
 hildon-mime.h
-#endif
-#ifdef NS_OSSO
+hildon-file-chooser-dialog.h
 libosso.h
+osso-mem.h
 #endif
 #ifdef MOZ_ENABLE_GIO
 gio/gio.h
+#endif
+#ifdef MOZ_ENABLE_LIBCONIC
+conic/conicconnection.h
+conic/conicconnectionevent.h
+conic/conicstatisticsevent.h
+#endif
+#if MOZ_NATIVE_LIBEVENT==1
+event.h
 #endif

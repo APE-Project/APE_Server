@@ -54,6 +54,8 @@
     #define NANOJIT_SPARC
 #elif defined AVMPLUS_AMD64
     #define NANOJIT_X64
+#elif defined AVMPLUS_MIPS
+    #define NANOJIT_MIPS
 #else
     #error "unknown nanojit architecture"
 #endif
@@ -65,24 +67,19 @@
 #if defined NANOJIT_64BIT
     #define IF_64BIT(...) __VA_ARGS__
     #define UNLESS_64BIT(...)
+    #define CASE32(x)
+    #define CASE64(x)   case x
 #else
     #define IF_64BIT(...)
     #define UNLESS_64BIT(...) __VA_ARGS__
+    #define CASE32(x)   case x
+    #define CASE64(x)
 #endif
 
-// set ARM_VFP constant if not already set
-#if !defined(ARM_VFP)
-    #ifdef AVMPLUS_ARM
-        #if defined(NJ_ARM_VFP)
-            #define ARM_VFP      1
-        #else
-            #define ARM_VFP      0
-        #endif
-    #else
-        // some LIR features should test VFP on ARM,
-        // but can be set to "always on" on non-ARM
-        #define ARM_VFP 1
-    #endif
+#if defined NANOJIT_IA32 || defined NANOJIT_X64
+    #define CASE86(x)   case x
+#else
+    #define CASE86(x)
 #endif
 
 // Embed no-op macros that let Valgrind work with the JIT.
@@ -114,8 +111,8 @@ namespace nanojit
 
         #define __NanoAssertMsgf(a, file_, line_, f, ...)  \
             if (!(a)) { \
-                avmplus::AvmLog("Assertion failed: " f "%s (%s:%d)\n", __VA_ARGS__, #a, file_, line_); \
-                NanoAssertFail(); \
+                avmplus::AvmLog("Assertion failure: " f "%s (%s:%d)\n", __VA_ARGS__, #a, file_, line_); \
+                avmplus::AvmAssertFail(""); \
             }
 
         #define _NanoAssertMsgf(a, file_, line_, f, ...)   __NanoAssertMsgf(a, file_, line_, f, __VA_ARGS__)
@@ -151,22 +148,17 @@ namespace nanojit
 }
 
 #ifdef AVMPLUS_VERBOSE
-#ifndef NJ_VERBOSE_DISABLED
-	#define NJ_VERBOSE 1
-#endif
-#ifndef NJ_PROFILE_DISABLED
-	#define NJ_PROFILE 1
-#endif
+    #define NJ_VERBOSE 1
 #endif
 
 #ifdef NJ_NO_VARIADIC_MACROS
     #include <stdio.h>
-    #define verbose_outputf            if (_logc->lcbits & LC_Assembly) \
+    #define verbose_outputf            if (_logc->lcbits & LC_Native) \
                                         Assembler::outputf
     #define verbose_only(x)            x
 #elif defined(NJ_VERBOSE)
     #include <stdio.h>
-    #define verbose_outputf            if (_logc->lcbits & LC_Assembly) \
+    #define verbose_outputf            if (_logc->lcbits & LC_Native) \
                                         Assembler::outputf
     #define verbose_only(...)        __VA_ARGS__
 #else
@@ -179,30 +171,6 @@ namespace nanojit
 #else
     #define debug_only(x)
 #endif /* DEBUG */
-
-#ifdef NJ_PROFILE
-    #define counter_struct_begin()  struct {
-    #define counter_struct_end()    } _stats;
-    #define counter_define(x)       int32_t x
-    #define counter_value(x)        _stats.x
-    #define counter_set(x,v)        (counter_value(x)=(v))
-    #define counter_adjust(x,i)     (counter_value(x)+=(int32_t)(i))
-    #define counter_reset(x)        counter_set(x,0)
-    #define counter_increment(x)    counter_adjust(x,1)
-    #define counter_decrement(x)    counter_adjust(x,-1)
-    #define profile_only(x)         x
-#else
-    #define counter_struct_begin()
-    #define counter_struct_end()
-    #define counter_define(x)
-    #define counter_value(x)
-    #define counter_set(x,v)
-    #define counter_adjust(x,i)
-    #define counter_reset(x)
-    #define counter_increment(x)
-    #define counter_decrement(x)
-    #define profile_only(x)
-#endif /* NJ_PROFILE */
 
 #define isS8(i)  ( int32_t(i) == int8_t(i) )
 #define isU8(i)  ( int32_t(i) == uint8_t(i) )
@@ -250,13 +218,13 @@ namespace nanojit {
            themselves. */
         // TODO: add entries for the writer pipeline
         LC_FragProfile = 1<<7, // collect per-frag usage counts
-        LC_Activation  = 1<<6, // enable printActivationState
-        LC_Liveness    = 1<<5, // (show LIR liveness analysis)
-        LC_ReadLIR     = 1<<4, // As read from LirBuffer
-        LC_AfterSF     = 1<<3, // After StackFilter
-        LC_RegAlloc    = 1<<2, // stuff to do with reg alloc
-        LC_Assembly    = 1<<1, // final assembly
-        LC_NoCodeAddrs = 1<<0  // (don't show code addresses on asm output)
+        LC_Liveness    = 1<<6, // show LIR liveness analysis
+        LC_ReadLIR     = 1<<5, // as read from LirBuffer
+        LC_AfterSF     = 1<<4, // after StackFilter
+        LC_AfterDCE    = 1<<3, // after dead code elimination
+        LC_Native      = 1<<2, // final native code
+        LC_RegAlloc    = 1<<1, // stuff to do with reg alloc
+        LC_Activation  = 1<<0  // enable printActivationState
     };
 
     class LogControl
@@ -264,12 +232,14 @@ namespace nanojit {
     public:
         // All Nanojit and jstracer printing should be routed through
         // this function.
-        void printf( const char* format, ... ) PRINTF_CHECK(2,3);
+        virtual ~LogControl() {}
+        #ifdef NJ_VERBOSE
+        virtual void printf( const char* format, ... ) PRINTF_CHECK(2,3);
+        #endif
 
         // An OR of LC_Bits values, indicating what should be output
         uint32_t lcbits;
     };
-
 }
 
 // -------------------------------------------------------------------
@@ -277,6 +247,7 @@ namespace nanojit {
 // -------------------------------------------------------------------
 
 
+#include "njconfig.h"
 #include "Allocator.h"
 #include "Containers.h"
 #include "Native.h"

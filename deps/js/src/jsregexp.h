@@ -52,26 +52,15 @@
 
 JS_BEGIN_EXTERN_C
 
-struct JSRegExpStatics {
-    JSString    *input;         /* input string to match (perl $_, GC root) */
-    JSBool      multiline;      /* whether input contains newlines (perl $*) */
-    uint16      parenCount;     /* number of valid elements in parens[] */
-    uint16      moreLength;     /* number of allocated elements in moreParens */
-    JSSubString parens[9];      /* last set of parens matched (perl $1, $2) */
-    JSSubString *moreParens;    /* null or realloc'd vector for $10, etc. */
-    JSSubString lastMatch;      /* last string matched (perl $&) */
-    JSSubString lastParen;      /* last paren matched (perl $+) */
-    JSSubString leftContext;    /* input to left of last match (perl $`) */
-    JSSubString rightContext;   /* input to right of last match (perl $') */
-};
+namespace js { class AutoValueRooter; }
 
 extern JS_FRIEND_API(void)
 js_SaveAndClearRegExpStatics(JSContext *cx, JSRegExpStatics *statics,
-                             JSTempValueRooter *tvr);
+                             js::AutoValueRooter *tvr);
 
 extern JS_FRIEND_API(void)
 js_RestoreRegExpStatics(JSContext *cx, JSRegExpStatics *statics,
-                        JSTempValueRooter *tvr);
+                        js::AutoValueRooter *tvr);
 
 /*
  * This struct holds a bitmap representation of a class from a regexp.
@@ -94,17 +83,6 @@ typedef struct RECharSet {
     } u;
 } RECharSet;
 
-/*
- * This macro is safe because moreParens is guaranteed to be allocated and big
- * enough to hold parenCount, or else be null when parenCount is 0.
- */
-#define REGEXP_PAREN_SUBSTRING(res, num)                                      \
-    (((jsuint)(num) < (jsuint)(res)->parenCount)                              \
-     ? ((jsuint)(num) < 9)                                                    \
-       ? &(res)->parens[num]                                                  \
-       : &(res)->moreParens[(num) - 9]                                        \
-     : &js_EmptySubString)
-
 typedef struct RENode RENode;
 
 struct JSRegExp {
@@ -118,7 +96,7 @@ struct JSRegExp {
 };
 
 extern JSRegExp *
-js_NewRegExp(JSContext *cx, JSTokenStream *ts,
+js_NewRegExp(JSContext *cx, js::TokenStream *ts,
              JSString *str, uintN flags, JSBool flat);
 
 extern JSRegExp *
@@ -149,19 +127,18 @@ extern void
 js_FreeRegExpStatics(JSContext *cx);
 
 #define VALUE_IS_REGEXP(cx, v)                                                \
-    (JSVAL_IS_OBJECT(v) && JSVAL_TO_OBJECT(v) &&                              \
-     OBJ_GET_CLASS(cx, JSVAL_TO_OBJECT(v)) == &js_RegExpClass)
+    (!JSVAL_IS_PRIMITIVE(v) && JSVAL_TO_OBJECT(v)->isRegExp())
 
 extern JSClass js_RegExpClass;
 
-enum regexp_tinyid {
-    REGEXP_SOURCE       = -1,
-    REGEXP_GLOBAL       = -2,
-    REGEXP_IGNORE_CASE  = -3,
-    REGEXP_LAST_INDEX   = -4,
-    REGEXP_MULTILINE    = -5,
-    REGEXP_STICKY       = -6
-};
+inline bool
+JSObject::isRegExp() const
+{
+    return getClass() == &js_RegExpClass;
+}
+
+extern JS_FRIEND_API(JSBool)
+js_ObjectIsRegExp(JSObject *obj);
 
 extern JSObject *
 js_InitRegExpClass(JSContext *cx, JSObject *obj);
@@ -176,24 +153,14 @@ js_regexp_toString(JSContext *cx, JSObject *obj, jsval *vp);
  * Create, serialize/deserialize, or clone a RegExp object.
  */
 extern JSObject *
-js_NewRegExpObject(JSContext *cx, JSTokenStream *ts,
-                   jschar *chars, size_t length, uintN flags);
+js_NewRegExpObject(JSContext *cx, js::TokenStream *ts,
+                   const jschar *chars, size_t length, uintN flags);
 
 extern JSBool
 js_XDRRegExpObject(JSXDRState *xdr, JSObject **objp);
 
-extern JSObject *
-js_CloneRegExpObject(JSContext *cx, JSObject *obj, JSObject *parent);
-
-const uint32 JSSLOT_REGEXP_LAST_INDEX = JSSLOT_PRIVATE + 1;
-const uint32 REGEXP_CLASS_FIXED_RESERVED_SLOTS = 1;
-
-static inline void
-js_ClearRegExpLastIndex(JSObject *obj)
-{
-    JS_ASSERT(obj->getClass() == &js_RegExpClass);
-    obj->fslots[JSSLOT_REGEXP_LAST_INDEX] = JSVAL_ZERO;
-}
+extern JS_FRIEND_API(JSObject *) JS_FASTCALL
+js_CloneRegExpObject(JSContext *cx, JSObject *obj, JSObject *proto);
 
 /* Return whether the given character array contains RegExp meta-characters. */
 extern bool

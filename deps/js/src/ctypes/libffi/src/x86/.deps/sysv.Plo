@@ -1,0 +1,1 @@
+src/x86/sysv.lo: src/x86/sysv.S

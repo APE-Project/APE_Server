@@ -1154,12 +1154,12 @@ static JSObject *sm_ape_socket_to_jsobj(JSContext *cx, ape_socket *client)
 		
 		JSObject *obj = JS_NewObject(cx, &apesocket_class, NULL, NULL);
 		
-		JS_AddRoot(cx, &obj);
+		JS_AddObjectRoot(cx, &obj);
 
 		JS_DefineFunctions(cx, obj, apesocketclient_funcs);
 		JS_SetPrivate(cx, obj, client);
 		
-		JS_RemoveRoot(cx, &obj);
+		JS_RemoveObjectRoot(cx, &obj);
 		
 		client->data = obj;
 		return obj;
@@ -1193,7 +1193,7 @@ static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
 
 			obj = JS_NewObject(cb->asc->cx, &apesocket_class, NULL, NULL);
 			sock_obj->client_obj = obj;
-			JS_AddRoot(cb->asc->cx, &sock_obj->client_obj);
+			JS_AddObjectRoot(cb->asc->cx, &sock_obj->client_obj);
 			
 			JS_SetPrivate(cb->asc->cx, obj, cbcopy);
 			JS_DefineFunctions(cb->asc->cx, obj, apesocket_funcs);
@@ -1228,11 +1228,11 @@ static void sm_sock_ondisconnect(ape_socket *client, acetables *g_ape)
 				
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 1, params, &rval);
 				JS_SetPrivate(cb->asc->cx, client_obj, (void *)NULL);
-				JS_RemoveRoot(cb->asc->cx, &((struct _ape_sock_js_obj *)cb->private)->client_obj);
+				JS_RemoveObjectRoot(cb->asc->cx, &((struct _ape_sock_js_obj *)cb->private)->client_obj);
 			} else {
 				JS_CallFunctionName(cb->asc->cx, cb->server_obj, "onDisconnect", 0, NULL, &rval);
 				JS_SetPrivate(cb->asc->cx, cb->server_obj, (void *)NULL);
-				JS_RemoveRoot(cb->asc->cx, &cb->server_obj);
+				JS_RemoveObjectRoot(cb->asc->cx, &cb->server_obj);
 			}
 			
 			free(cb->private);
@@ -1434,7 +1434,7 @@ static void ape_sm_pipe_on_send_wrapper(transpipe *pipe, USERS *user, json_item 
 	
 	JS_CallFunctionName(cx, pipe->data, "onSend", 2, params, &rval);
 	
-	JS_RemoveRoot(cx, &obj);
+	JS_RemoveObjectRoot(cx, &obj);
 }
 
 /* Dispatch CMD to the corresponding javascript callback */
@@ -1460,10 +1460,10 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 		jsval jval;
 
 		obj = ape_json_to_jsobj(cx, head, NULL);
-		JS_AddRoot(cx, &obj);
+		JS_AddObjectRoot(cx, &obj);
 		
 		cb = JS_NewObject(cx, &cmdresponse_class, NULL, NULL);
-		JS_AddRoot(cx, &cb);
+		JS_AddObjectRoot(cx, &cb);
 		JS_DefineFunctions(cx, cb, cmdresponse_funcs);
 		
 		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->host));
@@ -1500,8 +1500,8 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 			}
 		}
 		
-		JS_RemoveRoot(cx, &obj);
-		JS_RemoveRoot(cx, &cb);	
+		JS_RemoveObjectRoot(cx, &obj);
+		JS_RemoveObjectRoot(cx, &cb);	
 		
 	//JS_EndRequest(cx);
 	//JS_ClearContextThread(cx);
@@ -1525,7 +1525,7 @@ APE_JS_NATIVE(ape_sm_register_bad_cmd)
 		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
-	JS_AddRoot(cx, &ascb->func);
+	JS_AddValueRoot(cx, &ascb->func);
 	
 	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
 	ascb->next = NULL;
@@ -1570,7 +1570,7 @@ APE_JS_NATIVE(ape_sm_register_cmd)
 		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
-	JS_AddRoot(cx, &ascb->func);
+	JS_AddValueRoot(cx, &ascb->func);
 	
 	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
 	ascb->next = NULL;
@@ -1619,7 +1619,7 @@ APE_JS_NATIVE(ape_sm_hook_cmd)
 		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
-	JS_AddRoot(cx, &ascb->func);
+	JS_AddValueRoot(cx, &ascb->func);
 	
 	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
 	ascb->next = NULL;
@@ -1890,7 +1890,7 @@ APE_JS_NATIVE(ape_sm_addEvent)
 		JS_free(cx, ascb);
 		return JS_TRUE;
 	}
-	JS_AddRoot(cx, &ascb->func);
+	JS_AddValueRoot(cx, &ascb->func);
 
 	ascb->next = NULL;
 	ascb->type = APE_EVENT;
@@ -1920,10 +1920,10 @@ static JSObject *get_pipe_object(const char *pubid, transpipe *pipe, JSContext *
 				return NULL;
 			}
 			
-			JS_AddRoot(cx, &jspipe);
+			JS_AddObjectRoot(cx, &jspipe);
 			//JS_DefineFunctions(cx, jspipe, apepipe_funcs);
 			JS_SetPrivate(cx, jspipe, pipe);
-			JS_RemoveRoot(cx, &jspipe);
+			JS_RemoveObjectRoot(cx, &jspipe);
 			
 			pipe->data = jspipe;
 		}
@@ -2073,7 +2073,7 @@ static void ape_sm_timer_wrapper(struct _ape_sm_timer *params, int *last)
 			}
 		}
 		if (*last) {
-			JS_RemoveRoot(params->cx, &params->func);
+			JS_RemoveValueRoot(params->cx, &params->func);
 			
 			if (params->argv != NULL) {
 				free(params->argv);
@@ -2112,7 +2112,7 @@ APE_JS_NATIVE(ape_sm_set_timeout)
 		return JS_TRUE;
 	}
 	
-	JS_AddRoot(cx, &params->func);
+	JS_AddValueRoot(cx, &params->func);
 	
 	for (i = 0; i < argc-2; i++) {
 		params->argv[i] = argv[i+2];
@@ -2156,7 +2156,7 @@ APE_JS_NATIVE(ape_sm_set_interval)
 		return JS_TRUE;
 	}
 	
-	JS_AddRoot(cx, &params->func);
+	JS_AddValueRoot(cx, &params->func);
 	
 	for (i = 0; i < argc-2; i++) {
 		params->argv[i] = argv[i+2];
@@ -2247,7 +2247,7 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	cbcopy->server_obj = obj;
 	cbcopy->state = 1;
 	
-	JS_AddRoot(cx, &cbcopy->server_obj);
+	JS_AddObjectRoot(cx, &cbcopy->server_obj);
 	
 	pattern = xmalloc(sizeof(*pattern));
 	pattern->callbacks.on_connect = sm_sock_onconnect;
@@ -2401,16 +2401,16 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 		unsigned int nfield = mysac_field_count(myres), nrow = mysac_num_rows(myres), pos = 0;
 		JSObject *res = JS_NewArrayObject(myhandle->cx, nrow, NULL); /* First param [{},{},{},] */
 		
-		JS_AddRoot(myhandle->cx, &res);
+		JS_AddObjectRoot(myhandle->cx, &res);
 		
 		while (nrow && (row = mysac_fetch_row(myres)) != NULL) {
 			unsigned int i;
 			jsval currentval;
 			JSObject *elem = JS_NewObject(myhandle->cx, NULL, NULL, NULL);
-			JS_AddRoot(myhandle->cx, &elem);
+			JS_AddObjectRoot(myhandle->cx, &elem);
 			currentval = OBJECT_TO_JSVAL(elem);
 			JS_SetElement(myhandle->cx, res, pos, &currentval);
-			JS_RemoveRoot(myhandle->cx, &elem);
+			JS_RemoveObjectRoot(myhandle->cx, &elem);
 			for (i = 0; i < nfield; i++) {
 				int fieldlen, valuelen;
 				char *field, *val;
@@ -2430,7 +2430,7 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 		params[0] = OBJECT_TO_JSVAL(res);
 		params[1] = JSVAL_FALSE;
 
-		JS_RemoveRoot(myhandle->cx, &res);
+		JS_RemoveObjectRoot(myhandle->cx, &res);
 		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
 	} else {
 		params[0] = JSVAL_FALSE;
@@ -2438,7 +2438,7 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 
 		JS_CallFunctionValue(myhandle->cx, myhandle->jsmysql, queue->callback, 2, params, &rval);
 	}
-	JS_RemoveRoot(myhandle->cx, &queue->callback);
+	JS_RemoveValueRoot(myhandle->cx, &queue->callback);
 	
 	free(queue->query);
 	free(queue->res);
@@ -2514,7 +2514,7 @@ static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myha
 	}
 	myhandle->queue.foot = nqueue;
 	
-	JS_AddRoot(myhandle->cx, &nqueue->callback);
+	JS_AddValueRoot(myhandle->cx, &nqueue->callback);
 
 	if (myhandle->queue.head->next == NULL && myhandle->state == SQL_READY_FOR_QUERY) {
 		
@@ -2600,7 +2600,7 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	((struct _ape_sock_callbacks *)server->attach)->server_obj 		= obj;
 	((struct _ape_sock_callbacks *)server->attach)->state 			= 1;
 	
-	JS_AddRoot(cx, &((struct _ape_sock_callbacks *)server->attach)->server_obj);
+	JS_AddObjectRoot(cx, &((struct _ape_sock_callbacks *)server->attach)->server_obj);
 
 	/* check if flushlf is set to true in the optional object */
 	if (options != NULL && JS_GetProperty(cx, options, "flushlf", &vp) && JSVAL_IS_BOOLEAN(vp) && vp == JSVAL_TRUE) {
@@ -2907,7 +2907,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	
 	glob_t globbuf;
 
-	rt = JS_NewRuntime(128L * 1024L * 1024L);
+	rt = JS_NewRuntime(8L * 1024L * 1024L);
 	
 	if (rt == NULL) {
 		printf("[ERR] Not enougth memory\n");
@@ -2922,7 +2922,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	JS_SetOptions(gcx, JSOPTION_VAROBJFIX | JSOPTION_JIT);
 	JS_SetVersion(gcx, JSVERSION_LATEST);
 	JS_SetErrorReporter(gcx, reportError);
-	JS_InitStandardClasses(gcx, JS_NewObject(gcx, &global_class, NULL, NULL));
+	JS_InitStandardClasses(gcx, JS_NewGlobalObject(gcx, &global_class));
 	
 	add_property(&g_ape->properties, "sm_context", gcx, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	add_property(&g_ape->properties, "sm_runtime", asr, EXTEND_POINTER, EXTEND_ISPRIVATE);
@@ -2939,7 +2939,10 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 		asc->filename = (void *)xstrdup(globbuf.gl_pathv[i]);
 
 		asc->cx = JS_NewContext(rt, 8192);
-		//JS_SetGCZeal(asc->cx, 2);
+		
+		#if 0
+		JS_SetGCZeal(asc->cx, 2);
+		#endif
 		
 		if (asc->cx == NULL) {
 			free(asc->filename);
@@ -2954,7 +2957,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 			JS_SetVersion(asc->cx, JSVERSION_LATEST);
 			JS_SetErrorReporter(asc->cx, reportError);
 
-			asc->global = JS_NewObject(asc->cx, &global_class, NULL, NULL);
+			asc->global = JS_NewGlobalObject(asc->cx, &global_class);
 			
 			JS_InitStandardClasses(asc->cx, asc->global);
 			
@@ -2967,7 +2970,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 				asc->scriptObj = JS_NewScriptObject(asc->cx, asc->bytecode);
 
 				/* Adding to the root (prevent the script to be GC collected) */
-				JS_AddNamedRoot(asc->cx, &asc->scriptObj, asc->filename);
+				JS_AddNamedObjectRoot(asc->cx, &asc->scriptObj, asc->filename);
 
 				/* put the Ape table on the script structure */
 				asc->g_ape = g_ape;
@@ -2997,14 +3000,18 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 static void free_module(acetables *g_ape) // Called when module is unloaded
 {
-	// TODO free other allocated objects
 
 	ape_sm_compiled *asc = ASMR->scripts;
 	ape_sm_compiled *prev_asc;
+    ape_sm_callback *cb;
 
 	while (asc != NULL) {
 		free(asc->filename);
-		JS_DestroyContext(asc->cx);
+        JS_RemoveObjectRoot(asc->cx, &asc->scriptObj);
+        for (cb = asc->callbacks.head; cb; cb = cb->next) {
+            JS_RemoveValueRoot(asc->cx, &cb->func);
+        }
+        JS_DestroyContext(asc->cx);
 		prev_asc = asc;
 		asc = asc->next;
 		free(prev_asc);
@@ -3045,7 +3052,7 @@ static USERS *ape_cb_allocateuser(ape_socket *client, const char *host, const ch
 
 		/* Store the JSObject into a private properties of the user */
 		jsobj = add_property(&u->properties, "jsobj", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
-		JS_AddRoot(gcx, &jsobj->val); /* add user object to the gc root */
+		JS_AddObjectRoot(gcx, (JSObject **)&jsobj->val); /* add user object to the gc root */
 
 		JS_SetPrivate(gcx, user, u);
 		
@@ -3074,7 +3081,7 @@ static void ape_cb_del_user(USERS *user, int istmp, acetables *g_ape)
 	jsobj = get_property(user->properties, "jsobj");
 	
 	JS_SetPrivate(gcx, jsobj->val, (void *)NULL);
-	JS_RemoveRoot(gcx, &jsobj->val);
+	JS_RemoveObjectRoot(gcx, (JSObject **)&jsobj->val);
 
 	deluser(user, g_ape);
 }
@@ -3101,7 +3108,7 @@ static CHANNEL *ape_cb_mkchan(char *name, int flags, acetables *g_ape)
 		}
 		
 		jsobj = add_property(&chan->properties, "jsobj", js_channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
-		JS_AddRoot(gcx, &jsobj->val);
+		JS_AddObjectRoot(gcx, (JSObject **)&jsobj->val);
 
 		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, chan->pipe, gcx, g_ape));
 		JS_SetProperty(gcx, js_channel, "pipe", &pipe);
@@ -3130,7 +3137,7 @@ static void ape_cb_rmchan(CHANNEL *chan, acetables *g_ape)
 	jsobj = get_property(chan->properties, "jsobj");
 	
 	JS_SetPrivate(gcx, jsobj->val, (void *)NULL);
-	JS_RemoveRoot(gcx, &jsobj->val);
+	JS_RemoveObjectRoot(gcx, (JSObject **)&jsobj->val);
 	
 	pipe = chan->pipe->data;
 	JS_SetPrivate(gcx, pipe, (void *)NULL);
@@ -3179,7 +3186,7 @@ static void ape_cb_addsubuser(subuser *sub, acetables *g_ape)
 	}
 	
 	jsobj = add_property(&sub->properties, "jsobj", subjs, EXTEND_POINTER, EXTEND_ISPRIVATE);
-	JS_AddRoot(gcx, &jsobj->val);
+	JS_AddObjectRoot(gcx, (JSObject **)&jsobj->val);
 	
 	JS_SetPrivate(gcx, subjs, sub);
 	
@@ -3193,7 +3200,7 @@ static void ape_cb_delsubuser(subuser *sub, acetables *g_ape)
 	jsobj = get_property(sub->properties, "jsobj");
 	
 	JS_SetPrivate(gcx, jsobj->val, (void *)NULL);
-	JS_RemoveRoot(gcx, &jsobj->val);
+	JS_RemoveObjectRoot(gcx, (JSObject **)&jsobj->val);
 	
 }
 

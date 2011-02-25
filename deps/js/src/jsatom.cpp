@@ -60,6 +60,8 @@
 #include "jsversion.h"
 #include "jsstrinlines.h"
 
+using namespace js;
+
 /*
  * ATOM_HASH assumes that JSHashNumber is 32-bit even on 64-bit systems.
  */
@@ -132,29 +134,33 @@ const char *const js_common_atom_names[] = {
     js_caller_str,              /* callerAtom                   */
     js_class_prototype_str,     /* classPrototypeAtom           */
     js_constructor_str,         /* constructorAtom              */
-    js_count_str,               /* countAtom                    */
     js_each_str,                /* eachAtom                     */
     js_eval_str,                /* evalAtom                     */
     js_fileName_str,            /* fileNameAtom                 */
     js_get_str,                 /* getAtom                      */
-    js_getter_str,              /* getterAtom                   */
+    js_global_str,              /* globalAtom                   */
+    js_ignoreCase_str,          /* ignoreCaseAtom               */
     js_index_str,               /* indexAtom                    */
     js_input_str,               /* inputAtom                    */
     js_iterator_str,            /* iteratorAtom                 */
+    js_lastIndex_str,           /* lastIndexAtom                */
     js_length_str,              /* lengthAtom                   */
     js_lineNumber_str,          /* lineNumberAtom               */
     js_message_str,             /* messageAtom                  */
+    js_multiline_str,           /* multilineAtom                */
     js_name_str,                /* nameAtom                     */
     js_next_str,                /* nextAtom                     */
     js_noSuchMethod_str,        /* noSuchMethodAtom             */
-    js_parent_str,              /* parentAtom                   */
     js_proto_str,               /* protoAtom                    */
     js_set_str,                 /* setAtom                      */
-    js_setter_str,              /* setterAtom                   */
+    js_source_str,              /* sourceAtom                   */
     js_stack_str,               /* stackAtom                    */
+    js_sticky_str,              /* stickyAtom                   */
+    js_toGMTString_str,         /* toGMTStringAtom              */
     js_toLocaleString_str,      /* toLocaleStringAtom           */
     js_toSource_str,            /* toSourceAtom                 */
     js_toString_str,            /* toStringAtom                 */
+    js_toUTCString_str,         /* toUTCStringAtom              */
     js_valueOf_str,             /* valueOfAtom                  */
     js_toJSON_str,              /* toJSONAtom                   */
     "(void 0)",                 /* void0Atom                    */
@@ -184,6 +190,21 @@ const char *const js_common_atom_names[] = {
     js_ExecutionContext_str,    /* ExecutionContextAtom         */
     js_current_str,             /* currentAtom                  */
 #endif
+
+    "Proxy",                    /* ProxyAtom                    */
+
+    "getOwnPropertyDescriptor", /* getOwnPropertyDescriptorAtom */
+    "getPropertyDescriptor",    /* getPropertyDescriptorAtom    */
+    "defineProperty",           /* definePropertyAtom           */
+    "delete",                   /* deleteAtom                   */
+    "getOwnPropertyNames",      /* getOwnPropertyNames          */
+    "enumerate",                /* enumerateAtom                */
+    "fix",                      /* fixAtom                      */
+
+    "has",                      /* hasAtom                      */
+    "hasOwn",                   /* hasOwnAtom                   */
+    "enumerateOwn",             /* enumerateOwnAtom             */
+    "iterate"                   /* iterateAtom                  */
 };
 
 JS_STATIC_ASSERT(JS_ARRAY_LENGTH(js_common_atom_names) * sizeof(JSAtom *) ==
@@ -206,30 +227,36 @@ const char js_callee_str[]          = "callee";
 const char js_caller_str[]          = "caller";
 const char js_class_prototype_str[] = "prototype";
 const char js_constructor_str[]     = "constructor";
-const char js_count_str[]           = "__count__";
 const char js_each_str[]            = "each";
 const char js_eval_str[]            = "eval";
 const char js_fileName_str[]        = "fileName";
 const char js_get_str[]             = "get";
 const char js_getter_str[]          = "getter";
+const char js_global_str[]          = "global";
+const char js_ignoreCase_str[]      = "ignoreCase";
 const char js_index_str[]           = "index";
 const char js_input_str[]           = "input";
 const char js_iterator_str[]        = "__iterator__";
+const char js_lastIndex_str[]       = "lastIndex";
 const char js_length_str[]          = "length";
 const char js_lineNumber_str[]      = "lineNumber";
 const char js_message_str[]         = "message";
+const char js_multiline_str[]       = "multiline";
 const char js_name_str[]            = "name";
 const char js_next_str[]            = "next";
 const char js_noSuchMethod_str[]    = "__noSuchMethod__";
 const char js_object_str[]          = "object";
-const char js_parent_str[]          = "__parent__";
 const char js_proto_str[]           = "__proto__";
 const char js_setter_str[]          = "setter";
 const char js_set_str[]             = "set";
+const char js_source_str[]          = "source";
 const char js_stack_str[]           = "stack";
+const char js_sticky_str[]          = "sticky";
+const char js_toGMTString_str[]     = "toGMTString";
+const char js_toLocaleString_str[]  = "toLocaleString";
 const char js_toSource_str[]        = "toSource";
 const char js_toString_str[]        = "toString";
-const char js_toLocaleString_str[]  = "toLocaleString";
+const char js_toUTCString_str[]     = "toUTCString";
 const char js_undefined_str[]       = "undefined";
 const char js_valueOf_str[]         = "valueOf";
 const char js_toJSON_str[]          = "toJSON";
@@ -501,6 +528,7 @@ js_InitCommonAtoms(JSContext *cx)
     JS_ASSERT((uint8 *)atoms - (uint8 *)state == LAZY_ATOM_OFFSET_START);
     memset(atoms, 0, ATOM_OFFSET_LIMIT - LAZY_ATOM_OFFSET_START);
 
+    cx->runtime->emptyString = ATOM_TO_STRING(state->emptyAtom);
     return JS_TRUE;
 }
 
@@ -516,8 +544,8 @@ js_atom_unpinner(JSDHashTable *table, JSDHashEntryHdr *hdr,
 void
 js_FinishCommonAtoms(JSContext *cx)
 {
+    cx->runtime->emptyString = NULL;
     JSAtomState *state = &cx->runtime->atomState;
-
     JS_DHashTableEnumerate(&state->stringAtoms, js_atom_unpinner, NULL);
 #ifdef DEBUG
     memset(COMMON_ATOMS_START(state), JS_FREE_PATTERN,
@@ -537,8 +565,8 @@ js_locked_atom_tracer(JSDHashTable *table, JSDHashEntryHdr *hdr,
         return JS_DHASH_NEXT;
     }
     JS_SET_TRACING_INDEX(trc, "locked_atom", (size_t)number);
-    JS_CallTracer(trc, ATOM_ENTRY_KEY(entry),
-                  IS_STRING_TABLE(table) ? JSTRACE_STRING : JSTRACE_DOUBLE);
+    js_CallGCMarker(trc, ATOM_ENTRY_KEY(entry),
+                    IS_STRING_TABLE(table) ? JSTRACE_STRING : JSTRACE_DOUBLE);
     return JS_DHASH_NEXT;
 }
 
@@ -557,18 +585,18 @@ js_pinned_atom_tracer(JSDHashTable *table, JSDHashEntryHdr *hdr,
                              ? "pinned_atom"
                              : "interned_atom",
                              (size_t)number);
-        JS_CallTracer(trc, ATOM_ENTRY_KEY(entry), JSTRACE_STRING);
+        js_CallGCMarker(trc, ATOM_ENTRY_KEY(entry), JSTRACE_STRING);
     }
     return JS_DHASH_NEXT;
 }
 
 void
-js_TraceAtomState(JSTracer *trc, JSBool allAtoms)
+js_TraceAtomState(JSTracer *trc)
 {
     JSRuntime *rt = trc->context->runtime;
     JSAtomState *state = &rt->atomState;
 
-    if (allAtoms) {
+    if (rt->gcKeepAtoms) {
         JS_DHashTableEnumerate(&state->doubleAtoms, js_locked_atom_tracer, trc);
         JS_DHashTableEnumerate(&state->stringAtoms, js_locked_atom_tracer, trc);
     } else {
@@ -581,7 +609,6 @@ js_atom_sweeper(JSDHashTable *table, JSDHashEntryHdr *hdr,
                 uint32 number, void *arg)
 {
     JSAtomHashEntry *entry = TO_ATOM_ENTRY(hdr);
-    JSContext *cx = (JSContext *)arg;
 
     /* Remove uninitialized entries.  */
     if (entry->keyAndFlags == 0)
@@ -589,8 +616,8 @@ js_atom_sweeper(JSDHashTable *table, JSDHashEntryHdr *hdr,
 
     if (ATOM_ENTRY_FLAGS(entry) & (ATOM_PINNED | ATOM_INTERNED)) {
         /* Pinned or interned key cannot be finalized. */
-        JS_ASSERT(!js_IsAboutToBeFinalized(cx, ATOM_ENTRY_KEY(entry)));
-    } else if (js_IsAboutToBeFinalized(cx, ATOM_ENTRY_KEY(entry))) {
+        JS_ASSERT(!js_IsAboutToBeFinalized(ATOM_ENTRY_KEY(entry)));
+    } else if (js_IsAboutToBeFinalized(ATOM_ENTRY_KEY(entry))) {
         /* Remove entries with things about to be GC'ed. */
         return JS_DHASH_REMOVE;
     }
@@ -602,8 +629,8 @@ js_SweepAtomState(JSContext *cx)
 {
     JSAtomState *state = &cx->runtime->atomState;
 
-    JS_DHashTableEnumerate(&state->doubleAtoms, js_atom_sweeper, cx);
-    JS_DHashTableEnumerate(&state->stringAtoms, js_atom_sweeper, cx);
+    JS_DHashTableEnumerate(&state->doubleAtoms, js_atom_sweeper, NULL);
+    JS_DHashTableEnumerate(&state->stringAtoms, js_atom_sweeper, NULL);
 
     /*
      * Optimize for simplicity and mutate table generation numbers even if the
@@ -748,7 +775,7 @@ js_AtomizeString(JSContext *cx, JSString *str, uintN flags)
                     if (!key)
                         return NULL;
                 }
-           } else {
+            } else {
                 JS_ASSERT(str->isDependent());
                 if (!js_UndependString(cx, str))
                     return NULL;
@@ -795,6 +822,8 @@ js_Atomize(JSContext *cx, const char *bytes, size_t length, uintN flags)
     JSString str;
     JSAtom *atom;
 
+    CHECK_REQUEST(cx);
+
     /*
      * Avoiding the malloc in js_InflateString on shorter strings saves us
      * over 20,000 malloc calls on mozilla browser startup. This compares to
@@ -830,6 +859,7 @@ js_AtomizeChars(JSContext *cx, const jschar *chars, size_t length, uintN flags)
 {
     JSString str;
 
+    CHECK_REQUEST(cx);
     str.initFlat((jschar *)chars, length);
     return js_AtomizeString(cx, &str, ATOM_TMPSTR | flags);
 }
@@ -960,23 +990,23 @@ JS_STATIC_ASSERT(TEMP_SIZE_START >= sizeof(JSHashTable));
 static void *
 js_alloc_temp_space(void *priv, size_t size)
 {
-    JSCompiler *jsc = (JSCompiler *) priv;
+    Parser *parser = (Parser *) priv;
 
     void *space;
     if (size < TEMP_SIZE_LIMIT) {
         int bin = JS_CeilingLog2(size) - TEMP_SIZE_START_LOG2;
         JS_ASSERT(unsigned(bin) < NUM_TEMP_FREELISTS);
 
-        space = jsc->tempFreeList[bin];
+        space = parser->tempFreeList[bin];
         if (space) {
-            jsc->tempFreeList[bin] = *(void **)space;
+            parser->tempFreeList[bin] = *(void **)space;
             return space;
         }
     }
 
-    JS_ARENA_ALLOCATE(space, &jsc->context->tempPool, size);
+    JS_ARENA_ALLOCATE(space, &parser->context->tempPool, size);
     if (!space)
-        js_ReportOutOfScriptQuota(jsc->context);
+        js_ReportOutOfScriptQuota(parser->context);
     return space;
 }
 
@@ -986,29 +1016,29 @@ js_free_temp_space(void *priv, void *item, size_t size)
     if (size >= TEMP_SIZE_LIMIT)
         return;
 
-    JSCompiler *jsc = (JSCompiler *) priv;
+    Parser *parser = (Parser *) priv;
     int bin = JS_CeilingLog2(size) - TEMP_SIZE_START_LOG2;
     JS_ASSERT(unsigned(bin) < NUM_TEMP_FREELISTS);
 
-    *(void **)item = jsc->tempFreeList[bin];
-    jsc->tempFreeList[bin] = item;
+    *(void **)item = parser->tempFreeList[bin];
+    parser->tempFreeList[bin] = item;
 }
 
 static JSHashEntry *
 js_alloc_temp_entry(void *priv, const void *key)
 {
-    JSCompiler *jsc = (JSCompiler *) priv;
+    Parser *parser = (Parser *) priv;
     JSAtomListElement *ale;
 
-    ale = jsc->aleFreeList;
+    ale = parser->aleFreeList;
     if (ale) {
-        jsc->aleFreeList = ALE_NEXT(ale);
+        parser->aleFreeList = ALE_NEXT(ale);
         return &ale->entry;
     }
 
-    JS_ARENA_ALLOCATE_TYPE(ale, JSAtomListElement, &jsc->context->tempPool);
+    JS_ARENA_ALLOCATE_TYPE(ale, JSAtomListElement, &parser->context->tempPool);
     if (!ale) {
-        js_ReportOutOfScriptQuota(jsc->context);
+        js_ReportOutOfScriptQuota(parser->context);
         return NULL;
     }
     return &ale->entry;
@@ -1017,11 +1047,11 @@ js_alloc_temp_entry(void *priv, const void *key)
 static void
 js_free_temp_entry(void *priv, JSHashEntry *he, uintN flag)
 {
-    JSCompiler *jsc = (JSCompiler *) priv;
+    Parser *parser = (Parser *) priv;
     JSAtomListElement *ale = (JSAtomListElement *) he;
 
-    ALE_SET_NEXT(ale, jsc->aleFreeList);
-    jsc->aleFreeList = ale;
+    ALE_SET_NEXT(ale, parser->aleFreeList);
+    parser->aleFreeList = ale;
 }
 
 static JSHashAllocOps temp_alloc_ops = {
@@ -1032,24 +1062,23 @@ static JSHashAllocOps temp_alloc_ops = {
 JSAtomListElement *
 JSAtomList::rawLookup(JSAtom *atom, JSHashEntry **&hep)
 {
-    JSAtomListElement *ale;
-
     if (table) {
         hep = JS_HashTableRawLookup(table, ATOM_HASH(atom), atom);
-        ale = *hep ? (JSAtomListElement *) *hep : NULL;
-    } else {
-        JSHashEntry **alep = &list;
-        hep = NULL;
-        while ((ale = (JSAtomListElement *)*alep) != NULL) {
-            if (ALE_ATOM(ale) == atom) {
-                /* Hit, move atom's element to the front of the list. */
-                *alep = ale->entry.next;
-                ale->entry.next = list;
-                list = &ale->entry;
-                break;
-            }
-            alep = &ale->entry.next;
+        return (JSAtomListElement *) *hep;
+    }
+
+    JSHashEntry **alep = &list;
+    hep = NULL;
+    JSAtomListElement *ale;
+    while ((ale = (JSAtomListElement *)*alep) != NULL) {
+        if (ALE_ATOM(ale) == atom) {
+            /* Hit, move atom's element to the front of the list. */
+            *alep = ale->entry.next;
+            ale->entry.next = list;
+            list = &ale->entry;
+            break;
         }
+        alep = &ale->entry.next;
     }
     return ale;
 }
@@ -1057,7 +1086,7 @@ JSAtomList::rawLookup(JSAtom *atom, JSHashEntry **&hep)
 #define ATOM_LIST_HASH_THRESHOLD        12
 
 JSAtomListElement *
-JSAtomList::add(JSCompiler *jsc, JSAtom *atom, AddHow how)
+JSAtomList::add(Parser *parser, JSAtom *atom, AddHow how)
 {
     JS_ASSERT(!set);
 
@@ -1068,7 +1097,7 @@ JSAtomList::add(JSCompiler *jsc, JSAtom *atom, AddHow how)
     if (!ale || how != UNIQUE) {
         if (count < ATOM_LIST_HASH_THRESHOLD && !table) {
             /* Few enough for linear search and no hash table yet needed. */
-            ale = (JSAtomListElement *)js_alloc_temp_entry(jsc, atom);
+            ale = (JSAtomListElement *)js_alloc_temp_entry(parser, atom);
             if (!ale)
                 return NULL;
             ALE_SET_ATOM(ale, atom);
@@ -1094,7 +1123,7 @@ JSAtomList::add(JSCompiler *jsc, JSAtom *atom, AddHow how)
                 JS_ASSERT(!hep);
                 table = JS_NewHashTable(count + 1, js_hash_atom_ptr,
                                         JS_CompareValues, JS_CompareValues,
-                                        &temp_alloc_ops, jsc);
+                                        &temp_alloc_ops, parser);
                 if (!table)
                     return NULL;
 
@@ -1154,7 +1183,7 @@ JSAtomList::add(JSCompiler *jsc, JSAtom *atom, AddHow how)
 }
 
 void
-JSAtomList::rawRemove(JSCompiler *jsc, JSAtomListElement *ale, JSHashEntry **hep)
+JSAtomList::rawRemove(Parser *parser, JSAtomListElement *ale, JSHashEntry **hep)
 {
     JS_ASSERT(!set);
     JS_ASSERT(count != 0);
@@ -1170,7 +1199,7 @@ JSAtomList::rawRemove(JSCompiler *jsc, JSAtomListElement *ale, JSHashEntry **hep
             hep = &(*hep)->next;
         }
         *hep = ale->entry.next;
-        js_free_temp_entry(jsc, &ale->entry, HT_FREE_ENTRY);
+        js_free_temp_entry(parser, &ale->entry, HT_FREE_ENTRY);
     }
 
     --count;
@@ -1184,7 +1213,7 @@ JSAutoAtomList::~JSAutoAtomList()
         JSHashEntry *hep = list; 
         while (hep) {
             JSHashEntry *next = hep->next;
-            js_free_temp_entry(compiler, hep, HT_FREE_ENTRY);
+            js_free_temp_entry(parser, hep, HT_FREE_ENTRY);
             hep = next;
         }
     }

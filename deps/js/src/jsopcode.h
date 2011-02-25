@@ -122,7 +122,7 @@ typedef enum JSOp {
 
 #define JOF_SHARPSLOT    (1U<<24) /* first immediate is uint16 stack slot no.
                                      that needs fixup when in global code (see
-                                     JSCompiler::compileScript) */
+                                     Compiler::compileScript) */
 
 /* Shorthands for type from format and type from opcode. */
 #define JOF_TYPE(fmt)   ((fmt) & JOF_TYPEMASK)
@@ -260,6 +260,12 @@ extern const JSCodeSpec js_CodeSpec[];
 extern uintN            js_NumCodeSpecs;
 extern const char       *js_CodeName[];
 extern const char       js_EscapeMap[];
+
+/* Silence unreferenced formal parameter warnings */
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4100)
+#endif
 
 /*
  * Return a GC'ed string containing the chars in str, with any non-printing
@@ -424,10 +430,19 @@ js_DecompileFunctionBody(JSPrinter *jp);
 extern JSBool
 js_DecompileFunction(JSPrinter *jp);
 
+/*
+ * Some C++ compilers treat the language linkage (extern "C" vs.
+ * extern "C++") as part of function (and thus pointer-to-function)
+ * types. The use of this typedef (defined in "C") ensures that
+ * js_DecompileToString's definition (in "C++") gets matched up with
+ * this declaration.
+ */
+typedef JSBool (* JSDecompilerPtr)(JSPrinter *);
+
 extern JSString *
 js_DecompileToString(JSContext *cx, const char *name, JSFunction *fun,
                      uintN indent, JSBool pretty, JSBool grouped, JSBool strict,
-                     JSBool (*decompiler)(JSPrinter *jp));
+                     JSDecompilerPtr decompiler);
 
 /*
  * Find the source expression that resulted in v, and return a newly allocated
@@ -454,6 +469,10 @@ js_DecompileValueGenerator(JSContext *cx, intN spindex, jsval v,
  */
 extern uintN
 js_ReconstructStackDepth(JSContext *cx, JSScript *script, jsbytecode *pc);
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 JS_END_EXTERN_C
 

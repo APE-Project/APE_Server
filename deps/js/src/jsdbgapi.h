@@ -1,5 +1,5 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- * vim: set ts=8 sw=4 et tw=78:
+ * vim: set ts=8 sw=4 et tw=99:
  *
  * ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -57,16 +57,17 @@ JS_BEGIN_EXTERN_C
 extern jsbytecode *
 js_UntrapScriptCode(JSContext *cx, JSScript *script);
 
+/* The closure argument will be marked. */
 extern JS_PUBLIC_API(JSBool)
 JS_SetTrap(JSContext *cx, JSScript *script, jsbytecode *pc,
-           JSTrapHandler handler, void *closure);
+           JSTrapHandler handler, jsval closure);
 
 extern JS_PUBLIC_API(JSOp)
 JS_GetTrapOpcode(JSContext *cx, JSScript *script, jsbytecode *pc);
 
 extern JS_PUBLIC_API(void)
 JS_ClearTrap(JSContext *cx, JSScript *script, jsbytecode *pc,
-             JSTrapHandler *handlerp, void **closurep);
+             JSTrapHandler *handlerp, jsval *closurep);
 
 extern JS_PUBLIC_API(void)
 JS_ClearScriptTraps(JSContext *cx, JSScript *script);
@@ -78,10 +79,10 @@ extern JS_PUBLIC_API(JSTrapStatus)
 JS_HandleTrap(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval);
 
 extern JS_PUBLIC_API(JSBool)
-JS_SetInterrupt(JSRuntime *rt, JSTrapHandler handler, void *closure);
+JS_SetInterrupt(JSRuntime *rt, JSInterruptHook handler, void *closure);
 
 extern JS_PUBLIC_API(JSBool)
-JS_ClearInterrupt(JSRuntime *rt, JSTrapHandler *handlerp, void **closurep);
+JS_ClearInterrupt(JSRuntime *rt, JSInterruptHook *handlerp, void **closurep);
 
 /************************************************************************/
 
@@ -194,6 +195,9 @@ JS_StackFramePrincipals(JSContext *cx, JSStackFrame *fp);
  */
 extern JS_PUBLIC_API(JSPrincipals *)
 JS_EvalFramePrincipals(JSContext *cx, JSStackFrame *fp, JSStackFrame *caller);
+
+JSPrincipals *
+js_EvalFramePrincipals(JSContext *cx, JSObject *callee, JSStackFrame *caller);
 
 extern JS_PUBLIC_API(void *)
 JS_GetFrameAnnotation(JSContext *cx, JSStackFrame *fp);
@@ -333,8 +337,22 @@ JS_PutPropertyDescArray(JSContext *cx, JSPropertyDescArray *pda);
 
 /************************************************************************/
 
+extern JS_FRIEND_API(JSBool)
+js_GetPropertyByIdWithFakeFrame(JSContext *cx, JSObject *obj, JSObject *scopeobj, jsid id,
+                                jsval *vp);
+
+extern JS_FRIEND_API(JSBool)
+js_SetPropertyByIdWithFakeFrame(JSContext *cx, JSObject *obj, JSObject *scopeobj, jsid id,
+                                jsval *vp);
+
+extern JS_FRIEND_API(JSBool)
+js_CallFunctionValueWithFakeFrame(JSContext *cx, JSObject *obj, JSObject *scopeobj, jsval funval,
+                                  uintN argc, jsval *argv, jsval *rval);
+
+/************************************************************************/
+
 extern JS_PUBLIC_API(JSBool)
-JS_SetDebuggerHandler(JSRuntime *rt, JSTrapHandler handler, void *closure);
+JS_SetDebuggerHandler(JSRuntime *rt, JSDebuggerHandler hook, void *closure);
 
 extern JS_PUBLIC_API(JSBool)
 JS_SetSourceHandler(JSRuntime *rt, JSSourceHandler handler, void *closure);
@@ -349,7 +367,7 @@ extern JS_PUBLIC_API(JSBool)
 JS_SetObjectHook(JSRuntime *rt, JSObjectHook hook, void *closure);
 
 extern JS_PUBLIC_API(JSBool)
-JS_SetThrowHook(JSRuntime *rt, JSTrapHandler hook, void *closure);
+JS_SetThrowHook(JSRuntime *rt, JSThrowHook hook, void *closure);
 
 extern JS_PUBLIC_API(JSBool)
 JS_SetDebugErrorHook(JSRuntime *rt, JSDebugErrorHook hook, void *closure);
@@ -411,13 +429,12 @@ extern JS_PUBLIC_API(JSBool)
 JS_IsSystemObject(JSContext *cx, JSObject *obj);
 
 /*
- * Call JS_NewObject(cx, clasp, proto, parent) and, if system is true, mark the
- * result as a system object, that is an object for which JS_IsSystemObject
- * returns true.
+ * Mark an object as being a system object. This should be called immediately
+ * after allocating the object. A system object is an object for which
+ * JS_IsSystemObject returns true.
  */
-extern JS_PUBLIC_API(JSObject *)
-JS_NewSystemObject(JSContext *cx, JSClass *clasp, JSObject *proto,
-                   JSObject *parent, JSBool system);
+extern JS_PUBLIC_API(JSBool)
+JS_MakeSystemObject(JSContext *cx, JSObject *obj);
 
 /************************************************************************/
 
@@ -426,6 +443,10 @@ JS_GetGlobalDebugHooks(JSRuntime *rt);
 
 extern JS_PUBLIC_API(JSDebugHooks *)
 JS_SetContextDebugHooks(JSContext *cx, const JSDebugHooks *hooks);
+
+/* Disable debug hooks for this context. */
+extern JS_PUBLIC_API(JSDebugHooks *)
+JS_ClearContextDebugHooks(JSContext *cx);
 
 #ifdef MOZ_SHARK
 
