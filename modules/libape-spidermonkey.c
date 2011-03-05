@@ -2460,12 +2460,20 @@ static void apemysql_shift_queue(struct _ape_mysql_data *myhandle)
 {
 	struct _ape_mysql_queue *queue;
 	int ret;
+	int basemem = (1024*1024);
+	MYSAC_RES *res;
+	char *res_buf;
 	
+
 	if (myhandle->queue.head == NULL || myhandle->state != SQL_READY_FOR_QUERY) {
 		return;
 	}
-	
+	res_buf = xmalloc(sizeof(char) * basemem);
+	res = mysac_init_res(res_buf, basemem);		
+
 	queue = myhandle->queue.head;
+	queue->res = res;
+	
 	myhandle->state = SQL_NEED_QUEUE;
 	myhandle->data = queue;
 	
@@ -2492,19 +2500,14 @@ static void apemysql_shift_queue(struct _ape_mysql_data *myhandle)
 static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myhandle, char *query, unsigned int query_len, jsval callback)
 {
 	struct _ape_mysql_queue *nqueue;	
-	int basemem = (1024*1024);
-	MYSAC_RES *res;
-	char *res_buf = xmalloc(sizeof(char) * basemem);
-	
-	res = mysac_init_res(res_buf, basemem);
-	
+
 	nqueue = xmalloc(sizeof(*nqueue));
 	
 	nqueue->next = NULL;
 	nqueue->query = query;
 	nqueue->query_len = query_len;
 	nqueue->callback = callback;
-	nqueue->res = res;
+	nqueue->res = NULL;
 	
 	if (myhandle->queue.foot == NULL) {
 		myhandle->queue.head = nqueue;
