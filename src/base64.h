@@ -22,8 +22,8 @@
 #ifndef _IBASE64_H
 #define _IBASE64_H
 
-int base64_decode(char * out, const char *in, int out_length);
-char *base64_encode(char * src, int len);
+int base64_decode(unsigned char * out, const char *in, int out_length);
+char *base64_encode(unsigned char * src, int len);
 
 #endif
 

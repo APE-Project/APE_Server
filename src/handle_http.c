@@ -30,6 +30,12 @@
 #include "http.h"
 #include "parser.h"
 #include "md5.h"
+#include "sha1.h"
+#include "base64.h"
+
+/* Websocket GUID as defined by -06 */
+/* http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-06 */
+#define WS_IETF_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 static int gettransport(char *input)
 {
@@ -70,7 +76,7 @@ subuser *checkrecv_websocket(ape_socket *co, acetables *g_ape)
 	WebSockets protocol rev 76 (Opening handshake)
 	http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76 
 */
-static unsigned long int ws_compute_key(const char *value)
+static unsigned long int ws_compute_key_r76(const char *value)
 {
 	const char *pValue;
 	unsigned long int val = 0;
@@ -90,6 +96,31 @@ static unsigned long int ws_compute_key(const char *value)
 	return val / spaces;
 }
 
+/*
+    WebSockets protocol rev ietf-hybi-06
+    http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-06
+*/
+
+static char *ws_compute_key(const char *key, unsigned int key_len)
+{
+    unsigned char digest[20];
+    char out[128];
+    char *b64;
+    
+    if (key_len > 32) {
+        return NULL;
+    }
+    
+    memcpy(out, key, key_len);
+    memcpy(out+key_len, WS_IETF_GUID, sizeof(WS_IETF_GUID)-1);
+    
+    sha1_csum((unsigned char *)out, (sizeof(WS_IETF_GUID)-1)+key_len, digest);
+    
+    b64 = base64_encode(digest, 20);
+    
+    return b64; /* must be released */
+}
+
 subuser *checkrecv(ape_socket *co, acetables *g_ape)
 {
 	unsigned int op;
@@ -104,9 +135,12 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 	
 	if (gettransport(http->uri) == TRANSPORT_WEBSOCKET) {
 		int is_rev_76 = 0;
+		int is_ietf = 0;
+		
 		char *origin = get_header_line(http->hlines, "Origin");
 		char *key1 = get_header_line(http->hlines, "Sec-WebSocket-Key1");
 		char *key2 = get_header_line(http->hlines, "Sec-WebSocket-Key2");
+		char *keybase = get_header_line(http->hlines, "Sec-WebSocket-Key");
 		
 		websocket_state *websocket;
 		unsigned char md5sum[16];
@@ -119,8 +153,8 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		if (key1 != NULL && key2 != NULL) {
 			md5_context ctx;
 			
-			unsigned long int ckey1 = htonl(ws_compute_key(key1));
-			unsigned long int ckey2 = htonl(ws_compute_key(key2));
+			unsigned long int ckey1 = htonl(ws_compute_key_r76(key1));
+			unsigned long int ckey2 = htonl(ws_compute_key_r76(key2));
 			
 			is_rev_76 = 1; /* draft rev 76 detected (used in Firefox 4.0 alpha2) */
 			
@@ -131,6 +165,10 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 			md5_update(&ctx, (uint8 *)http->data, 8);
 			
 			md5_finish(&ctx, md5sum);
+		} else if (keybase != NULL) {
+		    is_ietf = 1;
+		    
+		    /* TODO */
 		}
 
 		PACK_TCP(co->fd);

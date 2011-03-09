@@ -1690,7 +1690,7 @@ APE_JS_NATIVE(ape_sm_b64_encode)
 		return JS_TRUE;
 	}	
 	
-	b64 = base64_encode(JS_GetStringBytes(string), JS_GetStringLength(string));
+	b64 = base64_encode((unsigned char *)JS_GetStringBytes(string), JS_GetStringLength(string));
 	
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, b64));
 	
@@ -1717,7 +1717,7 @@ APE_JS_NATIVE(ape_sm_b64_decode)
 	length = JS_GetStringLength(string);
 	
 	b64 = xmalloc(length+1);
-	len = base64_decode(b64, JS_GetStringBytes(string), length+1);
+	len = base64_decode((unsigned char *)b64, JS_GetStringBytes(string), length+1);
 	
 	if (len != -1) {
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, b64, len));
