@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2007, 2008, 2009, 2010  Anthony Catel <a.catel@weelya.com>
+  Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011  Anthony Catel <a.catel@weelya.com>
 
   This file is part of APE Server.
   APE is free software; you can redistribute it and/or modify
@@ -109,6 +109,13 @@ ape_parser parser_init_stream(ape_socket *co)
 	websocket->offset = 0;
 	websocket->data = NULL;
 	websocket->error = 0;
+	websocket->key.pos = 0;
+
+	websocket->frame_payload.start = 0;
+	websocket->frame_payload.length = 0;
+	websocket->frame_payload.extended_length = 0;
+	
+	websocket->step = WS_STEP_KEY;
 	
 	stream_parser.parser_func = process_websocket;
 	stream_parser.onready = parser_ready_websocket;

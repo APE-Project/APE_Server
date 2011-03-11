@@ -31,6 +31,7 @@ struct _transport_open_same_host_p transport_open_same_host(subuser *sub, ape_so
 		case TRANSPORT_LONGPOLLING:
 		case TRANSPORT_JSONP:
 		case TRANSPORT_WEBSOCKET:
+		case TRANSPORT_WEBSOCKET_IETF:
 		default:
 			ret.client_close = sub->client;
 			ret.client_listener = client;
@@ -62,6 +63,7 @@ void transport_data_completly_sent(subuser *sub, transport_t transport)
 		case TRANSPORT_XHRSTREAMING:
 		case TRANSPORT_SSE_LONGPOLLING:
 		case TRANSPORT_WEBSOCKET:
+		case TRANSPORT_WEBSOCKET_IETF:
 			break;
 	}	
 }
@@ -75,16 +77,14 @@ struct _transport_properties *transport_get_properties(transport_t transport, ac
 			break;
 		case TRANSPORT_XHRSTREAMING:
 			return &(g_ape->transports.xhrstreaming.properties);
-			break;
 		case TRANSPORT_JSONP:
 			return &(g_ape->transports.jsonp.properties);
-			break;
 		case TRANSPORT_SSE_LONGPOLLING:
 			return &(g_ape->transports.sse.properties);
-			break;
 		case TRANSPORT_WEBSOCKET:
 			return &(g_ape->transports.websocket.properties);
-			break;
+	    case TRANSPORT_WEBSOCKET_IETF:
+	        return &(g_ape->transports.websocket_ietf.properties);
 	}	
 	return NULL;
 }
@@ -123,7 +123,13 @@ void transport_start(acetables *g_ape)
 	g_ape->transports.websocket.properties.padding.left.len = 1;
 	
 	g_ape->transports.websocket.properties.padding.right.val = xstrdup("\xFF");
-	g_ape->transports.websocket.properties.padding.right.len = 1;	
+	g_ape->transports.websocket.properties.padding.right.len = 1;
+	
+	g_ape->transports.websocket_ietf.properties.padding.left.val = NULL;
+	g_ape->transports.websocket_ietf.properties.padding.left.len = 0;
+	
+	g_ape->transports.websocket_ietf.properties.padding.right.val = NULL;
+	g_ape->transports.websocket_ietf.properties.padding.right.len = 0;		
 	
 }
 
@@ -140,3 +146,4 @@ void transport_free(acetables *g_ape)
 		free(g_ape->transports.jsonp.properties.padding.right.val);
 	}
 }
+

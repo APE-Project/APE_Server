@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2007, 2008, 2009, 2010  Anthony Catel <a.catel@weelya.com>
+  Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011  Anthony Catel <a.catel@weelya.com>
 
   This file is part of APE Server.
   APE is free software; you can redistribute it and/or modify
@@ -78,6 +78,10 @@ struct _ape_transports {
 	struct {
 		struct _transport_properties properties;
 	} websocket;
+	
+	struct {
+	    struct _transport_properties properties;
+	} websocket_ietf;
 };
 
 typedef struct _http_state http_state;
@@ -100,14 +104,49 @@ struct _http_state
 	unsigned short int error;
 };
 
-typedef struct _websocket_state websocket_state;
-struct _websocket_state
+typedef enum {
+    WS_OLD,
+    WS_76,
+    WS_IETF_06
+} ws_version;
+
+typedef enum {
+    WS_STEP_KEY,
+    WS_STEP_START,
+    WS_STEP_LENGTH,
+    WS_STEP_SHORT_LENGTH,
+    WS_STEP_EXTENDED_LENGTH,
+    WS_STEP_DATA,
+    WS_STEP_END
+} ws_payload_step;
+
+typedef struct _websocket_state
 {
 	struct _http_state *http;
 	const char *data;
 	unsigned short int offset;
 	unsigned short int error;
-};
+	
+	ws_version version;
+    
+	struct {
+	    /* cypher key */
+	    unsigned char val[4];
+	    int pos;
+	} key;
+    
+    #pragma pack(2)
+	struct {
+	    unsigned char start;
+	    unsigned char length; /* 7 bit length */
+	    union {
+	        unsigned short short_length; /* 16 bit length */
+	        unsigned long long int extended_length; /* 64 bit length */
+	    };
+	} frame_payload;
+	#pragma pack()
+	ws_payload_step step;
+} websocket_state;
 
 typedef enum {
 	STREAM_IN,
@@ -233,6 +272,7 @@ struct _ape_socket {
 /* http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-55 : The first three lines in each case are hard-coded (the exact case and order matters); */
 #define WEBSOCKET_HARDCODED_HEADERS_OLD "HTTP/1.1 101 Web Socket Protocol Handshake\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\n"
 #define WEBSOCKET_HARDCODED_HEADERS_NEW "HTTP/1.1 101 WebSocket Protocol Handshake\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\n"
+#define WEBSOCKET_HARDCODED_HEADERS_IETF "HTTP/1.1 101 Switching Protocols\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\n"
 
 #define FIRE_EVENT(event, ret, arg...) \
 	if (g_ape->plugins != NULL) { \

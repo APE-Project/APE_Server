@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2007, 2008, 2009, 2010 Anthony Catel <a.catel@weelya.com>
+  Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 Anthony Catel <a.catel@weelya.com>
 
   This file is part of APE Server.
   APE is free software; you can redistribute it and/or modify
@@ -34,13 +34,15 @@ struct _transport_open_same_host_p
 };
 
 typedef enum {
+
 	TRANSPORT_LONGPOLLING,
 	TRANSPORT_XHRSTREAMING,
 	TRANSPORT_JSONP,
 	TRANSPORT_PERSISTANT,
 	TRANSPORT_SSE_LONGPOLLING,
 	TRANSPORT_SSE_JSONP,
-	TRANSPORT_WEBSOCKET
+    TRANSPORT_WEBSOCKET,
+    TRANSPORT_WEBSOCKET_IETF
 } transport_t;
 
 

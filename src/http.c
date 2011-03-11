@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006, 2007, 2008, 2009, 2010  Anthony Catel <a.catel@weelya.com>
+  Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011  Anthony Catel <a.catel@weelya.com>
 
   This file is part of APE Server.
   APE is free software; you can redistribute it and/or modify
@@ -28,6 +28,7 @@
 #include "dns.h"
 #include "log.h"
 #include <stdlib.h> /* endian macros */
+#include <arpa/inet.h>
 
 #if !defined(_BIG_ENDIAN) && !defined(_LITTLE_ENDIAN)
 # if defined(__i386) || defined(__amd64) || defined(__arm)
@@ -106,6 +107,112 @@ char *get_header_line(struct _http_header_line *lines, const char *key)
 	return NULL;
 }
 
+static void process_websocket_frame(ape_socket *co, acetables *g_ape)
+{
+	ape_buffer *buffer = &co->buffer_in;
+	websocket_state *websocket = co->parser.data;
+	ape_parser *parser = &co->parser;
+
+	char *data = &buffer->data[websocket->offset];
+    
+	if (websocket->step == WS_STEP_KEY) {
+	    int toread = MIN(4 - websocket->offset, buffer->length - websocket->offset);
+	    memcpy(websocket->key.val+websocket->offset, data, toread);
+
+	    websocket->offset += toread;
+	    
+	    if (websocket->offset == 4) {
+	        websocket->offset = 0;
+	        
+	        data = &buffer->data[4];
+	        websocket->step = WS_STEP_START;
+	        
+	    } else {
+	        return;
+	    }
+	}
+
+	while(&data[websocket->offset] != &buffer->data[buffer->length]) {
+	    /* de-cypher the payload with the 32bit key */
+	    data[websocket->offset] ^= websocket->key.val[websocket->key.pos++ % 4];
+        
+        if (websocket->step != WS_STEP_DATA) {
+            memcpy(((char *)&websocket->frame_payload)+websocket->offset, 
+                    &data[websocket->offset], 1);
+            
+            switch(websocket->offset) {
+                case 0:
+                    websocket->step = WS_STEP_LENGTH;
+                    break;
+                case 1:
+	                /* Remove the RSV4 bit */
+	                websocket->frame_payload.length &= 0x7F;
+	                
+	                if (websocket->frame_payload.length == 126) {
+	                    websocket->step = WS_STEP_SHORT_LENGTH;
+	                } else if (websocket->frame_payload.length == 127) {
+	                    websocket->step = WS_STEP_EXTENDED_LENGTH;
+	                } else {
+	                    websocket->frame_payload.extended_length = websocket->frame_payload.length;
+	                    websocket->step = WS_STEP_DATA;
+	                }
+	                break;
+	            case 3:
+	                if (websocket->step == WS_STEP_SHORT_LENGTH) {
+	                    websocket->frame_payload.extended_length = ntohs(websocket->frame_payload.short_length);
+	                    websocket->step = WS_STEP_DATA;
+	                }
+	                break;
+	            case 9:
+	                websocket->step = WS_STEP_DATA;
+	                /* TODO : 64bit Network bit order to host bit order */
+	                break;
+            }
+        } else if (websocket->frame_payload.extended_length != 0) {
+            
+            if (websocket->data == NULL) {
+                websocket->data = &data[websocket->offset];
+            }
+
+            if (--websocket->frame_payload.extended_length == 0) {
+                
+                switch(websocket->frame_payload.start & 0x0F) {
+                    case 0x01:
+                        /* Close frame */
+                        /* TODO: reply with a Close frame */
+                        break;
+                    case 0x02:
+                        /* Ping frame */
+                        /* TODO: Reply with a Pong frame */
+                        break;
+                    case 0x03:
+                        /* Pong frame */
+                        /* never happen as far as we never ask for it */
+                        break;
+                    default:
+                        /* Data frame */
+                        data[websocket->offset+1] = '\0';
+                        parser->onready(parser, g_ape);
+                        break;
+                }
+
+				parser->ready = -1;
+				buffer->length = 0;
+				websocket->offset = 0;
+				websocket->key.pos = 0;
+				websocket->step =  WS_STEP_KEY;
+				websocket->data = NULL;
+				
+				return;
+            }
+        }
+
+	    websocket->offset++;
+	}
+
+    return;    
+}
+
 void process_websocket(ape_socket *co, acetables *g_ape)
 {
 	char *pData;
@@ -114,7 +221,7 @@ void process_websocket(ape_socket *co, acetables *g_ape)
 	ape_parser *parser = &co->parser;
 	
 	char *data = pData = &buffer->data[websocket->offset];
-	
+
 	if (buffer->length == 0 || parser->ready == 1) {
 		return;
 	}
@@ -123,9 +230,14 @@ void process_websocket(ape_socket *co, acetables *g_ape)
 		shutdown(co->fd, 2);
 		return;
 	}
+	
+	if (websocket->version == WS_IETF_06) {
+	    process_websocket_frame(co, g_ape);
+	    return;
+	}
 
 	data[buffer->length - websocket->offset] = '\0';
-	
+    
 	if (*data == '\0') {
 		data = &data[1];
 	}
