@@ -200,7 +200,8 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		    case WS_IETF_06:
 			    sendbin(co->fd, CONST_STR_LEN(WEBSOCKET_HARDCODED_HEADERS_IETF), 0, g_ape);
                 sendbin(co->fd, CONST_STR_LEN("Sec-WebSocket-Accept: "), 0, g_ape);
-                sendbin(co->fd, wsaccept, strlen(wsaccept), 0, g_ape); 
+                sendbin(co->fd, wsaccept, strlen(wsaccept), 0, g_ape);
+                free(wsaccept);
 		        break;
 		}
 
