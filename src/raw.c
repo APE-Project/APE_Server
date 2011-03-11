@@ -399,11 +399,24 @@ int send_raws(subuser *user, acetables *g_ape)
 	        payload_head[1] = (unsigned char)payload_size & 0x7F;
 	        payload_length = 2;
 	    } else if (payload_size <= 65535) {
+	        unsigned short int s = htons(payload_size);
 	        payload_head[1] = 126;
-	        payload_head[2] = (unsigned char)((payload_size & 0x0000FF00) >> 8);
-	        payload_head[3] = (unsigned char)(payload_size & 0x000000FF);
+	        
+	        memcpy(&payload_head[2], &s, 2);
+	        
 	        payload_length = 4;
-	    } else {
+	    } else if (payload_size <= 0xFFFFFFFF) {
+	        unsigned int s = htonl(payload_size);
+	        
+	        payload_head[1] = 127;
+	        payload_head[2] = 0;
+	        payload_head[3] = 0;
+	        payload_head[4] = 0;
+	        payload_head[5] = 0;
+	        	        
+            memcpy(&payload_head[6], &s, 4);
+
+	        payload_length = 10;
 	        /* TODO: handle large payload */
 	    }
         
