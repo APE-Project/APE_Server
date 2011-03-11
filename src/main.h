@@ -147,6 +147,7 @@ typedef struct _websocket_state
 	#pragma pack()
 	ws_payload_step step;
 	int data_pos;
+	int noffset;
 } websocket_state;
 
 typedef enum {

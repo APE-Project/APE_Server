@@ -112,28 +112,27 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
 	ape_buffer *buffer = &co->buffer_in;
 	websocket_state *websocket = co->parser.data;
 	ape_parser *parser = &co->parser;
+    
 
-	if (websocket->step == WS_STEP_KEY) {
-	    int toread = MIN(4 - websocket->offset, buffer->length - websocket->offset);
-	    memcpy(websocket->key.val+websocket->offset, &buffer->data[websocket->offset], toread);
-
-	    websocket->offset += toread;
-	    
-	    if (websocket->offset == 4) {
-	        websocket->step = WS_STEP_START;
-	        
-	    } else {
-	        return;
-	    }
-	}
-
-	while(&buffer->data[websocket->offset] != &buffer->data[buffer->length]) {
+	while(&buffer->data[websocket->offset+websocket->noffset] != &buffer->data[buffer->length]) {
+	    if (websocket->step == WS_STEP_KEY) {
+	        int toread = MIN(4 - websocket->offset, buffer->length - websocket->offset);
+	        memcpy(websocket->key.val+websocket->offset, &buffer->data[websocket->offset+websocket->noffset], toread);
+            
+	        websocket->offset += toread;
+	        if (websocket->offset == 4) {
+	            websocket->step = WS_STEP_START;
+	            
+	        } else {
+	            return;
+	        }
+	    }	
 	    /* de-cypher the payload with the 32bit key */
-	    buffer->data[websocket->offset] ^= websocket->key.val[websocket->key.pos++ % 4];
-
+	    buffer->data[websocket->offset+websocket->noffset] ^= websocket->key.val[websocket->key.pos++ % 4];
+        
         if (websocket->step != WS_STEP_DATA) {
             memcpy(((char *)&websocket->frame_payload)+(websocket->offset-4), 
-                    &buffer->data[websocket->offset], 1);
+                    &buffer->data[websocket->offset+websocket->noffset], 1);
             
             switch(websocket->offset) {
                 case 0+4:
@@ -164,10 +163,10 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
 	                break;
             }
         } else if (websocket->frame_payload.extended_length != 0) {
-            
+            char saved;
             if (websocket->data == NULL || websocket->data != &buffer->data[websocket->data_pos]) {
                 if (websocket->data_pos == 0) {
-                    websocket->data_pos = websocket->offset;
+                    websocket->data_pos = websocket->offset + websocket->noffset;
                 }
                 websocket->data = &buffer->data[websocket->data_pos];
             }
@@ -189,19 +188,29 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                         break;
                     default:
                         /* Data frame */
-                        buffer->data[websocket->offset+1] = '\0';
+                        saved = buffer->data[websocket->noffset+websocket->offset+1];
+                        buffer->data[websocket->noffset+websocket->offset+1] = '\0';
                         parser->onready(parser, g_ape);
+                        buffer->data[websocket->noffset+websocket->offset+1] = saved;
                         break;
                 }
-
-				parser->ready = -1;
-				buffer->length = 0;
-				websocket->offset = 0;
-				websocket->key.pos = 0;
-				websocket->step =  WS_STEP_KEY;
-				websocket->data = NULL;
-				
-				return;
+			    
+			    websocket->key.pos = 0;
+			    websocket->step =  WS_STEP_KEY;
+			    websocket->data = NULL;
+			    websocket->data_pos = 0;         
+			    parser->ready = -1;
+			    
+                if (websocket->noffset+websocket->offset+1 == buffer->length) {
+                    websocket->offset = 0;		    
+				    buffer->length = 0;
+				    websocket->noffset = 0;
+				    return;
+				} else {
+				    websocket->noffset += websocket->offset+1;
+				    websocket->offset = 0;
+				    continue;
+				}
             }
         }
 
@@ -246,7 +255,6 @@ void process_websocket(ape_socket *co, acetables *g_ape)
 			*data = '\0';
 			
 			websocket->data = &pData[1];
-			
 			parser->onready(parser, g_ape);
 
 			websocket->offset += (data - pData)+1;

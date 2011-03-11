@@ -115,6 +115,7 @@ ape_parser parser_init_stream(ape_socket *co)
 	websocket->frame_payload.length = 0;
 	websocket->frame_payload.extended_length = 0;
 	websocket->data_pos = 0;
+	websocket->noffset = 0;
 	
 	websocket->step = WS_STEP_KEY;
 	
