@@ -113,18 +113,13 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
 	websocket_state *websocket = co->parser.data;
 	ape_parser *parser = &co->parser;
 
-	char *data = &buffer->data[websocket->offset];
-    
 	if (websocket->step == WS_STEP_KEY) {
 	    int toread = MIN(4 - websocket->offset, buffer->length - websocket->offset);
-	    memcpy(websocket->key.val+websocket->offset, data, toread);
+	    memcpy(websocket->key.val+websocket->offset, &buffer->data[websocket->offset], toread);
 
 	    websocket->offset += toread;
 	    
 	    if (websocket->offset == 4) {
-	        websocket->offset = 0;
-	        
-	        data = &buffer->data[4];
 	        websocket->step = WS_STEP_START;
 	        
 	    } else {
@@ -132,19 +127,19 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
 	    }
 	}
 
-	while(&data[websocket->offset] != &buffer->data[buffer->length]) {
+	while(&buffer->data[websocket->offset] != &buffer->data[buffer->length]) {
 	    /* de-cypher the payload with the 32bit key */
-	    data[websocket->offset] ^= websocket->key.val[websocket->key.pos++ % 4];
-        
+	    buffer->data[websocket->offset] ^= websocket->key.val[websocket->key.pos++ % 4];
+
         if (websocket->step != WS_STEP_DATA) {
-            memcpy(((char *)&websocket->frame_payload)+websocket->offset, 
-                    &data[websocket->offset], 1);
+            memcpy(((char *)&websocket->frame_payload)+(websocket->offset-4), 
+                    &buffer->data[websocket->offset], 1);
             
             switch(websocket->offset) {
-                case 0:
+                case 0+4:
                     websocket->step = WS_STEP_LENGTH;
                     break;
-                case 1:
+                case 1+4:
 	                /* Remove the RSV4 bit */
 	                websocket->frame_payload.length &= 0x7F;
 	                
@@ -157,21 +152,24 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
 	                    websocket->step = WS_STEP_DATA;
 	                }
 	                break;
-	            case 3:
+	            case 3+4:
 	                if (websocket->step == WS_STEP_SHORT_LENGTH) {
 	                    websocket->frame_payload.extended_length = ntohs(websocket->frame_payload.short_length);
 	                    websocket->step = WS_STEP_DATA;
 	                }
 	                break;
-	            case 9:
+	            case 9+4:
 	                websocket->step = WS_STEP_DATA;
-	                /* TODO : 64bit Network bit order to host bit order */
+	                websocket->frame_payload.extended_length = ntohl(websocket->frame_payload.extended_length >> 32);
 	                break;
             }
         } else if (websocket->frame_payload.extended_length != 0) {
             
-            if (websocket->data == NULL) {
-                websocket->data = &data[websocket->offset];
+            if (websocket->data == NULL || websocket->data != &buffer->data[websocket->data_pos]) {
+                if (websocket->data_pos == 0) {
+                    websocket->data_pos = websocket->offset;
+                }
+                websocket->data = &buffer->data[websocket->data_pos];
             }
 
             if (--websocket->frame_payload.extended_length == 0) {
@@ -191,7 +189,7 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                         break;
                     default:
                         /* Data frame */
-                        data[websocket->offset+1] = '\0';
+                        buffer->data[websocket->offset+1] = '\0';
                         parser->onready(parser, g_ape);
                         break;
                 }

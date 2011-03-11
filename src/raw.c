@@ -392,7 +392,7 @@ int send_raws(subuser *user, acetables *g_ape)
 	
 	if (user->user->transport == TRANSPORT_WEBSOCKET_IETF) {
 	    char payload_head[32] = { 0x84 };
-	    int payload_size = raws_size(user);
+	    int payload_size = raws_size(user); /* TODO: fragmentation? */
 	    int payload_length = 0;
 	    
 	    if (payload_size <= 125) {
@@ -413,11 +413,10 @@ int send_raws(subuser *user, acetables *g_ape)
 	        payload_head[3] = 0;
 	        payload_head[4] = 0;
 	        payload_head[5] = 0;
-	        	        
+	        
             memcpy(&payload_head[6], &s, 4);
 
 	        payload_length = 10;
-	        /* TODO: handle large payload */
 	    }
         
         finish &= sendbin(user->client->fd, payload_head, payload_length, 0, g_ape);

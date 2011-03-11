@@ -124,7 +124,7 @@ typedef struct _websocket_state
 {
 	struct _http_state *http;
 	const char *data;
-	unsigned short int offset;
+	unsigned int offset;
 	unsigned short int error;
 	
 	ws_version version;
@@ -146,6 +146,7 @@ typedef struct _websocket_state
 	} frame_payload;
 	#pragma pack()
 	ws_payload_step step;
+	int data_pos;
 } websocket_state;
 
 typedef enum {
