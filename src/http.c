@@ -109,116 +109,97 @@ char *get_header_line(struct _http_header_line *lines, const char *key)
 
 static void process_websocket_frame(ape_socket *co, acetables *g_ape)
 {
-	ape_buffer *buffer = &co->buffer_in;
-	websocket_state *websocket = co->parser.data;
-	ape_parser *parser = &co->parser;
+    ape_buffer *buffer = &co->buffer_in;
+    websocket_state *websocket = co->parser.data;
+    ape_parser *parser = &co->parser;
     
-
-	while(&buffer->data[websocket->offset+websocket->noffset] != &buffer->data[buffer->length]) {
-	    if (websocket->step == WS_STEP_KEY) {
-	        int toread = MIN(4 - websocket->offset, buffer->length - websocket->offset);
-	        memcpy(websocket->key.val+websocket->offset, &buffer->data[websocket->offset+websocket->noffset], toread);
-            
-	        websocket->offset += toread;
-	        if (websocket->offset == 4) {
-	            websocket->step = WS_STEP_START;
-	            
-	        } else {
-	            return;
-	        }
-	    }	
-	    /* de-cypher the payload with the 32bit key */
-	    buffer->data[websocket->offset+websocket->noffset] ^= websocket->key.val[websocket->key.pos++ % 4];
-        
-        if (websocket->step != WS_STEP_DATA) {
-            memcpy(((char *)&websocket->frame_payload)+(websocket->offset-4), 
-                    &buffer->data[websocket->offset+websocket->noffset], 1);
-            
-            switch(websocket->offset) {
-                case 0+4:
-                    websocket->step = WS_STEP_LENGTH;
-                    break;
-                case 1+4:
-	                /* Remove the RSV4 bit */
-	                websocket->frame_payload.length &= 0x7F;
-	                
-	                if (websocket->frame_payload.length == 126) {
-	                    websocket->step = WS_STEP_SHORT_LENGTH;
-	                } else if (websocket->frame_payload.length == 127) {
-	                    websocket->step = WS_STEP_EXTENDED_LENGTH;
-	                } else {
-	                    websocket->frame_payload.extended_length = websocket->frame_payload.length;
-	                    websocket->step = WS_STEP_DATA;
-	                }
-	                break;
-	            case 3+4:
-	                if (websocket->step == WS_STEP_SHORT_LENGTH) {
-	                    websocket->frame_payload.extended_length = ntohs(websocket->frame_payload.short_length);
-	                    websocket->step = WS_STEP_DATA;
-	                }
-	                break;
-	            case 9+4:
-	                websocket->step = WS_STEP_DATA;
-	                websocket->frame_payload.extended_length = ntohl(websocket->frame_payload.extended_length >> 32);
-	                break;
-            }
-        } else if (websocket->frame_payload.extended_length != 0) {
-            char saved;
-            if (websocket->data == NULL || websocket->data != &buffer->data[websocket->data_pos]) {
-                if (websocket->data_pos == 0) {
-                    websocket->data_pos = websocket->offset + websocket->noffset;
+    unsigned char *pData;
+    
+    for (pData = (unsigned char *)&buffer->data[websocket->offset]; websocket->offset < buffer->length; websocket->offset++, pData++) {
+        if (websocket->step != WS_STEP_KEY) {
+            /* de-cypher the data */
+            *pData ^= websocket->key.val[(websocket->frame_pos-4) % 4];
+        }
+        switch(websocket->step) {
+            case WS_STEP_KEY:
+                /* Copy the xor key (32 bits) */
+                websocket->key.val[websocket->frame_pos] = *pData;
+                if (websocket->frame_pos == 3) {
+                    websocket->step = WS_STEP_START;
                 }
-                websocket->data = &buffer->data[websocket->data_pos];
-            }
-
-            if (--websocket->frame_payload.extended_length == 0) {
-                
-                switch(websocket->frame_payload.start & 0x0F) {
-                    case 0x01:
-                        /* Close frame */
-                        /* TODO: reply with a Close frame */
+                break;
+            case WS_STEP_START:
+                /* Contain fragmentaiton infos & opcode (+ reserved bits) */
+                websocket->frame_payload.start = *pData;
+                websocket->step = WS_STEP_LENGTH;
+                break;
+            case WS_STEP_LENGTH: /* frame 5 */
+                switch (*pData & 0x7F) { /* 7bit length */
+                    case 126:
+                        /* Following 16bit are length */
+                        websocket->step = WS_STEP_SHORT_LENGTH;
                         break;
-                    case 0x02:
-                        /* Ping frame */
-                        /* TODO: Reply with a Pong frame */
-                        break;
-                    case 0x03:
-                        /* Pong frame */
-                        /* never happen as far as we never ask for it */
+                    case 127:
+                        /* Following 64bit are length */
+                        websocket->step = WS_STEP_EXTENDED_LENGTH;
                         break;
                     default:
-                        /* Data frame */
-                        saved = buffer->data[websocket->noffset+websocket->offset+1];
-                        buffer->data[websocket->noffset+websocket->offset+1] = '\0';
-                        parser->onready(parser, g_ape);
-                        buffer->data[websocket->noffset+websocket->offset+1] = saved;
+                        /* We have the actual length */
+                        websocket->frame_payload.extended_length = *pData & 0x7F;
+                        websocket->step = WS_STEP_DATA;
                         break;
                 }
-			    
-			    websocket->key.pos = 0;
-			    websocket->step =  WS_STEP_KEY;
-			    websocket->data = NULL;
-			    websocket->data_pos = 0;         
-			    parser->ready = -1;
-			    
-                if (websocket->noffset+websocket->offset+1 == buffer->length) {
-                    websocket->offset = 0;		    
-				    buffer->length = 0;
-				    websocket->noffset = 0;
-				    return;
-				} else {
-				    websocket->noffset += websocket->offset+1;
-				    websocket->offset = 0;
-				    continue;
-				}
-            }
+                break;
+            case WS_STEP_SHORT_LENGTH: /* frame 6-7 */
+                memcpy(((char *)&websocket->frame_payload)+(websocket->frame_pos-4), 
+                        pData, 1);
+                if (websocket->frame_pos == 7) {
+                    websocket->frame_payload.extended_length = ntohs(websocket->frame_payload.short_length);
+                    websocket->step = WS_STEP_DATA;
+                }
+                break;
+            case WS_STEP_EXTENDED_LENGTH: /* frame 6-7-8-9-10-11-12-13 */
+                memcpy(((char *)&websocket->frame_payload)+(websocket->frame_pos-4),
+                        pData, 1);
+                if (websocket->frame_pos == 13) {
+                    websocket->frame_payload.extended_length = ntohl(websocket->frame_payload.extended_length >> 32);
+                    websocket->step = WS_STEP_DATA;
+                }        
+                break;
+            case WS_STEP_DATA:
+                if (websocket->data_pos == 0) {
+                    websocket->data_pos = websocket->offset;
+                }
+                if (--websocket->frame_payload.extended_length == 0) {
+                    unsigned char saved;
+                    
+                    websocket->data = &buffer->data[websocket->data_pos];
+                    websocket->step = WS_STEP_KEY;
+                    websocket->frame_pos = -1;
+                    websocket->frame_payload.extended_length = 0;
+                    websocket->data_pos = 0;
+                    
+                    saved = buffer->data[websocket->offset+1];
+                    buffer->data[websocket->offset+1] = '\0';
+
+                    parser->onready(parser, g_ape);
+                    buffer->data[websocket->offset+1] = saved;
+                    
+                    if (websocket->offset+1 == buffer->length) {
+                        websocket->offset = 0;
+                        buffer->length = 0;
+                        websocket->frame_pos = 0;
+                        return;
+                    }
+                }
+                break;
+            default:
+                break;
         }
-
-	    websocket->offset++;
-	}
-
-    return;    
+        websocket->frame_pos++;
+    }
 }
+
 
 void process_websocket(ape_socket *co, acetables *g_ape)
 {
