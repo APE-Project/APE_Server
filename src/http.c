@@ -179,11 +179,31 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                     websocket->frame_payload.extended_length = 0;
                     websocket->data_pos = 0;
                     
-                    saved = buffer->data[websocket->offset+1];
-                    buffer->data[websocket->offset+1] = '\0';
+                    switch(websocket->frame_payload.start & 0x0F) {
+                        case 0x01:
+                        {
+                            /*
+                              Close frame
+                              Reply by a close response
+                            */
+                            char payload_head[2] = { 0x81, 0x00 };                    
+                            sendbin(co->fd, payload_head, 2, 0, g_ape);
+                            return;
+                        }
+                        case 0x02:
+                            
+                            break;
+                        case 0x03: /* Never called as long as we never ask for pong */
+                            break;
+                        default:
+                            /* Data frame */
+                            saved = buffer->data[websocket->offset+1];
+                            buffer->data[websocket->offset+1] = '\0';
 
-                    parser->onready(parser, g_ape);
-                    buffer->data[websocket->offset+1] = saved;
+                            parser->onready(parser, g_ape);
+                            buffer->data[websocket->offset+1] = saved;                            
+                            break;
+                    }
                     
                     if (websocket->offset+1 == buffer->length) {
                         websocket->offset = 0;
