@@ -197,7 +197,8 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                             
                             /* All control frames MUST be 125 bytes or less */
                             if (body_length > 125) {
-                                payload_head[0] = 0x81;        
+                                payload_head[0] = 0x81;  
+                                payload_head[1] = 0x00;      
                                 sendbin(co->fd, payload_head, 2, 1, g_ape);
                                 return;
                             }
