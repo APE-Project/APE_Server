@@ -191,8 +191,24 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                             return;
                         }
                         case 0x02:
+                        {
+                            int body_length = &buffer->data[websocket->offset+1] - websocket->data;
+                            char payload_head[2] = { 0x83, body_length & 0x7F };
                             
+                            /* All control frames MUST be 125 bytes or less */
+                            if (body_length > 125) {
+                                payload_head[0] = 0x81;        
+                                sendbin(co->fd, payload_head, 2, 1, g_ape);
+                                return;
+                            }
+                            PACK_TCP(co->fd);
+                            sendbin(co->fd, payload_head, 2, 0, g_ape);
+                            if (body_length) {
+                                sendbin(co->fd, websocket->data, body_length, 0, g_ape);
+                            }
+                            FLUSH_TCP(co->fd);
                             break;
+                        }
                         case 0x03: /* Never called as long as we never ask for pong */
                             break;
                         default:
