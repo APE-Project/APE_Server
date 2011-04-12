@@ -2697,7 +2697,7 @@ static JSFunctionSpec sha1_funcs[] = {
 
 static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g_ape)
 {
-	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *pipe, *subuser;
+	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *subuser;
 	#ifdef _USE_MYSQL
 	JSObject *jsmysql;
 	#endif
@@ -2708,16 +2708,13 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	user = JS_DefineObject(gcx, obj, "user", &user_class, NULL, 0);
 	subuser = JS_DefineObject(gcx, obj, "subuser", &subuser_class, NULL, 0);
 	channel = JS_DefineObject(gcx, obj, "channel", &channel_class, NULL, 0);
-	pipe = JS_DefineObject(gcx, obj, "pipe", &pipe_class, NULL, 0);
 	
 	JS_DefineFunctions(gcx, user, apeuser_funcs);
 	JS_DefineFunctions(gcx, channel, apechannel_funcs);
-	JS_DefineFunctions(gcx, pipe, apepipe_funcs);
 	
 	add_property(&g_ape->properties, "user_proto", user, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	add_property(&g_ape->properties, "subuser_proto", subuser, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	add_property(&g_ape->properties, "channel_proto", channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
-	add_property(&g_ape->properties, "pipe_proto", pipe, EXTEND_POINTER, EXTEND_ISPRIVATE);
 	
 	JS_DefineFunctions(asc->cx, obj, ape_funcs);
 	JS_DefineFunctions(asc->cx, asc->global, global_funcs);
@@ -2725,6 +2722,8 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	JS_DefineFunctions(asc->cx, sha1, sha1_funcs);
 	
 	custompipe = JS_InitClass(asc->cx, obj, NULL, &pipe_class, ape_sm_pipe_constructor, 0, NULL, NULL, NULL, NULL);
+	add_property(&g_ape->properties, "pipe_proto", custompipe, EXTEND_POINTER, EXTEND_ISPRIVATE);
+	
 	sockserver = JS_InitClass(asc->cx, obj, NULL, &socketserver_class, ape_sm_sockserver_constructor, 2, NULL, NULL, NULL, NULL);
 	sockclient = JS_InitClass(asc->cx, obj, NULL, &socketclient_class, ape_sm_sockclient_constructor, 2, NULL, NULL, NULL, NULL);
 	#ifdef _USE_MYSQL
