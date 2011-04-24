@@ -34,7 +34,6 @@ struct _transport_open_same_host_p
 };
 
 typedef enum {
-
 	TRANSPORT_LONGPOLLING,
 	TRANSPORT_XHRSTREAMING,
 	TRANSPORT_JSONP,

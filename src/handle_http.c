@@ -33,8 +33,8 @@
 #include "sha1.h"
 #include "base64.h"
 
-/* Websocket GUID as defined by -06 */
-/* http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-06 */
+/* Websocket GUID as defined by -07 (since -06) */
+/* http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-07 */
 #define WS_IETF_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 static int gettransport(char *input)
@@ -61,8 +61,10 @@ subuser *checkrecv_websocket(ape_socket *co, acetables *g_ape)
 	cget.host   = websocket->http->host;
 	cget.hlines = websocket->http->hlines;
 
-	op = checkcmd(&cget, (websocket->version == WS_IETF_06 ? TRANSPORT_WEBSOCKET_IETF : TRANSPORT_WEBSOCKET), 
-	                &user, g_ape);
+	op = checkcmd(&cget, (websocket->version == WS_IETF_06 || 
+	                    websocket->version == WS_IETF_07 ? 
+	                            TRANSPORT_WEBSOCKET_IETF : TRANSPORT_WEBSOCKET), 
+	              &user, g_ape);
 
 	switch (op) {
 		case CONNECT_SHUTDOWN:
@@ -98,8 +100,8 @@ static unsigned long int ws_compute_key_r76(const char *value)
 }
 
 /*
-    WebSockets protocol rev ietf-hybi-06
-    http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-06
+    WebSockets protocol rev ietf-hybi-07 (since -06)
+    http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-07
 */
 static char *ws_compute_key(const char *key, unsigned int key_len)
 {
@@ -144,6 +146,7 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		char *key1 = get_header_line(http->hlines, "Sec-WebSocket-Key1");
 		char *key2 = get_header_line(http->hlines, "Sec-WebSocket-Key2");
 		char *keybase = get_header_line(http->hlines, "Sec-WebSocket-Key");
+		char *ws_version = get_header_line(http->hlines, "Sec-WebSocket-Version");
 
 		if (origin == NULL && (origin = get_header_line(http->hlines, "Sec-WebSocket-Origin")) == NULL) {
 			shutdown(co->fd, 2);
@@ -165,8 +168,18 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 			md5_update(&ctx, (uint8 *)http->data, 8);
 			
 			md5_finish(&ctx, md5sum);
-		} else if (keybase != NULL) {		    
-		    version = WS_IETF_06;
+		} else if (keybase != NULL) {
+		    if (ws_version != NULL) {
+		        switch(atoi(ws_version)) {
+		            case 6:
+		            default:
+		                version = WS_IETF_06;
+		                break;
+		            case 7:
+		                version = WS_IETF_07;
+		                break;
+		        }
+		    }
 		    if ((wsaccept = ws_compute_key(keybase, strlen(keybase))) == NULL) {
 	        	shutdown(co->fd, 2);
 	            return NULL;		        
@@ -198,9 +211,11 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		        sendbin(co->fd, http->uri, strlen(http->uri), 0, g_ape);
 			    break;
 		    case WS_IETF_06:
+		    case WS_IETF_07:
 			    sendbin(co->fd, CONST_STR_LEN(WEBSOCKET_HARDCODED_HEADERS_IETF), 0, g_ape);
                 sendbin(co->fd, CONST_STR_LEN("Sec-WebSocket-Accept: "), 0, g_ape);
                 sendbin(co->fd, wsaccept, strlen(wsaccept), 0, g_ape);
+                sendbin(co->fd, CONST_STR_LEN("\r\nSec-WebSocket-Protocol: APE"), 0, g_ape);
                 free(wsaccept);
 		        break;
 		}
@@ -215,10 +230,19 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		websocket = co->parser.data;
 		websocket->http = http; /* keep http data */
 		websocket->version = version;
+		switch(version) {
+		    case WS_IETF_06:
+		        websocket->step = WS_STEP_KEY;
+		        break;
+		    case WS_IETF_07:
+		        websocket->step = WS_STEP_START;
+		        break;
+		    default:
+		        break;		    
+		}
 		
 		return NULL;
 	}
-
 	if (http->data == NULL) {
 		sendbin(co->fd, HEADER_DEFAULT, HEADER_DEFAULT_LEN, 0, g_ape);
 		sendbin(co->fd, CONST_STR_LEN(CONTENT_NOTFOUND), 0, g_ape);

@@ -107,7 +107,8 @@ struct _http_state
 typedef enum {
     WS_OLD,
     WS_76,
-    WS_IETF_06
+    WS_IETF_06,
+    WS_IETF_07
 } ws_version;
 
 typedef enum {
