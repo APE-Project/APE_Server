@@ -269,7 +269,7 @@ int send_raw_inline(ape_socket *client, transport_t transport, RAW *raw, acetabl
 {
 	struct _transport_properties *properties;
 	int finish = 1;
-	
+
 	properties = transport_get_properties(transport, g_ape);
 
 	switch(transport) {
@@ -290,6 +290,39 @@ int send_raw_inline(ape_socket *client, transport_t transport, RAW *raw, acetabl
 	if (properties != NULL && properties->padding.left.val != NULL) {
 		finish &= sendbin(client->fd, properties->padding.left.val, properties->padding.left.len, 0, g_ape);
 	}	
+
+
+	if (transport == TRANSPORT_WEBSOCKET_IETF) {
+	    char payload_head[32] = { 0x84 };
+	    int payload_size = raw->len+2; /* TODO: fragmentation? */
+	    int payload_length = 0;
+	    
+	    if (payload_size <= 125) {
+	        payload_head[1] = (unsigned char)payload_size & 0x7F;
+	        payload_length = 2;
+	    } else if (payload_size <= 65535) {
+	        unsigned short int s = htons(payload_size);
+	        payload_head[1] = 126;
+	        
+	        memcpy(&payload_head[2], &s, 2);
+	        
+	        payload_length = 4;
+	    } else if (payload_size <= 0xFFFFFFFF) {
+	        unsigned int s = htonl(payload_size);
+	        
+	        payload_head[1] = 127;
+	        payload_head[2] = 0;
+	        payload_head[3] = 0;
+	        payload_head[4] = 0;
+	        payload_head[5] = 0;
+	        
+            memcpy(&payload_head[6], &s, 4);
+
+	        payload_length = 10;
+	    }
+        
+        finish &= sendbin(client->fd, payload_head, payload_length, 0, g_ape);        
+	}
 	
 	finish &= sendbin(client->fd, "[", 1, 0, g_ape);
 	

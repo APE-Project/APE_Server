@@ -147,6 +147,7 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		char *key2 = get_header_line(http->hlines, "Sec-WebSocket-Key2");
 		char *keybase = get_header_line(http->hlines, "Sec-WebSocket-Key");
 		char *ws_version = get_header_line(http->hlines, "Sec-WebSocket-Version");
+		char *ws_protocol = get_header_line(http->hlines, "Sec-WebSocket-Protocol");
 
 		if (origin == NULL && (origin = get_header_line(http->hlines, "Sec-WebSocket-Origin")) == NULL) {
 			shutdown(co->fd, 2);
@@ -215,7 +216,8 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 			    sendbin(co->fd, CONST_STR_LEN(WEBSOCKET_HARDCODED_HEADERS_IETF), 0, g_ape);
                 sendbin(co->fd, CONST_STR_LEN("Sec-WebSocket-Accept: "), 0, g_ape);
                 sendbin(co->fd, wsaccept, strlen(wsaccept), 0, g_ape);
-                sendbin(co->fd, CONST_STR_LEN("\r\nSec-WebSocket-Protocol: APE"), 0, g_ape);
+                sendbin(co->fd, CONST_STR_LEN("\r\nSec-WebSocket-Protocol: "), 0, g_ape);
+                sendbin(co->fd, ws_protocol, strlen(ws_protocol), 0, g_ape);
                 free(wsaccept);
 		        break;
 		}

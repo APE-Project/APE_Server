@@ -126,15 +126,15 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                 break;
             case WS_STEP_START:
                 /* Contain fragmentaiton infos & opcode (+ reserved bits) */
-                if (!(websocket->frame_payload.start = *pData) % 2) {
-                    /* A server MUST	
-			         close the connection upon receiving a frame with the MASK bit set to 0
-			        */
-			        return;
-                }
+                websocket->frame_payload.start = *pData;
+
                 websocket->step = WS_STEP_LENGTH;
                 break;
-            case WS_STEP_LENGTH: /* frame 5 */
+            case WS_STEP_LENGTH:
+                /* Check for MASK bit */
+                if (!(*pData & 0x80)) {
+                    return;
+                }
                 switch (*pData & 0x7F) { /* 7bit length */
                     case 126:
                         /* Following 16bit are length */
@@ -151,7 +151,7 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                         break;
                 }
                 break;
-            case WS_STEP_SHORT_LENGTH: /* frame 6-7 */
+            case WS_STEP_SHORT_LENGTH:
                 memcpy(((char *)&websocket->frame_payload)+(websocket->frame_pos), 
                         pData, 1);
                 if (websocket->frame_pos == 3) {
@@ -159,7 +159,7 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                     websocket->step = WS_STEP_KEY;
                 }
                 break;
-            case WS_STEP_EXTENDED_LENGTH: /* frame 6-7-8-9-10-11-12-13 */
+            case WS_STEP_EXTENDED_LENGTH:
                 memcpy(((char *)&websocket->frame_payload)+(websocket->frame_pos),
                         pData, 1);
                 if (websocket->frame_pos == 9) {
@@ -221,7 +221,6 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                             /* Data frame */
                             saved = buffer->data[websocket->offset+1];
                             buffer->data[websocket->offset+1] = '\0';
-
                             parser->onready(parser, g_ape);
                             buffer->data[websocket->offset+1] = saved;                            
                             break;
