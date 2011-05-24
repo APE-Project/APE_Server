@@ -293,7 +293,8 @@ int send_raw_inline(ape_socket *client, transport_t transport, RAW *raw, acetabl
 
 
 	if (transport == TRANSPORT_WEBSOCKET_IETF) {
-	    char payload_head[32] = { 0x84 };
+	    websocket_state *websocket = client->parser.data;
+	    char payload_head[32] = { websocket->version == WS_IETF_06 ? 0x84 : 0x81 };
 	    int payload_size = raw->len+2; /* TODO: fragmentation? */
 	    int payload_length = 0;
 	    
@@ -424,7 +425,9 @@ int send_raws(subuser *user, acetables *g_ape)
 	}
 	
 	if (user->user->transport == TRANSPORT_WEBSOCKET_IETF) {
-	    char payload_head[32] = { 0x84 };
+	    websocket_state *websocket = user->client->parser.data;
+	    char payload_head[32] = { websocket->version == WS_IETF_06 ? 0x84 : 0x81 };
+
 	    int payload_size = raws_size(user); /* TODO: fragmentation? */
 	    int payload_length = 0;
 	    

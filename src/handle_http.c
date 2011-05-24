@@ -216,8 +216,10 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 			    sendbin(co->fd, CONST_STR_LEN(WEBSOCKET_HARDCODED_HEADERS_IETF), 0, g_ape);
                 sendbin(co->fd, CONST_STR_LEN("Sec-WebSocket-Accept: "), 0, g_ape);
                 sendbin(co->fd, wsaccept, strlen(wsaccept), 0, g_ape);
-                sendbin(co->fd, CONST_STR_LEN("\r\nSec-WebSocket-Protocol: "), 0, g_ape);
-                sendbin(co->fd, ws_protocol, strlen(ws_protocol), 0, g_ape);
+                if (ws_protocol != NULL) {
+                    sendbin(co->fd, CONST_STR_LEN("\r\nSec-WebSocket-Protocol: "), 0, g_ape);
+                    sendbin(co->fd, ws_protocol, strlen(ws_protocol), 0, g_ape);
+                }
                 free(wsaccept);
 		        break;
 		}
