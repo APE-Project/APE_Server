@@ -21,6 +21,7 @@
 
 #include "pipe.h"
 #include "utils.h"
+#include "users.h"
 
 
 const char basic_chars[16] = { 	'a', 'b', 'c', 'd', 'e', 'f', '0', '1',
@@ -138,7 +139,7 @@ void post_json_custom(json_item *jstr, USERS *user, transpipe *pipe, acetables *
 	pipe->on_send(pipe, user, jstr, g_ape);
 }
 
-json_item *get_json_object_pipe_custom(transpipe *pipe)
+json_item *get_json_object_pipe_custom(transpipe *pipe, int full)
 {
 	json_item *jstr = NULL;
 	
@@ -147,7 +148,7 @@ json_item *get_json_object_pipe_custom(transpipe *pipe)
 		json_set_property_strN(jstr, "casttype", 8, "custom", 6);
 		json_set_property_strN(jstr, "pubid", 5, pipe->pubid, 32);
 		
-		if (pipe->properties != NULL) {
+		if (pipe->properties != NULL && full) {
 			int has_prop = 0;
 			
 			json_item *jprop = NULL;
@@ -160,14 +161,23 @@ json_item *get_json_object_pipe_custom(transpipe *pipe)
 						has_prop = 1;
 						jprop = json_new_object();
 					}
-					if (eTmp->type == EXTEND_JSON) {
-						json_item *jcopy = json_item_copy(eTmp->val, NULL);
+					switch(eTmp->type) {
+					    case EXTEND_JSON:
+					    {
+						    json_item *jcopy = json_item_copy(eTmp->val, NULL);
 						
-						json_set_property_objZ(jprop, eTmp->key, jcopy);
-					} else {
-						json_set_property_strZ(jprop, eTmp->key, eTmp->val);
-
-					}			
+						    json_set_property_objZ(jprop, eTmp->key, jcopy);					    
+					        break;
+					    }
+					    case EXTEND_STR:
+					        json_set_property_strZ(jprop, eTmp->key, eTmp->val);
+					        break;
+					    case EXTEND_INT:
+					        json_set_property_intZ(jprop, eTmp->key, eTmp->integer);
+					        break;
+					    default:
+					        break;
+					}	
 				}
 				eTmp = eTmp->next;
 			}
@@ -180,15 +190,15 @@ json_item *get_json_object_pipe_custom(transpipe *pipe)
 	return jstr;
 }
 
-json_item *get_json_object_pipe(transpipe *pipe)
+json_item *get_json_object_pipe(transpipe *pipe, int full)
 {
 	switch(pipe->type) {
 		case USER_PIPE:
-			return get_json_object_user(pipe->pipe);
+			return get_json_object_user(pipe->pipe, full);
 		case CHANNEL_PIPE:
-			return get_json_object_channel(pipe->pipe);
+			return get_json_object_channel(pipe->pipe, full);
 		case CUSTOM_PIPE:
-			return get_json_object_pipe_custom(pipe);
+			return get_json_object_pipe_custom(pipe, full);
 		case PROXY_PIPE:
 		default:
 			return NULL;

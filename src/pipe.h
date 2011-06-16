@@ -23,7 +23,6 @@
 #define _PIPE_H
 
 #include "main.h"
-#include "users.h"
 #include "json.h"
 
 enum {
@@ -66,7 +65,7 @@ transpipe *get_pipe_strict(const char *pubid, struct USERS *user, acetables *g_a
 void post_json_custom(json_item *jstr, struct USERS *user, struct _transpipe *pipe, acetables *g_ape);
 void gen_sessid_new(char *input, acetables *g_ape);
 void unlink_all_pipe(transpipe *origin, acetables *g_ape);
-json_item *get_json_object_pipe(transpipe *pipe);
-json_item *get_json_object_pipe_custom(transpipe *pipe);
+json_item *get_json_object_pipe(transpipe *pipe, int full);
+json_item *get_json_object_pipe_custom(transpipe *pipe, int full);
 #endif
 

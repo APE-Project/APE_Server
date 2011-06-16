@@ -516,7 +516,7 @@ void subuser_restor(subuser *sub, acetables *g_ape)
 			
 			while (ulist != NULL) {
 	
-				json_item *juser = get_json_object_user(ulist->userinfo);
+				json_item *juser = get_json_object_user(ulist->userinfo, 1);
 		
 				if (ulist->userinfo != user) {
 					//make_link(user, ulist->userinfo);
@@ -531,7 +531,7 @@ void subuser_restor(subuser *sub, acetables *g_ape)
 			
 			json_set_property_objN(jlist, "users", 5, user_list);
 		}
-		json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
+		json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan, 1));
 
 		newraw = forge_raw(RAW_CHANNEL, jlist);
 		newraw->priority = RAW_PRI_HI;
@@ -540,7 +540,7 @@ void subuser_restor(subuser *sub, acetables *g_ape)
 	}
 
 	jlist = json_new_object();
-	json_set_property_objN(jlist, "user", 4, get_json_object_user(user));	
+	json_set_property_objN(jlist, "user", 4, get_json_object_user(user, 1));	
 	
 	newraw = forge_raw("IDENT", jlist);
 	newraw->priority = RAW_PRI_HI;
@@ -641,7 +641,7 @@ void make_link(USERS *a, USERS *b)
 	struct _users_link *link;
 	struct _link_list *link_a, *link_b;
 	
-	if (are_linked(a, b) != NULL) {	
+	if ((link = are_linked(a, b)) == NULL) {	
 		link = xmalloc(sizeof(*link));
 	
 		link_a = xmalloc(sizeof(*link_a));
@@ -662,9 +662,10 @@ void make_link(USERS *a, USERS *b)
 		b->links.ulink = link_b;
 		(b->links.nlink)++;
 	
-		link->link_type = 0;
+		link->nlink = 1;
 		printf("Link etablished between %s and %s\n", a->pipe->pubid, b->pipe->pubid);
 	} else {
+	    link->nlink++;
 		printf("%s and %s are already linked\n", a->pipe->pubid, b->pipe->pubid);
 	}
 }
@@ -678,7 +679,7 @@ void destroy_link(USERS *a, USERS *b)
 	}	
 }
 
-json_item *get_json_object_user(USERS *user)
+json_item *get_json_object_user(USERS *user, int full)
 {
 	json_item *jstr = NULL;
 	
@@ -687,7 +688,7 @@ json_item *get_json_object_user(USERS *user)
 		json_set_property_strN(jstr, "casttype", 8, "uni", 3);
 		json_set_property_strN(jstr, "pubid", 5, user->pipe->pubid, 32);
 		
-		if (user->properties != NULL) {
+		if (user->properties != NULL && full) {
 			int has_prop = 0;
 			
 			json_item *jprop = NULL;
@@ -700,14 +701,23 @@ json_item *get_json_object_user(USERS *user)
 						has_prop = 1;
 						jprop = json_new_object();
 					}
-					if (eTmp->type == EXTEND_JSON) {
-						json_item *jcopy = json_item_copy(eTmp->val, NULL);
+					switch(eTmp->type) {
+					    case EXTEND_JSON:
+					    {
+						    json_item *jcopy = json_item_copy(eTmp->val, NULL);
 						
-						json_set_property_objZ(jprop, eTmp->key, jcopy);
-					} else {
-						json_set_property_strZ(jprop, eTmp->key, eTmp->val);
-
-					}			
+						    json_set_property_objZ(jprop, eTmp->key, jcopy);					    
+					        break;
+					    }
+					    case EXTEND_STR:
+					        json_set_property_strZ(jprop, eTmp->key, eTmp->val);
+					        break;
+					    case EXTEND_INT:
+					        json_set_property_intZ(jprop, eTmp->key, eTmp->integer);
+					        break;
+					    default:
+					        break;
+					}	
 				}
 				eTmp = eTmp->next;
 			}

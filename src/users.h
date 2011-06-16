@@ -138,7 +138,7 @@ struct _users_link
 	USERS *a;
 	USERS *b;
 	
-	int link_type;
+	int nlink;
 };
 
 struct _link_list
@@ -228,7 +228,7 @@ void send_msg_channel(struct CHANNEL *chan, const char *msg, const char *type, a
 
 unsigned int isonchannel(USERS *user, struct CHANNEL *chan);
 
-json_item *get_json_object_user(USERS *user);
+json_item *get_json_object_user(USERS *user, int full);
 
 session *get_session(USERS *user, const char *key);
 session *set_session(USERS *user, const char *key, const char *val, int update, acetables *g_ape);

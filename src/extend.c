@@ -21,9 +21,118 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "pipe.h"
 #include "extend.h"
 #include "utils.h"
 #include "json.h"
+#include "raw.h"
+
+#if 0
+extend *add_pipe_property(transpipe *pipe, const char *key, void *val, EXTEND_TYPE etype, int *erased, acetables *g_ape)
+{
+    extend **entry = NULL;
+    json_item *jprop, *jlist;
+    RAW *newraw;
+ 	extend *new_property = NULL, *eTmp;
+ 	int klen;
+	
+	if ((klen = strlen(key)) > EXTEND_KEY_LENGTH) {
+		return NULL;
+	}
+	   
+    *erased = 0;
+
+    switch(pipe->type) {
+        case CHANNEL_PIPE:
+            entry = &((CHANNEL *)pipe->pipe)->properties;
+            break;
+        case USER_PIPE:
+            entry = &((USERS *)pipe->pipe)->properties;
+            break;
+        default:
+            return NULL;
+    }
+
+    jprop = json_new_object();
+
+    *erased = del_property(entry, key);
+    
+    eTmp = *entry;
+    
+    if (val == NULL) {
+        
+        return NULL;
+    }
+    
+    jlist = json_new_object();
+
+	new_property = xmalloc(sizeof(*new_property));
+
+	strcpy(new_property->key, key);
+    
+    /* TODO if channel is empty, do nothing related to raws */
+	switch(etype) {
+		case EXTEND_STR:
+		{
+		    int len = strlen(val);
+		    new_property->val = xmalloc(sizeof(char) * (len + 1));
+		    memcpy(new_property->val, val, len + 1);
+		    
+			json_set_property_strN(jlist, key, klen, (char *)val, len);
+			break;
+		}
+		case EXTEND_INT:
+		    json_set_property_intN(jlist, key, klen, *(int *)val);
+		    new_property->integer = *(int *)val;
+		    break;
+		case EXTEND_JSON:
+		    ((json_item *)val)->freeonstring = 0;
+			json_set_property_objN(jlist, key, klen, (json_item *)val);
+			new_property->val = val;
+			break;
+		default:
+		    return NULL;
+	}
+	
+    json_set_property_objN(jprop, (*erased ? "mod" : "set"), 3, jlist);
+	newraw = forge_raw("PROP", jprop);
+
+	new_property->next = eTmp;
+	new_property->type = etype;
+	new_property->visibility = EXTEND_ISPUBLIC;
+
+	*entry = new_property;
+
+	post_raw_pipe(newraw, pipe, g_ape);
+	
+	return new_property;
+}
+#endif
+
+extend *add_pipe_property(transpipe *pipe, const char *key, void *val, EXTEND_TYPE etype, int *erased, acetables *g_ape)
+{
+    extend **entry = NULL;
+ 	extend *new_property = NULL;
+
+    *erased = 0;
+
+    switch(pipe->type) {
+        case CHANNEL_PIPE:
+            entry = &((CHANNEL *)pipe->pipe)->properties;
+            break;
+        case USER_PIPE:
+            entry = &((USERS *)pipe->pipe)->properties;
+            break;
+        default:
+            return NULL;
+    }
+    
+    new_property = add_property(entry, key, val, etype, EXTEND_ISPUBLIC);
+    new_property->state.notcommited = 1;
+    
+    return new_property;
+}
+
 
 /*
 	Add a property to an object (user, channel, proxy, acetables)
@@ -36,6 +145,7 @@
 	EXTEND_ISPUBLIC : The property is added to the json tree sent with get_json_object_*
 	EXTEND_ISPRIVATE : The property is not shown in get_json_object_*
 */
+
 extend *add_property(extend **entry, const char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility)
 {
 	extend *new_property = NULL, *eTmp;
@@ -50,14 +160,16 @@ extend *add_property(extend **entry, const char *key, void *val, EXTEND_TYPE ety
 	eTmp = *entry;
 	
 	new_property = xmalloc(sizeof(*new_property));
-	
-	/* The key cannot be longer than EXTEND_KEY_LENGTH */
+
 	strcpy(new_property->key, key);
 	
 	switch(etype) {
 		case EXTEND_STR:
 			new_property->val = xstrdup(val);	
 			break;
+		case EXTEND_INT:
+		    new_property->integer = *(int *)val;
+		    break;
 		case EXTEND_POINTER:
 		default:
 			/* a pointer must be a private property */
@@ -67,7 +179,10 @@ extend *add_property(extend **entry, const char *key, void *val, EXTEND_TYPE ety
 			new_property->val = val;		
 			break;		
 	}
-
+    
+    new_property->state.notcommited = 0;
+    new_property->state.deleted = 0;
+    
 	new_property->next = eTmp;
 	new_property->type = etype;
 	new_property->visibility = visibility;
@@ -102,14 +217,14 @@ void *get_property_val(extend *entry, const char *key)
 	
 }
 
-void del_property(extend **entry, const char *key)
+int del_property(extend **entry, const char *key)
 {
 
 	while (*entry != NULL) {
 		if (strcmp((*entry)->key, key) == 0) {
 			extend *pEntry = *entry;
 			*entry = (*entry)->next;
-			
+
 			switch(pEntry->type) {
 				case EXTEND_STR:
 					free(pEntry->val);
@@ -123,11 +238,12 @@ void del_property(extend **entry, const char *key)
 			
 			free(pEntry);
 			
-			return;
+			return 1;
 		}
 		entry = &(*entry)->next;
 	}
-
+    
+    return 0;
 }
 
 /* TODO : use del_property */

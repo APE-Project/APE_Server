@@ -24,10 +24,13 @@
 
 #define EXTEND_KEY_LENGTH 32
 
+#include "pipe.h"
+
 typedef enum {
 	EXTEND_STR,
 	EXTEND_JSON,
-	EXTEND_POINTER
+	EXTEND_POINTER,
+	EXTEND_INT
 } EXTEND_TYPE;
 
 typedef enum {
@@ -39,18 +42,26 @@ typedef struct _extend extend;
 
 struct _extend
 {	
-	void *val;
-	
+    char key[EXTEND_KEY_LENGTH+1];
+    union {
+	    void *val;
+	    int integer;  
+	};
 	EXTEND_TYPE type;
 	EXTEND_PUBLIC visibility;
 	
 	struct _extend *next;
-	char key[EXTEND_KEY_LENGTH+1];
+	
+	struct {
+	    unsigned short int notcommited;
+	    unsigned short int deleted;
+	} state;
 };
 
 extend *get_property(extend *entry, const char *key);
 void clear_properties(extend **entry);
-void del_property(extend **entry, const char *key);
+int del_property(extend **entry, const char *key);
 //extend *add_property_str(extend **entry, char *key, char *val);
+extend *add_pipe_property(transpipe *pipe, const char *key, void *val, EXTEND_TYPE etype, int *erased, acetables *g_ape);
 extend *add_property(extend **entry, const char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility);
 #endif

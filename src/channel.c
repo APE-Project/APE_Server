@@ -167,8 +167,8 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 			
 			uinfo = json_new_object();
 		
-			json_set_property_objN(uinfo, "user", 4, get_json_object_user(user));
-			json_set_property_objN(uinfo, "pipe", 4, get_json_object_channel(chan));
+			json_set_property_objN(uinfo, "user", 4, get_json_object_user(user, 1));
+			json_set_property_objN(uinfo, "pipe", 4, get_json_object_channel(chan, 1));
 
 			newraw = forge_raw(RAW_JOIN, uinfo);
 			post_raw_channel_restricted(newraw, chan, user, g_ape);
@@ -177,10 +177,10 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 		ulist = chan->head;
 		while (ulist != NULL) {
 		
-			json_item *juser = get_json_object_user(ulist->userinfo);
+			json_item *juser = get_json_object_user(ulist->userinfo, 1);
 			
 			if (ulist->userinfo != user) {
-				//make_link(user, ulist->userinfo);
+				make_link(user, ulist->userinfo);
 			}
 			
 			json_set_property_intN(juser, "level", 5, ulist->level);
@@ -192,7 +192,7 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 		json_set_property_objN(jlist, "users", 5, user_list);
 	}
 	
-	json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
+	json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan, 1));
 
 	newraw = forge_raw(RAW_CHANNEL, jlist);
 	post_raw(newraw, user, g_ape);
@@ -262,8 +262,8 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 		if (list->userinfo == user) {
 			jlist = json_new_object();
 			
-			json_set_property_objN(jlist, "user", 4, get_json_object_user(user));
-			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
+			json_set_property_objN(jlist, "user", 4, get_json_object_user(user, 0));
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan, 0));
 			
 			newraw = forge_raw(RAW_LEFT, jlist);
 			post_raw(newraw, user, g_ape);
@@ -278,8 +278,8 @@ void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainé
 			if (chan->head != NULL && !(chan->flags & CHANNEL_NONINTERACTIVE)) {
 				jlist = json_new_object();
 				
-				json_set_property_objN(jlist, "user", 4, get_json_object_user(user));
-				json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
+				json_set_property_objN(jlist, "user", 4, get_json_object_user(user, 0));
+				json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan, 0));
 				
 				newraw = forge_raw(RAW_LEFT, jlist);
 				post_raw_channel(newraw, chan, g_ape);
@@ -326,6 +326,7 @@ userslist *getuchan(USERS *user, CHANNEL *chan)
 	return NULL;
 }
 
+#if 0
 // TODO : Rewrite this f***g ugly function
 unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsigned int lvl, acetables *g_ape)
 {
@@ -377,6 +378,7 @@ unsigned int setlevel(USERS *user_actif, USERS *user_passif, CHANNEL *chan, unsi
 	}
 	return 0;
 }
+#endif
 
 /*unsigned int settopic(USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape)
 {
@@ -429,8 +431,8 @@ void ban(CHANNEL *chan, USERS *banner, const char *ip, char *reason, unsigned in
 			jlist = json_new_object();
 			
 			json_set_property_strZ(jlist, "reason", reason);
-			json_set_property_objN(jlist, "banner", 6, get_json_object_user(banner));
-			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan));
+			json_set_property_objN(jlist, "banner", 6, get_json_object_user(banner, 0));
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(chan, 0));
 			
 			newraw = forge_raw(RAW_BAN, jlist);
 			
@@ -526,7 +528,7 @@ void rmallban(CHANNEL *chan)
 	chan->banned = NULL;
 }
 
-json_item *get_json_object_channel(CHANNEL *chan)
+json_item *get_json_object_channel(CHANNEL *chan, int full)
 {
 	json_item *jstr = json_new_object();
 	json_set_property_strN(jstr, "casttype", 8, "multi", 5);
@@ -537,14 +539,24 @@ json_item *get_json_object_channel(CHANNEL *chan)
 
 	extend *eTmp = chan->properties;
 	
-	while (eTmp != NULL) {
-		if (eTmp->visibility == EXTEND_ISPUBLIC) {
-			if (eTmp->type == EXTEND_JSON) {
-				json_item *jcopy = json_item_copy(eTmp->val, NULL);
+	while (eTmp != NULL && full) {
+		if (eTmp->visibility == EXTEND_ISPUBLIC && !eTmp->state.deleted) {
+			switch(eTmp->type) {
+			    case EXTEND_JSON:
+			    {
+				    json_item *jcopy = json_item_copy(eTmp->val, NULL);
 				
-				json_set_property_objZ(jprop, eTmp->key, jcopy);
-			} else {
-				json_set_property_strZ(jprop, eTmp->key, eTmp->val);
+				    json_set_property_objZ(jprop, eTmp->key, jcopy);					    
+			        break;
+			    }
+			    case EXTEND_STR:
+			        json_set_property_strZ(jprop, eTmp->key, eTmp->val);
+			        break;
+			    case EXTEND_INT:
+			        json_set_property_intZ(jprop, eTmp->key, eTmp->integer);
+			        break;
+			    default:
+			        break;
 			}
 		}
 		

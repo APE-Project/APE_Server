@@ -21,7 +21,7 @@
 /* HOWTO : http://www.ape-project.org/wiki/index.php/How_to_build_a_serverside_JS_module */
 
 #define XP_UNIX
-
+#define DEBUG 1
 #include "../src/configure.h"
 #ifdef _USE_MYSQL
 #include <mysac.h>
@@ -612,7 +612,7 @@ APE_JS_NATIVE(apepipe_sm_to_object)
 		return JS_TRUE;
 	}
 	
-	pipe_object = get_json_object_pipe(spipe);
+	pipe_object = get_json_object_pipe(spipe, 1);
 	
 	js_pipe_object = ape_json_to_jsobj(cx, pipe_object->jchild.child, NULL);
 	
@@ -659,15 +659,15 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 		transpipe *from_pipe = JS_GetPrivate(cx, js_pipe);
 		
 		if (from_pipe != NULL && from_pipe->type == USER_PIPE) {
-			json_set_property_objN(jstr, "from", 4, get_json_object_pipe(from_pipe));
+			json_set_property_objN(jstr, "from", 4, get_json_object_pipe(from_pipe, 0));
 			
 			if (to_pipe->type == USER_PIPE) {
-				json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
+				json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe, 0));
 			} else if (to_pipe->type == CHANNEL_PIPE) {
 				json_item *jcopy = json_item_copy(jstr, NULL);
 				if (((CHANNEL*)to_pipe->pipe)->head != NULL && ((CHANNEL*)to_pipe->pipe)->head->next != NULL) {
 					
-					json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(to_pipe));
+					json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(to_pipe, 0));
 				
 					newraw = forge_raw(raw, jstr);
 					post_raw_channel_restricted(newraw, to_pipe->pipe, from_pipe->pipe, g_ape);
@@ -676,7 +676,7 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 					JSObject *subjs = JSVAL_TO_OBJECT(vp);
 					subuser *sub = JS_GetPrivate(cx, subjs);
 					if (sub != NULL && ((USERS *)from_pipe->pipe)->nsub > 1) {						
-						json_set_property_objN(jcopy, "pipe", 4, get_json_object_pipe(to_pipe));
+						json_set_property_objN(jcopy, "pipe", 4, get_json_object_pipe(to_pipe, 0));
 						newraw = forge_raw(raw, jcopy);
 						post_raw_restricted(newraw, from_pipe->pipe, sub, g_ape);
 					} else {
@@ -689,7 +689,7 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 				return JS_TRUE;
 			}
 		} else if (from_pipe != NULL && from_pipe->type == CUSTOM_PIPE) {
-			json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe));
+			json_set_property_objN(jstr, "pipe", 4, get_json_object_pipe(from_pipe, 0));
 		}
 	}
 
@@ -829,7 +829,7 @@ APE_JS_NATIVE(apechannel_sm_set_property)
 		}
 	} else { /* Convert to string */
 		property = JS_ValueToString(cx, argv[1]); /* No needs to be gc-rooted while there is no JSAPI Call after that */
-		add_property(&chan->properties, key, JS_GetStringBytes(property), EXTEND_STR, EXTEND_ISPUBLIC);
+		//add_property(&chan->properties, key, JS_GetStringBytes(property), EXTEND_STR, EXTEND_ISPUBLIC);
 	}
 
 	
@@ -2941,7 +2941,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 		asc->cx = JS_NewContext(rt, 8192);
 		
-		#if 0
+		#if 1
 		JS_SetGCZeal(asc->cx, 2);
 		#endif
 		
@@ -3087,6 +3087,52 @@ static void ape_cb_del_user(USERS *user, int istmp, acetables *g_ape)
 	deluser(user, g_ape);
 }
 
+JSBool ape_channel_prop_setter(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+{
+    jsval key;
+    JSObject *js_channel;
+    CHANNEL *chan;
+    int erased;
+	acetables *g_ape;
+    ape_sm_compiled *asc;
+	
+	asc = JS_GetContextPrivate(cx);
+	g_ape = asc->g_ape;	
+
+    if ((js_channel = JS_GetParent(cx, obj)) == NULL || 
+            (chan = JS_GetPrivate(cx, js_channel)) == NULL ||
+            JS_IdToValue(cx, id, &key) == JS_FALSE) {
+        return JS_TRUE;
+    }
+
+    switch(JS_TypeOfValue(cx, *vp)) {
+        case JSTYPE_OBJECT:
+            add_pipe_property(chan->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(*vp)), EXTEND_JSON, &erased, g_ape);
+            break;
+        case JSTYPE_STRING:
+            add_pipe_property(chan->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), JS_EncodeString(cx, JSVAL_TO_STRING(*vp)), EXTEND_STR, &erased, g_ape);
+            break;
+        case JSTYPE_NUMBER:
+            if (JSVAL_IS_INT(*vp)) {
+                int vpint = JSVAL_TO_INT(*vp);
+                add_pipe_property(chan->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), &vpint, EXTEND_INT, &erased, g_ape);
+            }
+            break;
+        default:
+            break;
+    }
+
+    return JS_TRUE;
+}
+
+static JSClass channel_prop = {
+	"channel_prop", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, ape_channel_prop_setter,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
+
 static CHANNEL *ape_cb_mkchan(char *name, int flags, acetables *g_ape)
 {
 	JSObject *js_channel;
@@ -3107,7 +3153,11 @@ static CHANNEL *ape_cb_mkchan(char *name, int flags, acetables *g_ape)
 		if (js_channel == NULL) {
 			return NULL;
 		}
-		
+
+        //JS_DefineProperty(gcx, js_channel, "properties", OBJECT_TO_JSVAL(JS_NewObject(gcx, NULL, NULL, NULL)), NULL, ape_channel_pop_setter, JSPROP_ENUMERATE | JSPROP_SHARED);
+        
+        JS_DefineObject(gcx, js_channel, "properties", &channel_prop, NULL, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+        
 		jsobj = add_property(&chan->properties, "jsobj", js_channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
 		JS_AddObjectRoot(gcx, (JSObject **)&jsobj->val);
 

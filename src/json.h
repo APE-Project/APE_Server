@@ -88,7 +88,7 @@ typedef struct _json_item {
 	struct _json_item *next;
 			
 	int type;
-	
+	int freeonstring;
 } json_item;
 
 

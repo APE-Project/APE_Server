@@ -84,7 +84,7 @@ unsigned int setlevel(struct USERS *user_actif, struct USERS *user_passif, CHANN
 //unsigned int settopic(struct USERS *user, CHANNEL *chan, const char *topic, acetables *g_ape);
 unsigned int isvalidchan(char *name);
 
-json_item *get_json_object_channel(CHANNEL *chan);
+json_item *get_json_object_channel(CHANNEL *chan, int full);
 
 #endif
 

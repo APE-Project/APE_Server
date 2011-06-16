@@ -256,7 +256,7 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 			string->jstring[string->len++] = '"';
 			string->jstring[string->len++] = ':';
 			
-			if (free_tree) {
+			if (free_tree && head->freeonstring) {
 				free(head->key.val);
 			}
 		}
@@ -267,7 +267,7 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 			string->len += escape_json_string(head->jval.vu.str.value, string->jstring + string->len, head->jval.vu.str.length); /* TODO : Add a "escape" argument to json_to_string */	
 			string->jstring[string->len++] = '"';
 			
-			if (free_tree) {
+			if (free_tree && head->freeonstring) {
 				free(head->jval.vu.str.value);
 			}
 		} else if (head->jval.vu.integer_value) {
@@ -317,7 +317,7 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 				default:
 					break;
 			}
-			json_to_string(head->jchild.child, string, free_tree);
+			json_to_string(head->jchild.child, string, (free_tree & head->freeonstring ? 1 : 0));
 
 		}
 		
@@ -337,7 +337,7 @@ struct jsontring *json_to_string(json_item *head, struct jsontring *string, int 
 				}
 			}
 		}
-		if (free_tree) {
+		if (free_tree && head->freeonstring) {
 			json_item *jtmp = head->next;
 			free(head);
 			head = jtmp;
@@ -369,6 +369,7 @@ static json_item *init_json_item()
 	jval->jval.vu.float_value = 0.;
 	
 	jval->type = -1;
+	jval->freeonstring = 1;
 	
 	return jval;
 }

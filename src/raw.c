@@ -47,7 +47,7 @@ RAW *forge_raw(const char *raw, json_item *jlist)
 	string = json_to_string(jstruct, NULL, 1);
 
 	new_raw = xmalloc(sizeof(*new_raw));
-    	new_raw->len = string->len;
+    new_raw->len = string->len;
 	new_raw->next = NULL;
 	new_raw->priority = RAW_PRI_LO;
 	new_raw->refcount = 0;
@@ -142,6 +142,26 @@ void post_raw_restricted(RAW *raw, USERS *user, subuser *sub, acetables *g_ape)
 	}
 }
 
+void post_raw_link(RAW *raw, USERS *user, acetables *g_ape)
+{
+    struct _link_list *ulink;
+    
+    if (user->links.nlink == 0) {
+        return;
+    }
+    
+    ulink = user->links.ulink;
+    
+    while (ulink != NULL) {
+
+        post_raw(raw, (ulink->link->a == user ?
+                        ulink->link->b : 
+                        ulink->link->a), g_ape);
+        
+        ulink = ulink->next;
+    }
+}
+
 /************* Channels related functions ****************/
 
 /* Post raw to a channel and propagate it to all of it's users */
@@ -200,11 +220,9 @@ void proxy_post_raw(RAW *raw, ape_proxy *proxy, acetables *g_ape)
 }
 
 /* to manage subuser use post_to_pipe() instead */
-int post_raw_pipe(RAW *raw, const char *pipe, acetables *g_ape)
+int post_raw_pipe(RAW *raw, transpipe *spipe, acetables *g_ape)
 {
-	transpipe *spipe;
-	
-	if ((spipe = get_pipe(pipe, g_ape)) != NULL) {
+	if (spipe != NULL) {
 		
 		if (spipe->type == CHANNEL_PIPE) {
 			post_raw_channel(raw, spipe->pipe, g_ape);
@@ -229,32 +247,32 @@ int post_to_pipe(json_item *jlist, const char *rawname, const char *pipe, subuse
 			send_error(sender, "UNKNOWN_PIPE", "109", g_ape);
 			return 0;
 		}
-		json_set_property_objN(jlist, "from", 4, get_json_object_user(sender));
+		json_set_property_objN(jlist, "from", 4, get_json_object_user(sender, 0));
 
 	}
 	
 	if (sender != NULL && sender->nsub > 1) {
 		jlist_copy = json_item_copy(jlist, NULL);
 	
-		json_set_property_objN(jlist_copy, "pipe", 4, get_json_object_pipe(recver));
+		json_set_property_objN(jlist_copy, "pipe", 4, get_json_object_pipe(recver, 0));
 		newraw = forge_raw(rawname, jlist_copy);
 		post_raw_restricted(newraw, sender, from, g_ape);
 	}	
 	switch(recver->type) {
 		case USER_PIPE:
-			json_set_property_objN(jlist, "pipe", 4, get_json_object_user(sender));
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_user(sender, 0));
 			newraw = forge_raw(rawname, jlist);
 			post_raw(newraw, recver->pipe, g_ape);
 			break;
 		case CHANNEL_PIPE:
 			if (((CHANNEL*)recver->pipe)->head != NULL && ((CHANNEL*)recver->pipe)->head->next != NULL) {
-				json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(recver->pipe));
+				json_set_property_objN(jlist, "pipe", 4, get_json_object_channel(recver->pipe, 0));
 				newraw = forge_raw(rawname, jlist);
 				post_raw_channel_restricted(newraw, recver->pipe, sender, g_ape);
 			}
 			break;
 		case CUSTOM_PIPE:
-			json_set_property_objN(jlist, "pipe", 4, get_json_object_user(sender));
+			json_set_property_objN(jlist, "pipe", 4, get_json_object_user(sender, 0));
 			post_json_custom(jlist, sender, recver, g_ape);
 			break;
 		default:
