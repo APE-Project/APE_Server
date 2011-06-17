@@ -30,7 +30,7 @@ fi
 cd ./deps/udns-0.0.9/
 make clean && ./configure && make
 cd ../js/src/
-./configure && make
+./configure && make -j8
 cd ../../../
 make
 cd ./modules/ && make
