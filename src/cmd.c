@@ -216,9 +216,11 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 
 		}
 		
-		if (pc->guser != NULL && sub != NULL && (jchl = json_lookup(ijson->jchild.child, "chl")) != NULL && jchl->jval.vu.integer_value > sub->current_chl) {
+		if (pc->guser != NULL && sub != NULL && (jchl = json_lookup(ijson->jchild.child, "chl")) != NULL /*&& jchl->jval.vu.integer_value > sub->current_chl*/) {
 			sub->current_chl = jchl->jval.vu.integer_value;
-		} else if (pc->guser != NULL && sub != NULL) {
+		}
+		#if 0 
+		else if (pc->guser != NULL && sub != NULL) {
 			/* if a bad challenge is detected, we are stoping walking on cmds */
 			send_error(pc->guser, "BAD_CHL", "250", g_ape);
 
@@ -226,6 +228,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 			
 			return (CONNECT_KEEPALIVE);
 		}
+		#endif
 					
 		cp.param = json_lookup(ijson->jchild.child, "params");
 		cp.client = (cp.client != NULL ? cp.client : pc->client);
@@ -388,8 +391,13 @@ unsigned int cmd_connect(callbackp *callbacki)
 	
 	callbacki->call_user = nuser;
 
-	subuser_restor(getsubuser(callbacki->call_user, callbacki->host), callbacki->g_ape);
+	jstr = json_new_object();
+	json_set_property_objN(jstr, "user", 4, get_json_object_user(callbacki->call_user));	
 	
+	newraw = forge_raw("IDENT", jstr);
+	newraw->priority = RAW_PRI_HI;
+	post_raw_sub(newraw, callbacki->call_subuser, callbacki->g_ape);	
+
 	jstr = json_new_object();	
 	json_set_property_strN(jstr, "sessid", 6, nuser->sessid, 32);
 	
