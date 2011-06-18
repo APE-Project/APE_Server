@@ -235,47 +235,6 @@ void do_died(subuser *sub)
 	}
 }
 
-void check_timeout(acetables *g_ape, int *last)
-{
-	USERS *list, *wait;
-	long int ctime = time(NULL);
-	
-	list = g_ape->uHead;
-	
-	while (list != NULL) {
-		
-		wait = list->next;
-
-		if ((ctime - list->idle) >= TIMEOUT_SEC && list->type == HUMAN) {
-			deluser(list, g_ape);
-		} else if (list->type == HUMAN) {
-			subuser **n = &(list->subuser);
-			while (*n != NULL) {
-				if ((ctime - (*n)->idle) >= TIMEOUT_SEC) {
-					delsubuser(n, g_ape);
-					continue;
-				}
-				if ((*n)->state == ALIVE && (*n)->raw_pools.nraw && !(*n)->need_update && !(*n)->burn_after_writing) {
-
-					/* Data completetly sent => closed */
-					if (send_raws(*n, g_ape)) {
-						transport_data_completly_sent(*n, (*n)->user->transport); // todo : hook
-					} else {
-
-						(*n)->burn_after_writing = 1;
-					}
-				} else {
-					FIRE_EVENT_NONSTOP(tickuser, *n, g_ape);
-				}
-				n = &(*n)->next;
-			}
-		}
-		
-		list = wait;
-	}
-
-}
-
 void send_error(USERS *user, const char *msg, const char *code, acetables *g_ape)
 {
 	RAW *newraw;

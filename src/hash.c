@@ -28,15 +28,15 @@
 
 static unsigned int hach_string(const char *str)
 {
-        int hash = 5381; // DJB Hash
-        const char *s;
-	
-	
-        for (s = str; *s != '\0'; s++) {
-                hash = ((hash << 5) + hash) + tolower(*s);
-        }
-	
-        return (hash & 0x7FFFFFFF)%(HACH_TABLE_MAX-1);
+	int hash = 5381; // DJB Hash
+	const char *s;
+
+
+	for (s = str; *s != '\0'; s++) {
+		    hash = ((hash << 5) + hash) + tolower(*s);
+	}
+
+	return (hash & 0x7FFFFFFF)%(HACH_TABLE_MAX-1);
 }
 
 HTBL *hashtbl_init()

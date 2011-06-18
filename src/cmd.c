@@ -392,7 +392,7 @@ unsigned int cmd_connect(callbackp *callbacki)
 	callbacki->call_user = nuser;
 
 	jstr = json_new_object();
-	json_set_property_objN(jstr, "user", 4, get_json_object_user(callbacki->call_user));	
+	json_set_property_objN(jstr, "user", 4, get_json_object_user(callbacki->call_user, 1));	
 	
 	newraw = forge_raw("IDENT", jstr);
 	newraw->priority = RAW_PRI_HI;

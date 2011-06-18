@@ -201,7 +201,7 @@ typedef struct _acetables
 	
 	HTBL *hLogin;
 	HTBL *hSessid;
-	HTBL *hLusers;
+	HTBL *hChannels;
 	HTBL *hCallback;
 	HTBL *hPubid;
 

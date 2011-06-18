@@ -86,5 +86,12 @@ unsigned int isvalidchan(char *name);
 
 json_item *get_json_object_channel(CHANNEL *chan, int full);
 
+#define FOREACH_CHANNEL(res) \
+	{ \
+		struct _htbl_item *var;\
+		for (var = g_ape->hChannels->first; var != NULL; var = var->next) { \
+			res = (CHANNEL *)var->addrs;
+
+#define FOREACH_CHANNEL_END }}
 #endif
 

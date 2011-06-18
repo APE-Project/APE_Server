@@ -69,7 +69,7 @@ CHANNEL *mkchan(char *chan, int flags, acetables *g_ape)
 
 	new_chan->pipe = init_pipe(new_chan, CHANNEL_PIPE, g_ape);
 	
-	hashtbl_append(g_ape->hLusers, chan, (void *)new_chan);
+	hashtbl_append(g_ape->hChannels, chan, (void *)new_chan);
 	
 	/* just to test */
 	//proxy_attach(proxy_init("olol", "localhost", 1337, g_ape), new_chan->pipe->pubid, 0, g_ape);
@@ -83,7 +83,7 @@ CHANNEL *getchan(const char *chan, acetables *g_ape)
 	if (strlen(chan) > MAX_CHAN_LEN) {
 		return NULL;
 	}
-	return (CHANNEL *)hashtbl_seek(g_ape->hLusers, chan);	
+	return (CHANNEL *)hashtbl_seek(g_ape->hChannels, chan);	
 }
 
 CHANNEL *getchanbypubid(const char *pubid, acetables *g_ape)
@@ -118,7 +118,7 @@ void rmchan(CHANNEL *chan, acetables *g_ape)
 	
 	rmallban(chan);
 		
-	hashtbl_erase(g_ape->hLusers, chan->name);
+	hashtbl_erase(g_ape->hChannels, chan->name);
 	
 	clear_properties(&chan->properties);
 	
@@ -301,7 +301,7 @@ userslist *getlist(const char *chan, acetables *g_ape)
 	if (strlen(chan) > MAX_CHAN_LEN) {
 		return NULL;
 	}
-	if ((lchan = (CHANNEL *)hashtbl_seek(g_ape->hLusers, chan)) == NULL) {
+	if ((lchan = (CHANNEL *)hashtbl_seek(g_ape->hChannels, chan)) == NULL) {
 		return NULL;
 	}
 	return lchan->head;

@@ -64,4 +64,5 @@ int del_property(extend **entry, const char *key);
 //extend *add_property_str(extend **entry, char *key, char *val);
 extend *add_pipe_property(transpipe *pipe, const char *key, void *val, EXTEND_TYPE etype, int *erased, acetables *g_ape);
 extend *add_property(extend **entry, const char *key, void *val, EXTEND_TYPE etype, EXTEND_PUBLIC visibility);
+void commit_properties(transpipe *pipe, acetables *g_ape);
 #endif

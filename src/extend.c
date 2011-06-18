@@ -27,88 +27,6 @@
 #include "json.h"
 #include "raw.h"
 
-#if 0
-extend *add_pipe_property(transpipe *pipe, const char *key, void *val, EXTEND_TYPE etype, int *erased, acetables *g_ape)
-{
-    extend **entry = NULL;
-    json_item *jprop, *jlist;
-    RAW *newraw;
- 	extend *new_property = NULL, *eTmp;
- 	int klen;
-	
-	if ((klen = strlen(key)) > EXTEND_KEY_LENGTH) {
-		return NULL;
-	}
-	   
-    *erased = 0;
-
-    switch(pipe->type) {
-        case CHANNEL_PIPE:
-            entry = &((CHANNEL *)pipe->pipe)->properties;
-            break;
-        case USER_PIPE:
-            entry = &((USERS *)pipe->pipe)->properties;
-            break;
-        default:
-            return NULL;
-    }
-
-    jprop = json_new_object();
-
-    *erased = del_property(entry, key);
-    
-    eTmp = *entry;
-    
-    if (val == NULL) {
-        
-        return NULL;
-    }
-    
-    jlist = json_new_object();
-
-	new_property = xmalloc(sizeof(*new_property));
-
-	strcpy(new_property->key, key);
-    
-    /* TODO if channel is empty, do nothing related to raws */
-	switch(etype) {
-		case EXTEND_STR:
-		{
-		    int len = strlen(val);
-		    new_property->val = xmalloc(sizeof(char) * (len + 1));
-		    memcpy(new_property->val, val, len + 1);
-		    
-			json_set_property_strN(jlist, key, klen, (char *)val, len);
-			break;
-		}
-		case EXTEND_INT:
-		    json_set_property_intN(jlist, key, klen, *(int *)val);
-		    new_property->integer = *(int *)val;
-		    break;
-		case EXTEND_JSON:
-		    ((json_item *)val)->freeonstring = 0;
-			json_set_property_objN(jlist, key, klen, (json_item *)val);
-			new_property->val = val;
-			break;
-		default:
-		    return NULL;
-	}
-	
-    json_set_property_objN(jprop, (*erased ? "mod" : "set"), 3, jlist);
-	newraw = forge_raw("PROP", jprop);
-
-	new_property->next = eTmp;
-	new_property->type = etype;
-	new_property->visibility = EXTEND_ISPUBLIC;
-
-	*entry = new_property;
-
-	post_raw_pipe(newraw, pipe, g_ape);
-	
-	return new_property;
-}
-#endif
-
 extend *add_pipe_property(transpipe *pipe, const char *key, void *val, EXTEND_TYPE etype, int *erased, acetables *g_ape)
 {
     extend **entry = NULL;
@@ -127,12 +45,74 @@ extend *add_pipe_property(transpipe *pipe, const char *key, void *val, EXTEND_TY
             return NULL;
     }
     
-    new_property = add_property(entry, key, val, etype, EXTEND_ISPUBLIC);
+    if ((new_property = add_property(entry, key, val, etype, EXTEND_ISPUBLIC)) 
+    					== NULL) {
+    	return NULL;
+    }
+
     new_property->state.notcommited = 1;
     
     return new_property;
 }
 
+void commit_properties(transpipe *pipe, acetables *g_ape)
+{
+	extend *entry = NULL;
+	json_item *set = NULL, *del = NULL, *jlist = NULL;
+	RAW *newraw;
+	
+    switch(pipe->type) {
+        case CHANNEL_PIPE:
+            entry = ((CHANNEL *)pipe->pipe)->properties;
+            break;
+        case USER_PIPE:
+            entry = ((USERS *)pipe->pipe)->properties;
+            break;
+        default:
+            return;
+    }
+    
+    if (entry == NULL) {
+    	return;
+    }
+
+    while(entry != NULL) {
+    	if (entry->state.notcommited) {
+    		if (jlist == NULL) {   
+				jlist = json_new_object();
+				set = json_new_object();
+				del = json_new_object();
+    		}
+			
+			switch(entry->type) {
+				case EXTEND_STR:
+				{
+					json_set_property_strZ(set, entry->key, entry->val);
+					break;
+				}
+				case EXTEND_INT:
+					json_set_property_intZ(set, entry->key, entry->integer);
+					break;
+				case EXTEND_JSON:
+					((json_item *)entry->val)->freeonstring = 0;
+					json_set_property_objZ(set, entry->key, (json_item *)entry->val);
+					break;
+				default:
+					break;
+			}
+
+			entry->state.notcommited = 0;
+		}	
+    	entry = entry->next;
+    }
+    
+    if (jlist != NULL) {
+    	json_set_property_objN(jlist, "set", 3, set);
+    	newraw = forge_raw("PROP", jlist);
+    	
+    	post_raw_pipe(newraw, pipe, g_ape);
+    }
+}
 
 /*
 	Add a property to an object (user, channel, proxy, acetables)

@@ -25,5 +25,6 @@
 #include "main.h"
 
 int servers_init(acetables *g_ape);
+void ape_frame(acetables *g_ape, int *last);
 
 #endif

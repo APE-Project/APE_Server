@@ -21,7 +21,7 @@
 /* HOWTO : http://www.ape-project.org/wiki/index.php/How_to_build_a_serverside_JS_module */
 
 #define XP_UNIX
-#define DEBUG 1
+
 #include "../src/configure.h"
 #ifdef _USE_MYSQL
 #include <mysac.h>
@@ -2941,7 +2941,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 		asc->cx = JS_NewContext(rt, 8192);
 		
-		#if 1
+		#if 0
 		JS_SetGCZeal(asc->cx, 2);
 		#endif
 		

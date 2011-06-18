@@ -277,7 +277,7 @@ int main(int argc, char **argv)
 	g_ape->hLogin = hashtbl_init();
 	g_ape->hSessid = hashtbl_init();
 
-	g_ape->hLusers = hashtbl_init();
+	g_ape->hChannels = hashtbl_init();
 	g_ape->hPubid = hashtbl_init();
 	
 	g_ape->proxy.list = NULL;
@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 	
 	g_ape->properties = NULL;
 
-	add_ticked(check_timeout, g_ape);
+	add_ticked(ape_frame, g_ape);
 	
 	do_register(g_ape);
 	
@@ -320,7 +320,7 @@ int main(int argc, char **argv)
 
 	hashtbl_free(g_ape->hLogin);
 	hashtbl_free(g_ape->hSessid);
-	hashtbl_free(g_ape->hLusers);
+	hashtbl_free(g_ape->hChannels);
 	hashtbl_free(g_ape->hPubid);
 	
 	hashtbl_free(g_ape->hCallback);

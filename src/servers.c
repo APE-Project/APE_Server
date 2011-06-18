@@ -28,6 +28,7 @@
 #include "transports.h"
 #include "parser.h"
 #include "main.h"
+#include "plugins.h"
 
 static void ape_read(ape_socket *co, ape_buffer *buffer, size_t offset, acetables *g_ape)
 {
@@ -85,5 +86,51 @@ int servers_init(acetables *g_ape)
 	main_server->callbacks.on_accept = ape_onaccept;
 	
 	return main_server->fd;
+}
+
+
+void ape_frame(acetables *g_ape, int *last)
+{
+	USERS *list, *wait;
+	CHANNEL *channel;
+	long int ctime = time(NULL);
+	
+	FOREACH_CHANNEL(channel)
+		commit_properties(channel->pipe, g_ape);
+	FOREACH_CHANNEL_END
+	
+	list = g_ape->uHead;
+	
+	while (list != NULL) {
+		
+		wait = list->next;
+
+		if ((ctime - list->idle) >= TIMEOUT_SEC && list->type == HUMAN) {
+			deluser(list, g_ape);
+		} else if (list->type == HUMAN) {
+			subuser **n = &(list->subuser);
+			while (*n != NULL) {
+				if ((ctime - (*n)->idle) >= TIMEOUT_SEC) {
+					delsubuser(n, g_ape);
+					continue;
+				}
+				if ((*n)->state == ALIVE && (*n)->raw_pools.nraw && !(*n)->need_update && !(*n)->burn_after_writing) {
+
+					/* Data completetly sent => closed */
+					if (send_raws(*n, g_ape)) {
+						transport_data_completly_sent(*n, (*n)->user->transport); // todo : hook
+					} else {
+
+						(*n)->burn_after_writing = 1;
+					}
+				} else {
+					FIRE_EVENT_NONSTOP(tickuser, *n, g_ape);
+				}
+				n = &(*n)->next;
+			}
+		}
+		
+		list = wait;
+	}
 }
 
