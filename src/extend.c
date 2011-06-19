@@ -33,24 +33,17 @@ extend *add_pipe_property(transpipe *pipe, const char *key, void *val, EXTEND_TY
  	extend *new_property = NULL;
 
     *erased = 0;
+	
+	/* type punning */
+	entry = &((pipe_parent *)pipe->pipe)->properties;
 
-    switch(pipe->type) {
-        case CHANNEL_PIPE:
-            entry = &((CHANNEL *)pipe->pipe)->properties;
-            break;
-        case USER_PIPE:
-            entry = &((USERS *)pipe->pipe)->properties;
-            break;
-        default:
-            return NULL;
-    }
-    
     if ((new_property = add_property(entry, key, val, etype, EXTEND_ISPUBLIC)) 
-    					== NULL) {
+    						== NULL) {
     	return NULL;
     }
 
     new_property->state.notcommited = 1;
+    ((pipe_parent *)pipe->pipe)->needcommit = 1;
     
     return new_property;
 }
@@ -61,17 +54,12 @@ void commit_properties(transpipe *pipe, acetables *g_ape)
 	json_item *set = NULL, *del = NULL, *jlist = NULL;
 	RAW *newraw;
 	
-    switch(pipe->type) {
-        case CHANNEL_PIPE:
-            entry = ((CHANNEL *)pipe->pipe)->properties;
-            break;
-        case USER_PIPE:
-            entry = ((USERS *)pipe->pipe)->properties;
-            break;
-        default:
-            return;
-    }
-    
+	if (((pipe_parent *)pipe->pipe)->needcommit == 0) {
+		return;
+	}
+	
+	entry = ((pipe_parent *)pipe->pipe)->properties;
+
     if (entry == NULL) {
     	return;
     }
@@ -80,7 +68,7 @@ void commit_properties(transpipe *pipe, acetables *g_ape)
     	if (entry->state.notcommited) {
     		if (jlist == NULL) {   
 				jlist = json_new_object();
-				set = json_new_object();
+				set = json_new_object(); /* TODO: move this to the appropriaite case */
 				del = json_new_object();
     		}
 			
@@ -106,11 +94,31 @@ void commit_properties(transpipe *pipe, acetables *g_ape)
     	entry = entry->next;
     }
     
+    ((pipe_parent *)pipe->pipe)->needcommit = 0;
+    
     if (jlist != NULL) {
+    	json_set_property_objN(jlist, "pipe", 4, get_json_object_pipe(pipe, 0));
     	json_set_property_objN(jlist, "set", 3, set);
-    	newraw = forge_raw("PROP", jlist);
     	
-    	post_raw_pipe(newraw, pipe, g_ape);
+		switch(pipe->type) {
+		    case CHANNEL_PIPE:
+		    	if (((CHANNEL *)pipe->pipe)->head == NULL) {
+		    		/* No user found on the channel */
+		    		free_json_item(jlist);
+		    	} else {
+		    		newraw = forge_raw("PROP", jlist);
+		        	post_raw_pipe(newraw, pipe, g_ape);
+		        }
+		        break;
+		    case USER_PIPE:
+		    	printf("User properties...\n");
+				newraw = forge_raw("PROP", jlist);
+				post_raw(newraw, (USERS *)pipe->pipe, g_ape);
+			    post_raw_link(newraw, (USERS *)pipe->pipe, g_ape);
+		        break;
+		    default:
+		        return;
+		}
     }
 }
 

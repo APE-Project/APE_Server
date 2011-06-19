@@ -64,6 +64,8 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 static void apemysql_finalize(JSContext *cx, JSObject *jsmysql);
 #endif
 
+JSBool ape_pipe_prop_setter(JSContext *cx, JSObject *obj, jsid id, jsval *vp);
+
 static JSBool ape_sm_stub(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	return JS_TRUE;
@@ -273,6 +275,15 @@ static JSClass cmdresponse_class = {
 	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
+
+
+static JSClass pipe_prop = {
+	"pipe_prop", JSCLASS_HAS_PRIVATE,
+	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, ape_pipe_prop_setter,
+	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+	    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 
 
 APE_JS_NATIVE(apesocket_write)
@@ -3057,6 +3068,8 @@ static USERS *ape_cb_allocateuser(ape_socket *client, const char *host, const ch
 
 		JS_SetPrivate(gcx, user, u);
 		
+		JS_DefineObject(gcx, user, "properties", &pipe_prop, NULL, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+		
 		pipe = OBJECT_TO_JSVAL(get_pipe_object(NULL, u->pipe, gcx, g_ape));
 		JS_SetProperty(gcx, user, "pipe", &pipe);
 	}
@@ -3087,11 +3100,11 @@ static void ape_cb_del_user(USERS *user, int istmp, acetables *g_ape)
 	deluser(user, g_ape);
 }
 
-JSBool ape_channel_prop_setter(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+JSBool ape_pipe_prop_setter(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
     jsval key;
-    JSObject *js_channel;
-    CHANNEL *chan;
+    JSObject *js_object;
+    pipe_parent *parent;
     int erased;
 	acetables *g_ape;
     ape_sm_compiled *asc;
@@ -3099,23 +3112,23 @@ JSBool ape_channel_prop_setter(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	asc = JS_GetContextPrivate(cx);
 	g_ape = asc->g_ape;	
 
-    if ((js_channel = JS_GetParent(cx, obj)) == NULL || 
-            (chan = JS_GetPrivate(cx, js_channel)) == NULL ||
+    if ((js_object = JS_GetParent(cx, obj)) == NULL || 
+            (parent = JS_GetPrivate(cx, js_object)) == NULL ||
             JS_IdToValue(cx, id, &key) == JS_FALSE) {
         return JS_TRUE;
     }
 
     switch(JS_TypeOfValue(cx, *vp)) {
         case JSTYPE_OBJECT:
-            add_pipe_property(chan->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(*vp)), EXTEND_JSON, &erased, g_ape);
+            add_pipe_property(parent->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(*vp)), EXTEND_JSON, &erased, g_ape);
             break;
         case JSTYPE_STRING:
-            add_pipe_property(chan->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), JS_EncodeString(cx, JSVAL_TO_STRING(*vp)), EXTEND_STR, &erased, g_ape);
+            add_pipe_property(parent->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), JS_EncodeString(cx, JSVAL_TO_STRING(*vp)), EXTEND_STR, &erased, g_ape);
             break;
         case JSTYPE_NUMBER:
             if (JSVAL_IS_INT(*vp)) {
                 int vpint = JSVAL_TO_INT(*vp);
-                add_pipe_property(chan->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), &vpint, EXTEND_INT, &erased, g_ape);
+                add_pipe_property(parent->pipe, JS_EncodeString(cx, JSVAL_TO_STRING(key)), &vpint, EXTEND_INT, &erased, g_ape);
             }
             break;
         default:
@@ -3124,14 +3137,6 @@ JSBool ape_channel_prop_setter(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
     return JS_TRUE;
 }
-
-static JSClass channel_prop = {
-	"channel_prop", JSCLASS_HAS_PRIVATE,
-	    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, ape_channel_prop_setter,
-	    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
-	    JSCLASS_NO_OPTIONAL_MEMBERS
-};
-
 
 static CHANNEL *ape_cb_mkchan(char *name, int flags, acetables *g_ape)
 {
@@ -3153,10 +3158,9 @@ static CHANNEL *ape_cb_mkchan(char *name, int flags, acetables *g_ape)
 		if (js_channel == NULL) {
 			return NULL;
 		}
-
         //JS_DefineProperty(gcx, js_channel, "properties", OBJECT_TO_JSVAL(JS_NewObject(gcx, NULL, NULL, NULL)), NULL, ape_channel_pop_setter, JSPROP_ENUMERATE | JSPROP_SHARED);
         
-        JS_DefineObject(gcx, js_channel, "properties", &channel_prop, NULL, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+        JS_DefineObject(gcx, js_channel, "properties", &pipe_prop, NULL, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
         
 		jsobj = add_property(&chan->properties, "jsobj", js_channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
 		JS_AddObjectRoot(gcx, (JSObject **)&jsobj->val);

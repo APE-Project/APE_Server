@@ -585,7 +585,7 @@ struct _users_link *are_linked(USERS *a, USERS *b)
 	ulink = aUser->links.ulink;
 	
 	while (ulink != NULL) {
-		if (ulink->link->b == bUser || ulink->link->a == bUser) {
+		if (ulink->link->b.user == bUser || ulink->link->a.user == bUser) {
 			return ulink->link;
 		}
 		ulink = ulink->next;
@@ -597,7 +597,7 @@ struct _users_link *are_linked(USERS *a, USERS *b)
 
 void make_link(USERS *a, USERS *b)
 {
-	struct _users_link *link;
+	struct _users_link *link; /* common part */
 	struct _link_list *link_a, *link_b;
 	
 	if ((link = are_linked(a, b)) == NULL) {	
@@ -608,12 +608,23 @@ void make_link(USERS *a, USERS *b)
 	
 		link_a->link = link;
 		link_b->link = link;
-	
+		
+		if (a->links.ulink != NULL) {
+			a->links.ulink->prev = link_a;
+		}
+		if (b->links.ulink != NULL) {
+			b->links.ulink->prev = link_b;
+		}
+		
+		link_a->prev = NULL;
+		link_b->prev = NULL;
 		link_a->next = a->links.ulink;
 		link_b->next = b->links.ulink;
 	
-		link->a = a;
-		link->b = b;
+		link->a.user = a;
+		link->a.parent = link_a;
+		link->b.user = b;
+		link->b.parent = link_b;
 	
 		a->links.ulink = link_a;
 		(a->links.nlink)++;
@@ -629,13 +640,51 @@ void make_link(USERS *a, USERS *b)
 	}
 }
 
-void destroy_link(USERS *a, USERS *b)
+void destroy_all_link(USERS *user)
 {
-	struct _users_link *link;
+	struct _link_list *ulink = user->links.ulink, *tlink;
+	
+	while (ulink != NULL) {
+		tlink = ulink->next;
+		destroy_link(ulink->link->a.user, ulink->link->b.user, ulink->link);
+		ulink = tlink;
+	}
+}
 
-	if ((link = are_linked(a, b)) != NULL) {
-		
-	}	
+void destroy_link(USERS *a, USERS *b, struct _users_link *link)
+{
+	int hard = (link != NULL);
+	
+	if ((link != NULL || (link = are_linked(a, b)) != NULL) && 
+		(hard || --(link->nlink) == 0)) {
+			struct _link_list *la, *lb;
+			
+			la = link->a.parent;
+			lb = link->b.parent;
+	
+			if (la->prev == NULL) {
+				a->links.ulink = la->next;
+			} else {
+				la->prev->next = la->next;
+			}
+			if (la->next != NULL) {
+				la->next->prev = la->prev;
+			}
+			
+			if (lb->prev == NULL) {
+				b->links.ulink = lb->next;
+			} else {
+				lb->prev->next = lb->next;
+			}
+			if (lb->next != NULL) {
+				lb->next->prev = lb->prev;
+			}
+			a->links.nlink--;
+			b->links.nlink--;
+			free(la);
+			free(lb);
+			free(link);
+	}
 }
 
 json_item *get_json_object_user(USERS *user, int full)

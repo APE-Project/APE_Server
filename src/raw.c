@@ -55,6 +55,8 @@ RAW *forge_raw(const char *raw, json_item *jlist)
 	new_raw->data = string->jstring;
 
 	free(string);
+	
+	printf("Data : %s\n", new_raw->data);
 
 	return new_raw;
 }
@@ -154,9 +156,9 @@ void post_raw_link(RAW *raw, USERS *user, acetables *g_ape)
     
     while (ulink != NULL) {
 
-        post_raw(raw, (ulink->link->a == user ?
-                        ulink->link->b : 
-                        ulink->link->a), g_ape);
+        post_raw(raw, (ulink->link->a.user == user ?
+                        ulink->link->b.user : 
+                        ulink->link->a.user), g_ape);
         
         ulink = ulink->next;
     }

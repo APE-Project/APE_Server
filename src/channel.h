@@ -36,18 +36,17 @@
 
 typedef struct CHANNEL
 {
-	//char topic[MAX_TOPIC_LEN+1];
-
 	struct _transpipe *pipe;
+	extend *properties;
+	int needcommit;
+	
 	struct userslist *head;
 	
 	struct BANNED *banned;
-	
-	extend *properties;
 
 	int flags;
 	char name[MAX_CHAN_LEN+1];
-
+	
 } CHANNEL;
 
 typedef struct BANNED

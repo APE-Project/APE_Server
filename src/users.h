@@ -52,6 +52,10 @@ struct _raw_pool {
 
 typedef struct USERS
 {
+	struct _transpipe *pipe;
+	struct _extend *properties;
+	int needcommit;
+		
 	struct {
 		struct _link_list *ulink;
 		int nlink;
@@ -65,8 +69,6 @@ typedef struct USERS
 	struct USERS *next;
 	struct USERS *prev;
 	struct CHANLIST *chan_foot;
-	struct _transpipe *pipe;
-	struct _extend *properties;
 	struct _subuser *subuser;
 	
 	json_item *cmdqueue;
@@ -79,7 +81,7 @@ typedef struct USERS
 	
 	unsigned short int type;
 	unsigned short int istmp;
-
+	
 	char ip[16]; // ipv4
 	char lastping[24];
 	char sessid[33];
@@ -132,21 +134,27 @@ typedef struct CHANLIST
 	
 } CHANLIST;
 
-
-struct _users_link
-{
-	USERS *a;
-	USERS *b;
-	
-	int nlink;
-};
-
 struct _link_list
 {
 	struct _users_link *link;
 	struct _link_list *next;
+	struct _link_list *prev;
 };
 
+struct _users_link
+{
+	struct {
+		USERS *user;
+		struct _link_list *parent;
+	} a;
+	
+	struct {
+		USERS *user;
+		struct _link_list *parent;
+	} b;
+
+	int nlink;
+};
 
 typedef struct userslist
 {
@@ -244,7 +252,7 @@ void ping_request(USERS *user, acetables *g_ape);
 
 void make_link(USERS *a, USERS *b);
 struct _users_link *are_linked(USERS *a, USERS *b);
-void destroy_link(USERS *a, USERS *b);
+void destroy_link(USERS *a, USERS *b, struct _users_link *link);
 
 
 #endif

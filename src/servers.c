@@ -109,6 +109,7 @@ void ape_frame(acetables *g_ape, int *last)
 			deluser(list, g_ape);
 		} else if (list->type == HUMAN) {
 			subuser **n = &(list->subuser);
+			commit_properties(list->pipe, g_ape);
 			while (*n != NULL) {
 				if ((ctime - (*n)->idle) >= TIMEOUT_SEC) {
 					delsubuser(n, g_ape);

@@ -135,6 +135,8 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 	json_item *jlist;
 	CHANLIST *chanl;
 	
+	commit_properties(chan->pipe, g_ape);
+	
 	FIRE_EVENT_NULL(join, user, chan, g_ape);
 	
 	if (isonchannel(user, chan)) {

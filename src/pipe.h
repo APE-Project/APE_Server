@@ -25,6 +25,13 @@
 #include "main.h"
 #include "json.h"
 
+/* punning type for CHANNEL or USERS  */
+typedef struct _pipe_parent {
+	struct _transpipe *pipe;
+	struct _extend *properties;
+	int needcommit;
+} pipe_parent;
+
 enum {
 	CHANNEL_PIPE = 0,
 	USER_PIPE,
