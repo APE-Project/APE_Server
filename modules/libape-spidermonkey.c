@@ -2421,7 +2421,8 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 				field = ((MYSAC_RES *)myres)->cols[i].name;
 				val = row[i].blob;
 				
-				jval = STRING_TO_JSVAL(JS_NewStringCopyN(myhandle->cx, val, valuelen));
+				jval = (val == NULL ? JSVAL_NULL : STRING_TO_JSVAL(JS_NewStringCopyN(myhandle->cx, val, valuelen)));
+				
 				JS_SetProperty(myhandle->cx, elem, field, &jval);
 			}
 			pos++;
