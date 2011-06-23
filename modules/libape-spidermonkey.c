@@ -3005,7 +3005,9 @@ static void free_module(acetables *g_ape) // Called when module is unloaded
 
 	ape_sm_compiled *asc = ASMR->scripts;
 	ape_sm_compiled *prev_asc;
-    ape_sm_callback *cb;
+	ape_sm_callback *cb;
+
+	APE_JS_EVENT("stop", 0, NULL);
 
 	while (asc != NULL) {
 		free(asc->filename);
