@@ -53,7 +53,7 @@ script regress-429266.js
 script regress-453955.js
 fails-if(!xulRuntime.shell) script regress-455982-01.js # NS_ERROR_DOM_NOT_SUPPORTED_ERR
 fails-if(!xulRuntime.shell) script regress-455982-02.js # NS_ERROR_DOM_NOT_SUPPORTED_ERR
-skip-if(!xulRuntime.shell||xulRuntime.shell&&xulRuntime.XPCOMABI.match(/x86_64/)) script regress-458679.js # slow
+skip-if(!xulRuntime.shell||xulRuntime.shell&&xulRuntime.XPCOMABI.match(/x86_64/)) slow script regress-458679.js
 script regress-469234.js
 script regress-469405-01.js
 script regress-469405-02.js
@@ -65,3 +65,6 @@ script regress-474771-01.js
 script regress-474771-02.js
 script regress-476257.js
 script regress-477048.js
+script regress-589112.js
+script regress-590813.js
+script regress-591450.js

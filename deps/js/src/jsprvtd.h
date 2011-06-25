@@ -55,28 +55,10 @@
  */
 
 #include "jspubtd.h"
+#include "jsstaticcheck.h"
 #include "jsutil.h"
 
-/* Internal identifier (jsid) macros. */
-
-#define JSID_IS_ATOM(id)            JSVAL_IS_STRING((jsval)(id))
-#define JSID_TO_ATOM(id)            ((JSAtom *)(id))
-#define ATOM_TO_JSID(atom)          (JS_ASSERT(ATOM_IS_STRING(atom)),         \
-                                     (jsid)(atom))
-
-#define JSID_IS_INT(id)             JSVAL_IS_INT((jsval)(id))
-#define JSID_TO_INT(id)             JSVAL_TO_INT((jsval)(id))
-#define INT_TO_JSID(i)              ((jsid)INT_TO_JSVAL(i))
-#define INT_JSVAL_TO_JSID(v)        ((jsid)(v))
-#define INT_JSID_TO_JSVAL(id)       ((jsval)(id))
-#define INT_FITS_IN_JSID(i)         INT_FITS_IN_JSVAL(i)
-
-#define JSID_IS_OBJECT(id)          JSVAL_IS_OBJECT((jsval)(id))
-#define JSID_TO_OBJECT(id)          JSVAL_TO_OBJECT((jsval)(id))
-#define OBJECT_TO_JSID(obj)         ((jsid)OBJECT_TO_JSVAL(obj))
-#define OBJECT_JSVAL_TO_JSID(v)     ((jsid)v)
-
-#define ID_TO_VALUE(id)             ((jsval)(id))
+JS_BEGIN_EXTERN_C
 
 /*
  * Convenience constants.
@@ -84,42 +66,34 @@
 #define JS_BITS_PER_UINT32_LOG2 5
 #define JS_BITS_PER_UINT32      32
 
+/* The alignment required of objects stored in GC arenas. */
+static const uintN JS_GCTHING_ALIGN = 8;
+static const uintN JS_GCTHING_ZEROBITS = 3;
+
 /* Scalar typedefs. */
 typedef uint8  jsbytecode;
 typedef uint8  jssrcnote;
 typedef uint32 jsatomid;
 
-#ifdef __cplusplus
-
-/* Class and struct forward declarations in namespace js. */
-extern "C++" {
-namespace js {
-struct Parser;
-struct Compiler;
-}
-}
-
-#endif
-
 /* Struct typedefs. */
 typedef struct JSArgumentFormatMap  JSArgumentFormatMap;
 typedef struct JSCodeGenerator      JSCodeGenerator;
-typedef union JSGCThing             JSGCThing;
+typedef struct JSGCThing            JSGCThing;
 typedef struct JSGenerator          JSGenerator;
 typedef struct JSNativeEnumerator   JSNativeEnumerator;
 typedef struct JSFunctionBox        JSFunctionBox;
 typedef struct JSObjectBox          JSObjectBox;
 typedef struct JSParseNode          JSParseNode;
 typedef struct JSProperty           JSProperty;
+typedef struct JSScript             JSScript;
 typedef struct JSSharpObjectMap     JSSharpObjectMap;
-typedef struct JSEmptyScope         JSEmptyScope;
 typedef struct JSThread             JSThread;
 typedef struct JSThreadData         JSThreadData;
 typedef struct JSTreeContext        JSTreeContext;
 typedef struct JSTryNote            JSTryNote;
-typedef struct JSWeakRoots          JSWeakRoots;
 
 /* Friend "Advanced API" typedefs. */
+typedef struct JSLinearString       JSLinearString;
 typedef struct JSAtom               JSAtom;
 typedef struct JSAtomList           JSAtomList;
 typedef struct JSAtomListElement    JSAtomListElement;
@@ -127,11 +101,7 @@ typedef struct JSAtomMap            JSAtomMap;
 typedef struct JSAtomState          JSAtomState;
 typedef struct JSCodeSpec           JSCodeSpec;
 typedef struct JSPrinter            JSPrinter;
-typedef struct JSRegExp             JSRegExp;
 typedef struct JSRegExpStatics      JSRegExpStatics;
-typedef struct JSScope              JSScope;
-typedef struct JSScopeOps           JSScopeOps;
-typedef struct JSScopeProperty      JSScopeProperty;
 typedef struct JSStackHeader        JSStackHeader;
 typedef struct JSSubString          JSSubString;
 typedef struct JSNativeTraceInfo    JSNativeTraceInfo;
@@ -152,14 +122,24 @@ extern "C++" {
 
 namespace js {
 
+struct ArgumentsData;
+
+class RegExp;
+class RegExpStatics;
+class AutoStringRooter;
 class ExecuteArgsGuard;
 class InvokeFrameGuard;
 class InvokeArgsGuard;
+class InvokeSessionGuard;
 class TraceRecorder;
 struct TraceMonitor;
 class StackSpace;
-class CallStack;
+class StackSegment;
+class FrameRegsIter;
+class StringBuffer;
 
+struct Compiler;
+struct Parser;
 class TokenStream;
 struct Token;
 struct TokenPos;
@@ -187,21 +167,13 @@ template <class T,
           class AllocPolicy = ContextAllocPolicy>
 class HashSet;
 
-class DeflatedStringCache;
-
 class PropertyCache;
 struct PropertyCacheEntry;
 
-static inline JSPropertyOp
-CastAsPropertyOp(JSObject *object)
-{
-    return JS_DATA_TO_FUNC_PTR(JSPropertyOp, object);
-}
+struct Shape;
+struct EmptyShape;
 
 } /* namespace js */
-
-/* Common instantiations. */
-typedef js::Vector<jschar, 32> JSCharBuffer;
 
 } /* export "C++" */
 #endif  /* __cplusplus */
@@ -232,7 +204,7 @@ typedef JSTrapStatus
                 void *closure);
 
 typedef JSBool
-(* JSWatchPointHandler)(JSContext *cx, JSObject *obj, jsval id, jsval old,
+(* JSWatchPointHandler)(JSContext *cx, JSObject *obj, jsid id, jsval old,
                         jsval *newp, void *closure);
 
 /* called just after script creation */
@@ -283,9 +255,6 @@ typedef void *
 (* JSInterpreterHook)(JSContext *cx, JSStackFrame *fp, JSBool before,
                       JSBool *ok, void *closure);
 
-typedef void
-(* JSObjectHook)(JSContext *cx, JSObject *obj, JSBool isNew, void *closure);
-
 typedef JSBool
 (* JSDebugErrorHook)(JSContext *cx, const char *message, JSErrorReport *report,
                      void *closure);
@@ -305,15 +274,13 @@ typedef struct JSDebugHooks {
     void                *executeHookData;
     JSInterpreterHook   callHook;
     void                *callHookData;
-    JSObjectHook        objectHook;
-    void                *objectHookData;
     JSThrowHook         throwHook;
     void                *throwHookData;
     JSDebugErrorHook    debugErrorHook;
     void                *debugErrorHookData;
 } JSDebugHooks;
 
-/* JSObjectOps function pointer typedefs. */
+/* js::ObjectOps function pointer typedefs. */
 
 /*
  * Look for id in obj and its prototype chain, returning false on error or
@@ -324,8 +291,7 @@ typedef struct JSDebugHooks {
  *
  * If JSLookupPropOp succeeds and returns with *propp non-null, that pointer
  * may be passed as the prop parameter to a JSAttributesOp, as a short-cut
- * that bypasses id re-lookup.  In any case, a non-null *propp result after a
- * successful lookup must be dropped via JSObject::dropProperty.
+ * that bypasses id re-lookup.
  *
  * NB: successful return with non-null *propp means the implementation may
  * have locked *objp and added a reference count associated with *propp, so
@@ -337,25 +303,6 @@ typedef JSBool
                    JSProperty **propp);
 
 /*
- * Define obj[id], a direct property of obj named id, having the given initial
- * value, with the specified getter, setter, and attributes.
- */
-typedef JSBool
-(* JSDefinePropOp)(JSContext *cx, JSObject *obj, jsid id, jsval value,
-                   JSPropertyOp getter, JSPropertyOp setter, uintN attrs);
-
-/*
- * Get, set, or delete obj[id], returning false on error or exception, true
- * on success.  If getting or setting, the new value is returned in *vp on
- * success.  If deleting without error, *vp will be JSVAL_FALSE if obj[id] is
- * permanent, and JSVAL_TRUE if id named a direct property of obj that was in
- * fact deleted, or if id names no direct property of obj (id could name a
- * prototype property, or no property in obj or its prototype chain).
- */
-typedef JSBool
-(* JSPropertyIdOp)(JSContext *cx, JSObject *obj, jsid id, jsval *vp);
-
-/*
  * Get or set attributes of the property obj[id]. Return false on error or
  * exception, true with current attributes in *attrsp.
  */
@@ -363,12 +310,18 @@ typedef JSBool
 (* JSAttributesOp)(JSContext *cx, JSObject *obj, jsid id, uintN *attrsp);
 
 /*
- * The type of ops->call. Same argument types as JSFastNative, but a different
- * contract. A JSCallOp expects a dummy stack frame with the caller's
- * scopeChain.
+ * A generic type for functions mapping an object to another object, or null
+ * if an error or exception was thrown on cx.
  */
-typedef JSBool
-(* JSCallOp)(JSContext *cx, uintN argc, jsval *vp);
+typedef JSObject *
+(* JSObjectOp)(JSContext *cx, JSObject *obj);
+
+/*
+ * Hook that creates an iterator object for a given object. Returns the
+ * iterator object or null if an error or exception was thrown on cx.
+ */
+typedef JSObject *
+(* JSIteratorOp)(JSContext *cx, JSObject *obj, JSBool keysonly);
 
 /*
  * The following determines whether JS_EncodeCharacters and JS_DecodeBytes
@@ -379,5 +332,14 @@ typedef JSBool
 #else
 extern JSBool js_CStringsAreUTF8;
 #endif
+
+/*
+ * Hack to expose obj->getOps()->outer to the C implementation of the debugger
+ * interface.
+ */
+extern JS_FRIEND_API(JSObject *)
+js_ObjectToOuterObject(JSContext *cx, JSObject *obj);
+
+JS_END_EXTERN_C
 
 #endif /* jsprvtd_h___ */

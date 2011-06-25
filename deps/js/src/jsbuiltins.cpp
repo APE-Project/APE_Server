@@ -72,7 +72,11 @@ using namespace js;
 JS_FRIEND_API(void)
 js_SetTraceableNativeFailed(JSContext *cx)
 {
-    SetBuiltinError(cx);
+    /*
+     * We might not be on trace (we might have deep bailed) so we hope
+     * cx->compartment is correct.
+     */
+    SetBuiltinError(JS_TRACE_MONITOR_FROM_CONTEXT(cx));
 }
 
 /*
@@ -85,13 +89,13 @@ js_dmod(jsdouble a, jsdouble b)
 {
     if (b == 0.0) {
         jsdpun u;
-        u.s.hi = JSDOUBLE_HI32_EXPMASK | JSDOUBLE_HI32_MANTMASK;
-        u.s.lo = 0xffffffff;
+        u.s.hi = JSDOUBLE_HI32_NAN;
+        u.s.lo = JSDOUBLE_LO32_NAN;
         return u.d;
     }
     return js_fmod(a, b);
 }
-JS_DEFINE_CALLINFO_2(extern, DOUBLE, js_dmod, DOUBLE, DOUBLE, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_2(extern, DOUBLE, js_dmod, DOUBLE, DOUBLE, 1, ACCSET_NONE)
 
 int32 FASTCALL
 js_imod(int32 a, int32 b)
@@ -101,232 +105,189 @@ js_imod(int32 a, int32 b)
     int r = a % b;
     return r;
 }
-JS_DEFINE_CALLINFO_2(extern, INT32, js_imod, INT32, INT32, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_2(extern, INT32, js_imod, INT32, INT32, 1, ACCSET_NONE)
 
-jsval FASTCALL
-js_BoxDouble(JSContext* cx, jsdouble d)
-{
-    int32 i;
-    if (JSDOUBLE_IS_INT(d, i) && INT_FITS_IN_JSVAL(i))
-        return INT_TO_JSVAL(i);
-    JS_ASSERT(JS_ON_TRACE(cx));
-    jsval v; /* not rooted but ok here because we know GC won't run */
-    if (!js_NewDoubleInRootedValue(cx, d, &v))
-        return JSVAL_NULL;
-    return v;
-}
-JS_DEFINE_CALLINFO_2(extern, JSVAL, js_BoxDouble, CONTEXT, DOUBLE, 1, ACC_NONE)
-
-jsval FASTCALL
-js_BoxInt32(JSContext* cx, int32 i)
-{
-    if (JS_LIKELY(INT_FITS_IN_JSVAL(i)))
-        return INT_TO_JSVAL(i);
-    JS_ASSERT(JS_ON_TRACE(cx));
-    jsval v; /* not rooted but ok here because we know GC won't run */
-    jsdouble d = (jsdouble)i;
-    if (!js_NewDoubleInRootedValue(cx, d, &v))
-        return JSVAL_NULL;
-    return v;
-}
-JS_DEFINE_CALLINFO_2(extern, JSVAL, js_BoxInt32, CONTEXT, INT32, 1, ACC_NONE)
+#if JS_BITS_PER_WORD == 32
 
 jsdouble FASTCALL
-js_UnboxDouble(jsval v)
+js_UnboxDouble(uint32 tag, uint32 payload)
 {
-    if (JS_LIKELY(JSVAL_IS_INT(v)))
-        return (jsdouble)JSVAL_TO_INT(v);
-    return *JSVAL_TO_DOUBLE(v);
+    if (tag == JSVAL_TAG_INT32)
+        return (double)(int32)payload;
+
+    jsval_layout l;
+    l.s.tag = (JSValueTag)tag;
+    l.s.payload.u32 = payload;
+    return l.asDouble;
 }
-JS_DEFINE_CALLINFO_1(extern, DOUBLE, js_UnboxDouble, JSVAL, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_2(extern, DOUBLE, js_UnboxDouble, UINT32, UINT32, 1, ACCSET_NONE)
 
 int32 FASTCALL
-js_UnboxInt32(jsval v)
+js_UnboxInt32(uint32 tag, uint32 payload)
 {
-    if (JS_LIKELY(JSVAL_IS_INT(v)))
-        return JSVAL_TO_INT(v);
-    return js_DoubleToECMAInt32(*JSVAL_TO_DOUBLE(v));
-}
-JS_DEFINE_CALLINFO_1(extern, INT32, js_UnboxInt32, JSVAL, 1, ACC_NONE)
+    if (tag == JSVAL_TAG_INT32)
+        return (int32)payload;
 
-JSBool FASTCALL
-js_TryUnboxInt32(jsval v, int32* i32p)
-{
-    if (JS_LIKELY(JSVAL_IS_INT(v))) {
-        *i32p = JSVAL_TO_INT(v);
-        return JS_TRUE;
-    }
-    if (!JSVAL_IS_DOUBLE(v))
-        return JS_FALSE;
-    int32 i;
-    jsdouble d = *JSVAL_TO_DOUBLE(v);
-    if (!JSDOUBLE_IS_INT(d, i))
-        return JS_FALSE;
-    *i32p = i;
-    return JS_TRUE;
+    jsval_layout l;
+    l.s.tag = (JSValueTag)tag;
+    l.s.payload.u32 = payload;
+    return js_DoubleToECMAInt32(l.asDouble);
 }
-JS_DEFINE_CALLINFO_2(extern, BOOL, js_TryUnboxInt32, JSVAL, INT32PTR, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_2(extern, INT32, js_UnboxInt32, UINT32, UINT32, 1, ACCSET_NONE)
+
+#elif JS_BITS_PER_WORD == 64
+
+jsdouble FASTCALL
+js_UnboxDouble(Value v)
+{
+    if (v.isInt32())
+        return (jsdouble)v.toInt32();
+    return v.toDouble();
+}
+JS_DEFINE_CALLINFO_1(extern, DOUBLE, js_UnboxDouble, JSVAL, 1, ACCSET_NONE)
+
+int32 FASTCALL
+js_UnboxInt32(Value v)
+{
+    if (v.isInt32())
+        return v.toInt32();
+    return js_DoubleToECMAInt32(v.toDouble());
+}
+JS_DEFINE_CALLINFO_1(extern, INT32, js_UnboxInt32, VALUE, 1, ACCSET_NONE)
+
+#endif
 
 int32 FASTCALL
 js_DoubleToInt32(jsdouble d)
 {
     return js_DoubleToECMAInt32(d);
 }
-JS_DEFINE_CALLINFO_1(extern, INT32, js_DoubleToInt32, DOUBLE, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_1(extern, INT32, js_DoubleToInt32, DOUBLE, 1, ACCSET_NONE)
 
 uint32 FASTCALL
 js_DoubleToUint32(jsdouble d)
 {
     return js_DoubleToECMAUint32(d);
 }
-JS_DEFINE_CALLINFO_1(extern, UINT32, js_DoubleToUint32, DOUBLE, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_1(extern, UINT32, js_DoubleToUint32, DOUBLE, 1, ACCSET_NONE)
 
+/*
+ * js_StringToNumber and js_StringToInt32 store into their second argument, so
+ * they need to be annotated accordingly.  To be future-proof, we use
+ * ACCSET_STORE_ANY so that new callers don't have to remember to update the
+ * annotation.
+ */
 jsdouble FASTCALL
-js_StringToNumber(JSContext* cx, JSString* str)
+js_StringToNumber(JSContext* cx, JSString* str, JSBool *ok)
 {
-    return StringToNumberType<jsdouble>(cx, str);
+    double out = 0;  /* silence warnings. */
+    *ok = StringToNumberType<jsdouble>(cx, str, &out);
+    return out;
 }
-JS_DEFINE_CALLINFO_2(extern, DOUBLE, js_StringToNumber, CONTEXT, STRING, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_3(extern, DOUBLE, js_StringToNumber, CONTEXT, STRING, BOOLPTR,
+                     0, ACCSET_STORE_ANY)
 
 int32 FASTCALL
-js_StringToInt32(JSContext* cx, JSString* str)
+js_StringToInt32(JSContext* cx, JSString* str, JSBool *ok)
 {
-    return StringToNumberType<int32>(cx, str);
+    int32 out = 0;  /* silence warnings. */
+    *ok = StringToNumberType<int32>(cx, str, &out);
+    return out;
 }
-JS_DEFINE_CALLINFO_2(extern, INT32, js_StringToInt32, CONTEXT, STRING, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_3(extern, INT32, js_StringToInt32, CONTEXT, STRING, BOOLPTR,
+                     0, ACCSET_STORE_ANY)
 
 /* Nb: it's always safe to set isDefinitelyAtom to false if you're unsure or don't know. */
 static inline JSBool
-AddPropertyHelper(JSContext* cx, JSObject* obj, JSScopeProperty* sprop, bool isDefinitelyAtom)
+AddPropertyHelper(JSContext* cx, JSObject* obj, Shape* shape, bool isDefinitelyAtom)
 {
-    JS_LOCK_OBJ(cx, obj);
+    JS_ASSERT(shape->previous() == obj->lastProperty());
 
-    uint32 slot = sprop->slot;
-    JSScope* scope = obj->scope();
-    if (slot != scope->freeslot)
-        return false;
-    JS_ASSERT(sprop->parent == scope->lastProperty());
-
-    if (scope->isSharedEmpty()) {
-        scope = js_GetMutableScope(cx, obj);
-        if (!scope)
+    if (obj->nativeEmpty()) {
+        if (!obj->ensureClassReservedSlotsForEmptyObject(cx))
             return false;
-    } else {
-        JS_ASSERT(!scope->hasProperty(sprop));
     }
 
-    if (!scope->table) {
-        if (slot < obj->numSlots()) {
-            JS_ASSERT(JSVAL_IS_VOID(obj->getSlot(scope->freeslot)));
-            ++scope->freeslot;
-        } else {
-            if (!js_AllocSlot(cx, obj, &slot))
-                goto exit_trace;
+    uint32 slot;
+    slot = shape->slot;
+    JS_ASSERT(slot == obj->slotSpan());
 
-            if (slot != sprop->slot) {
-                js_FreeSlot(cx, obj, slot);
-                goto exit_trace;
-            }
-        }
-
-        scope->extend(cx, sprop, isDefinitelyAtom);
+    if (slot < obj->numSlots()) {
+        JS_ASSERT(obj->getSlot(slot).isUndefined());
     } else {
-        JSScopeProperty *sprop2 =
-            scope->addProperty(cx, sprop->id, sprop->getter(), sprop->setter(),
-                               SPROP_INVALID_SLOT, sprop->attributes(), sprop->getFlags(),
-                               sprop->shortid);
-        if (sprop2 != sprop)
-            goto exit_trace;
+        if (!obj->allocSlot(cx, &slot))
+            return false;
+        JS_ASSERT(slot == shape->slot);
     }
 
-    if (js_IsPropertyCacheDisabled(cx))
-        goto exit_trace;
-
-    JS_UNLOCK_SCOPE(cx, scope);
-    return true;
-
-  exit_trace:
-    JS_UNLOCK_SCOPE(cx, scope);
-    return false;
+    obj->extend(cx, shape, isDefinitelyAtom);
+    return !js_IsPropertyCacheDisabled(cx);
 }
 
 JSBool FASTCALL
-js_AddProperty(JSContext* cx, JSObject* obj, JSScopeProperty* sprop)
+js_AddProperty(JSContext* cx, JSObject* obj, Shape* shape)
 {
-    return AddPropertyHelper(cx, obj, sprop, /* isDefinitelyAtom = */false);
+    return AddPropertyHelper(cx, obj, shape, /* isDefinitelyAtom = */false);
 }
-JS_DEFINE_CALLINFO_3(extern, BOOL, js_AddProperty, CONTEXT, OBJECT, SCOPEPROP, 0, ACC_STORE_ANY)
+JS_DEFINE_CALLINFO_3(extern, BOOL, js_AddProperty, CONTEXT, OBJECT, SHAPE, 0, ACCSET_STORE_ANY)
 
 JSBool FASTCALL
-js_AddAtomProperty(JSContext* cx, JSObject* obj, JSScopeProperty* sprop)
+js_AddAtomProperty(JSContext* cx, JSObject* obj, Shape* shape)
 {
-    return AddPropertyHelper(cx, obj, sprop, /* isDefinitelyAtom = */true);
+    return AddPropertyHelper(cx, obj, shape, /* isDefinitelyAtom = */true);
 }
-JS_DEFINE_CALLINFO_3(extern, BOOL, js_AddAtomProperty, CONTEXT, OBJECT, SCOPEPROP, 0, ACC_STORE_ANY)
+JS_DEFINE_CALLINFO_3(extern, BOOL, js_AddAtomProperty, CONTEXT, OBJECT, SHAPE, 0, ACCSET_STORE_ANY)
 
 static JSBool
 HasProperty(JSContext* cx, JSObject* obj, jsid id)
 {
     // Check that we know how the lookup op will behave.
     for (JSObject* pobj = obj; pobj; pobj = pobj->getProto()) {
-        if (pobj->map->ops->lookupProperty != js_LookupProperty)
-            return JSVAL_TO_SPECIAL(JSVAL_VOID);
-        JSClass* clasp = pobj->getClass();
+        if (pobj->getOps()->lookupProperty)
+            return JS_NEITHER;
+        Class* clasp = pobj->getClass();
         if (clasp->resolve != JS_ResolveStub && clasp != &js_StringClass)
-            return JSVAL_TO_SPECIAL(JSVAL_VOID);
+            return JS_NEITHER;
     }
 
     JSObject* obj2;
     JSProperty* prop;
     if (js_LookupPropertyWithFlags(cx, obj, id, JSRESOLVE_QUALIFIED, &obj2, &prop) < 0)
-        return JSVAL_TO_SPECIAL(JSVAL_VOID);
-    if (prop)
-        obj2->dropProperty(cx, prop);
+        return JS_NEITHER;
     return prop != NULL;
 }
 
 JSBool FASTCALL
 js_HasNamedProperty(JSContext* cx, JSObject* obj, JSString* idstr)
 {
-    jsid id;
-    if (!js_ValueToStringId(cx, STRING_TO_JSVAL(idstr), &id))
-        return JSVAL_TO_BOOLEAN(JSVAL_VOID);
+    JSAtom *atom = js_AtomizeString(cx, idstr, 0);
+    if (!atom)
+        return JS_NEITHER;
 
-    return HasProperty(cx, obj, id);
+    return HasProperty(cx, obj, ATOM_TO_JSID(atom));
 }
-JS_DEFINE_CALLINFO_3(extern, BOOL, js_HasNamedProperty, CONTEXT, OBJECT, STRING, 0, ACC_STORE_ANY)
+JS_DEFINE_CALLINFO_3(extern, BOOL, js_HasNamedProperty, CONTEXT, OBJECT, STRING,
+                     0, ACCSET_STORE_ANY)
 
 JSBool FASTCALL
 js_HasNamedPropertyInt32(JSContext* cx, JSObject* obj, int32 index)
 {
     jsid id;
     if (!js_Int32ToId(cx, index, &id))
-        return JSVAL_TO_BOOLEAN(JSVAL_VOID);
+        return JS_NEITHER;
 
     return HasProperty(cx, obj, id);
 }
-JS_DEFINE_CALLINFO_3(extern, BOOL, js_HasNamedPropertyInt32, CONTEXT, OBJECT, INT32, 0,
-                     ACC_STORE_ANY)
+JS_DEFINE_CALLINFO_3(extern, BOOL, js_HasNamedPropertyInt32, CONTEXT, OBJECT, INT32,
+                     0, ACCSET_STORE_ANY)
 
 JSString* FASTCALL
 js_TypeOfObject(JSContext* cx, JSObject* obj)
 {
-    if (!obj)
-        return ATOM_TO_STRING(cx->runtime->atomState.typeAtoms[JSTYPE_OBJECT]);
+    JS_ASSERT(obj);
     return ATOM_TO_STRING(cx->runtime->atomState.typeAtoms[obj->typeOf(cx)]);
 }
-JS_DEFINE_CALLINFO_2(extern, STRING, js_TypeOfObject, CONTEXT, OBJECT, 1, ACC_NONE)
-
-JSString* FASTCALL
-js_TypeOfBoolean(JSContext* cx, int32 unboxed)
-{
-    /* Watch out for pseudo-booleans. */
-    jsval boxed = SPECIAL_TO_JSVAL(unboxed);
-    JS_ASSERT(JSVAL_IS_VOID(boxed) || JSVAL_IS_BOOLEAN(boxed));
-    JSType type = JS_TypeOfValue(cx, boxed);
-    return ATOM_TO_STRING(cx->runtime->atomState.typeAtoms[type]);
-}
-JS_DEFINE_CALLINFO_2(extern, STRING, js_TypeOfBoolean, CONTEXT, INT32, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_2(extern, STRING, js_TypeOfObject, CONTEXT, OBJECT, 1, ACCSET_NONE)
 
 JSString* FASTCALL
 js_BooleanIntToString(JSContext *cx, int32 unboxed)
@@ -334,7 +295,7 @@ js_BooleanIntToString(JSContext *cx, int32 unboxed)
     JS_ASSERT(uint32(unboxed) <= 1);
     return ATOM_TO_STRING(cx->runtime->atomState.booleanAtoms[unboxed]);
 }
-JS_DEFINE_CALLINFO_2(extern, STRING, js_BooleanIntToString, CONTEXT, INT32, 1, ACC_NONE)
+JS_DEFINE_CALLINFO_2(extern, STRING, js_BooleanIntToString, CONTEXT, INT32, 1, ACCSET_NONE)
 
 JSObject* FASTCALL
 js_NewNullClosure(JSContext* cx, JSObject* funobj, JSObject* proto, JSObject* parent)
@@ -346,89 +307,16 @@ js_NewNullClosure(JSContext* cx, JSObject* funobj, JSObject* proto, JSObject* pa
     JSFunction *fun = (JSFunction*) funobj;
     JS_ASSERT(GET_FUNCTION_PRIVATE(cx, funobj) == fun);
 
-    JSObject* closure = js_NewGCObject(cx);
+    JSObject* closure = js_NewGCObject(cx, gc::FINALIZE_OBJECT2);
     if (!closure)
         return NULL;
 
-    closure->initSharingEmptyScope(&js_FunctionClass, proto, parent,
-                                   reinterpret_cast<jsval>(fun));
+    if (!closure->initSharingEmptyShape(cx, &js_FunctionClass, proto, parent,
+                                        fun, gc::FINALIZE_OBJECT2)) {
+        return NULL;
+    }
     return closure;
 }
-JS_DEFINE_CALLINFO_4(extern, OBJECT, js_NewNullClosure, CONTEXT, OBJECT, OBJECT, OBJECT, 0,
-                     ACC_STORE_ANY)
+JS_DEFINE_CALLINFO_4(extern, OBJECT, js_NewNullClosure, CONTEXT, OBJECT, OBJECT, OBJECT,
+                     0, ACCSET_STORE_ANY)
 
-JS_REQUIRES_STACK JSBool FASTCALL
-js_PopInterpFrame(JSContext* cx, TracerState* state)
-{
-    JS_ASSERT(cx->fp && cx->fp->down);
-    JSStackFrame* const fp = cx->fp;
-
-    /*
-     * Mirror frame popping code from inline_return in js_Interpret. There are
-     * some things we just don't want to handle. In those cases, the trace will
-     * MISMATCH_EXIT.
-     */
-    if (fp->hookData)
-        return JS_FALSE;
-    if (cx->version != fp->callerVersion)
-        return JS_FALSE;
-    if (fp->flags & JSFRAME_CONSTRUCTING)
-        return JS_FALSE;
-    if (fp->imacpc)
-        return JS_FALSE;
-    if (fp->blockChain)
-        return JS_FALSE;
-
-    fp->putActivationObjects(cx);
-    
-    /* Update display table. */
-    if (fp->script->staticLevel < JS_DISPLAY_SIZE)
-        cx->display[fp->script->staticLevel] = fp->displaySave;
-
-    /* Pop the frame and its memory. */
-    cx->stack().popInlineFrame(cx, fp, fp->down);
-
-    /* Update the inline call count. */
-    *state->inlineCallCountp = *state->inlineCallCountp - 1;
-    return JS_TRUE;
-}
-JS_DEFINE_CALLINFO_2(extern, BOOL, js_PopInterpFrame, CONTEXT, TRACERSTATE, 0, ACC_STORE_ANY)
-
-JSString* FASTCALL
-js_ConcatN(JSContext *cx, JSString **strArray, uint32 size)
-{
-    /* Calculate total size. */
-    size_t numChar = 1;
-    for (uint32 i = 0; i < size; ++i) {
-        size_t before = numChar;
-        numChar += strArray[i]->length();
-        if (numChar < before)
-            return NULL;
-    }
-
-
-    /* Allocate buffer. */
-    if (numChar & js::tl::MulOverflowMask<sizeof(jschar)>::result)
-        return NULL;
-    jschar *buf = (jschar *)cx->malloc(numChar * sizeof(jschar));
-    if (!buf)
-        return NULL;
-
-    /* Fill buffer. */
-    jschar *ptr = buf;
-    for (uint32 i = 0; i < size; ++i) {
-        const jschar *chars;
-        size_t length;
-        strArray[i]->getCharsAndLength(chars, length);
-        js_strncpy(ptr, chars, length);
-        ptr += length;
-    }
-    *ptr = '\0';
-
-    /* Create string. */
-    JSString *str = js_NewString(cx, buf, numChar - 1);
-    if (!str)
-        cx->free(buf);
-    return str;
-}
-JS_DEFINE_CALLINFO_3(extern, STRING, js_ConcatN, CONTEXT, STRINGPTR, UINT32, 0, ACC_STORE_ANY)

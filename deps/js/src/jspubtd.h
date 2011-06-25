@@ -44,17 +44,22 @@
  */
 #include "jstypes.h"
 #include "jscompat.h"
+#include "jsval.h"
 
 JS_BEGIN_EXTERN_C
 
 /* Scalar typedefs. */
-typedef uint16    jschar;
-typedef int32     jsint;
-typedef uint32    jsuint;
+typedef JSInt32   jsint;
+typedef JSUint32  jsuint;
 typedef float64   jsdouble;
-typedef jsword    jsval;
-typedef jsword    jsid;
-typedef int32     jsrefcount;   /* PRInt32 if JS_THREADSAFE, see jslock.h */
+typedef JSInt32   jsrefcount;   /* PRInt32 if JS_THREADSAFE, see jslock.h */
+
+#ifdef WIN32
+typedef wchar_t   jschar;
+#else
+typedef JSUint16  jschar;
+#endif
+
 
 /*
  * Run-time version enumeration.  See jsversion.h for compile-time counterparts
@@ -102,7 +107,7 @@ typedef enum JSProtoKey {
     JSProto_LIMIT
 } JSProtoKey;
 
-/* JSObjectOps.checkAccess mode enumeration. */
+/* js_CheckAccess mode enumeration. */
 typedef enum JSAccessMode {
     JSACC_PROTO  = 0,           /* XXXbe redundant w.r.t. id */
     JSACC_PARENT = 1,           /* XXXbe redundant w.r.t. id */
@@ -140,7 +145,6 @@ typedef enum JSIterateOp {
 
 /* Struct typedefs. */
 typedef struct JSClass           JSClass;
-typedef struct JSExtendedClass   JSExtendedClass;
 typedef struct JSConstDoubleSpec JSConstDoubleSpec;
 typedef struct JSContext         JSContext;
 typedef struct JSErrorReport     JSErrorReport;
@@ -150,13 +154,9 @@ typedef struct JSTracer          JSTracer;
 typedef struct JSIdArray         JSIdArray;
 typedef struct JSPropertyDescriptor JSPropertyDescriptor;
 typedef struct JSPropertySpec    JSPropertySpec;
-typedef struct JSObject          JSObject;
 typedef struct JSObjectMap       JSObjectMap;
-typedef struct JSObjectOps       JSObjectOps;
 typedef struct JSRuntime         JSRuntime;
-typedef struct JSScript          JSScript;
 typedef struct JSStackFrame      JSStackFrame;
-typedef struct JSString          JSString;
 typedef struct JSXDRState        JSXDRState;
 typedef struct JSExceptionState  JSExceptionState;
 typedef struct JSLocaleCallbacks JSLocaleCallbacks;
@@ -164,22 +164,36 @@ typedef struct JSSecurityCallbacks JSSecurityCallbacks;
 typedef struct JSONParser        JSONParser;
 typedef struct JSCompartment     JSCompartment;
 typedef struct JSCrossCompartmentCall JSCrossCompartmentCall;
+typedef struct JSStructuredCloneWriter JSStructuredCloneWriter;
+typedef struct JSStructuredCloneReader JSStructuredCloneReader;
+typedef struct JSStructuredCloneCallbacks JSStructuredCloneCallbacks;
+
 #ifdef __cplusplus
 typedef class JSWrapper          JSWrapper;
 typedef class JSCrossCompartmentWrapper JSCrossCompartmentWrapper;
 #endif
 
-/* JSClass (and JSObjectOps where appropriate) function pointer typedefs. */
+/* JSClass (and js::ObjectOps where appropriate) function pointer typedefs. */
 
 /*
- * Add, delete, get or set a property named by id in obj.  Note the jsval id
+ * Add, delete, or get a property named by id in obj.  Note the jsid id
  * type -- id may be a string (Unicode property identifier) or an int (element
  * index).  The *vp out parameter, on success, is the new property value after
- * an add, get, or set.  After a successful delete, *vp is JSVAL_FALSE iff
+ * an add or get.  After a successful delete, *vp is JSVAL_FALSE iff
  * obj[id] can't be deleted (because it's permanent).
  */
 typedef JSBool
-(* JSPropertyOp)(JSContext *cx, JSObject *obj, jsval id, jsval *vp);
+(* JSPropertyOp)(JSContext *cx, JSObject *obj, jsid id, jsval *vp);
+
+/*
+ * Set a property named by id in obj, treating the assignment as strict
+ * mode code if strict is true. Note the jsid id type -- id may be a string
+ * (Unicode property identifier) or an int (element index). The *vp out
+ * parameter, on success, is the new property value after the
+ * set.
+ */
+typedef JSBool
+(* JSStrictPropertyOp)(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp);
 
 /*
  * This function type is used for callbacks that enumerate the properties of
@@ -237,7 +251,7 @@ typedef JSBool
  * NB: JSNewResolveOp provides a cheaper way to resolve lazy properties.
  */
 typedef JSBool
-(* JSResolveOp)(JSContext *cx, JSObject *obj, jsval id);
+(* JSResolveOp)(JSContext *cx, JSObject *obj, jsid id);
 
 /*
  * Like JSResolveOp, but flags provide contextual information as follows:
@@ -269,7 +283,7 @@ typedef JSBool
  * *objp without a new JSClass flag.
  */
 typedef JSBool
-(* JSNewResolveOp)(JSContext *cx, JSObject *obj, jsval id, uintN flags,
+(* JSNewResolveOp)(JSContext *cx, JSObject *obj, jsid id, uintN flags,
                    JSObject **objp);
 
 /*
@@ -301,36 +315,13 @@ typedef void
 (* JSStringFinalizeOp)(JSContext *cx, JSString *str);
 
 /*
- * The signature for JSClass.getObjectOps, used by JS_NewObject's internals
- * to discover the set of high-level object operations to use for new objects
- * of the given class.  All native objects have a JSClass, which is stored as
- * a private (int-tagged) pointer in obj slots. In contrast, all native and
- * host objects have a JSObjectMap at obj->map, which may be shared among a
- * number of objects, and which contains the JSObjectOps *ops pointer used to
- * dispatch object operations from API calls.
- *
- * Thus JSClass (which pre-dates JSObjectOps in the API) provides a low-level
- * interface to class-specific code and data, while JSObjectOps allows for a
- * higher level of operation, which does not use the object's class except to
- * find the class's JSObjectOps struct, by calling clasp->getObjectOps, and to
- * finalize the object.
- *
- * If this seems backwards, that's because it is!  API compatibility requires
- * a JSClass *clasp parameter to JS_NewObject, etc.  Most host objects do not
- * need to implement the larger JSObjectOps, and can share the common JSScope
- * code and data used by the native (js_ObjectOps, see jsobj.c) ops.
- */
-typedef JSObjectOps *
-(* JSGetObjectOps)(JSContext *cx, JSClass *clasp);
-
-/*
  * JSClass.checkAccess type: check whether obj[id] may be accessed per mode,
  * returning false on error/exception, true on success with obj[id]'s last-got
  * value in *vp, and its attributes in *attrsp.  As for JSPropertyOp above, id
  * is either a string or an int jsval.
  */
 typedef JSBool
-(* JSCheckAccessOp)(JSContext *cx, JSObject *obj, jsval id, JSAccessMode mode,
+(* JSCheckAccessOp)(JSContext *cx, JSObject *obj, jsid id, JSAccessMode mode,
                     jsval *vp);
 
 /*
@@ -346,7 +337,7 @@ typedef JSBool
  * *bp otherwise.
  */
 typedef JSBool
-(* JSHasInstanceOp)(JSContext *cx, JSObject *obj, jsval v, JSBool *bp);
+(* JSHasInstanceOp)(JSContext *cx, JSObject *obj, const jsval *v, JSBool *bp);
 
 /*
  * Deprecated function type for JSClass.mark. All new code should define
@@ -400,10 +391,10 @@ extern JSMarkOp js_WrongTypeForClassTracer;
  * JS_TraceChildren on the passed thing. In this case the callback must be
  * prepared to deal with cycles in the traversal graph.
  *
- * kind argument is one of JSTRACE_OBJECT, JSTRACE_DOUBLE, JSTRACE_STRING or
- * a tag denoting internal implementation-specific traversal kind. In the
- * latter case the only operations on thing that the callback can do is to call
- * JS_TraceChildren or DEBUG-only JS_PrintTraceThingInfo.
+ * kind argument is one of JSTRACE_OBJECT, JSTRACE_STRING or a tag denoting
+ * internal implementation-specific traversal kind. In the latter case the only
+ * operations on thing that the callback can do is to call JS_TraceChildren or
+ * DEBUG-only JS_PrintTraceThingInfo.
  */
 typedef void
 (* JSTraceCallback)(JSTracer *trc, void *thing, uint32 kind);
@@ -415,35 +406,17 @@ typedef void
 typedef void
 (* JSTraceNamePrinter)(JSTracer *trc, char *buf, size_t bufsize);
 
-/* JSExtendedClass function pointer typedefs. */
-
 typedef JSBool
-(* JSEqualityOp)(JSContext *cx, JSObject *obj, jsval v, JSBool *bp);
+(* JSEqualityOp)(JSContext *cx, JSObject *obj, const jsval *v, JSBool *bp);
 
 /*
- * A generic type for functions mapping an object to another object, or null
- * if an error or exception was thrown on cx.  Used by JSObjectOps.thisObject
- * at present.
+ * Typedef for native functions called by the JS VM.
+ *
+ * See jsapi.h, the JS_CALLEE, JS_THIS, etc. macros.
  */
-typedef JSObject *
-(* JSObjectOp)(JSContext *cx, JSObject *obj);
-
-/*
- * Hook that creates an iterator object for a given object. Returns the
- * iterator object or null if an error or exception was thrown on cx.
- */
-typedef JSObject *
-(* JSIteratorOp)(JSContext *cx, JSObject *obj, JSBool keysonly);
-
-/* Typedef for native functions called by the JS VM. */
 
 typedef JSBool
-(* JSNative)(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-             jsval *rval);
-
-/* See jsapi.h, the JS_CALLEE, JS_THIS, etc. macros. */
-typedef JSBool
-(* JSFastNative)(JSContext *cx, uintN argc, jsval *vp);
+(* JSNative)(JSContext *cx, uintN argc, jsval *vp);
 
 /* Callbacks and their arguments. */
 
@@ -492,12 +465,6 @@ typedef void
 
 typedef JSBool
 (* JSOperationCallback)(JSContext *cx);
-
-/*
- * Deprecated form of JSOperationCallback.
- */
-typedef JSBool
-(* JSBranchCallback)(JSContext *cx, JSScript *script);
 
 typedef void
 (* JSErrorReporter)(JSContext *cx, const char *message, JSErrorReport *report);
@@ -554,7 +521,7 @@ typedef JSBool
                     jsval *rval);
 
 typedef JSBool
-(* JSLocaleToUnicode)(JSContext *cx, char *src, jsval *rval);
+(* JSLocaleToUnicode)(JSContext *cx, const char *src, jsval *rval);
 
 /*
  * Security protocol types.
@@ -595,7 +562,57 @@ typedef JSBool
  * destination compartment.
  */
 typedef JSObject *
-(* JSWrapObjectCallback)(JSContext *cx, JSObject *obj, JSObject *proto, uintN flags);
+(* JSWrapObjectCallback)(JSContext *cx, JSObject *obj, JSObject *proto, JSObject *parent,
+                         uintN flags);
+
+/*
+ * Callback used by the wrap hook to ask the embedding to prepare an object
+ * for wrapping in a context. This might include unwrapping other wrappers
+ * or even finding a more suitable object for the new compartment.
+ */
+typedef JSObject *
+(* JSPreWrapCallback)(JSContext *cx, JSObject *scope, JSObject *obj, uintN flags);
+
+typedef enum {
+    JSCOMPARTMENT_NEW, /* XXX Does it make sense to have a NEW? */
+    JSCOMPARTMENT_DESTROY
+} JSCompartmentOp;
+
+typedef JSBool
+(* JSCompartmentCallback)(JSContext *cx, JSCompartment *compartment, uintN compartmentOp);
+
+/*
+ * Read structured data from the reader r. This hook is used to read a value
+ * previously serialized by a call to the WriteStructuredCloneOp hook.
+ *
+ * tag and data are the pair of uint32 values from the header. The callback may
+ * use the JS_Read* APIs to read any other relevant parts of the object from
+ * the reader r. closure is any value passed to the JS_ReadStructuredClone
+ * function. Return the new object on success, NULL on error/exception.
+ */
+typedef JSObject *(*ReadStructuredCloneOp)(JSContext *cx, JSStructuredCloneReader *r,
+                                           uint32 tag, uint32 data, void *closure);
+
+/*
+ * Structured data serialization hook. The engine can write primitive values,
+ * Objects, Arrays, Dates, RegExps, TypedArrays, and ArrayBuffers. Any other
+ * type of object requires application support. This callback must first use
+ * the JS_WriteUint32Pair API to write an object header, passing a value
+ * greater than JS_SCTAG_USER to the tag parameter. Then it can use the
+ * JS_Write* APIs to write any other relevant parts of the value v to the
+ * writer w. closure is any value passed to the JS_WriteStructuredCLone function.
+ *
+ * Return true on success, false on error/exception.
+ */
+typedef JSBool (*WriteStructuredCloneOp)(JSContext *cx, JSStructuredCloneWriter *w,
+                                         JSObject *obj, void *closure);
+
+/*
+ * This is called when JS_WriteStructuredClone finds that the object to be
+ * written is recursive. To follow HTML5, the application must throw a
+ * DATA_CLONE_ERR DOMException. errorid is always JS_SCERR_RECURSION.
+ */
+typedef void (*StructuredCloneErrorOp)(JSContext *cx, uint32 errorid);
 
 JS_END_EXTERN_C
 

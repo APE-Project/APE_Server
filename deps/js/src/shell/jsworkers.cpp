@@ -95,9 +95,7 @@ extern size_t gMaxStackSize;
  */
 
 namespace js {
-namespace detail {
-
-using js::workers::WorkerHooks;
+namespace workers {
 
 template <class T, class AllocPolicy>
 class Queue {
@@ -272,20 +270,32 @@ class MainQueue;
 class Event
 {
   protected:
+    virtual ~Event() { JS_ASSERT(!data); }
+
     WorkerParent *recipient;
     Worker *child;
-    JSString *data;
+    uint64 *data;
+    size_t nbytes;
 
   public:
     enum Result { fail = JS_FALSE, ok = JS_TRUE, forwardToParent };
 
-    virtual ~Event() {}
-
-    JSString *getData() const { return data; }
+    virtual void destroy(JSContext *cx) { 
+        JS_free(cx, data);
+#ifdef DEBUG
+        data = NULL;
+#endif
+        delete this;
+    }
 
     void setChildAndRecipient(Worker *aChild, WorkerParent *aRecipient) {
         child = aChild;
         recipient = aRecipient;
+    }
+
+    bool deserializeData(JSContext *cx, jsval *vp) {
+        return !!JS_ReadStructuredClone(cx, data, nbytes, JS_STRUCTURED_CLONE_VERSION, vp,
+                                        NULL, NULL);
     }
 
     virtual Result process(JSContext *cx) = 0;
@@ -294,9 +304,11 @@ class Event
 
     template <class EventType>
     static EventType *createEvent(JSContext *cx, WorkerParent *recipient, Worker *child,
-                                  JSString *data)
+                                  jsval v)
     {
-        if (data && !JS_MakeStringImmutable(cx, data))
+        uint64 *data;
+        size_t nbytes;
+        if (!JS_WriteStructuredClone(cx, v, &data, &nbytes, NULL, NULL))
             return NULL;
 
         EventType *event = new EventType;
@@ -307,6 +319,7 @@ class Event
         event->recipient = recipient;
         event->child = child;
         event->data = data;
+        event->nbytes = nbytes;
         return event;
     }
 
@@ -323,8 +336,11 @@ class Event
             return noHandler;
 
         // Create event object.
+        jsval v;
+        if (!deserializeData(cx, &v))
+            return fail;
         JSObject *obj = JS_NewObject(cx, NULL, NULL, NULL);
-        if (!obj || !JS_DefineProperty(cx, obj, dataPropName, STRING_TO_JSVAL(data), NULL, NULL, 0))
+        if (!obj || !JS_DefineProperty(cx, obj, dataPropName, v, NULL, NULL, 0))
             return fail;
 
         // Call event handler.
@@ -345,11 +361,16 @@ class MainQueue : public EventQueue, public WorkerParent
     explicit MainQueue(ThreadPool *tp) : threadPool(tp) {}
 
     ~MainQueue() {
-        while (!queue.empty())
-            delete queue.pop();
+        JS_ASSERT(queue.empty());
     }
 
     bool init() { return initThreadSafeQueue() && initWorkerParent(); }
+
+    void destroy(JSContext *cx) {
+        while (!queue.empty())
+            queue.pop()->destroy(cx);
+        delete this;
+    }
 
     virtual JSLock *getLock() { return lock; }
     virtual ThreadPool *getThreadPool() { return threadPool; }
@@ -377,11 +398,15 @@ class MainQueue : public EventQueue, public WorkerParent
                 result = event->process(cx);
                 if (result == Event::forwardToParent) {
                     // FIXME - pointlessly truncates the string to 8 bits
-                    JSString *data = event->getData();
-                    if (const char *s = data ? JS_GetStringBytesZ(cx, data) : NULL)
-                        JS_ReportError(cx, "%s", s);
-                    else
+                    jsval data;
+                    JSAutoByteString bytes;
+                    if (event->deserializeData(cx, &data) &&
+                        JSVAL_IS_STRING(data) &&
+                        bytes.encode(cx, JSVAL_TO_STRING(data))) {
+                        JS_ReportError(cx, "%s", bytes.ptr());
+                    } else {
                         JS_ReportOutOfMemory(cx);
+                    }
                     result = Event::fail;
                 }
                 if (result == Event::fail && continueOnError) {
@@ -392,7 +417,7 @@ class MainQueue : public EventQueue, public WorkerParent
             }
             JS_ACQUIRE_LOCK(lock);
             drop(event);
-            delete event;
+            event->destroy(cx);
             if (result != Event::ok)
                 return false;
         }
@@ -478,7 +503,7 @@ class ThreadPool
         JS_ASSERT(!mq && !wq);
         mq = new MainQueue(this);
         if (!mq || !mq->init()) {
-            delete mq;
+            mq->destroy(cx);
             mq = NULL;
             return false;
         }
@@ -486,7 +511,7 @@ class ThreadPool
         if (!wq || !wq->initThreadSafeQueue()) {
             delete wq;
             wq = NULL;
-            delete mq;
+            mq->destroy(cx);
             mq = NULL;
             return false;
         }
@@ -496,7 +521,7 @@ class ThreadPool
             threads[i] = PR_CreateThread(PR_USER_THREAD, start, wq, PR_PRIORITY_NORMAL,
                                          PR_LOCAL_THREAD, PR_JOINABLE_THREAD, 0);
             if (!threads[i]) {
-                shutdown();
+                shutdown(cx);
                 ok = false;
                 break;
             }
@@ -504,14 +529,15 @@ class ThreadPool
         return ok;
     }
 
-    void terminateAll(JSContext *cx) {
+    void terminateAll(JSRuntime *rt) {
         // See comment about JS_ATOMIC_SET in the implementation of
         // JS_TriggerOperationCallback.
         JS_ATOMIC_SET(&terminating, 1);
-        JS_TriggerAllOperationCallbacks(JS_GetRuntime(cx));
+        JS_TriggerAllOperationCallbacks(rt);
     }
 
-    void shutdown() {
+    /* This context is used only to free memory. */
+    void shutdown(JSContext *cx) {
         wq->close();
         for (int i = 0; i < threadCount; i++) {
             if (threads[i]) {
@@ -524,7 +550,7 @@ class ThreadPool
         wq = NULL;
 
         mq->disposeChildren();
-        delete mq;
+        mq->destroy(cx);
         mq = NULL;
         terminating = 0;
     }
@@ -610,7 +636,7 @@ class Worker : public WorkerParent
         JS_SetVersion(context, JS_GetVersion(parentcx));
         JS_SetContextPrivate(context, this);
         JS_SetOperationCallback(context, jsOperationCallback);
-        JS_TransferRequest(parentcx, context);
+        JS_BeginRequest(context);
 
         JSObject *global = threadPool->getHooks()->newGlobalObject(context);
         JSObject *post, *proto, *ctor;
@@ -624,8 +650,7 @@ class Worker : public WorkerParent
         // is collected.  Therefore it's safe to stash a pointer (a weak
         // reference) to the C++ Worker object in the reserved slot.
         post = JS_GetFunctionObject(JS_DefineFunction(context, global, "postMessage",
-                                                      (JSNative) jsPostMessageToParent, 1,
-                                                      JSFUN_FAST_NATIVE));
+                                                      (JSNative) jsPostMessageToParent, 1, 0));
         if (!post || !JS_SetReservedSlot(context, post, 0, PRIVATE_TO_JSVAL(this)))
             goto bad;
 
@@ -638,14 +663,14 @@ class Worker : public WorkerParent
         if (!ctor || !JS_SetReservedSlot(context, ctor, 0, PRIVATE_TO_JSVAL(this)))
             goto bad;
 
-        JS_TransferRequest(context, parentcx);
+        JS_EndRequest(context);
         JS_ClearContextThread(context);
         return true;
 
     bad:
+        JS_EndRequest(context);
         JS_DestroyContext(context);
         context = NULL;
-        JS_BeginRequest(parentcx);
         return false;
     }
 
@@ -672,7 +697,7 @@ class Worker : public WorkerParent
         return !w->checkTermination();
     }
 
-    static JSBool jsResolveGlobal(JSContext *cx, JSObject *obj, jsval id, uintN flags,
+    static JSBool jsResolveGlobal(JSContext *cx, JSObject *obj, jsid id, uintN flags,
                                   JSObject **objp)
     {
         JSBool resolved;
@@ -685,9 +710,9 @@ class Worker : public WorkerParent
         return true;
     }
 
-    static JSBool jsPostMessageToParent(JSContext *cx, int argc, jsval *vp);
-    static JSBool jsPostMessageToChild(JSContext *cx, int argc, jsval *vp);
-    static JSBool jsTerminate(JSContext *cx, int argc, jsval *vp);
+    static JSBool jsPostMessageToParent(JSContext *cx, uintN argc, jsval *vp);
+    static JSBool jsPostMessageToChild(JSContext *cx, uintN argc, jsval *vp);
+    static JSBool jsTerminate(JSContext *cx, uintN argc, jsval *vp);
 
     bool checkTermination() {
         AutoLock hold(lock);
@@ -706,7 +731,7 @@ class Worker : public WorkerParent
     void terminateSelf() {
         terminated = true;
         while (!events.empty())
-            delete events.pop();
+            events.pop()->destroy(context);
 
         // Tell the children to shut down too. An arbitrarily silly amount of
         // processing could happen before the whole tree is terminated; but
@@ -725,7 +750,7 @@ class Worker : public WorkerParent
     void dispose() {
         JS_ASSERT(!current);
         while (!events.empty())
-            delete events.pop();
+            events.pop()->destroy(context);
         if (lock) {
             JS_DESTROY_LOCK(lock);
             lock = NULL;
@@ -797,7 +822,7 @@ class Worker : public WorkerParent
                 return false;
             WorkerParent *parent = threadPool->getMainQueue();
             if (!JS_SetReservedSlot(cx, ctor, 0, PRIVATE_TO_JSVAL(parent))) {
-                threadPool->shutdown();
+                threadPool->shutdown(cx);
                 return false;
             }
             *p = parent;
@@ -807,31 +832,32 @@ class Worker : public WorkerParent
         return true;
     }
 
-    static JSBool jsConstruct(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval) {
+    static JSBool jsConstruct(JSContext *cx, uintN argc, jsval *vp) {
         WorkerParent *parent;
-        if (!getWorkerParentFromConstructor(cx, JSVAL_TO_OBJECT(argv[-2]), &parent))
+        if (!getWorkerParentFromConstructor(cx, JSVAL_TO_OBJECT(JS_CALLEE(cx, vp)), &parent))
             return false;
 
-        JSString *scriptName = JS_ValueToString(cx, argv[0]);
+
+        JSString *scriptName = JS_ValueToString(cx, argc ? JS_ARGV(cx, vp)[0] : JSVAL_VOID);
         if (!scriptName)
             return false;
-        argv[0] = STRING_TO_JSVAL(scriptName);
 
-        obj = JS_NewObject(cx, &jsWorkerClass, NULL, NULL);
+        JSObject *obj = JS_NewObject(cx, &jsWorkerClass, NULL, NULL);
         if (!obj || !create(cx, parent, scriptName, obj))
             return false;
-        *rval = OBJECT_TO_JSVAL(obj);
+        JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(obj));
         return true;
     }
 
     static JSFunctionSpec jsMethods[3];
     static JSFunctionSpec jsStaticMethod[2];
 
-    static JSBool initWorkers(JSContext *cx, WorkerHooks *hooks, JSObject *global, JSObject **objp) {
+    static ThreadPool *initWorkers(JSContext *cx, WorkerHooks *hooks, JSObject *global,
+                                   JSObject **objp) {
         // Create the ThreadPool object and its JSObject wrapper.
         ThreadPool *threadPool = ThreadPool::create(cx, hooks);
         if (!threadPool)
-            return false;
+            return NULL;
 
         // Root the ThreadPool JSObject early.
         *objp = threadPool->asObject();
@@ -841,15 +867,15 @@ class Worker : public WorkerParent
                                        jsConstruct, 1,
                                        NULL, jsMethods, NULL, NULL);
         if (!proto)
-            return false;
+            return NULL;
 
         // Stash a pointer to the ThreadPool in constructor reserved slot 1.
         // It will be used later when lazily creating the MainQueue.
         JSObject *ctor = JS_GetConstructor(cx, proto);
         if (!JS_SetReservedSlot(cx, ctor, 1, PRIVATE_TO_JSVAL(threadPool)))
-            return false;
+            return NULL;
 
-        return true;
+        return threadPool;
     }
 };
 
@@ -857,21 +883,24 @@ class InitEvent : public Event
 {
   public:
     static InitEvent *create(JSContext *cx, Worker *worker, JSString *scriptName) {
-        return createEvent<InitEvent>(cx, worker, worker, scriptName);
+        return createEvent<InitEvent>(cx, worker, worker, STRING_TO_JSVAL(scriptName));
     }
 
     Result process(JSContext *cx) {
-        const char *filename = JS_GetStringBytesZ(cx, data);
+        jsval s;
+        if (!deserializeData(cx, &s))
+            return fail;
+        JS_ASSERT(JSVAL_IS_STRING(s));
+        JSAutoByteString filename(cx, JSVAL_TO_STRING(s));
         if (!filename)
             return fail;
 
-        JSScript *script = JS_CompileFile(cx, child->getGlobal(), filename);
-        if (!script)
+        JSObject *scriptObj = JS_CompileFile(cx, child->getGlobal(), filename.ptr());
+        if (!scriptObj)
             return fail;
 
         AutoValueRooter rval(cx);
-        JSBool ok = JS_ExecuteScript(cx, child->getGlobal(), script, rval.addr());
-        JS_DestroyScript(cx, script);
+        JSBool ok = JS_ExecuteScript(cx, child->getGlobal(), scriptObj, Jsvalify(rval.addr()));
         return Result(ok);
     }
 };
@@ -879,7 +908,7 @@ class InitEvent : public Event
 class DownMessageEvent : public Event
 {
   public:
-    static DownMessageEvent *create(JSContext *cx, Worker *child, JSString *data) {
+    static DownMessageEvent *create(JSContext *cx, Worker *child, jsval data) {
         return createEvent<DownMessageEvent>(cx, child, child, data);
     }
 
@@ -891,7 +920,7 @@ class DownMessageEvent : public Event
 class UpMessageEvent : public Event
 {
   public:
-    static UpMessageEvent *create(JSContext *cx, Worker *child, JSString *data) {
+    static UpMessageEvent *create(JSContext *cx, Worker *child, jsval data) {
         return createEvent<UpMessageEvent>(cx, child->getParent(), child, data);
     }
 
@@ -907,7 +936,7 @@ class ErrorEvent : public Event
         JSString *data = NULL;
         jsval exc;
         if (JS_GetPendingException(cx, &exc)) {
-            AutoValueRooter tvr(cx, exc);
+            AutoValueRooter tvr(cx, Valueify(exc));
             JS_ClearPendingException(cx);
 
             // Determine what error message to put in the error event.
@@ -926,7 +955,8 @@ class ErrorEvent : public Event
                     return NULL;
             }
         }
-        return createEvent<ErrorEvent>(cx, child->getParent(), child, data);
+        return createEvent<ErrorEvent>(cx, child->getParent(), child,
+                                       data ? STRING_TO_JSVAL(data) : JSVAL_VOID);
     }
 
     Result process(JSContext *cx) {
@@ -934,10 +964,10 @@ class ErrorEvent : public Event
     }
 };
 
-} /* namespace detail */
+} /* namespace workers */
 } /* namespace js */
 
-using namespace js::detail;
+using namespace js::workers;
 
 void
 WorkerParent::disposeChildren()
@@ -1058,7 +1088,7 @@ Worker::create(JSContext *parentcx, WorkerParent *parent, JSString *scriptName, 
     if (!event)
         return NULL;
     if (!w->events.push(event) || !w->threadPool->getWorkerQueue()->post(w)) {
-        delete event;
+        event->destroy(parentcx);
         JS_ReportOutOfMemory(parentcx);
         w->dispose();
         return NULL;
@@ -1103,7 +1133,7 @@ Worker::processOneEvent()
         Event *err = ErrorEvent::create(context, this);
         if (err && !parent->post(err)) {
             JS_ReportOutOfMemory(context);
-            delete err;
+            err->destroy(context);
             err = NULL;
         }
         if (!err) {
@@ -1111,6 +1141,8 @@ Worker::processOneEvent()
         }
     }
 
+    if (event)
+        event->destroy(context);
     JS_ClearContextThread(context);
 
     {
@@ -1122,11 +1154,10 @@ Worker::processOneEvent()
                 JS_ReportOutOfMemory(context);
         }
     }
-    delete event;
 }
 
 JSBool
-Worker::jsPostMessageToParent(JSContext *cx, int argc, jsval *vp)
+Worker::jsPostMessageToParent(JSContext *cx, uintN argc, jsval *vp)
 {
     jsval workerval;
     if (!JS_GetReservedSlot(cx, JSVAL_TO_OBJECT(JS_CALLEE(cx, vp)), 0, &workerval))
@@ -1139,22 +1170,21 @@ Worker::jsPostMessageToParent(JSContext *cx, int argc, jsval *vp)
             return false;
     }
 
-    JSString *message = JS_ValueToString(cx, argc > 0 ? JS_ARGV(cx, vp)[0] : JSVAL_VOID);
-    if (!message)
-        return false;
-
-    Event *event = UpMessageEvent::create(cx, w, message);
+    jsval data = argc > 0 ? JS_ARGV(cx, vp)[0] : JSVAL_VOID;
+    Event *event = UpMessageEvent::create(cx, w, data);
     if (!event)
         return false;
     if (!w->parent->post(event)) {
-        delete event;
+        event->destroy(cx);
         JS_ReportOutOfMemory(cx);
+        return false;
     }
+    JS_SET_RVAL(cx, vp, JSVAL_VOID);
     return true;
 }
 
 JSBool
-Worker::jsPostMessageToChild(JSContext *cx, int argc, jsval *vp)
+Worker::jsPostMessageToChild(JSContext *cx, uintN argc, jsval *vp)
 {
     JSObject *workerobj = JS_THIS_OBJECT(cx, vp);
     if (!workerobj)
@@ -1166,23 +1196,23 @@ Worker::jsPostMessageToChild(JSContext *cx, int argc, jsval *vp)
         return false;
     }
     
-    JSString *message = JS_ValueToString(cx, argc > 0 ? JS_ARGV(cx, vp)[0] : JSVAL_VOID);
-    if (!message)
-        return false;
-
-    Event *event = DownMessageEvent::create(cx, w, message);
+    jsval data = argc > 0 ? JS_ARGV(cx, vp)[0] : JSVAL_VOID;
+    Event *event = DownMessageEvent::create(cx, w, data);
     if (!event)
         return false;
     if (!w->post(event)) {
         JS_ReportOutOfMemory(cx);
         return false;
     }
+    JS_SET_RVAL(cx, vp, JSVAL_VOID);
     return true;
 }
 
 JSBool
-Worker::jsTerminate(JSContext *cx, int argc, jsval *vp)
+Worker::jsTerminate(JSContext *cx, uintN argc, jsval *vp)
 {
+    JS_SET_RVAL(cx, vp, JSVAL_VOID);
+
     JSObject *workerobj = JS_THIS_OBJECT(cx, vp);
     if (!workerobj)
         return false;
@@ -1202,13 +1232,11 @@ Event::trace(JSTracer *trc)
         recipient->trace(trc);
     if (child)
         JS_CALL_OBJECT_TRACER(trc, child->asObject(), "worker");
-    if (data)
-        JS_CALL_STRING_TRACER(trc, data, "worker event data");
 }
 
 JSClass ThreadPool::jsClass = {
     "ThreadPool", JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, jsFinalize,
     NULL, NULL, NULL, NULL,
     NULL, NULL, JS_CLASS_TRACE(jsTraceThreadPool), NULL
@@ -1216,7 +1244,7 @@ JSClass ThreadPool::jsClass = {
 
 JSClass Worker::jsWorkerClass = {
     "Worker", JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, jsFinalize,
     NULL, NULL, NULL, NULL,
     NULL, NULL, JS_CLASS_TRACE(jsTraceWorker), NULL
@@ -1228,29 +1256,24 @@ JSFunctionSpec Worker::jsMethods[3] = {
     JS_FS_END
 };
 
-JSBool
+ThreadPool *
 js::workers::init(JSContext *cx, WorkerHooks *hooks, JSObject *global, JSObject **rootp)
 {
     return Worker::initWorkers(cx, hooks, global, rootp);
 }
 
 void
-js::workers::terminateAll(JSContext *cx, JSObject *workersobj)
+js::workers::terminateAll(JSRuntime *rt, ThreadPool *tp)
 {
-    ThreadPool::unwrap(cx, workersobj)->terminateAll(cx);
+    tp->terminateAll(rt);
 }
 
 void
-js::workers::finish(JSContext *cx, JSObject *workersobj)
+js::workers::finish(JSContext *cx, ThreadPool *tp)
 {
-    ThreadPool *threadPool = ThreadPool::unwrap(cx, workersobj);
-    if (MainQueue *mq = threadPool->getMainQueue()) {
-#ifdef DEBUG
-        JSBool ok =
-#endif
-            mq->mainThreadWork(cx, true);
-        JS_ASSERT(ok);
-        threadPool->shutdown();
+    if (MainQueue *mq = tp->getMainQueue()) {
+        JS_ALWAYS_TRUE(mq->mainThreadWork(cx, true));
+        tp->shutdown(cx);
     }
 }
 

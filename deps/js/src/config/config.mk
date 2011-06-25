@@ -45,6 +45,9 @@
 #
 
 # Define an include-at-most-once flag
+#ifdef INCLUDED_CONFIG_MK
+#$(error Don't include config.mk twice!)
+#endif
 INCLUDED_CONFIG_MK = 1
 
 EXIT_ON_ERROR = set -e; # Shell loops continue past errors without this.
@@ -79,6 +82,11 @@ check-variable = $(if $(filter-out 0 1,$(words $($(x))z)),$(error Spaces are not
 $(foreach x,$(CHECK_VARS),$(check-variable))
 
 core_abspath = $(if $(findstring :,$(1)),$(1),$(if $(filter /%,$(1)),$(1),$(CURDIR)/$(1)))
+
+nullstr :=
+space :=$(nullstr) # EOL
+
+core_winabspath = $(firstword $(subst /, ,$(call core_abspath,$(1)))):$(subst $(space),,$(patsubst %,\\%,$(wordlist 2,$(words $(subst /, ,$(call core_abspath,$(1)))), $(strip $(subst /, ,$(call core_abspath,$(1)))))))
 
 # FINAL_TARGET specifies the location into which we copy end-user-shipped
 # build products (typelibs, components, chrome).
@@ -154,8 +162,16 @@ MOZ_WIDGET_SUPPORT_LIBS    = $(DIST)/lib/$(LIB_PREFIX)widgetsupport_s.$(LIB_SUFF
 ifdef MOZ_MEMORY
 ifneq (,$(filter-out WINNT WINCE,$(OS_ARCH)))
 JEMALLOC_LIBS = $(MKSHLIB_FORCE_ALL) $(call EXPAND_MOZLIBNAME,jemalloc) $(MKSHLIB_UNFORCE_ALL)
+# If we are linking jemalloc into a program, we want the jemalloc symbols
+# to be exported
+ifneq (,$(SIMPLE_PROGRAMS)$(PROGRAM))
+JEMALLOC_LIBS += $(MOZ_JEMALLOC_STANDALONE_GLUE_LDOPTS)
 endif
 endif
+endif
+
+CC := $(CC_WRAPPER) $(CC)
+CXX := $(CXX_WRAPPER) $(CXX)
 
 # determine debug-related options
 _DEBUG_CFLAGS :=
@@ -174,7 +190,7 @@ else
   endif
 endif
 
-MOZALLOC_LIB = -L$(DIST)/bin $(call EXPAND_MOZLIBNAME,mozalloc)
+MOZALLOC_LIB = $(call EXPAND_LIBNAME_PATH,mozalloc,$(DIST)/lib)
 
 OS_CFLAGS += $(_DEBUG_CFLAGS)
 OS_CXXFLAGS += $(_DEBUG_CFLAGS)
@@ -203,7 +219,11 @@ endif
 ifdef MOZ_DEBUG_SYMBOLS
 OS_CXXFLAGS += -Zi -UDEBUG -DNDEBUG
 OS_CFLAGS += -Zi -UDEBUG -DNDEBUG
+ifdef HAVE_64BIT_OS
+OS_LDFLAGS += -DEBUG -OPT:REF,ICF
+else
 OS_LDFLAGS += -DEBUG -OPT:REF
+endif
 endif
 
 ifdef MOZ_QUANTIFY
@@ -223,7 +243,11 @@ endif
 #
 ifdef NS_TRACE_MALLOC
 MOZ_OPTIMIZE_FLAGS=-Zi -Od -UDEBUG -DNDEBUG
-OS_LDFLAGS = -DEBUG -PDB:NONE -OPT:REF -OPT:nowin98
+ifdef HAVE_64BIT_OS
+OS_LDFLAGS = -DEBUG -PDB:NONE -OPT:REF,ICF
+else
+OS_LDFLAGS = -DEBUG -PDB:NONE -OPT:REF
+endif
 endif # NS_TRACE_MALLOC
 
 endif # MOZ_DEBUG
@@ -318,34 +342,44 @@ STATIC_LIBRARY_NAME=$(LIBRARY_NAME)
 endif
 endif
 
+ifeq (WINNT,$(OS_ARCH))
+MOZ_FAKELIBS = 1
+endif
+
 # This comes from configure
 ifdef MOZ_PROFILE_GUIDED_OPTIMIZE_DISABLE
+NO_PROFILE_GUIDED_OPTIMIZE = 1
+endif
+
+# No sense in profiling tools
+ifdef INTERNAL_TOOLS
+NO_PROFILE_GUIDED_OPTIMIZE = 1
+endif
+
+# Don't build SIMPLE_PROGRAMS with PGO, since they don't need it anyway,
+# and we don't have the same build logic to re-link them in the second pass.
+ifdef SIMPLE_PROGRAMS
 NO_PROFILE_GUIDED_OPTIMIZE = 1
 endif
 
 # Enable profile-based feedback
 ifndef NO_PROFILE_GUIDED_OPTIMIZE
 ifdef MOZ_PROFILE_GENERATE
-# No sense in profiling tools
-ifndef INTERNAL_TOOLS
 OS_CFLAGS += $(PROFILE_GEN_CFLAGS)
 OS_CXXFLAGS += $(PROFILE_GEN_CFLAGS)
 OS_LDFLAGS += $(PROFILE_GEN_LDFLAGS)
 ifeq (WINNT,$(OS_ARCH))
 AR_FLAGS += -LTCG
 endif
-endif # INTERNAL_TOOLS
 endif # MOZ_PROFILE_GENERATE
 
 ifdef MOZ_PROFILE_USE
-ifndef INTERNAL_TOOLS
 OS_CFLAGS += $(PROFILE_USE_CFLAGS)
 OS_CXXFLAGS += $(PROFILE_USE_CFLAGS)
 OS_LDFLAGS += $(PROFILE_USE_LDFLAGS)
 ifeq (WINNT,$(OS_ARCH))
 AR_FLAGS += -LTCG
 endif
-endif # INTERNAL_TOOLS
 endif # MOZ_PROFILE_USE
 endif # NO_PROFILE_GUIDED_OPTIMIZE
 
@@ -370,8 +404,8 @@ DEFINES += \
 		-DIMPL_THEBES \
 		$(NULL)
 
-ifndef MOZ_NATIVE_ZLIB
-DEFINES += -DZLIB_INTERNAL
+ifndef JS_SHARED_LIBRARY
+DEFINES += -DSTATIC_EXPORTABLE_JS_API
 endif
 endif
 endif
@@ -450,12 +484,6 @@ INCLUDES = \
   $(NULL) 
 
 include $(topsrcdir)/config/static-checking-config.mk
-
-ifdef MOZ_SHARK
-OS_CFLAGS += -F/System/Library/PrivateFrameworks
-OS_CXXFLAGS += -F/System/Library/PrivateFrameworks
-OS_LDFLAGS += -F/System/Library/PrivateFrameworks -framework CHUD
-endif # ifdef MOZ_SHARK
 
 CFLAGS		= $(OS_CFLAGS)
 CXXFLAGS	= $(OS_CXXFLAGS)
@@ -713,7 +741,7 @@ DEFINES		+= -DOSARCH=$(OS_ARCH)
 
 ######################################################################
 
-GARBAGE		+= $(DEPENDENCIES) $(MKDEPENDENCIES) $(MKDEPENDENCIES).bak core $(wildcard core.[0-9]*) $(wildcard *.err) $(wildcard *.pure) $(wildcard *_pure_*.o) Templates.DB
+GARBAGE		+= $(DEPENDENCIES) $(MKDEPENDENCIES) $(MKDEPENDENCIES).bak core $(wildcard core.[0-9]*) $(wildcard *.err) $(wildcard *.pure) $(wildcard *_pure_*.o) Templates.DB $(FAKE_LIBRARY)
 
 ifeq ($(OS_ARCH),Darwin)
 ifndef NSDISTMODE
@@ -821,3 +849,5 @@ ifdef TIERS
 DIRS += $(foreach tier,$(TIERS),$(tier_$(tier)_dirs))
 STATIC_DIRS += $(foreach tier,$(TIERS),$(tier_$(tier)_staticdirs))
 endif
+
+OPTIMIZE_JARS_CMD = $(PYTHON) $(call core_abspath,$(topsrcdir)/config/optimizejars.py)

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Test harness for JSTests, controlled by manifest files.
 
 import datetime, os, sys, subprocess
@@ -63,7 +65,7 @@ class TestTask:
             parts += debugger_prefix
         parts.append(js_path)
         if js_args:
-            parts.append(js_args)
+            parts += js_args
         self.js_cmd_prefix = parts
 
 class ResultsSink:
@@ -215,7 +217,7 @@ if __name__ == '__main__':
                   help='run only skipped tests')
     op.add_option('--tinderbox', dest='tinderbox', action='store_true',
                   help='Tinderbox-parseable output format')
-    op.add_option('--args', dest='shell_args',
+    op.add_option('--args', dest='shell_args', default='',
                   help='extra args to pass to the JS shell')
     op.add_option('-g', '--debug', dest='debug', action='store_true',
                   help='run test in debugger')
@@ -227,6 +229,12 @@ if __name__ == '__main__':
                   help='check for test files not listed in the manifest')
     op.add_option('--failure-file', dest='failure_file',
                   help='write tests that have not passed to the given file')
+    op.add_option('--run-slow-tests', dest='run_slow_tests', action='store_true',
+                  help='run particularly slow tests as well as average-speed tests')
+    op.add_option('--xul-info', dest='xul_info_src',
+                  help='config data for xulRuntime (avoids search for config/autoconf.mk)')
+    op.add_option('--no-extensions', dest='no_extensions', action='store_true',
+                  help='run only tests conforming to the ECMAScript 5 standard')
     (OPTIONS, args) = op.parse_args()
     if len(args) < 1:
         if not OPTIONS.check_manifest:
@@ -253,8 +261,8 @@ if __name__ == '__main__':
         OPTIONS.show_output = True 
     else:
         debugger_prefix = []
-    
-    TestTask.set_js_cmd_prefix(JS, OPTIONS.shell_args, debugger_prefix)
+
+    TestTask.set_js_cmd_prefix(JS, OPTIONS.shell_args.split(), debugger_prefix)
 
     output_file = sys.stdout
     if OPTIONS.output_file and (OPTIONS.show_cmd or OPTIONS.show_output):
@@ -277,7 +285,12 @@ if __name__ == '__main__':
     if JS is None:
         xul_tester = manifest.NullXULInfoTester()
     else:
-        xul_info = manifest.XULInfo.create(JS)
+        if OPTIONS.xul_info_src is None:
+            xul_info = manifest.XULInfo.create(JS)
+        else:
+            xul_abi, xul_os, xul_debug = OPTIONS.xul_info_src.split(r':')
+            xul_debug = xul_debug.lower() is 'true'
+            xul_info = manifest.XULInfo(xul_abi, xul_os, xul_debug)
         xul_tester = manifest.XULInfoTester(xul_info, JS)
     test_list = manifest.parse(OPTIONS.manifest, xul_tester)
 
@@ -303,12 +316,18 @@ if __name__ == '__main__':
     if OPTIONS.exclude_file:
         test_list = exclude_tests(test_list, OPTIONS.exclude_file)
 
+    if OPTIONS.no_extensions:
+        test_list = [_ for _ in test_list if '/extensions/' not in _.path]
+
     if not OPTIONS.random:
         test_list = [ _ for _ in test_list if not _.random ]
 
     if OPTIONS.run_only_skipped:
         OPTIONS.run_skipped = True
         test_list = [ _ for _ in test_list if not _.enable ]
+
+    if not OPTIONS.run_slow_tests:
+        test_list = [ _ for _ in test_list if not _.slow ]
 
     if OPTIONS.debug and test_list:
         if len(test_list) > 1:
@@ -320,6 +339,9 @@ if __name__ == '__main__':
         cmd = test_list[0].get_command(TestTask.js_cmd_prefix)
         if OPTIONS.show_cmd:
             print subprocess.list2cmdline(cmd)
+        manifest_dir = os.path.dirname(OPTIONS.manifest)
+        if manifest_dir not in ('', '.'):
+            os.chdir(os.path.dirname(OPTIONS.manifest))
         call(cmd)
         sys.exit()
 

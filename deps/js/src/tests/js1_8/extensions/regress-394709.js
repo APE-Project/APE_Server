@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-394709.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 394709;
 var summary = 'Do not leak with object.watch and closure';
@@ -60,12 +59,21 @@ function test()
   printBugNumber(BUGNUMBER);
   printStatus (summary);
 
+  // Ensure that we flush all values so that gc() collects all objects that
+  // the user cannot reach from JS.
+  eval();
+
   runtest();
   gc();
-  var counter = countHeap();
+  var count1 = countHeap();
   runtest();
   gc();
-  if (counter != countHeap())
+  var count2 = countHeap();
+  runtest();
+  gc();
+  var count3 = countHeap();
+  /* Try to be tolerant of conservative GC noise: we want a steady leak. */
+  if (count1 < count2 && count2 < count3)
     throw "A leaky watch point is detected";
 
   function runtest () {

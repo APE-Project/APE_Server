@@ -1,4 +1,4 @@
-/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  * vim: set ts=8 sw=4 et tw=99:
  *
  * ***** BEGIN LICENSE BLOCK *****
@@ -49,6 +49,85 @@
 
 JS_BEGIN_EXTERN_C
 
+extern JS_PUBLIC_API(JSCrossCompartmentCall *)
+JS_EnterCrossCompartmentCallScript(JSContext *cx, JSScript *target);
+
+#ifdef __cplusplus
+JS_END_EXTERN_C
+
+namespace JS {
+
+class JS_PUBLIC_API(AutoEnterScriptCompartment)
+{
+    JSCrossCompartmentCall *call;
+
+  public:
+    AutoEnterScriptCompartment() : call(NULL) {}
+
+    bool enter(JSContext *cx, JSScript *target);
+
+    bool entered() const { return call != NULL; }
+
+    ~AutoEnterScriptCompartment() {
+        if (call && call != reinterpret_cast<JSCrossCompartmentCall*>(1))
+            JS_LeaveCrossCompartmentCall(call);
+    }
+};
+
+} /* namespace JS */
+
+JS_BEGIN_EXTERN_C
+#endif
+
+extern JS_PUBLIC_API(JSScript *)
+JS_GetScriptFromObject(JSObject *scriptObject);
+
+extern JS_PUBLIC_API(JSString *)
+JS_DecompileScript(JSContext *cx, JSScript *script, const char *name, uintN indent);
+
+/*
+ * Currently, we only support runtime-wide debugging. In the future, we should
+ * be able to support compartment-wide debugging.
+ */
+extern JS_PUBLIC_API(void)
+JS_SetRuntimeDebugMode(JSRuntime *rt, JSBool debug);
+
+/*
+ * Debug mode is a compartment-wide mode that enables a debugger to attach
+ * to and interact with running methodjit-ed frames. In particular, it causes
+ * every function to be compiled as if an eval was present (so eval-in-frame)
+ * can work, and it ensures that functions can be re-JITed for other debug
+ * features. In general, it is not safe to interact with frames that were live
+ * before debug mode was enabled. For this reason, it is also not safe to
+ * enable debug mode while frames are live.
+ */
+
+/* Get current state of debugging mode. */
+extern JS_PUBLIC_API(JSBool)
+JS_GetDebugMode(JSContext *cx);
+
+/*
+ * Turn on/off debugging mode for a single compartment. This must be
+ * called from the main thread and the compartment must be associated
+ * with the main thread.
+ */
+JS_FRIEND_API(JSBool)
+JS_SetDebugModeForCompartment(JSContext *cx, JSCompartment *comp, JSBool debug);
+
+/*
+ * Turn on/off debugging mode for a context's compartment.
+ */
+JS_FRIEND_API(JSBool)
+JS_SetDebugMode(JSContext *cx, JSBool debug);
+
+/* Turn on single step mode. Requires debug mode. */
+extern JS_FRIEND_API(JSBool)
+js_SetSingleStepMode(JSContext *cx, JSScript *script, JSBool singleStep);
+
+/* Turn on single step mode. */
+extern JS_PUBLIC_API(JSBool)
+JS_SetSingleStepMode(JSContext *cx, JSScript *script, JSBool singleStep);
+
 /*
  * Unexported library-private helper used to unpatch all traps in a script.
  * Returns script->code if script has no traps, else a JS_malloc'ed copy of
@@ -87,12 +166,12 @@ JS_ClearInterrupt(JSRuntime *rt, JSInterruptHook *handlerp, void **closurep);
 /************************************************************************/
 
 extern JS_PUBLIC_API(JSBool)
-JS_SetWatchPoint(JSContext *cx, JSObject *obj, jsval id,
-                 JSWatchPointHandler handler, void *closure);
+JS_SetWatchPoint(JSContext *cx, JSObject *obj, jsid id,
+                 JSWatchPointHandler handler, JSObject *closure);
 
 extern JS_PUBLIC_API(JSBool)
-JS_ClearWatchPoint(JSContext *cx, JSObject *obj, jsval id,
-                   JSWatchPointHandler *handlerp, void **closurep);
+JS_ClearWatchPoint(JSContext *cx, JSObject *obj, jsid id,
+                   JSWatchPointHandler *handlerp, JSObject **closurep);
 
 extern JS_PUBLIC_API(JSBool)
 JS_ClearWatchPointsForObject(JSContext *cx, JSObject *obj);
@@ -111,25 +190,19 @@ js_TraceWatchPoints(JSTracer *trc, JSObject *obj);
 extern void
 js_SweepWatchPoints(JSContext *cx);
 
-extern JSScopeProperty *
-js_FindWatchPoint(JSRuntime *rt, JSScope *scope, jsid id);
-
-/*
- * NB: callers outside of jsdbgapi.c must pass non-null scope.
- */
-extern JSPropertyOp
-js_GetWatchedSetter(JSRuntime *rt, JSScope *scope,
-                    const JSScopeProperty *sprop);
+#ifdef __cplusplus
 
 extern JSBool
-js_watch_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp);
+js_watch_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, js::Value *vp);
 
-extern JSBool
-js_watch_set_wrapper(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-                     jsval *rval);
+namespace js {
 
-extern JSPropertyOp
-js_WrapWatchedSetter(JSContext *cx, jsid id, uintN attrs, JSPropertyOp setter);
+bool
+IsWatchedProperty(JSContext *cx, const Shape *shape);
+
+}
+
+#endif
 
 #endif /* JS_HAS_OBJ_WATCHPOINT */
 
@@ -141,14 +214,37 @@ JS_PCToLineNumber(JSContext *cx, JSScript *script, jsbytecode *pc);
 extern JS_PUBLIC_API(jsbytecode *)
 JS_LineNumberToPC(JSContext *cx, JSScript *script, uintN lineno);
 
+extern JS_PUBLIC_API(jsbytecode *)
+JS_EndPC(JSContext *cx, JSScript *script);
+
+extern JS_PUBLIC_API(uintN)
+JS_GetFunctionArgumentCount(JSContext *cx, JSFunction *fun);
+
+extern JS_PUBLIC_API(JSBool)
+JS_FunctionHasLocalNames(JSContext *cx, JSFunction *fun);
+
+/*
+ * N.B. The mark is in the context temp pool and thus the caller must take care
+ * to call JS_ReleaseFunctionLocalNameArray in a LIFO manner (wrt to any other
+ * call that may use the temp pool.
+ */
+extern JS_PUBLIC_API(jsuword *)
+JS_GetFunctionLocalNameArray(JSContext *cx, JSFunction *fun, void **markp);
+
+extern JS_PUBLIC_API(JSAtom *)
+JS_LocalNameToAtom(jsuword w);
+
+extern JS_PUBLIC_API(JSString *)
+JS_AtomKey(JSAtom *atom);
+
+extern JS_PUBLIC_API(void)
+JS_ReleaseFunctionLocalNameArray(JSContext *cx, void *mark);
+
 extern JS_PUBLIC_API(JSScript *)
 JS_GetFunctionScript(JSContext *cx, JSFunction *fun);
 
 extern JS_PUBLIC_API(JSNative)
 JS_GetFunctionNative(JSContext *cx, JSFunction *fun);
-
-extern JS_PUBLIC_API(JSFastNative)
-JS_GetFunctionFastNative(JSContext *cx, JSFunction *fun);
 
 extern JS_PUBLIC_API(JSPrincipals *)
 JS_GetScriptPrincipals(JSContext *cx, JSScript *script);
@@ -179,22 +275,8 @@ JS_GetScriptedCaller(JSContext *cx, JSStackFrame *fp);
  * Return a weak reference to fp's principals.  A null return does not denote
  * an error, it means there are no principals.
  */
-extern JS_PUBLIC_API(JSPrincipals *)
-JS_StackFramePrincipals(JSContext *cx, JSStackFrame *fp);
-
-/*
- * This API is like JS_StackFramePrincipals(cx, caller), except that if
- * cx->runtime->findObjectPrincipals is non-null, it returns the weaker of
- * the caller's principals and the object principals of fp's callee function
- * object (fp->argv[-2]), which is eval, Function, or a similar eval-like
- * method.  The caller parameter should be JS_GetScriptedCaller(cx, fp).
- *
- * All eval-like methods must use JS_EvalFramePrincipals to acquire a weak
- * reference to the correct principals for the eval call to be secure, given
- * an embedding that calls JS_SetObjectPrincipalsFinder (see jsapi.h).
- */
-extern JS_PUBLIC_API(JSPrincipals *)
-JS_EvalFramePrincipals(JSContext *cx, JSStackFrame *fp, JSStackFrame *caller);
+extern JSPrincipals *
+js_StackFramePrincipals(JSContext *cx, JSStackFrame *fp);
 
 JSPrincipals *
 js_EvalFramePrincipals(JSContext *cx, JSObject *callee, JSStackFrame *caller);
@@ -209,7 +291,7 @@ extern JS_PUBLIC_API(void *)
 JS_GetFramePrincipalArray(JSContext *cx, JSStackFrame *fp);
 
 extern JS_PUBLIC_API(JSBool)
-JS_IsNativeFrame(JSContext *cx, JSStackFrame *fp);
+JS_IsScriptFrame(JSContext *cx, JSStackFrame *fp);
 
 /* this is deprecated, use JS_GetFrameScopeChain instead */
 extern JS_PUBLIC_API(JSObject *)
@@ -221,8 +303,8 @@ JS_GetFrameScopeChain(JSContext *cx, JSStackFrame *fp);
 extern JS_PUBLIC_API(JSObject *)
 JS_GetFrameCallObject(JSContext *cx, JSStackFrame *fp);
 
-extern JS_PUBLIC_API(JSObject *)
-JS_GetFrameThis(JSContext *cx, JSStackFrame *fp);
+extern JS_PUBLIC_API(JSBool)
+JS_GetFrameThis(JSContext *cx, JSStackFrame *fp, jsval *thisv);
 
 extern JS_PUBLIC_API(JSFunction *)
 JS_GetFrameFunction(JSContext *cx, JSStackFrame *fp);
@@ -245,10 +327,41 @@ extern JS_PUBLIC_API(void)
 JS_SetFrameReturnValue(JSContext *cx, JSStackFrame *fp, jsval rval);
 
 /**
- * Return fp's callee function object (fp->callee) if it has one.
+ * Return fp's callee function object (fp->callee) if it has one. Note that
+ * this API cannot fail. A null return means "no callee": fp is a global or
+ * eval-from-global frame, not a call frame.
+ *
+ * This API began life as an infallible getter, but now it can return either:
+ *
+ * 1. An optimized closure that was compiled assuming the function could not
+ *    escape and be called from sites the compiler could not see.
+ *
+ * 2. A "joined function object", an optimization whereby SpiderMonkey avoids
+ *    creating fresh function objects for every evaluation of a function
+ *    expression that is used only once by a consumer that either promises to
+ *    clone later when asked for the value or that cannot leak the value.
+ *
+ * Because Mozilla's Gecko embedding of SpiderMonkey (and no doubt other
+ * embeddings) calls this API in potentially performance-sensitive ways (e.g.
+ * in nsContentUtils::GetDocumentFromCaller), we are leaving this API alone. It
+ * may now return an unwrapped non-escaping optimized closure, or a joined
+ * function object. Such optimized objects may work well if called from the
+ * correct context, never mutated or compared for identity, etc.
+ *
+ * However, if you really need to get the same callee object that JS code would
+ * see, which means undoing the optimizations, where an undo attempt can fail,
+ * then use JS_GetValidFrameCalleeObject.
  */
 extern JS_PUBLIC_API(JSObject *)
 JS_GetFrameCalleeObject(JSContext *cx, JSStackFrame *fp);
+
+/**
+ * Return fp's callee function object after running the deferred closure
+ * cloning "method read barrier". This API can fail! If the frame has no
+ * callee, this API returns true with JSVAL_IS_VOID(*vp).
+ */
+extern JS_PUBLIC_API(JSBool)
+JS_GetValidFrameCalleeObject(JSContext *cx, JSStackFrame *fp, jsval *vp);
 
 /************************************************************************/
 
@@ -298,7 +411,7 @@ JS_EvaluateInStackFrame(JSContext *cx, JSStackFrame *fp,
 /************************************************************************/
 
 typedef struct JSPropertyDesc {
-    jsval           id;         /* primary id, a string or int */
+    jsval           id;         /* primary id, atomized string, or int */
     jsval           value;      /* property value */
     uint8           flags;      /* flags, see below */
     uint8           spare;      /* unused */
@@ -322,11 +435,13 @@ typedef struct JSPropertyDescArray {
     JSPropertyDesc  *array;     /* alloc'd by Get, freed by Put */
 } JSPropertyDescArray;
 
+typedef struct JSScopeProperty JSScopeProperty;
+
 extern JS_PUBLIC_API(JSScopeProperty *)
 JS_PropertyIterator(JSObject *obj, JSScopeProperty **iteratorp);
 
 extern JS_PUBLIC_API(JSBool)
-JS_GetPropertyDesc(JSContext *cx, JSObject *obj, JSScopeProperty *sprop,
+JS_GetPropertyDesc(JSContext *cx, JSObject *obj, JSScopeProperty *shape,
                    JSPropertyDesc *pd);
 
 extern JS_PUBLIC_API(JSBool)
@@ -334,20 +449,6 @@ JS_GetPropertyDescArray(JSContext *cx, JSObject *obj, JSPropertyDescArray *pda);
 
 extern JS_PUBLIC_API(void)
 JS_PutPropertyDescArray(JSContext *cx, JSPropertyDescArray *pda);
-
-/************************************************************************/
-
-extern JS_FRIEND_API(JSBool)
-js_GetPropertyByIdWithFakeFrame(JSContext *cx, JSObject *obj, JSObject *scopeobj, jsid id,
-                                jsval *vp);
-
-extern JS_FRIEND_API(JSBool)
-js_SetPropertyByIdWithFakeFrame(JSContext *cx, JSObject *obj, JSObject *scopeobj, jsid id,
-                                jsval *vp);
-
-extern JS_FRIEND_API(JSBool)
-js_CallFunctionValueWithFakeFrame(JSContext *cx, JSObject *obj, JSObject *scopeobj, jsval funval,
-                                  uintN argc, jsval *argv, jsval *rval);
 
 /************************************************************************/
 
@@ -362,9 +463,6 @@ JS_SetExecuteHook(JSRuntime *rt, JSInterpreterHook hook, void *closure);
 
 extern JS_PUBLIC_API(JSBool)
 JS_SetCallHook(JSRuntime *rt, JSInterpreterHook hook, void *closure);
-
-extern JS_PUBLIC_API(JSBool)
-JS_SetObjectHook(JSRuntime *rt, JSObjectHook hook, void *closure);
 
 extern JS_PUBLIC_API(JSBool)
 JS_SetThrowHook(JSRuntime *rt, JSThrowHook hook, void *closure);
@@ -438,6 +536,14 @@ JS_MakeSystemObject(JSContext *cx, JSObject *obj);
 
 /************************************************************************/
 
+extern JS_PUBLIC_API(JSObject *)
+JS_UnwrapObject(JSContext *cx, JSObject *obj);
+
+/************************************************************************/
+
+extern JS_FRIEND_API(void)
+js_RevertVersion(JSContext *cx);
+
 extern JS_PUBLIC_API(const JSDebugHooks *)
 JS_GetGlobalDebugHooks(JSRuntime *rt);
 
@@ -448,82 +554,72 @@ JS_SetContextDebugHooks(JSContext *cx, const JSDebugHooks *hooks);
 extern JS_PUBLIC_API(JSDebugHooks *)
 JS_ClearContextDebugHooks(JSContext *cx);
 
-#ifdef MOZ_SHARK
+extern JS_PUBLIC_API(JSBool)
+JS_StartProfiling();
+
+extern JS_PUBLIC_API(void)
+JS_StopProfiling();
 
 extern JS_PUBLIC_API(JSBool)
-JS_StartChudRemote();
-
-extern JS_PUBLIC_API(JSBool)
-JS_StopChudRemote();
-
-extern JS_PUBLIC_API(JSBool)
-JS_ConnectShark();
-
-extern JS_PUBLIC_API(JSBool)
-JS_DisconnectShark();
-
-extern JS_FRIEND_API(JSBool)
-js_StopShark(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-             jsval *rval);
-
-extern JS_FRIEND_API(JSBool)
-js_StartShark(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-              jsval *rval);
-
-extern JS_FRIEND_API(JSBool)
-js_ConnectShark(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-                jsval *rval);
-
-extern JS_FRIEND_API(JSBool)
-js_DisconnectShark(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-                   jsval *rval);
-
-#endif /* MOZ_SHARK */
+JS_DefineProfilingFunctions(JSContext *cx, JSObject *obj);
 
 #ifdef MOZ_CALLGRIND
 
 extern JS_FRIEND_API(JSBool)
-js_StopCallgrind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-                 jsval *rval);
+js_StopCallgrind(JSContext *cx, uintN argc, jsval *vp);
 
 extern JS_FRIEND_API(JSBool)
-js_StartCallgrind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-                  jsval *rval);
+js_StartCallgrind(JSContext *cx, uintN argc, jsval *vp);
 
 extern JS_FRIEND_API(JSBool)
-js_DumpCallgrind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-                 jsval *rval);
+js_DumpCallgrind(JSContext *cx, uintN argc, jsval *vp);
 
 #endif /* MOZ_CALLGRIND */
 
 #ifdef MOZ_VTUNE
 
 extern JS_FRIEND_API(JSBool)
-js_StartVtune(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-              jsval *rval);
+js_StartVtune(JSContext *cx, uintN argc, jsval *vp);
 
 extern JS_FRIEND_API(JSBool)
-js_StopVtune(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-             jsval *rval);
+js_StopVtune(JSContext *cx, uintN argc, jsval *vp);
 
 extern JS_FRIEND_API(JSBool)
-js_PauseVtune(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-              jsval *rval);
+js_PauseVtune(JSContext *cx, uintN argc, jsval *vp);
 
 extern JS_FRIEND_API(JSBool)
-js_ResumeVtune(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
-               jsval *rval);
+js_ResumeVtune(JSContext *cx, uintN argc, jsval *vp);
 
 #endif /* MOZ_VTUNE */
 
 #ifdef MOZ_TRACEVIS
 extern JS_FRIEND_API(JSBool)
-js_InitEthogram(JSContext *cx, JSObject *obj,
-                uintN argc, jsval *argv, jsval *rval);
+js_InitEthogram(JSContext *cx, uintN argc, jsval *vp);
 extern JS_FRIEND_API(JSBool)
-js_ShutdownEthogram(JSContext *cx, JSObject *obj,
-                    uintN argc, jsval *argv, jsval *rval);
+js_ShutdownEthogram(JSContext *cx, uintN argc, jsval *vp);
 #endif /* MOZ_TRACEVIS */
+
+#ifdef MOZ_TRACE_JSCALLS
+typedef void (*JSFunctionCallback)(const JSFunction *fun,
+                                   const JSScript *scr,
+                                   const JSContext *cx,
+                                   int entering);
+
+/*
+ * The callback is expected to be quick and noninvasive. It should not
+ * trigger interrupts, turn on debugging, or produce uncaught JS
+ * exceptions. The state of the stack and registers in the context
+ * cannot be relied upon, since this callback may be invoked directly
+ * from either JIT. The 'entering' field means we are entering a
+ * function if it is positive, leaving a function if it is zero or
+ * negative.
+ */
+extern JS_PUBLIC_API(void)
+JS_SetFunctionCallback(JSContext *cx, JSFunctionCallback fcb);
+
+extern JS_PUBLIC_API(JSFunctionCallback)
+JS_GetFunctionCallback(JSContext *cx);
+#endif /* MOZ_TRACE_JSCALLS */
 
 JS_END_EXTERN_C
 

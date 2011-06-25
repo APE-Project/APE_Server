@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-295052.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 295052;
 var summary = 'Do not crash when apply method is called on String.prototype.match';
@@ -45,6 +44,15 @@ var expect = 'No Crash';
 printBugNumber(BUGNUMBER);
 printStatus (summary);
 
-"".match.apply();
+try
+{
+  "".match.apply();
+  throw new Error("should have thrown for undefined this");
+}
+catch (e)
+{
+  assertEq(e instanceof TypeError, true,
+           "No TypeError for String.prototype.match");
+}
  
 reportCompare(expect, actual, summary);

@@ -372,16 +372,7 @@ static struct {
     jsbytecode apply6[36];
     jsbytecode apply7[41];
     jsbytecode apply8[46];
-    jsbytecode call0[7];
-    jsbytecode call1[7];
-    jsbytecode call2[7];
-    jsbytecode call3[7];
-    jsbytecode call4[7];
-    jsbytecode call5[7];
-    jsbytecode call6[7];
-    jsbytecode call7[7];
-    jsbytecode call8[7];
-} apply_imacros = {
+} funapply_imacros = {
     {
 /* 0*/  JSOP_PICK, 3,
 /* 2*/  JSOP_POP,
@@ -589,6 +580,18 @@ static struct {
 /*42*/  JSOP_CALL, 0, 8,
 /*45*/  JSOP_STOP,
     },
+};
+static struct {
+    jsbytecode call0[7];
+    jsbytecode call1[7];
+    jsbytecode call2[7];
+    jsbytecode call3[7];
+    jsbytecode call4[7];
+    jsbytecode call5[7];
+    jsbytecode call6[7];
+    jsbytecode call7[7];
+    jsbytecode call8[7];
+} funcall_imacros = {
     {
 /* 0*/  JSOP_SWAP,
 /* 1*/  JSOP_POP,
@@ -643,30 +646,6 @@ static struct {
 /* 2*/  JSOP_POP,
 /* 3*/  JSOP_CALL, 0, 7,
 /* 6*/  JSOP_STOP,
-    },
-};
-static struct {
-    jsbytecode toString[35];
-} objtostr_imacros = {
-    {
-/* 0*/  JSOP_DUP,
-/* 1*/  JSOP_DUP,
-/* 2*/  JSOP_GETPROP, 0, COMMON_ATOM_INDEX(valueOf),
-/* 5*/  JSOP_IFPRIMTOP, 0, 18,
-/* 8*/  JSOP_SWAP,
-/* 9*/  JSOP_STRING, 0, COMMON_TYPE_ATOM_INDEX(JSTYPE_VOID),
-/*12*/  JSOP_CALL, 0, 1,
-/*15*/  JSOP_IFPRIMTOP, 0, 17,
-/*18*/  JSOP_POP,
-/*19*/  JSOP_DUP,
-/*20*/  JSOP_GOTO, 0, 4,
-/*23*/  JSOP_POP,
-/*24*/  JSOP_CALLPROP, 0, COMMON_ATOM_INDEX(toString),
-/*27*/  JSOP_CALL, 0, 0,
-/*30*/  JSOP_PRIMTOP, (JSTYPE_VOID),
-/*32*/  JSOP_SWAP,
-/*33*/  JSOP_POP,
-/*34*/  JSOP_STOP,
     },
 };
 static struct {
@@ -773,7 +752,7 @@ uint8 js_opcode2extra[JSOP_LIMIT] = {
     0,  /* JSOP_ITER */
     0,  /* JSOP_MOREITER */
     0,  /* JSOP_ENDITER */
-    8,  /* JSOP_APPLY */
+    8,  /* JSOP_FUNAPPLY */
     0,  /* JSOP_SWAP */
     0,  /* JSOP_OBJECT */
     0,  /* JSOP_POP */
@@ -785,6 +764,8 @@ uint8 js_opcode2extra[JSOP_LIMIT] = {
     0,  /* JSOP_SETLOCAL */
     0,  /* JSOP_UINT16 */
     0,  /* JSOP_NEWINIT */
+    0,  /* JSOP_NEWARRAY */
+    0,  /* JSOP_NEWOBJECT */
     0,  /* JSOP_ENDINIT */
     0,  /* JSOP_INITPROP */
     0,  /* JSOP_INITELEM */
@@ -829,8 +810,8 @@ uint8 js_opcode2extra[JSOP_LIMIT] = {
     0,  /* JSOP_PICK */
     0,  /* JSOP_TRY */
     0,  /* JSOP_FINALLY */
-    0,  /* JSOP_GETDSLOT */
-    0,  /* JSOP_CALLDSLOT */
+    0,  /* JSOP_GETFCSLOT */
+    0,  /* JSOP_CALLFCSLOT */
     0,  /* JSOP_ARGSUB */
     0,  /* JSOP_ARGCNT */
     0,  /* JSOP_DEFLOCALFUN */
@@ -849,12 +830,12 @@ uint8 js_opcode2extra[JSOP_LIMIT] = {
     0,  /* JSOP_THROWING */
     0,  /* JSOP_SETRVAL */
     0,  /* JSOP_RETRVAL */
-    0,  /* JSOP_GETGVAR */
-    0,  /* JSOP_SETGVAR */
-    0,  /* JSOP_INCGVAR */
-    0,  /* JSOP_DECGVAR */
-    0,  /* JSOP_GVARINC */
-    0,  /* JSOP_GVARDEC */
+    0,  /* JSOP_GETGNAME */
+    0,  /* JSOP_SETGNAME */
+    0,  /* JSOP_INCGNAME */
+    0,  /* JSOP_DECGNAME */
+    0,  /* JSOP_GNAMEINC */
+    0,  /* JSOP_GNAMEDEC */
     0,  /* JSOP_REGEXP */
     0,  /* JSOP_DEFXMLNS */
     0,  /* JSOP_ANYNAME */
@@ -875,14 +856,14 @@ uint8 js_opcode2extra[JSOP_LIMIT] = {
     0,  /* JSOP_TOXMLLIST */
     0,  /* JSOP_XMLTAGEXPR */
     0,  /* JSOP_XMLELTEXPR */
-    0,  /* JSOP_UNUSED180 */
+    0,  /* JSOP_NOTRACE */
     0,  /* JSOP_XMLCDATA */
     0,  /* JSOP_XMLCOMMENT */
     0,  /* JSOP_XMLPI */
-    2,  /* JSOP_CALLPROP */
-    0,  /* JSOP_GETUPVAR */
-    0,  /* JSOP_CALLUPVAR */
     0,  /* JSOP_DELDESC */
+    2,  /* JSOP_CALLPROP */
+    0,  /* JSOP_BLOCKCHAIN */
+    0,  /* JSOP_NULLBLOCKCHAIN */
     0,  /* JSOP_UINT24 */
     0,  /* JSOP_INDEXBASE */
     0,  /* JSOP_RESETBASE */
@@ -910,14 +891,13 @@ uint8 js_opcode2extra[JSOP_LIMIT] = {
     0,  /* JSOP_INDEXBASE1 */
     0,  /* JSOP_INDEXBASE2 */
     0,  /* JSOP_INDEXBASE3 */
-    0,  /* JSOP_CALLGVAR */
+    0,  /* JSOP_CALLGNAME */
     0,  /* JSOP_CALLLOCAL */
     0,  /* JSOP_CALLARG */
-    0,  /* JSOP_UNUSED218 */
+    0,  /* JSOP_BINDGNAME */
     0,  /* JSOP_INT8 */
     0,  /* JSOP_INT32 */
     0,  /* JSOP_LENGTH */
-    0,  /* JSOP_NEWARRAY */
     0,  /* JSOP_HOLE */
     0,  /* JSOP_DEFFUN_FC */
     0,  /* JSOP_DEFLOCALFUN_FC */
@@ -929,13 +909,15 @@ uint8 js_opcode2extra[JSOP_LIMIT] = {
     0,  /* JSOP_DEFFUN_DBGFC */
     0,  /* JSOP_DEFLOCALFUN_DBGFC */
     0,  /* JSOP_LAMBDA_DBGFC */
-    0,  /* JSOP_CONCATN */
     0,  /* JSOP_SETMETHOD */
     0,  /* JSOP_INITMETHOD */
     0,  /* JSOP_UNBRAND */
     0,  /* JSOP_UNBRANDTHIS */
     0,  /* JSOP_SHARPINIT */
-    3,  /* JSOP_OBJTOSTR */
+    0,  /* JSOP_GETGLOBAL */
+    0,  /* JSOP_CALLGLOBAL */
+    0,  /* JSOP_FUNCALL */
+    0,  /* JSOP_FORGNAME */
 };
 #define JSOP_IS_IMACOP(x) (0 \
  || x == JSOP_BITOR \
@@ -963,13 +945,13 @@ uint8 js_opcode2extra[JSOP_LIMIT] = {
  || x == JSOP_ELEMDEC \
  || x == JSOP_GETPROP \
  || x == JSOP_CALL \
- || x == JSOP_APPLY \
+ || x == JSOP_FUNAPPLY \
  || x == JSOP_NEW \
  || x == JSOP_CALLPROP \
  || x == JSOP_GETTHISPROP \
  || x == JSOP_GETARGPROP \
  || x == JSOP_GETLOCALPROP \
- || x == JSOP_OBJTOSTR \
+ || x == JSOP_FUNCALL \
 )
 jsbytecode*
 js_GetImacroStart(jsbytecode* pc) {
@@ -988,25 +970,24 @@ js_GetImacroStart(jsbytecode* pc) {
     if (size_t(pc - decelem_imacros.elemdec) < 15) return decelem_imacros.elemdec;
     if (size_t(pc - call_imacros.String) < 38) return call_imacros.String;
     if (size_t(pc - new_imacros.String) < 38) return new_imacros.String;
-    if (size_t(pc - apply_imacros.apply0) < 8) return apply_imacros.apply0;
-    if (size_t(pc - apply_imacros.apply1) < 12) return apply_imacros.apply1;
-    if (size_t(pc - apply_imacros.apply2) < 16) return apply_imacros.apply2;
-    if (size_t(pc - apply_imacros.apply3) < 21) return apply_imacros.apply3;
-    if (size_t(pc - apply_imacros.apply4) < 26) return apply_imacros.apply4;
-    if (size_t(pc - apply_imacros.apply5) < 31) return apply_imacros.apply5;
-    if (size_t(pc - apply_imacros.apply6) < 36) return apply_imacros.apply6;
-    if (size_t(pc - apply_imacros.apply7) < 41) return apply_imacros.apply7;
-    if (size_t(pc - apply_imacros.apply8) < 46) return apply_imacros.apply8;
-    if (size_t(pc - apply_imacros.call0) < 7) return apply_imacros.call0;
-    if (size_t(pc - apply_imacros.call1) < 7) return apply_imacros.call1;
-    if (size_t(pc - apply_imacros.call2) < 7) return apply_imacros.call2;
-    if (size_t(pc - apply_imacros.call3) < 7) return apply_imacros.call3;
-    if (size_t(pc - apply_imacros.call4) < 7) return apply_imacros.call4;
-    if (size_t(pc - apply_imacros.call5) < 7) return apply_imacros.call5;
-    if (size_t(pc - apply_imacros.call6) < 7) return apply_imacros.call6;
-    if (size_t(pc - apply_imacros.call7) < 7) return apply_imacros.call7;
-    if (size_t(pc - apply_imacros.call8) < 7) return apply_imacros.call8;
-    if (size_t(pc - objtostr_imacros.toString) < 35) return objtostr_imacros.toString;
+    if (size_t(pc - funapply_imacros.apply0) < 8) return funapply_imacros.apply0;
+    if (size_t(pc - funapply_imacros.apply1) < 12) return funapply_imacros.apply1;
+    if (size_t(pc - funapply_imacros.apply2) < 16) return funapply_imacros.apply2;
+    if (size_t(pc - funapply_imacros.apply3) < 21) return funapply_imacros.apply3;
+    if (size_t(pc - funapply_imacros.apply4) < 26) return funapply_imacros.apply4;
+    if (size_t(pc - funapply_imacros.apply5) < 31) return funapply_imacros.apply5;
+    if (size_t(pc - funapply_imacros.apply6) < 36) return funapply_imacros.apply6;
+    if (size_t(pc - funapply_imacros.apply7) < 41) return funapply_imacros.apply7;
+    if (size_t(pc - funapply_imacros.apply8) < 46) return funapply_imacros.apply8;
+    if (size_t(pc - funcall_imacros.call0) < 7) return funcall_imacros.call0;
+    if (size_t(pc - funcall_imacros.call1) < 7) return funcall_imacros.call1;
+    if (size_t(pc - funcall_imacros.call2) < 7) return funcall_imacros.call2;
+    if (size_t(pc - funcall_imacros.call3) < 7) return funcall_imacros.call3;
+    if (size_t(pc - funcall_imacros.call4) < 7) return funcall_imacros.call4;
+    if (size_t(pc - funcall_imacros.call5) < 7) return funcall_imacros.call5;
+    if (size_t(pc - funcall_imacros.call6) < 7) return funcall_imacros.call6;
+    if (size_t(pc - funcall_imacros.call7) < 7) return funcall_imacros.call7;
+    if (size_t(pc - funcall_imacros.call8) < 7) return funcall_imacros.call8;
     if (size_t(pc - getprop_imacros.scriptgetter) < 4) return getprop_imacros.scriptgetter;
     if (size_t(pc - callprop_imacros.scriptgetter) < 5) return callprop_imacros.scriptgetter;
     if (size_t(pc - getthisprop_imacros.scriptgetter) < 4) return getthisprop_imacros.scriptgetter;

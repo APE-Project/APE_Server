@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-452498-119.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 452498;
 var summary = 'TM: upvar2 regression tests';
@@ -79,7 +78,7 @@ function test()
     function f() {
     var x;
     (function(){})();
-    eval("if(x|=[]) {const x; }");
+    eval("if(x|=[]) {var x; }");
   }
   f();
 

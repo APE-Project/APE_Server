@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-429248.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 429248;
 var summary = 'Do not assert: 0';
@@ -55,8 +54,9 @@ function test()
  
   function c() { do{}while(0) }
 
-  if (typeof trap == 'function')
+  if (typeof trap == 'function' && typeof setDebug == 'function')
   {
+    setDebug(true);
     trap(c, 0, "");
   }
   c + '';

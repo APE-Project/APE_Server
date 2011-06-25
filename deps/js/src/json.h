@@ -37,26 +37,25 @@
 
 #ifndef json_h___
 #define json_h___
-/*
- * JS JSON functions.
- */
-#include "jsscan.h"
+
+#include "jsprvtd.h"
+#include "jspubtd.h"
+#include "jsvalue.h"
+#include "jsvector.h"
 
 #define JSON_MAX_DEPTH  2048
 #define JSON_PARSER_BUFSIZE 1024
 
-JS_BEGIN_EXTERN_C
-
-extern JSClass js_JSONClass;
+extern js::Class js_JSONClass;
 
 extern JSObject *
 js_InitJSONClass(JSContext *cx, JSObject *obj);
 
 extern JSBool
-js_Stringify(JSContext *cx, jsval *vp, JSObject *replacer, jsval space,
-             JSCharBuffer &cb);
+js_Stringify(JSContext *cx, js::Value *vp, JSObject *replacer,
+             const js::Value &space, js::StringBuffer &sb);
 
-extern JSBool js_TryJSON(JSContext *cx, jsval *vp);
+extern JSBool js_TryJSON(JSContext *cx, js::Value *vp);
 
 /* JSON parsing states; most permit leading whitespace. */
 enum JSONParserState {
@@ -66,23 +65,26 @@ enum JSONParserState {
     /* JSON fully processed, expecting only trailing whitespace. */
     JSON_PARSE_STATE_FINISHED,
 
-    /* Unused: to be removed in bug 564621. */
-    JSON_PARSE_STATE_OBJECT_VALUE,
-
     /* Start of JSON value. */
     JSON_PARSE_STATE_VALUE,
 
-    /* In object, at start of pair, at comma, or at closing brace. */
-    JSON_PARSE_STATE_OBJECT,
+    /* Start of first key/value pair in object, or at }. */
+    JSON_PARSE_STATE_OBJECT_INITIAL_PAIR,
 
-    /* At start of pair within object, or at closing brace. */
+    /* Start of subsequent key/value pair in object, after delimiting comma. */
     JSON_PARSE_STATE_OBJECT_PAIR,
 
     /* At : in key/value pair in object. */
     JSON_PARSE_STATE_OBJECT_IN_PAIR,
 
-    /* In array, at start of element, at comma, or at closing bracket. */
-    JSON_PARSE_STATE_ARRAY,
+    /* Immediately after key/value pair in object: at , or }. */
+    JSON_PARSE_STATE_OBJECT_AFTER_PAIR,
+
+    /* Start of first element of array or at ]. */
+    JSON_PARSE_STATE_ARRAY_INITIAL_VALUE,
+
+    /* Immediately after element in array: at , or ]. */
+    JSON_PARSE_STATE_ARRAY_AFTER_ELEMENT,
 
 
     /* The following states allow no leading whitespace. */
@@ -103,24 +105,33 @@ enum JSONParserState {
     JSON_PARSE_STATE_KEYWORD
 };
 
-enum JSONDataType {
-    JSON_DATA_STRING,
-    JSON_DATA_KEYSTRING,
-    JSON_DATA_NUMBER,
-    JSON_DATA_KEYWORD
-};
-
 struct JSONParser;
 
 extern JSONParser *
-js_BeginJSONParse(JSContext *cx, jsval *rootVal);
+js_BeginJSONParse(JSContext *cx, js::Value *rootVal, bool suppressErrors = false);
 
-extern JSBool
-js_ConsumeJSONText(JSContext *cx, JSONParser *jp, const jschar *data, uint32 len);
+/* Aargh, Windows. */
+#ifdef STRICT
+#undef STRICT
+#endif
+#ifdef LEGACY
+#undef LEGACY
+#endif
+
+/*
+ * The type of JSON decoding to perform.  Strict decoding is to-the-spec;
+ * legacy decoding accepts a few non-JSON syntaxes historically accepted by the
+ * implementation.  (Full description of these deviations is deliberately
+ * omitted.)  New users should use strict decoding rather than legacy decoding,
+ * as legacy decoding might be removed at a future time.
+ */
+enum DecodingMode { STRICT, LEGACY };
+
+extern JS_FRIEND_API(JSBool)
+js_ConsumeJSONText(JSContext *cx, JSONParser *jp, const jschar *data, uint32 len,
+                   DecodingMode decodingMode = STRICT);
 
 extern bool
-js_FinishJSONParse(JSContext *cx, JSONParser *jp, jsval reviver);
-
-JS_END_EXTERN_C
+js_FinishJSONParse(JSContext *cx, JSONParser *jp, const js::Value &reviver);
 
 #endif /* json_h___ */

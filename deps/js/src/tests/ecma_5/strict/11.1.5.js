@@ -94,51 +94,76 @@ assertEq(testLenientAndStrict('({a:1, b:1, c:1, d:1, e:1, f:1, g:1, h:1, i:1, j:
  * appropriate.
  */
 assertEq(testLenientAndStrict('({get x() {}, x:1})',
-                              parsesSuccessfully,
+                              parseRaisesException(SyntaxError),
                               parseRaisesException(SyntaxError)),
          true);
 
 assertEq(testLenientAndStrict('({x:1, get x() {}})',
-                              parsesSuccessfully,
+                              parseRaisesException(SyntaxError),
                               parseRaisesException(SyntaxError)),
          true);
 
-assertEq(testLenientAndStrict('({set x() {}, x:1})',
-                              parsesSuccessfully,
+assertEq(testLenientAndStrict('({set x(q) {}, x:1})',
+                              parseRaisesException(SyntaxError),
                               parseRaisesException(SyntaxError)),
          true);
 
-assertEq(testLenientAndStrict('({x:1, set x() {}})',
-                              parsesSuccessfully,
+assertEq(testLenientAndStrict('({x:1, set x(q) {}})',
+                              parseRaisesException(SyntaxError),
                               parseRaisesException(SyntaxError)),
          true);
 
-assertEq(testLenientAndStrict('({get x() {}, set x() {}})',
+assertEq(testLenientAndStrict('({1:1, set 1(q) {}})',
+                              parseRaisesException(SyntaxError),
+                              parseRaisesException(SyntaxError)),
+         true);
+
+assertEq(testLenientAndStrict('({set 1(q) {}, 1:1})',
+                              parseRaisesException(SyntaxError),
+                              parseRaisesException(SyntaxError)),
+         true);
+
+assertEq(testLenientAndStrict('({"1":1, set 1(q) {}})',
+                              parseRaisesException(SyntaxError),
+                              parseRaisesException(SyntaxError)),
+         true);
+
+assertEq(testLenientAndStrict('({set 1(q) {}, "1":1})',
+                              parseRaisesException(SyntaxError),
+                              parseRaisesException(SyntaxError)),
+         true);
+
+assertEq(testLenientAndStrict('({get x() {}, set x(q) {}})',
                               parsesSuccessfully,
                               parsesSuccessfully),
          true);
 
-assertEq(testLenientAndStrict('({set x() {}, get x() {}})',
+assertEq(testLenientAndStrict('({set x(q) {}, get x() {}})',
                               parsesSuccessfully,
                               parsesSuccessfully),
          true);
 
-assertEq(testLenientAndStrict('({get x() {}, set x() {}, x:1})',
-                              parsesSuccessfully,
+assertEq(testLenientAndStrict('({get x() {}, set x(q) {}, x:1})',
+                              parseRaisesException(SyntaxError),
                               parseRaisesException(SyntaxError)),
          true);
 
-assertEq(testLenientAndStrict('({set x() {}, get x() {}, x:1})',
-                              parsesSuccessfully,
+assertEq(testLenientAndStrict('({set x(q) {}, get x() {}, x:1})',
+                              parseRaisesException(SyntaxError),
                               parseRaisesException(SyntaxError)),
          true);
 
 assertEq(testLenientAndStrict('({get x() {}, get x() {}})',
-                              parsesSuccessfully,
+                              parseRaisesException(SyntaxError),
                               parseRaisesException(SyntaxError)),
          true);
 
-assertEq(testLenientAndStrict('({get x() {}, set x() {}, y:1})',
+assertEq(testLenientAndStrict('({set x() {}, set x() {}})',
+                              parseRaisesException(SyntaxError),
+                              parseRaisesException(SyntaxError)),
+         true);
+
+assertEq(testLenientAndStrict('({get x() {}, set x(q) {}, y:1})',
                               parsesSuccessfully,
                               parsesSuccessfully),
          true);

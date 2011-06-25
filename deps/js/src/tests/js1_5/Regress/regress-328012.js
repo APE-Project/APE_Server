@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-328012.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 328012;
 var summary = 'Content PropertyIterator should not root in chrome';
@@ -46,7 +45,7 @@ var expect = 'No Error';
 printBugNumber(BUGNUMBER);
 printStatus (summary);
 
-if (typeof focus != 'undefined')
+if (typeof focus != 'undefined' && focus.prototype)
 {
   try
   {

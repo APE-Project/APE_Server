@@ -64,7 +64,7 @@ using namespace std;
 /* Allocator SPI implementation. */
 
 void*
-nanojit::Allocator::allocChunk(size_t nbytes)
+nanojit::Allocator::allocChunk(size_t nbytes, bool /*fallible*/)
 {
     void *p = malloc(nbytes);
     if (!p)
@@ -95,6 +95,10 @@ nanojit::StackFilter::getTop(LIns*)
     return 0;
 }
 
+// We lump everything into a single access region for lirasm.
+static const AccSet ACCSET_OTHER = (1 << 0);
+static const uint8_t LIRASM_NUM_USED_ACCS = 1;
+
 #if defined NJ_VERBOSE
 void
 nanojit::LInsPrinter::formatGuard(InsBuf *buf, LIns *ins)
@@ -124,10 +128,30 @@ nanojit::LInsPrinter::formatGuardXov(InsBuf *buf, LIns *ins)
             (long)x->line,
             ins->record()->profGuardID);
 }
+
+const char*
+nanojit::LInsPrinter::accNames[] = {
+    "o",    // (1 << 0) == ACCSET_OTHER
+    "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",   //  1..10 (unused)
+    "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",   // 11..20 (unused)
+    "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",   // 21..30 (unused)
+    "?"                                                 //     31 (unused)
+};
+#endif
+
+#ifdef DEBUG
+void ValidateWriter::checkAccSet(LOpcode op, LIns* base, int32_t disp, AccSet accSet)
+{
+    (void)op;
+    (void)base;
+    (void)disp;
+    NanoAssert(accSet == ACCSET_OTHER);
+}
 #endif
 
 typedef int32_t (FASTCALL *RetInt)();
-typedef double (FASTCALL *RetFloat)();
+typedef int64_t (FASTCALL *RetQuad)();
+typedef double (FASTCALL *RetDouble)();
 typedef GuardRecord* (FASTCALL *RetGuard)();
 
 struct Function {
@@ -136,9 +160,12 @@ struct Function {
 };
 
 enum ReturnType {
-    RT_INT32 = 1,
-    RT_FLOAT = 2,
-    RT_GUARD = 4
+    RT_INT = 1,
+#ifdef NANOJIT_64BIT
+    RT_QUAD = 2,
+#endif
+    RT_DOUBLE = 4,
+    RT_GUARD = 8
 };
 
 #ifdef DEBUG
@@ -148,7 +175,7 @@ enum ReturnType {
 #endif
 
 #define CI(name, args) \
-    {(uintptr_t) (&name), args, nanojit::ABI_CDECL, /*isPure*/0, ACC_STORE_ANY \
+    {(uintptr_t) (&name), args, nanojit::ABI_CDECL, /*isPure*/0, ACCSET_STORE_ANY \
      DEBUG_ONLY_NAME(name)}
 
 #define FN(name, args) \
@@ -239,8 +266,11 @@ private:
 class LirasmFragment {
 public:
     union {
-        RetFloat rfloat;
         RetInt rint;
+#ifdef NANOJIT_64BIT
+        RetQuad rquad;
+#endif
+        RetDouble rdouble;
         RetGuard rguard;
     };
     ReturnType mReturnType;
@@ -345,11 +375,43 @@ double sinFn(double d) {
 }
 #define sin sinFn
 
+double calld1(double x, double i, double y, double l, double x1, double i1, double y1, double l1) { 
+    return x + i * y - l + x1 / i1 - y1 * l1; 
+}
+
+// The calling tests with mixed argument types are sensible for all platforms, but they highlight
+// the differences between the supported ABIs on ARM.
+
+double callid1(int i, double x, double y, int j, int k, double z) {
+    return (x + y + z) / (double)(i + j + k);
+}
+
+double callid2(int i, int j, int k, double x) {
+    return x / (double)(i + j + k);
+}
+
+double callid3(int i, int j, double x, int k, double y, double z) {
+    return (x + y + z) / (double)(i + j + k);
+}
+
+// Simple print function for testing void calls.
+void printi(int x) {
+    cout << x << endl;
+}
+
 Function functions[] = {
-    FN(puts,   CallInfo::typeSig1(ARGTYPE_I, ARGTYPE_P)),
-    FN(sin,    CallInfo::typeSig1(ARGTYPE_D, ARGTYPE_D)),
-    FN(malloc, CallInfo::typeSig1(ARGTYPE_P, ARGTYPE_P)),
-    FN(free,   CallInfo::typeSig1(ARGTYPE_V, ARGTYPE_P)),
+    FN(puts,    CallInfo::typeSig1(ARGTYPE_I, ARGTYPE_P)),
+    FN(sin,     CallInfo::typeSig1(ARGTYPE_D, ARGTYPE_D)),
+    FN(malloc,  CallInfo::typeSig1(ARGTYPE_P, ARGTYPE_P)),
+    FN(free,    CallInfo::typeSig1(ARGTYPE_V, ARGTYPE_P)),
+    FN(calld1,  CallInfo::typeSig8(ARGTYPE_D, ARGTYPE_D, ARGTYPE_D, ARGTYPE_D,
+                                   ARGTYPE_D, ARGTYPE_D, ARGTYPE_D, ARGTYPE_D, ARGTYPE_D)),
+    FN(callid1, CallInfo::typeSig6(ARGTYPE_D, ARGTYPE_I, ARGTYPE_D, ARGTYPE_D,
+                                   ARGTYPE_I, ARGTYPE_I, ARGTYPE_D)),
+    FN(callid2, CallInfo::typeSig4(ARGTYPE_D, ARGTYPE_I, ARGTYPE_I, ARGTYPE_I, ARGTYPE_D)),
+    FN(callid3, CallInfo::typeSig6(ARGTYPE_D, ARGTYPE_I, ARGTYPE_I, ARGTYPE_D,
+                                   ARGTYPE_I, ARGTYPE_D, ARGTYPE_D)),
+    FN(printi,  CallInfo::typeSig1(ARGTYPE_V, ARGTYPE_I)),
 };
 
 template<typename out, typename in> out
@@ -504,7 +566,7 @@ FragmentAssembler::FragmentAssembler(Lirasm &parent, const string &fragmentName,
     }
 #endif
     if (optimize) {
-        mLir = mCseFilter = new CseFilter(mLir, mParent.mAlloc);
+        mLir = mCseFilter = new CseFilter(mLir, LIRASM_NUM_USED_ACCS, mParent.mAlloc);
     }
 #if NJ_SOFTFLOAT_SUPPORTED
     if (avmplus::AvmCore::config.soft_float) {
@@ -610,7 +672,7 @@ FragmentAssembler::assemble_load()
         mTokens[1].find_first_of("0123456789") == 0) {
         return mLir->insLoad(mOpcode,
                              ref(mTokens[0]),
-                             immI(mTokens[1]), ACC_LOAD_ANY);
+                             immI(mTokens[1]), ACCSET_OTHER);
     }
     bad("immediate offset required for load");
     return NULL;  // not reached
@@ -683,12 +745,13 @@ FragmentAssembler::assemble_call(const string &op)
         }
 
         // Select return type from opcode.
-        ArgType retType = ARGTYPE_V;
-        if      (mOpcode == LIR_calli) retType = ARGTYPE_I;
-        else if (mOpcode == LIR_calld) retType = ARGTYPE_D;
+        ArgType retType = ARGTYPE_P;
+        if      (mOpcode == LIR_callv) retType = ARGTYPE_V;
+        else if (mOpcode == LIR_calli) retType = ARGTYPE_I;
 #ifdef NANOJIT_64BIT
         else if (mOpcode == LIR_callq) retType = ARGTYPE_Q;
 #endif
+        else if (mOpcode == LIR_calld) retType = ARGTYPE_D;
         else                           nyi("callh");
         ci->_typesig = CallInfo::typeSigN(retType, argc, argTypes);
     }
@@ -788,9 +851,14 @@ FragmentAssembler::endFragment()
     if (mReturnTypeBits == 0) {
         cerr << "warning: no return type in fragment '"
              << mFragName << "'" << endl;
-    }
-    if (mReturnTypeBits != RT_INT32 && mReturnTypeBits != RT_FLOAT &&
-        mReturnTypeBits != RT_GUARD) {
+
+    } else if (mReturnTypeBits != RT_INT && 
+#ifdef NANOJIT_64BIT
+               mReturnTypeBits != RT_QUAD &&
+#endif
+               mReturnTypeBits != RT_DOUBLE &&
+               mReturnTypeBits != RT_GUARD)
+    {
         cerr << "warning: multiple return types in fragment '"
              << mFragName << "'" << endl;
     }
@@ -804,7 +872,7 @@ FragmentAssembler::endFragment()
     if (mParent.mAssm.error() != nanojit::None) {
         cerr << "error during assembly: ";
         switch (mParent.mAssm.error()) {
-          case nanojit::ConditionalBranchTooFar: cerr << "ConditionalBranchTooFar"; break;
+          case nanojit::BranchTooFar: cerr << "BranchTooFar"; break;
           case nanojit::StackFull: cerr << "StackFull"; break;
           case nanojit::UnknownBranch:  cerr << "UnknownBranch"; break;
           case nanojit::None: cerr << "None"; break;
@@ -818,17 +886,26 @@ FragmentAssembler::endFragment()
     f = &mParent.mFragments[mFragName];
 
     switch (mReturnTypeBits) {
+    case RT_INT:
+        f->rint = (RetInt)((uintptr_t)mFragment->code());
+        f->mReturnType = RT_INT;
+        break;
+#ifdef NANOJIT_64BIT
+    case RT_QUAD:
+        f->rquad = (RetQuad)((uintptr_t)mFragment->code());
+        f->mReturnType = RT_QUAD;
+        break;
+#endif
+    case RT_DOUBLE:
+        f->rdouble = (RetDouble)((uintptr_t)mFragment->code());
+        f->mReturnType = RT_DOUBLE;
+        break;
     case RT_GUARD:
         f->rguard = (RetGuard)((uintptr_t)mFragment->code());
         f->mReturnType = RT_GUARD;
         break;
-    case RT_FLOAT:
-        f->rfloat = (RetFloat)((uintptr_t)mFragment->code());
-        f->mReturnType = RT_FLOAT;
-        break;
     default:
-        f->rint = (RetInt)((uintptr_t)mFragment->code());
-        f->mReturnType = RT_INT32;
+        NanoAssert(0);
         break;
     }
 
@@ -948,6 +1025,8 @@ FragmentAssembler::assembleFragment(LirTokenStream &in, bool implicitBegin, cons
           CASE64(LIR_q2i:)
           CASE64(LIR_i2q:)
           CASE64(LIR_ui2uq:)
+          CASE64(LIR_dasq:)
+          CASE64(LIR_qasd:)
           case LIR_i2d:
           case LIR_ui2d:
           case LIR_d2i:
@@ -970,6 +1049,7 @@ FragmentAssembler::assembleFragment(LirTokenStream &in, bool implicitBegin, cons
           case LIR_muld:
           case LIR_divd:
           CASE64(LIR_addq:)
+          CASE64(LIR_subq:)
           case LIR_andi:
           case LIR_ori:
           case LIR_xori:
@@ -1014,6 +1094,7 @@ FragmentAssembler::assembleFragment(LirTokenStream &in, bool implicitBegin, cons
 
           case LIR_cmovi:
           CASE64(LIR_cmovq:)
+          case LIR_cmovd:
             need(3);
             ins = mLir->ins3(mOpcode,
                              ref(mTokens[0]),
@@ -1058,7 +1139,7 @@ FragmentAssembler::assembleFragment(LirTokenStream &in, bool implicitBegin, cons
             need(3);
             ins = mLir->insStore(mOpcode, ref(mTokens[0]),
                                   ref(mTokens[1]),
-                                  immI(mTokens[2]), ACC_STORE_ANY);
+                                  immI(mTokens[2]), ACCSET_OTHER);
             break;
 
 #if NJ_EXPANDED_LOADSTORE_SUPPORTED 
@@ -1117,19 +1198,26 @@ FragmentAssembler::assembleFragment(LirTokenStream &in, bool implicitBegin, cons
             ins = assemble_jump_jov();
             break;
 
+          case LIR_callv:
           case LIR_calli:
           CASESF(LIR_hcalli:)
-          case LIR_calld:
           CASE64(LIR_callq:)
+          case LIR_calld:
             ins = assemble_call(op);
             break;
 
           case LIR_reti:
-            ins = assemble_ret(RT_INT32);
+            ins = assemble_ret(RT_INT);
             break;
 
+#ifdef NANOJIT_64BIT
+          case LIR_retq:
+            ins = assemble_ret(RT_QUAD);
+            break;
+#endif
+
           case LIR_retd:
-            ins = assemble_ret(RT_FLOAT);
+            ins = assemble_ret(RT_DOUBLE);
             break;
 
           case LIR_label:
@@ -1143,7 +1231,6 @@ FragmentAssembler::assembleFragment(LirTokenStream &in, bool implicitBegin, cons
           case LIR_line:
           case LIR_xtbl:
           case LIR_jtbl:
-          CASE64(LIR_retq:)
             nyi(op);
             break;
 
@@ -1310,8 +1397,8 @@ const CallInfo ci_V_IQF = CI(f_V_IQF, CallInfo::typeSig3(ARGTYPE_V, ARGTYPE_I, A
 // - LIR_modd (not implemented in NJ backends)
 //
 // Other limitations:
-// - Loads always use accSet==ACC_LOAD_ANY
-// - Stores always use accSet==ACC_STORE_ANY
+// - Loads always use accSet==ACCSET_OTHER
+// - Stores always use accSet==ACCSET_OTHER
 //
 void
 FragmentAssembler::assembleRandomFragment(int nIns)
@@ -1374,6 +1461,9 @@ FragmentAssembler::assembleRandomFragment(int nIns)
     Q_BQQ_ops.push_back(LIR_cmovq);
 #endif
 
+    vector<LOpcode> D_BDD_ops;
+    D_BDD_ops.push_back(LIR_cmovd);
+
     vector<LOpcode> B_II_ops;
     B_II_ops.push_back(LIR_eqi);
     B_II_ops.push_back(LIR_lti);
@@ -1415,15 +1505,40 @@ FragmentAssembler::assembleRandomFragment(int nIns)
 #endif
 
     vector<LOpcode> D_I_ops;
+#if !NJ_SOFTFLOAT_SUPPORTED
+    // Don't emit LIR_{ui,i}2d for soft-float platforms because the soft-float filter removes them.
     D_I_ops.push_back(LIR_i2d);
     D_I_ops.push_back(LIR_ui2d);
+#elif defined(NANOJIT_ARM)
+    // The ARM back-end can detect FP support at run-time.
+    if (avmplus::AvmCore::config.arm_vfp) {
+        D_I_ops.push_back(LIR_i2d);
+        D_I_ops.push_back(LIR_ui2d);
+    }
+#endif
 
     vector<LOpcode> I_D_ops;
 #if NJ_SOFTFLOAT_SUPPORTED
     I_D_ops.push_back(LIR_dlo2i);
     I_D_ops.push_back(LIR_dhi2i);
 #endif
+#if !NJ_SOFTFLOAT_SUPPORTED
+    // Don't emit LIR_d2i for soft-float platforms because the soft-float filter removes it.
     I_D_ops.push_back(LIR_d2i);
+#elif defined(NANOJIT_ARM)
+    // The ARM back-end can detect FP support at run-time.
+    if (avmplus::AvmCore::config.arm_vfp) {
+        I_D_ops.push_back(LIR_d2i);
+    }
+#endif
+
+#ifdef NANOJIT_64BIT
+    vector<LOpcode> Q_D_ops;
+    Q_D_ops.push_back(LIR_dasq);
+
+    vector<LOpcode> D_Q_ops;
+    D_Q_ops.push_back(LIR_qasd);
+#endif
 
     vector<LOpcode> D_II_ops;
 #if NJ_SOFTFLOAT_SUPPORTED
@@ -1707,6 +1822,14 @@ FragmentAssembler::assembleRandomFragment(int nIns)
             break;
 #endif
 
+        case LOP_D_BDD:
+            if (!Bs.empty() && !Ds.empty()) {
+                ins = mLir->ins3(rndPick(D_BDD_ops), rndPick(Bs), rndPick(Ds), rndPick(Ds));
+                addOrReplace(Ds, ins);
+                n++;
+            }
+            break;
+
         case LOP_B_II:
            if (!Is.empty()) {
                ins = mLir->ins2(rndPick(B_II_ops), rndPick(Is), rndPick(Is));
@@ -1748,7 +1871,7 @@ FragmentAssembler::assembleRandomFragment(int nIns)
 #endif
 
         case LOP_D_I:
-            if (!Is.empty()) {
+            if (!Is.empty() && !D_I_ops.empty()) {
                 ins = mLir->ins1(rndPick(D_I_ops), rndPick(Is));
                 addOrReplace(Ds, ins);
                 n++;
@@ -1776,6 +1899,24 @@ FragmentAssembler::assembleRandomFragment(int nIns)
 #endif
             break;
 
+#if defined NANOJIT_X64
+        case LOP_Q_D:
+            if (!Ds.empty()) {
+                ins = mLir->ins1(rndPick(Q_D_ops), rndPick(Ds));
+                addOrReplace(Qs, ins);
+                n++;
+            }
+            break;
+
+        case LOP_D_Q:
+            if (!Qs.empty()) {
+                ins = mLir->ins1(rndPick(D_Q_ops), rndPick(Qs));
+                addOrReplace(Ds, ins);
+                n++;
+            }
+            break;
+#endif
+
         case LOP_D_II:
             if (!Is.empty() && !D_II_ops.empty()) {
                 ins = mLir->ins2(rndPick(D_II_ops), rndPick(Is), rndPick(Is));
@@ -1788,7 +1929,7 @@ FragmentAssembler::assembleRandomFragment(int nIns)
             vector<LIns*> Ms = rnd(2) ? M4s : M8ps;
             if (!Ms.empty()) {
                 LIns* base = rndPick(Ms);
-                ins = mLir->insLoad(rndPick(I_loads), base, rndOffset32(base->size()), ACC_LOAD_ANY);
+                ins = mLir->insLoad(rndPick(I_loads), base, rndOffset32(base->size()), ACCSET_OTHER);
                 addOrReplace(Is, ins);
                 n++;
             }
@@ -1799,7 +1940,7 @@ FragmentAssembler::assembleRandomFragment(int nIns)
         case LLD_Q:
             if (!M8ps.empty()) {
                 LIns* base = rndPick(M8ps);
-                ins = mLir->insLoad(rndPick(Q_loads), base, rndOffset64(base->size()), ACC_LOAD_ANY);
+                ins = mLir->insLoad(rndPick(Q_loads), base, rndOffset64(base->size()), ACCSET_OTHER);
                 addOrReplace(Qs, ins);
                 n++;
             }
@@ -1809,7 +1950,7 @@ FragmentAssembler::assembleRandomFragment(int nIns)
         case LLD_D:
             if (!M8ps.empty()) {
                 LIns* base = rndPick(M8ps);
-                ins = mLir->insLoad(rndPick(D_loads), base, rndOffset64(base->size()), ACC_LOAD_ANY);
+                ins = mLir->insLoad(rndPick(D_loads), base, rndOffset64(base->size()), ACCSET_OTHER);
                 addOrReplace(Ds, ins);
                 n++;
             }
@@ -1819,7 +1960,7 @@ FragmentAssembler::assembleRandomFragment(int nIns)
             vector<LIns*> Ms = rnd(2) ? M4s : M8ps;
             if (!Ms.empty() && !Is.empty()) {
                 LIns* base = rndPick(Ms);
-                mLir->insStore(rndPick(Is), base, rndOffset32(base->size()), ACC_STORE_ANY);
+                mLir->insStore(rndPick(Is), base, rndOffset32(base->size()), ACCSET_OTHER);
                 n++;
             }
             break;
@@ -1829,7 +1970,7 @@ FragmentAssembler::assembleRandomFragment(int nIns)
         case LST_Q:
             if (!M8ps.empty() && !Qs.empty()) {
                 LIns* base = rndPick(M8ps);
-                mLir->insStore(rndPick(Qs), base, rndOffset64(base->size()), ACC_STORE_ANY);
+                mLir->insStore(rndPick(Qs), base, rndOffset64(base->size()), ACCSET_OTHER);
                 n++;
             }
             break;
@@ -1838,7 +1979,7 @@ FragmentAssembler::assembleRandomFragment(int nIns)
         case LST_D:
             if (!M8ps.empty() && !Ds.empty()) {
                 LIns* base = rndPick(M8ps);
-                mLir->insStore(rndPick(Ds), base, rndOffset64(base->size()), ACC_STORE_ANY);
+                mLir->insStore(rndPick(Ds), base, rndOffset64(base->size()), ACCSET_OTHER);
                 n++;
             }
             break;
@@ -1932,7 +2073,7 @@ FragmentAssembler::assembleRandomFragment(int nIns)
     delete[] classGenerator;
 
     // Return 0.
-    mReturnTypeBits |= RT_INT32;
+    mReturnTypeBits |= RT_INT;
     mLir->ins1(LIR_reti, mLir->insImmI(0));
 
     endFragment();
@@ -1948,7 +2089,7 @@ Lirasm::Lirasm(bool verbose) :
 #ifdef DEBUG
     if (mVerbose) {
         mLogc.lcbits = LC_ReadLIR | LC_AfterDCE | LC_Native | LC_RegAlloc | LC_Activation;
-        mLirbuf->printer = new (mAlloc) LInsPrinter(mAlloc);
+        mLirbuf->printer = new (mAlloc) LInsPrinter(mAlloc, LIRASM_NUM_USED_ACCS);
     }
 #endif
 
@@ -1960,6 +2101,7 @@ Lirasm::Lirasm(bool verbose) :
 
     // XXX: could add more pointer-sized synonyms here
     mOpMap["paramp"] = mOpMap[PTR_SIZE("parami", "paramq")];
+    mOpMap["livep"]  = mOpMap[PTR_SIZE("livei", "liveq")];
 }
 
 Lirasm::~Lirasm()
@@ -1985,15 +2127,15 @@ Lirasm::lookupFunction(const string &name, CallInfo *&ci)
     Fragments::const_iterator func = mFragments.find(name);
     if (func != mFragments.end()) {
         // The ABI, arg types and ret type will be overridden by the caller.
-        if (func->second.mReturnType == RT_FLOAT) {
-            CallInfo target = {(uintptr_t) func->second.rfloat,
-                               0, ABI_FASTCALL, /*isPure*/0, ACC_STORE_ANY
+        if (func->second.mReturnType == RT_DOUBLE) {
+            CallInfo target = {(uintptr_t) func->second.rdouble,
+                               0, ABI_FASTCALL, /*isPure*/0, ACCSET_STORE_ANY
                                verbose_only(, func->first.c_str()) };
             *ci = target;
 
         } else {
             CallInfo target = {(uintptr_t) func->second.rint,
-                               0, ABI_FASTCALL, /*isPure*/0, ACC_STORE_ANY
+                               0, ABI_FASTCALL, /*isPure*/0, ACCSET_STORE_ANY
                                verbose_only(, func->first.c_str()) };
             *ci = target;
         }
@@ -2087,16 +2229,25 @@ usageAndQuit(const string& progname)
     cout <<
         "usage: " << progname << " [options] [filename]\n"
         "Options:\n"
-        "  -h --help        print this message\n"
-        "  -v --verbose     print LIR and assembly code\n"
-        "  --execute        execute LIR\n"
-        "  --[no-]optimize  enable or disable optimization of the LIR (default=off)\n"
-        "  --random [N]     generate a random LIR block of size N (default=1000)\n"
-        " i386-specific options:\n"
-        "  --sse            use SSE2 instructions\n"
-        " ARM-specific options:\n"
-        "  --arch N         generate code for ARM architecture version N (default=7)\n"
-        "  --[no]vfp        enable or disable the generation of ARM VFP code (default=on)\n"
+        "  -h --help         print this message\n"
+        "  -v --verbose      print LIR and assembly code\n"
+        "  --execute         execute LIR\n"
+        "  --[no-]optimize   enable or disable optimization of the LIR (default=off)\n"
+        "  --random [N]      generate a random LIR block of size N (default=1000)\n"
+        "\n"
+        "Build query options (these print a value for this build of lirasm and exit)\n"
+        "  --show-arch       show the architecture ('i386', 'X64', 'arm', 'ppc',\n"
+        "                    'sparc', 'mips', or 'sh4')\n"
+        "  --show-word-size  show the word size ('32' or '64')\n"
+        "  --show-endianness show the endianness ('little-endian' or 'big-endian')\n"
+        "\n"
+        "i386-specific options:\n"
+        "  --[no]sse         use SSE2 instructions (default=on)\n"
+        "\n"
+        "ARM-specific options:\n"
+        "  --arch N          use ARM architecture version N instructions (default=7)\n"
+        "  --[no]vfp         use ARM VFP instructions (default=on)\n"
+        "\n"
         ;
     exit(0);
 }
@@ -2128,7 +2279,7 @@ processCmdLine(int argc, char **argv, CmdLineOptions& opts)
 
     // Architecture-specific options.
 #if defined NANOJIT_IA32
-    bool            i386_sse = false;
+    bool            i386_sse = true;
 #elif defined NANOJIT_ARM
     unsigned int    arm_arch = 7;
     bool            arm_vfp = true;
@@ -2166,11 +2317,49 @@ processCmdLine(int argc, char **argv, CmdLineOptions& opts)
                 }
             }
         }
+        else if (arg == "--show-arch") {
+            const char* str = 
+#if defined NANOJIT_IA32
+                "i386";
+#elif defined NANOJIT_X64
+                "X64";
+#elif defined NANOJIT_ARM
+                "arm";
+#elif defined NANOJIT_PPC
+                "ppc";
+#elif defined NANOJIT_SPARC
+                "sparc";
+#elif defined NANOJIT_MIPS
+                "mips";
+#elif defined NANOJIT_SH4
+                "sh4";
+#else
+#               error "unknown arch"
+#endif
+            cout << str << "\n";
+            exit(0);
+        }
+        else if (arg == "--show-word-size") {
+            cout << sizeof(void*) * 8 << "\n";
+            exit(0);
+        }
+        else if (arg == "--show-endianness") {
+            int32_t x = 0x01020304;
+            if (*(char*)&x == 0x1) {
+              cout << "big-endian" << "\n";
+            } else {
+              cout << "little-endian" << "\n";
+            }
+            exit(0);
+        }
 
         // Architecture-specific flags.
 #if defined NANOJIT_IA32
         else if (arg == "--sse") {
             i386_sse = true;
+        }
+        else if (arg == "--nosse") {
+            i386_sse = false;
         }
 #elif defined NANOJIT_ARM
         else if ((arg == "--arch") && (i < argc-1)) {
@@ -2178,11 +2367,11 @@ processCmdLine(int argc, char **argv, CmdLineOptions& opts)
             arm_arch = strtoul(argv[i+1], &endptr, 10);
             // Check that the argument was a number.
             if ('\0' == *endptr) {
-                if ((arm_arch < 5) || (arm_arch > 7)) {
-                    errMsgAndQuit(opts.progname, "Unsupported argument to --arm-arch.\n");
+                if ((arm_arch < 4) || (arm_arch > 7)) {
+                    errMsgAndQuit(opts.progname, "Unsupported argument to --arch.\n");
                 }
             } else {
-                errMsgAndQuit(opts.progname, "Unrecognized argument to --arm-arch.\n");
+                errMsgAndQuit(opts.progname, "Unrecognized argument to --arch.\n");
             }
             i++;
         } else if (arg == "--vfp") {
@@ -2247,20 +2436,24 @@ main(int argc, char **argv)
         if (i == lasm.mFragments.end())
             errMsgAndQuit(opts.progname, "error: at least one fragment must be named 'main'");
         switch (i->second.mReturnType) {
-          case RT_FLOAT:
-          {
-            double res = i->second.rfloat();
-            cout << "Output is: " << res << endl;
-            break;
-          }
-          case RT_INT32:
-          {
+          case RT_INT: {
             int res = i->second.rint();
             cout << "Output is: " << res << endl;
             break;
           }
-          case RT_GUARD:
-          {
+#ifdef NANOJIT_64BIT
+          case RT_QUAD: {
+            int res = i->second.rquad();
+            cout << "Output is: " << res << endl;
+            break;
+          }
+#endif
+          case RT_DOUBLE: {
+            double res = i->second.rdouble();
+            cout << "Output is: " << res << endl;
+            break;
+          }
+          case RT_GUARD: {
             LasmSideExit *ls = (LasmSideExit*) i->second.rguard()->exit;
             cout << "Exited block on line: " << ls->line << endl;
             break;

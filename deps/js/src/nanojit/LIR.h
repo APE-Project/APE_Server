@@ -199,11 +199,12 @@ namespace nanojit
     // Access regions
     // --------------
     // Doing alias analysis precisely is difficult.  But it turns out that
-    // keeping track of aliasing at a very coarse level is enough to help with
-    // many optimisations.  So we conceptually divide the memory that is
-    // accessible from LIR into a small number of "access regions".  An access
-    // region may be non-contiguous.  No two access regions can overlap.  The
-    // union of all access regions covers all memory accessible from LIR.
+    // keeping track of aliasing at a coarse level is enough to help with many
+    // optimisations.  So we conceptually divide the memory that is accessible
+    // from LIR into a small number of "access regions" (aka. "Acc").  An
+    // access region may be non-contiguous.  No two access regions can
+    // overlap.  The union of all access regions covers all memory accessible
+    // from LIR.
     //
     // In general a (static) load or store may be executed more than once, and
     // thus may access multiple regions;  however, in practice almost all
@@ -214,64 +215,28 @@ namespace nanojit
     // If two loads/stores/calls are known to not access the same region(s),
     // then they do not alias.
     //
-    // The access regions used are as follows:
-    //
-    // - READONLY: all memory that is read-only, ie. never stored to.
-    //   A load from a READONLY region will never alias with any stores.
-    //
-    // - STACK: the stack.  Stack loads/stores can usually be easily
-    //   identified because they use SP as the base pointer.
-    //
-    // - RSTACK: the return stack.  Return stack loads/stores can usually be
-    //   easily identified because they use RP as the base pointer.
-    //
-    // - OTHER: all other regions of memory.
-    //
-    // It makes sense to add new access regions when doing so will help with
-    // one or more optimisations.
-    //
-    // One subtlety is that the meanings of the access region markings only
-    // apply to the LIR fragment that they are in.  For example, if a memory
-    // location M is read-only in a particular LIR fragment, all loads
-    // involving M in that fragment can be safely marked READONLY, even if M
-    // is modified elsewhere.  This is safe because the a LIR fragment is the
-    // unit of analysis in which the markings are used.  In other words alias
-    // region markings are only used for intra-fragment optimisations.
+    // All regions are defined by the embedding.  It makes sense to add new
+    // embedding-specific access regions when doing so will help with one or
+    // more optimisations.
     //
     // Access region sets and instruction markings
     // -------------------------------------------
-    // The LIR generator must mark each load/store with an "access region
-    // set", which is a set of one or more access regions.  This indicates
-    // which parts of LIR-accessible memory the load/store may touch.
+    // Each load/store is marked with an "access region set" (aka. "AccSet"),
+    // which is a set of one or more access regions.  This indicates which
+    // parts of LIR-accessible memory the load/store may touch.
     //
-    // The LIR generator must also mark each function called from LIR with an
-    // access region set for memory stored to by the function.  (We could also
-    // have a marking for memory loads, but there's no need at the moment.)
-    // These markings apply to the function itself, not the call site (ie.
-    // they're not context-sensitive).
+    // Each function called from LIR is also marked with an access region set
+    // for memory stored to by the function.  (We could also have a marking
+    // for memory loads done by the function, but there's no need at the
+    // moment.)  These markings apply to the function itself, not the call
+    // site, ie. they're not context-sensitive.
     //
-    // These load/store/call markings MUST BE ACCURATE -- if they are wrong
-    // then invalid optimisations might occur that change the meaning of the
-    // code.  However, they can safely be imprecise (ie. conservative), in the
-    // following ways:
-    //
-    // - A load that accesses a READONLY region can be safely marked instead
-    //   as loading from OTHER.  In other words, it's safe to underestimate
-    //   the size of the READONLY region.  (This would also apply to the load
-    //   set of a function, if we recorded that.)
-    //
-    // - A load/store can safely be marked as accessing regions that it
-    //   doesn't, so long as the regions it does access are also included (one
-    //   exception: marking a store with READONLY is nonsense and will cause
-    //   assertions).
-    //
-    //   In other words, a load/store can be marked with an access region set
-    //   that is a superset of its actual access region set.  Taking this to
-    //   its logical conclusion, any load can be safely marked with LOAD_ANY and
-    //   any store can be safely marked with with STORE_ANY (and the latter is
-    //   true for the store set of a function.)
-    //
-    // Such imprecision is safe but may reduce optimisation opportunities.
+    // These load/store/call markings MUST BE ACCURATE -- if not then invalid
+    // optimisations might occur that change the meaning of the code.
+    // However, they can safely be imprecise (ie. conservative), ie. a
+    // load/store/call can be marked with an access region set that is a
+    // superset of the actual access region set.  Such imprecision is safe but
+    // may reduce optimisation opportunities.
     //
     // Optimisations that use access region info
     // -----------------------------------------
@@ -282,35 +247,97 @@ namespace nanojit
     // load with a single access region, you might as well use ACC_LOAD_ANY.
     //-----------------------------------------------------------------------
 
-    // An access region set is represented as a bitset.  Nb: this restricts us
-    // to at most eight alias regions for the moment.
-    typedef uint8_t AccSet;
+    // An access region set is represented as a bitset.  Using a uint32_t
+    // restricts us to at most 32 alias regions for the moment.  This could be
+    // expanded to a uint64_t easily if needed.
+    typedef uint32_t AccSet;
+    static const int NUM_ACCS = sizeof(AccSet) * 8;
 
-    // The access regions.  Note that because of the bitset representation
-    // these constants are also valid (singleton) AccSet values.  If you add
-    // new ones please update ACC_ALL_STORABLE and formatAccSet() and
-    // CseFilter.
-    //
-    static const AccSet ACC_READONLY = 1 << 0;      // 0000_0001b
-    static const AccSet ACC_STACK    = 1 << 1;      // 0000_0010b
-    static const AccSet ACC_RSTACK   = 1 << 2;      // 0000_0100b
-    static const AccSet ACC_OTHER    = 1 << 3;      // 0000_1000b
-
-    // Some common (non-singleton) access region sets.  ACC_NONE does not make
+    // Some common (non-singleton) access region sets.  ACCSET_NONE does not make
     // sense for loads or stores (which must access at least one region), it
     // only makes sense for calls.
     //
-    // A convention that's worth using:  use ACC_LOAD_ANY/ACC_STORE_ANY for
-    // cases that you're unsure about or haven't considered carefully.  Use
-    // ACC_ALL/ACC_ALL_STORABLE for cases that you have considered carefully.
-    // That way it's easy to tell which ones have been considered and which
-    // haven't.
-    static const AccSet ACC_NONE         = 0x0;
-    static const AccSet ACC_ALL_STORABLE = ACC_STACK | ACC_RSTACK | ACC_OTHER;
-    static const AccSet ACC_ALL          = ACC_READONLY | ACC_ALL_STORABLE;
-    static const AccSet ACC_LOAD_ANY     = ACC_ALL;            // synonym
-    static const AccSet ACC_STORE_ANY    = ACC_ALL_STORABLE;   // synonym
+    static const AccSet ACCSET_NONE      = 0x0;
+    static const AccSet ACCSET_ALL       = 0xffffffff;
+    static const AccSet ACCSET_LOAD_ANY  = ACCSET_ALL;      // synonym
+    static const AccSet ACCSET_STORE_ANY = ACCSET_ALL;      // synonym
 
+    inline bool isSingletonAccSet(AccSet accSet) {
+        // This is a neat way of testing if a value has only one bit set.
+        return (accSet & (accSet - 1)) == 0;
+    }
+
+    // Full AccSets don't fit into load and store instructions.  But
+    // load/store AccSets almost always contain a single access region.  We
+    // take advantage of this to create a compressed AccSet, MiniAccSet, that
+    // does fit.
+    //
+    // The 32 single-region AccSets get compressed into a number in the range
+    // 0..31 (according to the position of the set bit), and all other
+    // (multi-region) AccSets get converted into MINI_ACCSET_MULTIPLE.  So the
+    // representation is lossy in the latter case, but that case is rare for
+    // loads/stores.  We use a full AccSet for the storeAccSets of calls, for
+    // which multi-region AccSets are common.
+    //
+    // We wrap the uint8_t inside a struct to avoid the possiblity of subtle
+    // bugs caused by mixing up AccSet and MiniAccSet, which is easy to do.
+    // However, the struct gets padded inside LInsLd in an inconsistent way on
+    // Windows, so we actually store a MiniAccSetVal inside LInsLd.  Sigh.
+    // But we use MiniAccSet everywhere else.
+    //
+    typedef uint8_t MiniAccSetVal;
+    struct MiniAccSet { MiniAccSetVal val; };
+    static const MiniAccSet MINI_ACCSET_MULTIPLE = { 99 };
+
+    static MiniAccSet compressAccSet(AccSet accSet) {
+        if (isSingletonAccSet(accSet)) {
+            MiniAccSet ret = { uint8_t(msbSet32(accSet)) };
+            return ret;
+        }
+
+        // If we got here, it must be a multi-region AccSet.
+        return MINI_ACCSET_MULTIPLE;
+    }
+
+    static AccSet decompressMiniAccSet(MiniAccSet miniAccSet) {
+        return (miniAccSet.val == MINI_ACCSET_MULTIPLE.val) ? ACCSET_ALL : (1 << miniAccSet.val);
+    }
+
+    // The LoadQual affects how a load can be optimised:
+    //
+    // - CONST: These loads are guaranteed to always return the same value
+    //   during a single execution of a fragment (but the value is allowed to
+    //   change between executions of the fragment).  This means that the
+    //   location is never stored to by the LIR, and is never modified by an
+    //   external entity while the fragment is running.
+    //
+    // - NORMAL: These loads may be stored to by the LIR, but are never
+    //   modified by an external entity while the fragment is running.
+    //
+    // - VOLATILE: These loads may be stored to by the LIR, and may be
+    //   modified by an external entity while the fragment is running.
+    //
+    // This gives a lattice with the ordering:  CONST < NORMAL < VOLATILE.
+    // As usual, it's safe to mark a load with a value higher (less precise)
+    // that actual, but it may result in fewer optimisations occurring.
+    //
+    // Generally CONST loads are highly amenable to optimisation (eg. CSE),
+    // VOLATILE loads are entirely unoptimisable, and NORMAL loads are in
+    // between and require some alias analysis to optimise.
+    //
+    // Note that CONST has a stronger meaning to "const" in C and C++;  in C
+    // and C++ a "const" variable may be modified by an external entity, such
+    // as hardware.  Hence "const volatile" makes sense in C and C++, but
+    // CONST+VOLATILE doesn't make sense in LIR.
+    //
+    // Note also that a 2-bit bitfield in LInsLd is used to hold LoadQual
+    // values, so you can one add one more value without expanding it.
+    //
+    enum LoadQual {
+        LOAD_CONST    = 0,
+        LOAD_NORMAL   = 1,
+        LOAD_VOLATILE = 2
+    };
 
     struct CallInfo
     {
@@ -422,7 +449,8 @@ namespace nanojit
 #if defined NANOJIT_64BIT
             op == LIR_cmovq ||
 #endif
-            op == LIR_cmovi;
+            op == LIR_cmovi ||
+            op == LIR_cmovd;
     }
     inline bool isCmpIOpcode(LOpcode op) {
         return LIR_eqi <= op && op <= LIR_geui;
@@ -463,31 +491,21 @@ namespace nanojit
         NanoAssert(op == LIR_xt || op == LIR_xf);
         return LOpcode(op ^ 1);
     }
-    inline LOpcode invertCmpIOpcode(LOpcode op) {
-        NanoAssert(isCmpIOpcode(op));
-        return LOpcode(op ^ 1);
-    }
-#ifdef NANOJIT_64BIT
-    inline LOpcode invertCmpQOpcode(LOpcode op) {
-        NanoAssert(isCmpQOpcode(op));
-        return LOpcode(op ^ 1);
-    }
-#endif
-    inline LOpcode invertCmpDOpcode(LOpcode op) {
-        NanoAssert(isCmpDOpcode(op));
+    inline LOpcode invertCmpOpcode(LOpcode op) {
+        NanoAssert(isCmpOpcode(op));
         return LOpcode(op ^ 1);
     }
 
     inline LOpcode getCallOpcode(const CallInfo* ci) {
         LOpcode op = LIR_callp;
         switch (ci->returnType()) {
-        case ARGTYPE_V: op = LIR_callp; break;
+        case ARGTYPE_V: op = LIR_callv; break;
         case ARGTYPE_I:
         case ARGTYPE_UI: op = LIR_calli; break;
-        case ARGTYPE_D: op = LIR_calld; break;
 #ifdef NANOJIT_64BIT
         case ARGTYPE_Q: op = LIR_callq; break;
 #endif
+        case ARGTYPE_D: op = LIR_calld; break;
         default:        NanoAssert(0);  break;
         }
         return op;
@@ -519,7 +537,7 @@ namespace nanojit
 
     inline RegisterMask rmask(Register r)
     {
-        return RegisterMask(1) << r;
+        return RegisterMask(1) << REGNUM(r);
     }
 
     //-----------------------------------------------------------------------
@@ -628,7 +646,7 @@ namespace nanojit
     private:
         // SharedFields: fields shared by all LIns kinds.
         //
-        // The .inReg, .reg, .inAr and .arIndex fields form a "reservation"
+        // The .inReg, .regnum, .inAr and .arIndex fields form a "reservation"
         // that is used temporarily during assembly to record information
         // relating to register allocation.  See class RegAlloc for more
         // details.  Note: all combinations of .inReg/.inAr are possible, ie.
@@ -640,7 +658,7 @@ namespace nanojit
         //
         struct SharedFields {
             uint32_t inReg:1;           // if 1, 'reg' is active
-            Register reg:7;
+            uint32_t regnum:7;
             uint32_t inAr:1;            // if 1, 'arIndex' is active
             uint32_t isResultLive:1;    // if 1, the instruction's result is live
 
@@ -687,7 +705,7 @@ namespace nanojit
         inline void initLInsOp1(LOpcode opcode, LIns* oprnd1);
         inline void initLInsOp2(LOpcode opcode, LIns* oprnd1, LIns* oprnd2);
         inline void initLInsOp3(LOpcode opcode, LIns* oprnd1, LIns* oprnd2, LIns* oprnd3);
-        inline void initLInsLd(LOpcode opcode, LIns* val, int32_t d, AccSet accSet);
+        inline void initLInsLd(LOpcode opcode, LIns* val, int32_t d, AccSet accSet, LoadQual loadQual);
         inline void initLInsSt(LOpcode opcode, LIns* val, LIns* base, int32_t d, AccSet accSet);
         inline void initLInsSk(LIns* prevLIns);
         // Nb: args[] must be allocated and initialised before being passed in;
@@ -703,6 +721,10 @@ namespace nanojit
         // Generally, void instructions (statements) are always live and
         // non-void instructions (expressions) are live if used by another
         // live instruction.  But there are some trickier cases.
+        // Any non-void instruction can be marked isResultLive=1 even
+        // when it is unreachable, e.g. due to an always-taken branch.
+        // The assembler marks it live if it sees any uses, regardless of
+        // whether those uses are in reachable code or not.
         bool isLive() const {
             return isV() ||
                    sharedFields.isResultLive ||
@@ -730,7 +752,12 @@ namespace nanojit
         }
         Register deprecated_getReg() {
             NanoAssert(isExtant());
-            return ( isInReg() ? sharedFields.reg : deprecated_UnknownReg );
+            if (isInReg()) {
+                Register r = { sharedFields.regnum };
+                return r;
+            } else { 
+                return deprecated_UnknownReg;
+            }
         }
         uint32_t deprecated_getArIndex() {
             NanoAssert(isExtant());
@@ -754,11 +781,12 @@ namespace nanojit
         }
         Register getReg() {
             NanoAssert(isInReg());
-            return sharedFields.reg;
+            Register r = { sharedFields.regnum };
+            return r;
         }
         void setReg(Register r) {
             sharedFields.inReg = 1;
-            sharedFields.reg = r;
+            sharedFields.regnum = REGNUM(r);
         }
         void clearReg() {
             sharedFields.inReg = 0;
@@ -790,8 +818,12 @@ namespace nanojit
         // For guards.
         inline GuardRecord* record() const;
 
+        // For loads.
+        inline LoadQual loadQual() const;
+
         // For loads/stores.
         inline int32_t  disp() const;
+        inline MiniAccSet miniAccSet() const;
         inline AccSet   accSet() const;
 
         // For LInsSk.
@@ -895,7 +927,8 @@ namespace nanojit
             return isCmpOpcode(opcode());
         }
         bool isCall() const {
-            return isop(LIR_calli) ||
+            return isop(LIR_callv) ||
+                   isop(LIR_calli) ||
 #if defined NANOJIT_64BIT
                    isop(LIR_callq) ||
 #endif
@@ -1084,8 +1117,17 @@ namespace nanojit
         // exceeds 16 bits.  This is rare, but does happen occasionally.  We
         // could go to 24 bits but then it would happen so rarely that the
         // handler code would be difficult to test and thus untrustworthy.
-        int16_t     disp;
-        AccSet      accSet;
+        //
+        // Nb: the types of these bitfields are all 32-bit integers to ensure
+        // they are fully packed on Windows, sigh.  Also, 'loadQual' is
+        // unsigned to ensure the values 0, 1, and 2 all fit in 2 bits.
+        //
+        // Nb: explicit signed keyword for bitfield types is required,
+        // some compilers may treat them as unsigned without it.
+        // See Bugzilla 584219 comment #18
+        signed int  disp:16;
+        signed int  miniAccSetVal:8;
+        uint32_t    loadQual:2;
 
         LIns*       oprnd_1;
 
@@ -1102,7 +1144,7 @@ namespace nanojit
         friend class LIns;
 
         int16_t     disp;
-        AccSet      accSet;
+        MiniAccSetVal miniAccSetVal;
 
         LIns*       oprnd_2;
 
@@ -1251,12 +1293,13 @@ namespace nanojit
         toLInsOp3()->oprnd_3 = oprnd3;
         NanoAssert(isLInsOp3());
     }
-    void LIns::initLInsLd(LOpcode opcode, LIns* val, int32_t d, AccSet accSet) {
+    void LIns::initLInsLd(LOpcode opcode, LIns* val, int32_t d, AccSet accSet, LoadQual loadQual) {
         initSharedFields(opcode);
         toLInsLd()->oprnd_1 = val;
         NanoAssert(d == int16_t(d));
         toLInsLd()->disp = int16_t(d);
-        toLInsLd()->accSet = accSet;
+        toLInsLd()->miniAccSetVal = compressAccSet(accSet).val;
+        toLInsLd()->loadQual = loadQual;
         NanoAssert(isLInsLd());
     }
     void LIns::initLInsSt(LOpcode opcode, LIns* val, LIns* base, int32_t d, AccSet accSet) {
@@ -1265,7 +1308,7 @@ namespace nanojit
         toLInsSt()->oprnd_2 = base;
         NanoAssert(d == int16_t(d));
         toLInsSt()->disp = int16_t(d);
-        toLInsSt()->accSet = accSet;
+        toLInsSt()->miniAccSetVal = compressAccSet(accSet).val;
         NanoAssert(isLInsSt());
     }
     void LIns::initLInsSk(LIns* prevLIns) {
@@ -1369,6 +1412,11 @@ namespace nanojit
         }
     }
 
+    LoadQual LIns::loadQual() const {
+        NanoAssert(isLInsLd());
+        return (LoadQual)toLInsLd()->loadQual;
+    }
+
     int32_t LIns::disp() const {
         if (isLInsSt()) {
             return toLInsSt()->disp;
@@ -1378,13 +1426,19 @@ namespace nanojit
         }
     }
 
-    AccSet LIns::accSet() const {
+    MiniAccSet LIns::miniAccSet() const {
+        MiniAccSet miniAccSet;
         if (isLInsSt()) {
-            return toLInsSt()->accSet;
+            miniAccSet.val = toLInsSt()->miniAccSetVal;
         } else {
             NanoAssert(isLInsLd());
-            return toLInsLd()->accSet;
+            miniAccSet.val = toLInsLd()->miniAccSetVal;
         }
+        return miniAccSet;
+    }
+
+    AccSet LIns::accSet() const {
+        return decompressMiniAccSet(miniAccSet());
     }
 
     LIns* LIns::prevLIns() const {
@@ -1510,8 +1564,8 @@ namespace nanojit
         virtual LIns* insImmD(double d) {
             return out->insImmD(d);
         }
-        virtual LIns* insLoad(LOpcode op, LIns* base, int32_t d, AccSet accSet) {
-            return out->insLoad(op, base, d, accSet);
+        virtual LIns* insLoad(LOpcode op, LIns* base, int32_t d, AccSet accSet, LoadQual loadQual) {
+            return out->insLoad(op, base, d, accSet, loadQual);
         }
         virtual LIns* insStore(LOpcode op, LIns* value, LIns* base, int32_t d, AccSet accSet) {
             return out->insStore(op, value, base, d, accSet);
@@ -1526,6 +1580,9 @@ namespace nanojit
         }
         virtual LIns* insJtbl(LIns* index, uint32_t size) {
             return out->insJtbl(index, size);
+        }
+        virtual LIns* insComment(const char* str) {
+            return out->insComment(str);
         }
 
         // convenience functions
@@ -1584,6 +1641,11 @@ namespace nanojit
     #endif
         }
 
+        // Do a load with LoadQual==LOAD_NORMAL.
+        LIns* insLoad(LOpcode op, LIns* base, int32_t d, AccSet accSet) {
+            return insLoad(op, base, d, accSet, LOAD_NORMAL);
+        }
+
         // Chooses LIR_sti, LIR_stq or LIR_std according to the type of 'value'.
         LIns* insStore(LIns* value, LIns* base, int32_t d, AccSet accSet);
     };
@@ -1617,10 +1679,36 @@ namespace nanojit
     private:
         Allocator& alloc;
 
-        template <class Key>
-        class CountMap: public HashMap<Key, int> {
+        // A small string-wrapper class, required because we need '==' to
+        // compare string contents, not string pointers, when strings are used
+        // as keys in CountMap.
+        struct Str {
+            Allocator& alloc;
+            char* s;
+
+            Str(Allocator& alloc_, const char* s_) : alloc(alloc_) {
+                s = new (alloc) char[1+strlen(s_)];
+                strcpy(s, s_);
+            }
+
+            bool operator==(const Str& str) const {
+                return (0 == strcmp(this->s, str.s));
+            }
+        };
+
+        // Similar to 'struct Str' -- we need to hash the string's contents,
+        // not its pointer.
+        template<class K> struct StrHash {
+            static size_t hash(const Str &k) {
+                // (const void*) cast is required by ARM RVCT 2.2
+                return murmurhash((const void*)k.s, strlen(k.s));
+            }
+        };
+
+        template <class Key, class H=DefaultHash<Key> >
+        class CountMap: public HashMap<Key, int, H> {
         public:
-            CountMap(Allocator& alloc) : HashMap<Key, int>(alloc) {}
+            CountMap(Allocator& alloc) : HashMap<Key, int, H>(alloc, 128) {}
             int add(Key k) {
                 int c = 1;
                 if (this->containsKey(k)) {
@@ -1633,7 +1721,7 @@ namespace nanojit
 
         CountMap<int> lircounts;
         CountMap<const CallInfo *> funccounts;
-        CountMap<const char *> namecounts;
+        CountMap<Str, StrHash<Str> > namecounts;
 
         void addNameWithSuffix(LIns* i, const char *s, int suffix, bool ignoreOneSuffix);
 
@@ -1680,16 +1768,21 @@ namespace nanojit
     {
     private:
         Allocator& alloc;
+        const int EMB_NUM_USED_ACCS;
 
         char *formatImmI(RefBuf* buf, int32_t c);
+#ifdef NANOJIT_64BIT
         char *formatImmQ(RefBuf* buf, uint64_t c);
+#endif
         char *formatImmD(RefBuf* buf, double c);
-        void formatGuard(InsBuf* buf, LIns* ins);
-        void formatGuardXov(InsBuf* buf, LIns* ins);
+        void formatGuard(InsBuf* buf, LIns* ins);       // defined by the embedder
+        void formatGuardXov(InsBuf* buf, LIns* ins);    // defined by the embedder
 
     public:
-        LInsPrinter(Allocator& alloc)
-            : alloc(alloc)
+        static const char* accNames[];                  // defined by the embedder
+
+        LInsPrinter(Allocator& alloc, int embNumUsedAccs)
+            : alloc(alloc), EMB_NUM_USED_ACCS(embNumUsedAccs)
         {
             addrNameMap = new (alloc) AddrNameMap(alloc);
             lirNameMap = new (alloc) LirNameMap(alloc);
@@ -1737,14 +1830,9 @@ namespace nanojit
         {
             if (!code.isEmpty()) {
                 InsBuf b;
-                int32_t count = 0;
-                for (Seq<LIns*>* p = code.get(); p != NULL; p = p->tail) {
+                for (Seq<LIns*>* p = code.get(); p != NULL; p = p->tail)
                     logc->printf("%s    %s\n", prefix, printer->formatIns(&b, p->head));
-                    count++;
-                }
                 code.clear();
-                if (count > 1)
-                    logc->printf("\n");
             }
         }
 
@@ -1753,7 +1841,7 @@ namespace nanojit
         }
 
         LIns* insGuardXov(LOpcode op, LIns* a, LIns* b, GuardRecord *gr) {
-            return add_flush(out->insGuardXov(op,a,b,gr));
+            return add(out->insGuardXov(op,a,b,gr));
         }
 
         LIns* insBranch(LOpcode v, LIns* condition, LIns* to) {
@@ -1761,7 +1849,7 @@ namespace nanojit
         }
 
         LIns* insBranchJov(LOpcode v, LIns* a, LIns* b, LIns* to) {
-            return add_flush(out->insBranchJov(v, a, b, to));
+            return add(out->insBranchJov(v, a, b, to));
         }
 
         LIns* insJtbl(LIns* index, uint32_t size) {
@@ -1790,11 +1878,11 @@ namespace nanojit
         LIns* insParam(int32_t i, int32_t kind) {
             return add(out->insParam(i, kind));
         }
-        LIns* insLoad(LOpcode v, LIns* base, int32_t disp, AccSet accSet) {
-            return add(out->insLoad(v, base, disp, accSet));
+        LIns* insLoad(LOpcode v, LIns* base, int32_t disp, AccSet accSet, LoadQual loadQual) {
+            return add(out->insLoad(v, base, disp, accSet, loadQual));
         }
         LIns* insStore(LOpcode op, LIns* v, LIns* b, int32_t d, AccSet accSet) {
-            return add(out->insStore(op, v, b, d, accSet));
+            return add_flush(out->insStore(op, v, b, d, accSet));
         }
         LIns* insAlloc(int32_t size) {
             return add(out->insAlloc(size));
@@ -1809,6 +1897,10 @@ namespace nanojit
 #endif
         LIns* insImmD(double d) {
             return add(out->insImmD(d));
+        }
+
+        LIns* insComment(const char* str) {
+            return add_flush(out->insComment(str));
         }
     };
 
@@ -1825,63 +1917,100 @@ namespace nanojit
         LIns* insGuardXov(LOpcode, LIns* a, LIns* b, GuardRecord *);
         LIns* insBranch(LOpcode, LIns* cond, LIns* target);
         LIns* insBranchJov(LOpcode, LIns* a, LIns* b, LIns* target);
-        LIns* insLoad(LOpcode op, LIns* base, int32_t off, AccSet accSet);
+        LIns* insLoad(LOpcode op, LIns* base, int32_t off, AccSet accSet, LoadQual loadQual);
     private:
         LIns* simplifyOverflowArith(LOpcode op, LIns** opnd1, LIns** opnd2);
     };
 
     class CseFilter: public LirWriter
     {
-        enum LInsHashKind {
+        enum NLKind {
             // We divide instruction kinds into groups.  LIns0 isn't present
-            // because we don't need to record any 0-ary instructions.
-            LInsImmI = 0,
-            LInsImmQ = 1,   // only occurs on 64-bit platforms
-            LInsImmD = 2,
-            LIns1    = 3,
-            LIns2    = 4,
-            LIns3    = 5,
-            LInsCall = 6,
+            // because we don't need to record any 0-ary instructions.  Loads
+            // aren't here, they're handled separately.
+            NLImmISmall = 0,
+            NLImmILarge = 1,
+            NLImmQ      = 2,   // only occurs on 64-bit platforms
+            NLImmD      = 3,
+            NL1         = 4,
+            NL2         = 5,
+            NL3         = 6,
+            NLCall      = 7,
 
-            // Loads are special.  We group them by access region:  one table for
-            // each region, and then a catch-all table for any loads marked with
-            // multiple regions.  This arrangement makes the removal of
-            // invalidated loads fast -- eg. we can invalidate all STACK loads by
-            // just clearing the LInsLoadStack table.  The disadvantage is that
-            // loads marked with multiple regions must be invalidated
-            // conservatively, eg. if any intervening stores occur.  But loads
-            // marked with multiple regions should be rare.
-            LInsLoadReadOnly = 7,
-            LInsLoadStack    = 8,
-            LInsLoadRStack   = 9,
-            LInsLoadOther    = 10,
-            LInsLoadMultiple = 11,
-
-            LInsFirst = 0,
-            LInsLast = 11,
+            NLFirst = 0,
+            NLLast = 7,
             // Need a value after "last" to outsmart compilers that insist last+1 is impossible.
-            LInsInvalid = 12
+            NLInvalid = 8
         };
-        #define nextKind(kind)  LInsHashKind(kind+1)
+        #define nextNLKind(kind)  NLKind(kind+1)
 
-        // There is one list for each instruction kind.  This lets us size the
-        // lists appropriately (some instructions are more common than others).
-        // It also lets us have kind-specific find/add/grow functions, which
+        // There is one table for each NLKind.  This lets us size the lists
+        // appropriately (some instruction kinds are more common than others).
+        // It also lets us have NLKind-specific find/add/grow functions, which
         // are faster than generic versions.
         //
-        // Nb: Size must be a power of 2.
-        //     Don't start too small, or we'll waste time growing and rehashing.
-        //     Don't start too large, will waste memory.
+        // Nb: m_listNL and m_capNL sizes must be a power of 2.
+        //     Don't start m_capNL too small, or we'll waste time growing and rehashing.
+        //     Don't start m_capNL too large, will waste memory.
         //
-        LIns**      m_list[LInsLast + 1];
-        uint32_t    m_cap[LInsLast + 1];
-        uint32_t    m_used[LInsLast + 1];
+        LIns**      m_listNL[NLLast + 1];
+        uint32_t    m_capNL[ NLLast + 1];
+        uint32_t    m_usedNL[NLLast + 1];
         typedef uint32_t (CseFilter::*find_t)(LIns*);
-        find_t      m_find[LInsLast + 1];
+        find_t      m_findNL[NLLast + 1];
+
+        // Similarly, for loads, there is one table for each CseAcc.  A CseAcc
+        // is like a normal access region, but there are two extra possible
+        // values: CSE_ACC_CONST, which is where we put all CONST-qualified
+        // loads, and CSE_ACC_MULTIPLE, where we put all multi-region loads.
+        // All remaining loads are single-region and go in the table entry for
+        // their region.
+        //
+        // This arrangement makes the removal of invalidated loads fast -- we
+        // can invalidate all loads from a single region by clearing that
+        // region's table.
+        //
+        typedef uint8_t CseAcc;     // same type as MiniAccSet
+
+        static const uint8_t CSE_NUM_ACCS = NUM_ACCS + 2;
+
+        // These values would be 'static const' except they are defined in
+        // terms of EMB_NUM_USED_ACCS which is itself not 'static const'
+        // because it's passed in by the embedding.
+        const uint8_t EMB_NUM_USED_ACCS;      // number of access regions used by the embedding
+        const uint8_t CSE_NUM_USED_ACCS;      // EMB_NUM_USED_ACCS + 2
+        const CseAcc CSE_ACC_CONST;           // EMB_NUM_USED_ACCS + 0
+        const CseAcc CSE_ACC_MULTIPLE;        // EMB_NUM_USED_ACCS + 1
+
+        // We will only use CSE_NUM_USED_ACCS of these entries, ie. the
+        // number of lists allocated depends on the number of access regions
+        // in use by the embedding.
+        LIns**      m_listL[CSE_NUM_ACCS];
+        uint32_t    m_capL[ CSE_NUM_ACCS];
+        uint32_t    m_usedL[CSE_NUM_ACCS];
 
         AccSet      storesSinceLastLoad;    // regions stored to since the last load
 
         Allocator& alloc;
+
+        // After a conditional guard such as "xf cmp", we know that 'cmp' must
+        // be true, else we would have side-exited.  So if we see 'cmp' again
+        // we can treat it like a constant.  This table records such
+        // comparisons.
+        HashMap <LIns*, bool> knownCmpValues;
+
+        // If true, we will not add new instructions to the CSE tables, but we
+        // will continue to CSE instructions that match existing table
+        // entries.  Load instructions will still be removed if aliasing
+        // stores are encountered.
+        bool suspended;
+
+        CseAcc miniAccSetToCseAcc(MiniAccSet miniAccSet, LoadQual loadQual) {
+            NanoAssert(miniAccSet.val < NUM_ACCS || miniAccSet.val == MINI_ACCSET_MULTIPLE.val);
+            return (loadQual == LOAD_CONST) ? CSE_ACC_CONST :
+                   (miniAccSet.val == MINI_ACCSET_MULTIPLE.val) ? CSE_ACC_MULTIPLE :
+                   miniAccSet.val;
+        }
 
         static uint32_t hash8(uint32_t hash, const uint8_t data);
         static uint32_t hash32(uint32_t hash, const uint32_t data);
@@ -1893,11 +2022,12 @@ namespace nanojit
         static uint32_t hash1(LOpcode op, LIns*);
         static uint32_t hash2(LOpcode op, LIns*, LIns*);
         static uint32_t hash3(LOpcode op, LIns*, LIns*, LIns*);
-        static uint32_t hashLoad(LOpcode op, LIns*, int32_t, AccSet);
+        static uint32_t hashLoad(LOpcode op, LIns*, int32_t);
         static uint32_t hashCall(const CallInfo *call, uint32_t argc, LIns* args[]);
 
         // These versions are used before an LIns has been created.
-        LIns* findImmI(int32_t a, uint32_t &k);
+        LIns* findImmISmall(int32_t a, uint32_t &k);
+        LIns* findImmILarge(int32_t a, uint32_t &k);
 #ifdef NANOJIT_64BIT
         LIns* findImmQ(uint64_t a, uint32_t &k);
 #endif
@@ -1905,14 +2035,15 @@ namespace nanojit
         LIns* find1(LOpcode v, LIns* a, uint32_t &k);
         LIns* find2(LOpcode v, LIns* a, LIns* b, uint32_t &k);
         LIns* find3(LOpcode v, LIns* a, LIns* b, LIns* c, uint32_t &k);
-        LIns* findLoad(LOpcode v, LIns* a, int32_t b, AccSet accSet, LInsHashKind kind,
+        LIns* findLoad(LOpcode v, LIns* a, int32_t b, MiniAccSet miniAccSet, LoadQual loadQual,
                        uint32_t &k);
         LIns* findCall(const CallInfo *call, uint32_t argc, LIns* args[], uint32_t &k);
 
         // These versions are used after an LIns has been created; they are
         // used for rehashing after growing.  They just call onto the
         // multi-arg versions above.
-        uint32_t findImmI(LIns* ins);
+        uint32_t findImmISmall(LIns* ins);
+        uint32_t findImmILarge(LIns* ins);
 #ifdef NANOJIT_64BIT
         uint32_t findImmQ(LIns* ins);
 #endif
@@ -1921,22 +2052,34 @@ namespace nanojit
         uint32_t find2(LIns* ins);
         uint32_t find3(LIns* ins);
         uint32_t findCall(LIns* ins);
-        uint32_t findLoadReadOnly(LIns* ins);
-        uint32_t findLoadStack(LIns* ins);
-        uint32_t findLoadRStack(LIns* ins);
-        uint32_t findLoadOther(LIns* ins);
-        uint32_t findLoadMultiple(LIns* ins);
+        uint32_t findLoad(LIns* ins);
 
-        void grow(LInsHashKind kind);
+        // These return false if they failed to grow due to OOM.
+        bool growNL(NLKind kind);
+        bool growL(CseAcc cseAcc);
 
+        void addNLImmISmall(LIns* ins, uint32_t k);
         // 'k' is the index found by findXYZ().
-        void add(LInsHashKind kind, LIns* ins, uint32_t k);
+        void addNL(NLKind kind, LIns* ins, uint32_t k);
+        void addL(LIns* ins, uint32_t k);
 
-        void clear();               // clears all tables
-        void clear(LInsHashKind);   // clears one table
+        void clearAll();            // clears all tables
+        void clearNL(NLKind);       // clears one non-load table
+        void clearL(CseAcc);        // clears one load table
 
     public:
-        CseFilter(LirWriter *out, Allocator&);
+        CseFilter(LirWriter *out, uint8_t embNumUsedAccs, Allocator&);
+
+        // CseFilter does some largish fallible allocations at start-up.  If
+        // they fail, the constructor sets this field to 'true'.  It should be
+        // checked after creation, and if set the CseFilter cannot be used.
+        // (But the check can be skipped if allocChunk() always succeeds.)
+        //
+        // FIXME: This fallibility is a sop to TraceMonkey's implementation of
+        // infallible malloc -- by avoiding some largish infallible
+        // allocations, it reduces the size of the reserve space needed.
+        // Bug 624590 is open to fix this.
+        bool initOOM;
 
         LIns* insImmI(int32_t imm);
 #ifdef NANOJIT_64BIT
@@ -1947,11 +2090,19 @@ namespace nanojit
         LIns* ins1(LOpcode v, LIns*);
         LIns* ins2(LOpcode v, LIns*, LIns*);
         LIns* ins3(LOpcode v, LIns*, LIns*, LIns*);
-        LIns* insLoad(LOpcode op, LIns* base, int32_t d, AccSet accSet);
+        LIns* insLoad(LOpcode op, LIns* base, int32_t d, AccSet accSet, LoadQual loadQual);
         LIns* insStore(LOpcode op, LIns* value, LIns* base, int32_t d, AccSet accSet);
         LIns* insCall(const CallInfo *call, LIns* args[]);
         LIns* insGuard(LOpcode op, LIns* cond, GuardRecord *gr);
         LIns* insGuardXov(LOpcode op, LIns* a, LIns* b, GuardRecord *gr);
+
+        // These functions provide control over CSE in the face of control
+        // flow.  A suspend()/resume() pair may be put around a synthetic
+        // control flow diamond, preventing the inserted label from resetting
+        // the CSE state.  A suspend() call must be dominated by a resume()
+        // call, else incorrect code could result.
+        void suspend() { suspended = true; }
+        void resume() { suspended = false; }
     };
 
     class LirBuffer
@@ -1965,7 +2116,6 @@ namespace nanojit
             verbose_only(LInsPrinter* printer;)
 
             int32_t insCount();
-            size_t  byteCount();
 
             // stats
             struct
@@ -1978,12 +2128,12 @@ namespace nanojit
             LIns *state, *param1, *sp, *rp;
             LIns* savedRegs[NumSavedRegs+1]; // Allocate an extra element in case NumSavedRegs == 0
 
-        protected:
-            friend class LirBufWriter;
-
             /** Each chunk is just a raw area of LIns instances, with no header
                 and no more than 8-byte alignment.  The chunk size is somewhat arbitrary. */
             static const size_t CHUNK_SZB = 8000;
+
+        protected:
+            friend class LirBufWriter;
 
             /** Get CHUNK_SZB more memory for LIR instructions. */
             void        chunkAlloc();
@@ -1992,7 +2142,6 @@ namespace nanojit
             Allocator&  _allocator;
             uintptr_t   _unused;   // next unused instruction slot in the current LIR chunk
             uintptr_t   _limit;    // one past the last usable byte of the current LIR chunk
-            size_t      _bytesAllocated;
     };
 
     class LirBufWriter : public LirWriter
@@ -2006,7 +2155,7 @@ namespace nanojit
             }
 
             // LirWriter interface
-            LIns*   insLoad(LOpcode op, LIns* base, int32_t disp, AccSet accSet);
+            LIns*   insLoad(LOpcode op, LIns* base, int32_t disp, AccSet accSet, LoadQual loadQual);
             LIns*   insStore(LOpcode op, LIns* o1, LIns* o2, int32_t disp, AccSet accSet);
             LIns*   ins0(LOpcode op);
             LIns*   ins1(LOpcode op, LIns* o1);
@@ -2025,6 +2174,7 @@ namespace nanojit
             LIns*   insBranchJov(LOpcode v, LIns* a, LIns* b, LIns* to);
             LIns*   insAlloc(int32_t size);
             LIns*   insJtbl(LIns* index, uint32_t size);
+            LIns*   insComment(const char* str);
     };
 
     class LirFilter
@@ -2091,6 +2241,78 @@ namespace nanojit
         LIns* read();
     };
 
+    // This type is used to perform a simple interval analysis of 32-bit
+    // add/sub/mul.  It lets us avoid overflow checks in some cases.
+    struct Interval
+    {
+        // The bounds are 64-bit integers so that any overflow from a 32-bit
+        // operation can be safely detected.
+        //
+        // If 'hasOverflowed' is false, 'lo' and 'hi' must be in the range
+        // I32_MIN..I32_MAX.  If 'hasOverflowed' is true, 'lo' and 'hi' should
+        // not be trusted (and in debug builds we set them both to a special
+        // value UNTRUSTWORTHY that is outside the I32_MIN..I32_MAX range to
+        // facilitate sanity checking).
+        //
+        int64_t lo;
+        int64_t hi;
+        bool hasOverflowed;
+
+        static const int64_t I32_MIN = int64_t(int32_t(0x80000000));
+        static const int64_t I32_MAX = int64_t(int32_t(0x7fffffff));
+
+#ifdef DEBUG
+        static const int64_t UNTRUSTWORTHY = int64_t(0xdeafdeadbeeffeedLL);
+
+        bool isSane() {
+            return (hasOverflowed && lo == UNTRUSTWORTHY && hi == UNTRUSTWORTHY) ||
+                   (!hasOverflowed && lo <= hi && I32_MIN <= lo && hi <= I32_MAX);
+        }
+#endif
+
+        Interval(int64_t lo_, int64_t hi_) {
+            if (lo_ < I32_MIN || I32_MAX < hi_) {
+                hasOverflowed = true;
+#ifdef DEBUG
+                lo = UNTRUSTWORTHY;
+                hi = UNTRUSTWORTHY;
+#endif
+            } else {
+                hasOverflowed = false;
+                lo = lo_;
+                hi = hi_;
+            }
+            NanoAssert(isSane());
+        }
+
+        static Interval OverflowInterval() {
+            Interval interval(0, 0);
+#ifdef DEBUG
+            interval.lo = UNTRUSTWORTHY;
+            interval.hi = UNTRUSTWORTHY;
+#endif
+            interval.hasOverflowed = true;
+            return interval;
+        }
+
+        static Interval of(LIns* ins, int32_t lim);
+
+        static Interval add(Interval x, Interval y);
+        static Interval sub(Interval x, Interval y);
+        static Interval mul(Interval x, Interval y);
+
+        bool canBeZero() {
+            NanoAssert(isSane());
+            return hasOverflowed || (lo <= 0 && 0 <= hi);
+        }
+
+        bool canBeNegative() {
+            NanoAssert(isSane());
+            return hasOverflowed || (lo < 0);
+        }
+    };
+
+#if NJ_SOFTFLOAT_SUPPORTED
     struct SoftFloatOps
     {
         const CallInfo* opmap[LIR_sentinel];
@@ -2111,12 +2333,13 @@ namespace nanojit
         LIns *split(const CallInfo *call, LIns* args[]);
         LIns *callD1(const CallInfo *call, LIns *a);
         LIns *callD2(const CallInfo *call, LIns *a, LIns *b);
+        LIns *callI1(const CallInfo *call, LIns *a);
         LIns *cmpD(const CallInfo *call, LIns *a, LIns *b);
         LIns *ins1(LOpcode op, LIns *a);
         LIns *ins2(LOpcode op, LIns *a, LIns *b);
         LIns *insCall(const CallInfo *ci, LIns* args[]);
     };
-
+#endif
 
 #ifdef DEBUG
     // This class does thorough checking of LIR.  It checks *implicit* LIR
@@ -2142,19 +2365,20 @@ namespace nanojit
         void errorStructureShouldBe(LOpcode op, const char* argDesc, int argN, LIns* arg,
                                     const char* shouldBeDesc);
         void errorAccSet(const char* what, AccSet accSet, const char* shouldDesc);
+        void errorLoadQual(const char* what, LoadQual loadQual);
         void checkLInsHasOpcode(LOpcode op, int argN, LIns* ins, LOpcode op2);
         void checkLInsIsACondOrConst(LOpcode op, int argN, LIns* ins);
         void checkLInsIsNull(LOpcode op, int argN, LIns* ins);
-        void checkAccSet(LOpcode op, LIns* base, AccSet accSet, AccSet maxAccSet);
+        void checkAccSet(LOpcode op, LIns* base, int32_t disp, AccSet accSet);   // defined by the embedder
 
-        LIns *sp, *rp;
+        // These can be set by the embedder and used in checkAccSet().
+        void** checkAccSetExtras;
 
     public:
         ValidateWriter(LirWriter* out, LInsPrinter* printer, const char* where);
-        void setSp(LIns* ins) { sp = ins; }
-        void setRp(LIns* ins) { rp = ins; }
+        void setCheckAccSetExtras(void** extras) { checkAccSetExtras = extras; }
 
-        LIns* insLoad(LOpcode op, LIns* base, int32_t d, AccSet accSet);
+        LIns* insLoad(LOpcode op, LIns* base, int32_t d, AccSet accSet, LoadQual loadQual);
         LIns* insStore(LOpcode op, LIns* value, LIns* base, int32_t d, AccSet accSet);
         LIns* ins0(LOpcode v);
         LIns* ins1(LOpcode v, LIns* a);

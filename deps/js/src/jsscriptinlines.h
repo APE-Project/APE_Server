@@ -41,10 +41,59 @@
 #ifndef jsscriptinlines_h___
 #define jsscriptinlines_h___
 
+#include "jscntxt.h"
 #include "jsfun.h"
 #include "jsopcode.h"
 #include "jsregexp.h"
 #include "jsscript.h"
+#include "jsscope.h"
+
+namespace js {
+
+inline
+Bindings::Bindings(JSContext *cx)
+  : lastBinding(cx->compartment->emptyCallShape), nargs(0), nvars(0), nupvars(0)
+{
+}
+
+inline void
+Bindings::transfer(JSContext *cx, Bindings *bindings)
+{
+    JS_ASSERT(lastBinding == cx->compartment->emptyCallShape);
+
+    *this = *bindings;
+#ifdef DEBUG
+    bindings->lastBinding = NULL;
+#endif
+
+    /* Preserve back-pointer invariants across the lastBinding transfer. */
+    if (lastBinding->inDictionary())
+        lastBinding->listp = &this->lastBinding;
+}
+
+inline void
+Bindings::clone(JSContext *cx, Bindings *bindings)
+{
+    JS_ASSERT(lastBinding == cx->compartment->emptyCallShape);
+
+    /*
+     * Non-dictionary bindings are fine to share, as are dictionary bindings if
+     * they're copy-on-modification.
+     */
+    JS_ASSERT(!bindings->lastBinding->inDictionary() || bindings->lastBinding->frozen());
+
+    *this = *bindings;
+}
+
+const Shape *
+Bindings::lastShape() const
+{
+    JS_ASSERT(lastBinding);
+    JS_ASSERT_IF(lastBinding->inDictionary(), lastBinding->frozen());
+    return lastBinding;
+}
+
+} // namespace js
 
 inline JSFunction *
 JSScript::getFunction(size_t index)
@@ -70,20 +119,13 @@ JSScript::getRegExp(size_t index)
 inline bool
 JSScript::isEmpty() const
 {
-    if (this == emptyScript())
-        return true;
+    if (length > 3)
+        return false;
 
-    if (length <= 3) {
-        jsbytecode *pc = code;
-
-        if (JSOp(*pc) == JSOP_TRACE)
-            ++pc;
-        if (noScriptRval && JSOp(*pc) == JSOP_FALSE)
-            ++pc;
-        if (JSOp(*pc) == JSOP_STOP)
-            return true;
-    }
-    return false;
+    jsbytecode *pc = code;
+    if (noScriptRval && JSOp(*pc) == JSOP_FALSE)
+        ++pc;
+    return JSOp(*pc) == JSOP_STOP;
 }
 
 #endif /* jsscriptinlines_h___ */

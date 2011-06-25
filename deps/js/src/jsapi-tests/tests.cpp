@@ -45,13 +45,18 @@ JSAPITest *JSAPITest::list;
 
 int main(int argc, char *argv[])
 {
+    int total = 0;
     int failures = 0;
     const char *filter = (argc == 2) ? argv[1] : NULL;
 
+    JS_SetCStringsAreUTF8();
+
     for (JSAPITest *test = JSAPITest::list; test; test = test->next) {
         const char *name = test->name();
-        if (filter && strcmp(filter, name) != 0)
+        if (filter && strstr(name, filter) == NULL)
             continue;
+
+        total += 1;
 
         printf("%s\n", name);
         if (!test->init()) {
@@ -77,6 +82,6 @@ int main(int argc, char *argv[])
         printf("\n%d unexpected failure%s.\n", failures, (failures == 1 ? "" : "s"));
         return 1;
     }
-    printf("\nPassed.\n");
+    printf("\nPassed: ran %d tests.\n", total);
     return 0;
 }

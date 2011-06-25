@@ -3,7 +3,6 @@
  * http://creativecommons.org/licenses/publicdomain/
  * Contributors: Gary Kwong and Nicholas Nethercote
  */
-gTestfile = 'regress-563210';
 
 if (typeof gczeal != 'undefined' && typeof gc != 'undefined') {
     try
@@ -18,6 +17,11 @@ if (typeof gczeal != 'undefined' && typeof gc != 'undefined') {
     {
     }
 }
+
+// Reset gczeal.
+if (typeof gczeal !== 'undefined')
+    gczeal(0)
+
 reportCompare("no assertion failure", "no assertion failure", "bug 563210");
 
 

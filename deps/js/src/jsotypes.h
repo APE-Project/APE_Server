@@ -75,11 +75,7 @@ typedef JSUintn uint;
 
 typedef JSUintn uintn;
 typedef JSUint64 uint64;
-#if !defined(_WIN32) && !defined(XP_OS2)
 typedef JSUint32 uint32;
-#else
-typedef unsigned long uint32;
-#endif
 typedef JSUint16 uint16;
 typedef JSUint8 uint8;
 
@@ -95,15 +91,19 @@ typedef JSIntn intn;
  */
 #if defined(AIX) && defined(HAVE_SYS_INTTYPES_H)
 #include <sys/inttypes.h>
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+typedef JSInt64 int64;
+
+/* Explicit signed keyword for bitfield types is required. */
+/* Some compilers may treat them as unsigned without it. */
+typedef signed int int32;
+typedef signed short int16;
+typedef signed char int8;
 #else
 typedef JSInt64 int64;
 
 /* /usr/include/model.h on HP-UX defines int8, int16, and int32 */
-#if !defined(_WIN32) && !defined(XP_OS2)
 typedef JSInt32 int32;
-#else
-typedef long int32;
-#endif
 typedef JSInt16 int16;
 typedef JSInt8 int8;
 #endif /* AIX && HAVE_SYS_INTTYPES_H */

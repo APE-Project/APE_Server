@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-452498-193.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 452498;
 var summary = 'TM: upvar2 regression tests';
@@ -56,7 +55,7 @@ function test()
 
 // Assertion failure: afunbox->parent, at ../jsparse.cpp:1912
 
-  watch("x", Function);
+  this.watch("x", Function);
   NaN = uneval({ get \u3056 (){ return undefined } });
   x+=NaN;
 

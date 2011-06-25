@@ -54,7 +54,9 @@ enum LibrarySlot {
 
 namespace Library
 {
-  JSObject* Create(JSContext* cx, jsval aPath);
+  JSBool Name(JSContext* cx, uintN argc, jsval *vp);
+
+  JSObject* Create(JSContext* cx, jsval path, JSCTypesCallbacks* callbacks);
 
   bool IsLibrary(JSContext* cx, JSObject* obj);
   PRLibrary* GetLibrary(JSContext* cx, JSObject* obj);

@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- * vim: set ts=8 sw=4 et tw=78:
+ * vim: set ts=4 sw=4 et tw=78:
  *
  * ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -69,7 +69,10 @@ JS_BEGIN_EXTERN_C
  *                          pn_body: TOK_UPVARS if the function's source body
  *                                   depends on outer names, else TOK_ARGSBODY
  *                                   if formal parameters, else TOK_LC node for
- *                                   function body statements
+ *                                   function body statements, else TOK_RETURN
+ *                                   for expression closure, else TOK_SEQ for
+ *                                   expression closure with destructured
+ *                                   formal parameters
  *                          pn_cookie: static level and var index for function
  *                          pn_dflags: PND_* definition/use flags (see below)
  *                          pn_blockid: block id number
@@ -84,7 +87,10 @@ JS_BEGIN_EXTERN_C
  *
  * <Statements>
  * TOK_LC       list        pn_head: list of pn_count statements
- * TOK_IF       ternary     pn_kid1: cond, pn_kid2: then, pn_kid3: else or null
+ * TOK_IF       ternary     pn_kid1: cond, pn_kid2: then, pn_kid3: else or null.
+ *                            In body of a comprehension or desugared generator
+ *                            expression, pn_kid2 is TOK_YIELD, TOK_ARRAYPUSH,
+ *                            or (if the push was optimized away) empty TOK_LC.
  * TOK_SWITCH   binary      pn_left: discriminant
  *                          pn_right: list of TOK_CASE nodes, with at most one
  *                            TOK_DEFAULT node, or if there are let bindings
@@ -128,10 +134,13 @@ JS_BEGIN_EXTERN_C
  *                                     pn_expr: initializer or null
  *                                   each assignment node has
  *                                     pn_left: TOK_NAME with pn_used true and
-*                                               pn_lexdef (NOT pn_expr) set
+ *                                              pn_lexdef (NOT pn_expr) set
  *                                     pn_right: initializer
  * TOK_RETURN   unary       pn_kid: return expr or null
  * TOK_SEMI     unary       pn_kid: expr or null statement
+ *                          pn_prologue: true if Directive Prologue member
+ *                              in original source, not introduced via
+ *                              constant folding or other tree rewriting
  * TOK_COLON    name        pn_atom: label, pn_expr: labeled statement
  *
  * <Expressions>
@@ -207,6 +216,9 @@ JS_BEGIN_EXTERN_C
  * TOK_PRIMARY  nullary     pn_op: JSOp bytecode
  *
  * <E4X node descriptions>
+ * TOK_DEFAULT  name        pn_atom: default XML namespace string literal
+ * TOK_FILTER   binary      pn_left: container expr, pn_right: filter expr
+ * TOK_DBLDOT   binary      pn_left: container expr, pn_right: selector expr
  * TOK_ANYNAME  nullary     pn_op: JSOP_ANYNAME
  *                          pn_atom: cx->runtime->atomState.starAtom
  * TOK_AT       unary       pn_op: JSOP_TOATTRNAME; pn_kid attribute id/expr
@@ -220,11 +232,13 @@ JS_BEGIN_EXTERN_C
  *                          pn_head: start tag, content1, ... contentN, end tag
  *                          pn_count: 2 + N where N is number of content nodes
  *                                    N may be > x.length() if {expr} embedded
+ *                            After constant folding, these contents may be
+ *                            concatenated into string nodes.
  * TOK_XMLLIST  list        XML list node
  *                          pn_head: content1, ... contentN
  * TOK_XMLSTAGO, list       XML start, end, and point tag contents
- * TOK_XMLETAGC,            pn_head: tag name or {expr}, ... XML attrs ...
- * TOK_XMLPTAGO
+ * TOK_XMLETAGO,            pn_head: tag name or {expr}, ... XML attrs ...
+ * TOK_XMLPTAGC
  * TOK_XMLNAME  nullary     pn_atom: XML name, with no {expr} embedded
  * TOK_XMLNAME  list        pn_head: tag name or {expr}, ... name or {expr}
  * TOK_XMLATTR, nullary     pn_atom: attribute value string; pn_op: JSOP_STRING
@@ -267,10 +281,10 @@ JS_BEGIN_EXTERN_C
  * TOK_LEXICALSCOPE   name      pn_op: JSOP_LEAVEBLOCK or JSOP_LEAVEBLOCKEXPR
  *                              pn_objbox: block object in JSObjectBox holder
  *                              pn_expr: block body
- * TOK_ARRAYCOMP      list      pn_head: list of pn_count (1 or 2) elements
- *                              if pn_count is 2, first element is #n=[...]
- *                                last element is block enclosing for loop(s)
- *                                and optionally if-guarded TOK_ARRAYPUSH
+ * TOK_ARRAYCOMP      list      pn_count: 1
+ *                              pn_head: list of 1 element, which is block
+ *                                enclosing for loop(s) and optionally
+ *                                if-guarded TOK_ARRAYPUSH
  * TOK_ARRAYPUSH      unary     pn_op: JSOP_ARRAYCOMP
  *                              pn_kid: array comprehension expression
  */
@@ -286,6 +300,45 @@ typedef enum JSParseNodeArity {
 } JSParseNodeArity;
 
 struct JSDefinition;
+
+namespace js {
+
+struct GlobalScope {
+    GlobalScope(JSContext *cx, JSObject *globalObj, JSCodeGenerator *cg)
+      : globalObj(globalObj), cg(cg), defs(ContextAllocPolicy(cx))
+    { }
+
+    struct GlobalDef {
+        JSAtom        *atom;        // If non-NULL, specifies the property name to add.
+        JSFunctionBox *funbox;      // If non-NULL, function value for the property.
+                                    // This value is only set/used if atom is non-NULL.
+        uint32        knownSlot;    // If atom is NULL, this is the known shape slot.
+
+        GlobalDef() { }
+        GlobalDef(uint32 knownSlot)
+          : atom(NULL), knownSlot(knownSlot)
+        { }
+        GlobalDef(JSAtom *atom, JSFunctionBox *box) :
+          atom(atom), funbox(box)
+        { }
+    };
+
+    JSObject        *globalObj;
+    JSCodeGenerator *cg;
+
+    /*
+     * This is the table of global names encountered during parsing. Each
+     * global name appears in the list only once, and the |names| table
+     * maps back into |defs| for fast lookup.
+     *
+     * A definition may either specify an existing global property, or a new
+     * one that must be added after compilation succeeds.
+     */
+    Vector<GlobalDef, 16, ContextAllocPolicy> defs;
+    JSAtomList      names;
+};
+
+} /* namespace js */
 
 struct JSParseNode {
     uint32              pn_type:16,     /* TOK_* type, see jsscan.h */
@@ -320,13 +373,15 @@ struct JSParseNode {
         struct {                        /* two kids if binary */
             JSParseNode *left;
             JSParseNode *right;
-            jsval       val;            /* switch case value */
+            js::Value   *pval;          /* switch case value */
             uintN       iflags;         /* JSITER_* flags for TOK_FOR node */
         } binary;
         struct {                        /* one kid if unary */
             JSParseNode *kid;
             jsint       num;            /* -1 or sharp variable number */
-            JSBool      hidden;         /* hidden genexp-induced JSOP_YIELD */
+            JSBool      hidden;         /* hidden genexp-induced JSOP_YIELD
+                                           or directive prologue member (as
+                                           pn_prologue) */
         } unary;
         struct {                        /* name, labeled statement, etc. */
             union {
@@ -372,11 +427,12 @@ struct JSParseNode {
 #define pn_kid3         pn_u.ternary.kid3
 #define pn_left         pn_u.binary.left
 #define pn_right        pn_u.binary.right
-#define pn_val          pn_u.binary.val
+#define pn_pval         pn_u.binary.pval
 #define pn_iflags       pn_u.binary.iflags
 #define pn_kid          pn_u.unary.kid
 #define pn_num          pn_u.unary.num
 #define pn_hidden       pn_u.unary.hidden
+#define pn_prologue     pn_u.unary.hidden
 #define pn_atom         pn_u.name.atom
 #define pn_objbox       pn_u.name.objbox
 #define pn_expr         pn_u.name.expr
@@ -429,7 +485,7 @@ public:
 #define PND_CONST       0x02            /* const binding (orthogonal to let) */
 #define PND_INITIALIZED 0x04            /* initialized declaration */
 #define PND_ASSIGNED    0x08            /* set if ever LHS of assignment */
-#define PND_TOPLEVEL    0x10            /* function at top of body or prog */
+#define PND_TOPLEVEL    0x10            /* see isTopLevel() below */
 #define PND_BLOCKCHILD  0x20            /* use or def is direct block child */
 #define PND_GVAR        0x40            /* gvar binding, can't close over
                                            because it could be deleted */
@@ -439,9 +495,10 @@ public:
 #define PND_DEOPTIMIZED 0x400           /* former pn_used name node, pn_lexdef
                                            still valid, but this use no longer
                                            optimizable via an upvar opcode */
+#define PND_CLOSED      0x800           /* variable is closed over */
 
 /* Flags to propagate from uses to definition. */
-#define PND_USE2DEF_FLAGS (PND_ASSIGNED | PND_FUNARG)
+#define PND_USE2DEF_FLAGS (PND_ASSIGNED | PND_FUNARG | PND_CLOSED)
 
 /* PN_LIST pn_xflags bits. */
 #define PNX_STRCAT      0x01            /* TOK_PLUS list has string term */
@@ -453,15 +510,16 @@ public:
 #define PNX_XMLROOT     0x20            /* top-most node in XML literal tree */
 #define PNX_GROUPINIT   0x40            /* var [a, b] = [c, d]; unit list */
 #define PNX_NEEDBRACES  0x80            /* braces necessary due to closure */
-#define PNX_FUNCDEFS   0x100            /* contains top-level function
-                                           statements */
+#define PNX_FUNCDEFS   0x100            /* contains top-level function statements */
+#define PNX_SETCALL    0x100            /* call expression in lvalue context */
 #define PNX_DESTRUCT   0x200            /* destructuring special cases:
                                            1. shorthand syntax used, at present
                                               object destructuring ({x,y}) only;
-                                           2. the first child of function body
-                                              is code evaluating destructuring
-                                              arguments */
+                                           2. code evaluating destructuring
+                                              arguments occurs before function
+                                              body */
 #define PNX_HOLEY      0x400            /* array initialiser has holes */
+#define PNX_NONCONST   0x800            /* initialiser has non-constants */
 
     uintN frameLevel() const {
         JS_ASSERT(pn_arity == PN_FUNC || pn_arity == PN_NAME);
@@ -478,12 +536,26 @@ public:
     bool isLet() const          { return test(PND_LET); }
     bool isConst() const        { return test(PND_CONST); }
     bool isInitialized() const  { return test(PND_INITIALIZED); }
-    bool isTopLevel() const     { return test(PND_TOPLEVEL); }
     bool isBlockChild() const   { return test(PND_BLOCKCHILD); }
     bool isPlaceholder() const  { return test(PND_PLACEHOLDER); }
     bool isDeoptimized() const  { return test(PND_DEOPTIMIZED); }
     bool isAssigned() const     { return test(PND_ASSIGNED); }
     bool isFunArg() const       { return test(PND_FUNARG); }
+    bool isClosed() const       { return test(PND_CLOSED); }
+
+    /*
+     * True iff this definition creates a top-level binding in the overall
+     * script being compiled -- that is, it affects the whole program's
+     * bindings, not bindings for a specific function (unless this definition
+     * is in the outermost scope in eval code, executed within a function) or
+     * the properties of a specific object (through the with statement).
+     *
+     * NB: Function sub-statements found in overall program code and not nested
+     *     within other functions are not currently top level, even though (if
+     *     executed) they do create top-level bindings; there is no particular
+     *     rationale for this behavior.
+     */
+    bool isTopLevel() const     { return test(PND_TOPLEVEL); }
 
     /* Defined below, see after struct JSDefinition. */
     void setFunArg();
@@ -499,13 +571,21 @@ public:
     }
 
     /*
-     * True if this statement node could be a member of a Directive
-     * Prologue.  Note that the prologue may contain strings that
-     * cannot themselves be directives; that's a stricter test.
-     * If Statement begins to simplify trees into this form, then
-     * we'll need additional flags that we can test here.
+     * True if this statement node could be a member of a Directive Prologue: an
+     * expression statement consisting of a single string literal.
+     *
+     * This considers only the node and its children, not its context. After
+     * parsing, check the node's pn_prologue flag to see if it is indeed part of
+     * a directive prologue.
+     *
+     * Note that a Directive Prologue can contain statements that cannot
+     * themselves be directives (string literals that include escape sequences
+     * or escaped newlines, say). This member function returns true for such
+     * nodes; we use it to determine the extent of the prologue.
+     * isEscapeFreeStringLiteral, below, checks whether the node itself could be
+     * a directive.
      */
-    bool isDirectivePrologueMember() const {
+    bool isStringExprStatement() const {
         if (PN_TYPE(this) == js::TOK_SEMI) {
             JS_ASSERT(pn_arity == PN_UNARY);
             JSParseNode *kid = pn_kid;
@@ -515,22 +595,54 @@ public:
     }
 
     /*
-     * True if this node, known to be a Directive Prologue member,
-     * could be a directive itself.
+     * Return true if this node, known to be a string literal, could be the
+     * string of a directive in a Directive Prologue. Directive strings never
+     * contain escape sequences or line continuations.
      */
-    bool isDirective() const {
-        JS_ASSERT(isDirectivePrologueMember());
-        JSParseNode *kid = pn_kid;
-        JSString *str = ATOM_TO_STRING(kid->pn_atom);
+    bool isEscapeFreeStringLiteral() const {
+        JS_ASSERT(pn_type == js::TOK_STRING && !pn_parens);
+        JSString *str = ATOM_TO_STRING(pn_atom);
 
         /*
-         * Directives must contain no EscapeSequences or LineContinuations.
          * If the string's length in the source code is its length as a value,
-         * accounting for the quotes, then it qualifies.
+         * accounting for the quotes, then it must not contain any escape
+         * sequences or line continuations.
          */
         return (pn_pos.begin.lineno == pn_pos.end.lineno &&
                 pn_pos.begin.index + str->length() + 2 == pn_pos.end.index);
     }
+
+    /* Return true if this node appears in a Directive Prologue. */
+    bool isDirectivePrologueMember() const { return pn_prologue; }
+
+#ifdef JS_HAS_GENERATOR_EXPRS
+    /*
+     * True if this node is a desugared generator expression.
+     */
+    bool isGeneratorExpr() const {
+        if (PN_TYPE(this) == js::TOK_LP) {
+            JSParseNode *callee = this->pn_head;
+            if (PN_TYPE(callee) == js::TOK_FUNCTION) {
+                JSParseNode *body = (PN_TYPE(callee->pn_body) == js::TOK_UPVARS)
+                                    ? callee->pn_body->pn_tree
+                                    : callee->pn_body;
+                if (PN_TYPE(body) == js::TOK_LEXICALSCOPE)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    JSParseNode *generatorExpr() const {
+        JS_ASSERT(isGeneratorExpr());
+        JSParseNode *callee = this->pn_head;
+        JSParseNode *body = PN_TYPE(callee->pn_body) == js::TOK_UPVARS
+            ? callee->pn_body->pn_tree
+            : callee->pn_body;
+        JS_ASSERT(PN_TYPE(body) == js::TOK_LEXICALSCOPE);
+        return body->pn_expr;
+    }
+#endif
 
     /*
      * Compute a pointer to the last element in a singly-linked list. NB: list
@@ -566,6 +678,9 @@ public:
         pn_tail = &pn->pn_next;
         pn_count++;
     }
+
+    bool getConstantValue(JSContext *cx, bool strictChecks, js::Value *vp);
+    inline bool isConstant();
 };
 
 namespace js {
@@ -734,12 +849,8 @@ struct LexicalScopeNode : public JSParseNode {
  * and because all uses are contained in the same block as the definition.
  *
  * We also analyze function uses to flag upward/downward funargs, optimizing
- * Algol-like (not passed as funargs, only ever called) lightweight functions
- * using cx->display. See JSOP_{GET,CALL}UPVAR.
- *
- * This means that closure optimizations may be frustrated by with, eval, or
- * assignment to an outer var. Such hard cases require heavyweight functions
- * and JSOP_NAME, etc.
+ * those lambdas that post-dominate their upvars inevitable only assignments or
+ * initializations as flat closures (after Chez Scheme's display closures).
  */
 #define dn_uses         pn_link
 
@@ -768,6 +879,11 @@ struct JSDefinition : public JSParseNode
     bool isFreeVar() const {
         JS_ASSERT(pn_defn);
         return pn_cookie.isFree() || test(PND_GVAR);
+    }
+
+    bool isGlobal() const {
+        JS_ASSERT(pn_defn);
+        return test(PND_GVAR);
     }
 
     // Grr, windows.h or something under it #defines CONST...
@@ -834,6 +950,9 @@ struct JSObjectBox {
     JSObjectBox         *traceLink;
     JSObjectBox         *emitLink;
     JSObject            *object;
+    JSObjectBox         *parent;
+    uintN               index;
+    bool                isFunctionBox;
 };
 
 #define JSFB_LEVEL_BITS 14
@@ -849,6 +968,7 @@ struct JSFunctionBox : public JSObjectBox
                                                    pn_link, since lambdas are
                                                    neither definitions nor uses
                                                    of a binding */
+    js::Bindings        bindings;               /* bindings for this function */
     uint32              queued:1,
                         inLoop:1,               /* in a loop in parent function */
                         level:JSFB_LEVEL_BITS;
@@ -857,13 +977,19 @@ struct JSFunctionBox : public JSObjectBox
     bool joinable() const;
 
     /*
+     * True if this function is inside the scope of a with-statement, an E4X
+     * filter-expression, or a function that uses direct eval.
+     */
+    bool inAnyDynamicScope() const;
+
+    /*
      * Unbrand an object being initialized or constructed if any method cannot
      * be joined to one compiler-created null closure shared among N different
      * closure environments.
      *
-     * We despecialize from caching function objects, caching slots or sprops
+     * We despecialize from caching function objects, caching slots or shapes
      * instead, because an unbranded object may still have joined methods (for
-     * which sprop->isMethod), since PropertyCache::fill gives precedence to
+     * which shape->isMethod), since PropertyCache::fill gives precedence to
      * joined methods over branded methods.
      */
     bool shouldUnbrand(uintN methods, uintN slowMethods) const;
@@ -882,11 +1008,11 @@ struct JSFunctionBoxQueue {
 
     bool init(uint32 count) {
         lengthMask = JS_BITMASK(JS_CeilingLog2(count));
-        vector = new JSFunctionBox*[length()];
+        vector = js_array_new<JSFunctionBox*>(length());
         return !!vector;
     }
 
-    ~JSFunctionBoxQueue() { delete[] vector; }
+    ~JSFunctionBoxQueue() { js_array_delete(vector); }
 
     void push(JSFunctionBox *funbox) {
         if (!funbox->queued) {
@@ -917,7 +1043,7 @@ struct Parser : private js::AutoGCRooter
     JSContext           * const context; /* FIXME Bug 551291: use AutoGCRooter::context? */
     JSAtomListElement   *aleFreeList;
     void                *tempFreeList[NUM_TEMP_FREELISTS];
-    js::TokenStream     tokenStream;
+    TokenStream         tokenStream;
     void                *tempPoolMark;  /* initial JSContext.tempPool mark */
     JSPrincipals        *principals;    /* principals associated with source */
     JSStackFrame *const callerFrame;    /* scripted caller frame for eval and dbgapi */
@@ -930,18 +1056,7 @@ struct Parser : private js::AutoGCRooter
     /* Root atoms and objects allocated for the parsed tree. */
     js::AutoKeepAtoms   keepAtoms;
 
-    Parser(JSContext *cx, JSPrincipals *prin = NULL, JSStackFrame *cfp = NULL)
-      : js::AutoGCRooter(cx, PARSER), context(cx),
-        aleFreeList(NULL), tokenStream(cx), principals(NULL), callerFrame(cfp),
-        callerVarObj(cfp ? cfp->varobj(cx->containingCallStack(cfp)) : NULL),
-        nodeList(NULL), functionCount(0), traceListHead(NULL), tc(NULL),
-        keepAtoms(cx->runtime)
-    {
-        js::PodArrayZero(tempFreeList);
-        setPrincipals(prin);
-        JS_ASSERT_IF(cfp, cfp->script);
-    }
-
+    Parser(JSContext *cx, JSPrincipals *prin = NULL, JSStackFrame *cfp = NULL);
     ~Parser();
 
     friend void js::AutoGCRooter::trace(JSTracer *trc);
@@ -954,10 +1069,16 @@ struct Parser : private js::AutoGCRooter
      * JSContext.tempPool mark. This means you cannot allocate from tempPool
      * and save the pointer beyond the next Parser destructor invocation.
      */
-    bool init(const jschar *base, size_t length,
-              FILE *fp, const char *filename, uintN lineno);
+    bool init(const jschar *base, size_t length, const char *filename, uintN lineno,
+              JSVersion version);
 
     void setPrincipals(JSPrincipals *prin);
+
+    const char *getFilename() const { return tokenStream.getFilename(); }
+    JSVersion versionWithFlags() const { return tokenStream.versionWithFlags(); }
+    JSVersion versionNumber() const { return tokenStream.versionNumber(); }
+    bool hasXML() const { return tokenStream.hasXML(); }
+    bool hasAnonFunFix() const { return tokenStream.hasAnonFunFix(); }
 
     /*
      * Parse a top-level JS script.
@@ -986,9 +1107,10 @@ struct Parser : private js::AutoGCRooter
      * starting at funbox, recursively walking its kids, then following its
      * siblings, their kids, etc.
      */
-    bool analyzeFunctions(JSFunctionBox *funbox, uint32& tcflags);
-    bool markFunArgs(JSFunctionBox *funbox, uintN tcflags);
-    void setFunctionKinds(JSFunctionBox *funbox, uint32& tcflags);
+    bool analyzeFunctions(JSTreeContext *tc);
+    void cleanFunctionList(JSFunctionBox **funbox);
+    bool markFunArgs(JSFunctionBox *funbox);
+    void setFunctionKinds(JSFunctionBox *funbox, uint32 *tcflags);
 
     void trace(JSTracer *trc);
 
@@ -1010,6 +1132,14 @@ private:
     JSParseNode *functionExpr();
     JSParseNode *statements();
     JSParseNode *statement();
+    JSParseNode *switchStatement();
+    JSParseNode *forStatement();
+    JSParseNode *tryStatement();
+    JSParseNode *withStatement();
+#if JS_HAS_BLOCK_SCOPE
+    JSParseNode *letStatement();
+#endif
+    JSParseNode *expressionStatement();
     JSParseNode *variables(bool inLetHead);
     JSParseNode *expr();
     JSParseNode *assignExpr();
@@ -1027,18 +1157,22 @@ private:
     JSParseNode *unaryExpr();
     JSParseNode *memberExpr(JSBool allowCallSyntax);
     JSParseNode *primaryExpr(js::TokenKind tt, JSBool afterDot);
-    JSParseNode *parenExpr(JSParseNode *pn1, JSBool *genexp);
+    JSParseNode *parenExpr(JSBool *genexp = NULL);
 
     /*
      * Additional JS parsers.
      */
-    bool recognizeDirectivePrologue(JSParseNode *pn);
+    bool recognizeDirectivePrologue(JSParseNode *pn, bool *isDirectivePrologueMember);
+
+    enum FunctionType { GETTER, SETTER, GENERAL };
+    bool functionArguments(JSTreeContext &funtc, JSFunctionBox *funbox, JSParseNode **list);
     JSParseNode *functionBody();
-    JSParseNode *functionDef(uintN lambda, bool namePermitted);
+    JSParseNode *functionDef(JSAtom *name, FunctionType type, uintN lambda);
+
     JSParseNode *condition();
     JSParseNode *comprehensionTail(JSParseNode *kid, uintN blockid,
                                    js::TokenKind type = js::TOK_SEMI, JSOp op = JSOP_NOP);
-    JSParseNode *generatorExpr(JSParseNode *pn, JSParseNode *kid);
+    JSParseNode *generatorExpr(JSParseNode *kid);
     JSBool argumentList(JSParseNode *listNode);
     JSParseNode *bracketedExpr();
     JSParseNode *letBlock(JSBool statement);
@@ -1075,34 +1209,33 @@ Parser::reportErrorNumber(JSParseNode *pn, uintN flags, uintN errorNumber, ...)
 struct Compiler
 {
     Parser parser;
+    GlobalScope *globalScope;
 
-    Compiler(JSContext *cx, JSPrincipals *prin = NULL, JSStackFrame *cfp = NULL)
-      : parser(cx, prin, cfp)
-    {
-    }
+    Compiler(JSContext *cx, JSPrincipals *prin = NULL, JSStackFrame *cfp = NULL);
 
     /*
      * Initialize a compiler. Parameters are passed on to init parser.
      */
     inline bool
-    init(const jschar *base, size_t length,
-         FILE *fp, const char *filename, uintN lineno)
+    init(const jschar *base, size_t length, const char *filename, uintN lineno, JSVersion version)
     {
-        return parser.init(base, length, fp, filename, lineno);
+        return parser.init(base, length, filename, lineno, version);
     }
 
     static bool
     compileFunctionBody(JSContext *cx, JSFunction *fun, JSPrincipals *principals,
-                        const jschar *chars, size_t length,
-                        const char *filename, uintN lineno);
+                        js::Bindings *bindings, const jschar *chars, size_t length,
+                        const char *filename, uintN lineno, JSVersion version);
 
     static JSScript *
     compileScript(JSContext *cx, JSObject *scopeChain, JSStackFrame *callerFrame,
                   JSPrincipals *principals, uint32 tcflags,
                   const jschar *chars, size_t length,
-                  FILE *file, const char *filename, uintN lineno,
-                  JSString *source = NULL,
-                  unsigned staticLevel = 0);
+                  const char *filename, uintN lineno, JSVersion version,
+                  JSString *source = NULL, uintN staticLevel = 0);
+
+  private:
+    static bool defineGlobals(JSContext *cx, GlobalScope &globalScope, JSScript *script);
 };
 
 } /* namespace js */

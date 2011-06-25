@@ -10,3 +10,27 @@ skip-if(!xulRuntime.shell) script worker-terminate.js
 skip-if(!xulRuntime.shell) script worker-timeout.js
 script scripted-proxies.js
 script array-length-protochange.js
+script parseInt-octal.js
+script proxy-enumerateOwn-duplicates.js
+skip-if(!xulRuntime.shell) script proxy-proto-setter.js
+skip-if(!xulRuntime.shell) script reflect-parse.js
+script destructure-accessor.js
+script censor-strict-caller.js
+skip-if(!xulRuntime.shell) script clone-simple.js
+skip-if(!xulRuntime.shell) script clone-regexp.js
+skip-if(!xulRuntime.shell) script clone-leaf-object.js
+skip-if(!xulRuntime.shell) script clone-object.js
+skip-if(!xulRuntime.shell) script clone-typed-array.js
+skip-if(!xulRuntime.shell) script clone-errors.js
+skip-if(!xulRuntime.shell) script clone-forge.js
+script set-property-non-extensible.js
+script recursion.js
+script regress-627984-1.js
+script regress-627984-2.js
+script regress-627984-3.js
+script regress-627984-4.js
+script regress-627984-5.js
+script regress-627984-6.js
+script regress-627984-7.js
+script regress-630377.js
+script regress-631723.js

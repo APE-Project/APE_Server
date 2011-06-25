@@ -46,6 +46,7 @@
 
 #include "jstypes.h"
 #include <stdlib.h>
+#include <string.h>
 
 JS_BEGIN_EXTERN_C
 
@@ -55,6 +56,14 @@ JS_BEGIN_EXTERN_C
  */
 extern JS_PUBLIC_API(void)
 JS_Assert(const char *s, const char *file, JSIntn ln);
+
+#define JS_CRASH_UNLESS(__cond)                                                 \
+    JS_BEGIN_MACRO                                                              \
+        if (!(__cond)) {                                                        \
+            *(int *)(uintptr_t)0xccadbeef = 0;                                  \
+            ((void(*)())0)(); /* More reliable, but doesn't say CCADBEEF */     \
+        }                                                                       \
+    JS_END_MACRO
 
 #ifdef DEBUG
 
@@ -69,12 +78,22 @@ JS_Assert(const char *s, const char *file, JSIntn ln);
 
 #define JS_ALWAYS_TRUE(expr) JS_ASSERT(expr)
 
+#define JS_ALWAYS_FALSE(expr) JS_ASSERT(!(expr))
+
+# ifdef JS_THREADSAFE
+# define JS_THREADSAFE_ASSERT(expr) JS_ASSERT(expr) 
+# else
+# define JS_THREADSAFE_ASSERT(expr) ((void) 0)
+# endif
+
 #else
 
 #define JS_ASSERT(expr)         ((void) 0)
 #define JS_ASSERT_IF(cond,expr) ((void) 0)
 #define JS_NOT_REACHED(reason)
 #define JS_ALWAYS_TRUE(expr)    ((void) (expr))
+#define JS_ALWAYS_FALSE(expr)    ((void) (expr))
+#define JS_THREADSAFE_ASSERT(expr) ((void) 0)
 
 #endif /* defined(DEBUG) */
 
@@ -84,14 +103,15 @@ JS_Assert(const char *s, const char *file, JSIntn ln);
  * allowed.
  */
 
+#ifdef __SUNPRO_CC
 /*
  * Sun Studio C++ compiler has a bug
  * "sizeof expression not accepted as size of array parameter"
+ * It happens when js_static_assert() function is declared inside functions.
  * The bug number is 6688515. It is not public yet.
- * Turn off this assert for Sun Studio until this bug is fixed.
+ * Therefore, for Sun Studio, declare js_static_assert as an array instead.
  */
-#ifdef __SUNPRO_CC
-#define JS_STATIC_ASSERT(cond)
+#define JS_STATIC_ASSERT(cond) extern char js_static_assert[(cond) ? 1 : -1]
 #else
 #ifdef __COUNTER__
     #define JS_STATIC_ASSERT_GLUE1(x,y) x##y
@@ -210,6 +230,93 @@ JS_END_EXTERN_C
 
 #ifdef __cplusplus
 
+/* 
+ * Using vanilla new/new[] is unsafe in SpiderMonkey because they throw on
+ * failure instead of returning NULL, which is what SpiderMonkey expects.
+ * js_new()/js_array_new() should be used instead, and memory allocated with
+ * them should be deallocated with js_delete()/js_array_delete().
+ *
+ * If you have a class with a private constructor or destructor, you can
+ * make js_new/js_delete a friend.  This can be fiddly, and the interaction of
+ * template functions, friend functions and namespaces can overwhelm even
+ * modern compilers.  Manual inlining is probably easier.
+ *
+ * (If you're wondering why we can't just use the 'nothrow' variant of
+ * new/new[], it's because we want to mediate *all* allocations within
+ * SpiderMonkey, to satisfy any embedders using JS_USE_CUSTOM_ALLOCATOR.)
+ */
+
+#define JS_NEW_BODY(t, parms)                                                 \
+    void *memory = js_malloc(sizeof(t));                                      \
+    return memory ? new(memory) t parms : NULL;
+
+template <class T>
+JS_ALWAYS_INLINE T *js_new() {
+    JS_NEW_BODY(T, ())
+}
+
+template <class T, class P1>
+JS_ALWAYS_INLINE T *js_new(const P1 &p1) {
+    JS_NEW_BODY(T, (p1))
+}
+
+template <class T, class P1, class P2>
+JS_ALWAYS_INLINE T *js_new(const P1 &p1, const P2 &p2) {
+    JS_NEW_BODY(T, (p1, p2))
+}
+
+template <class T, class P1, class P2, class P3>
+JS_ALWAYS_INLINE T *js_new(const P1 &p1, const P2 &p2, const P3 &p3) {
+    JS_NEW_BODY(T, (p1, p2, p3))
+}
+
+template <class T, class P1, class P2, class P3, class P4>
+JS_ALWAYS_INLINE T *js_new(const P1 &p1, const P2 &p2, const P3 &p3, const P4 &p4) {
+    JS_NEW_BODY(T, (p1, p2, p3, p4))
+}
+
+/* ...add additional js_new()s as necessary... */
+
+#undef JS_NEW_BODY
+
+template <class T>
+JS_ALWAYS_INLINE void js_delete(T *p) {
+    if (p) {
+        p->~T();
+        js_free(p);
+    }
+}
+
+static const int JSMinAlignment = 8;
+
+template <class T>
+JS_ALWAYS_INLINE T *js_array_new(size_t n) {
+	/* The length is stored just before the vector memory. */
+    uint64 numBytes64 = uint64(JSMinAlignment) + uint64(sizeof(T)) * uint64(n);
+    size_t numBytes = size_t(numBytes64);
+    if (numBytes64 != numBytes) {
+        JS_ASSERT(0);   /* we want to know if this happens in debug builds */
+        return NULL;
+    }
+    void *memory = js_malloc(numBytes);
+    if (!memory)
+        return NULL;
+	*(size_t *)memory = n;
+	memory = (void*)(uintptr_t(memory) + JSMinAlignment);
+    return new(memory) T[n];
+}
+
+template <class T>
+JS_ALWAYS_INLINE void js_array_delete(T *p) {
+    if (p) {
+		void* p0 = (void *)(uintptr_t(p) - JSMinAlignment);
+		size_t n = *(size_t *)p0;
+		for (size_t i = 0; i < n; i++)
+			(p + i)->~T();
+		js_free(p0);
+    }
+}
+
 /**
  * The following classes are designed to cause assertions to detect
  * inadvertent use of guard objects as temporaries.  In other words,
@@ -256,7 +363,7 @@ public:
         *mStatementDone = true;
     }
 
-    void SetStatementDone(bool *aStatementDone) {
+    void setStatementDone(bool *aStatementDone) {
         mStatementDone = aStatementDone;
     }
 };
@@ -284,7 +391,7 @@ public:
          * temporary, but we really intend it as non-const
          */
         const_cast<JSGuardObjectNotifier&>(aNotifier).
-            SetStatementDone(&mStatementDone);
+            setStatementDone(&mStatementDone);
     }
 };
 
@@ -292,6 +399,8 @@ public:
     JSGuardObjectNotificationReceiver _mCheckNotUsedAsTemporary;
 #define JS_GUARD_OBJECT_NOTIFIER_PARAM \
     , const JSGuardObjectNotifier& _notifier = JSGuardObjectNotifier()
+#define JS_GUARD_OBJECT_NOTIFIER_PARAM0 \
+    const JSGuardObjectNotifier& _notifier = JSGuardObjectNotifier()
 #define JS_GUARD_OBJECT_NOTIFIER_INIT \
     JS_BEGIN_MACRO _mCheckNotUsedAsTemporary.Init(_notifier); JS_END_MACRO
 
@@ -299,9 +408,61 @@ public:
 
 #define JS_DECL_USE_GUARD_OBJECT_NOTIFIER
 #define JS_GUARD_OBJECT_NOTIFIER_PARAM
+#define JS_GUARD_OBJECT_NOTIFIER_PARAM0
 #define JS_GUARD_OBJECT_NOTIFIER_INIT JS_BEGIN_MACRO JS_END_MACRO
 
 #endif /* !defined(DEBUG) */
+
+namespace js {
+
+template <class T>
+JS_ALWAYS_INLINE static void
+PodZero(T *t)
+{
+    memset(t, 0, sizeof(T));
+}
+
+template <class T>
+JS_ALWAYS_INLINE static void
+PodZero(T *t, size_t nelem)
+{
+    memset(t, 0, nelem * sizeof(T));
+}
+
+/*
+ * Arrays implicitly convert to pointers to their first element, which is
+ * dangerous when combined with the above PodZero definitions. Adding an
+ * overload for arrays is ambiguous, so we need another identifier. The
+ * ambiguous overload is left to catch mistaken uses of PodZero; if you get a
+ * compile error involving PodZero and array types, use PodArrayZero instead.
+ */
+template <class T, size_t N> static void PodZero(T (&)[N]);          /* undefined */
+template <class T, size_t N> static void PodZero(T (&)[N], size_t);  /* undefined */
+
+template <class T, size_t N>
+JS_ALWAYS_INLINE static void
+PodArrayZero(T (&t)[N])
+{
+    memset(t, 0, N * sizeof(T));
+}
+
+template <class T>
+JS_ALWAYS_INLINE static void
+PodCopy(T *dst, const T *src, size_t nelem)
+{
+    /* Cannot find portable word-sized abs(). */
+    JS_ASSERT_IF(dst >= src, size_t(dst - src) >= nelem);
+    JS_ASSERT_IF(src >= dst, size_t(src - dst) >= nelem);
+
+    if (nelem < 128) {
+        for (const T *srcend = src + nelem; src != srcend; ++src, ++dst)
+            *dst = *src;
+    } else {
+        memcpy(dst, src, nelem * sizeof(T));
+    }
+}
+
+} /* namespace js */
 
 #endif /* defined(__cplusplus) */
 

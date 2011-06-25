@@ -62,6 +62,7 @@ be/kernel/image.h
 be/kernel/OS.h
 bfd.h
 Bitmap.h
+bitset
 blapi.h
 bsd/libc.h
 bsd/syscall.h
@@ -85,6 +86,7 @@ cairo-glitz.h
 cairo-os2.h
 cairo-pdf.h
 cairo-ps.h
+cairo-tee.h
 cairo-quartz.h
 cairo-win32.h
 cairo-xlib.h
@@ -93,6 +95,7 @@ cairo-directfb.h
 cairo-qpainter.h
 #endif
 dfiff.h
+exception
 ffi.h
 fusion/reactor.h
 fusion/property.h
@@ -196,6 +199,7 @@ CPString.h
 crtdbg.h
 crt_externs.h
 crypt.h
+cstddef
 cstdio
 cstdlib
 cstring
@@ -539,6 +543,7 @@ Objsafe.h
 ojiapitests.h
 ole2.h
 oleidl.h
+OpenGL/OpenGL.h
 OpenTptInternet.h
 OpenTransport.h
 os2.h
@@ -548,9 +553,7 @@ OSUtils.h
 Packages.h
 Palettes.h
 PALM_CMN.H
-pango-engine.h
-pango-glyph.h
-pango-modules.h
+pango/pango-modules.h
 pango/pangocairo.h
 pango/pangofc-decoder.h
 pango/pangofc-font.h
@@ -560,7 +563,6 @@ pango/pango-fontmap.h
 pango/pango.h
 pango/pangoxft.h
 pango/pango-utils.h
-pango-types.h
 pascal.h
 Patches.h
 Path.h
@@ -861,6 +863,7 @@ Volume.h
 wab.h
 wait.h
 wchar.h
+wctype.h
 winbase.h
 win/compobj.h
 windef.h
@@ -891,6 +894,7 @@ wx/xrc/xmlres.h
 X11/cursorfont.h
 X11/extensions/Print.h
 X11/extensions/shape.h
+X11/extensions/scrnsaver.h
 X11/extensions/XIElib.h
 X11/extensions/XShm.h
 X11/extensions/Xrender.h
@@ -1032,4 +1036,20 @@ conic/conicstatisticsevent.h
 #endif
 #if MOZ_NATIVE_LIBEVENT==1
 event.h
+#endif
+#ifdef MOZ_ENABLE_LIBPROXY
+proxy.h
+#endif
+#if MOZ_PLATFORM_MAEMO==6
+contentaction/contentaction.h
+#endif
+#if MOZ_TREE_PIXMAN!=1
+pixman.h
+#endif
+#if MOZ_ENABLE_MEEGOTOUCHSHARE
+shareuiinterface.h
+#endif
+#if MOZ_NATIVE_LIBVPX==1
+vpx/vpx_decoder.h
+vpx/vp8dx.h
 #endif

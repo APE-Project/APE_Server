@@ -174,12 +174,21 @@ namespace nanojit
     }
 
     #ifndef AVMPLUS_ALIGN16
-        #ifdef AVMPLUS_WIN32
+        #ifdef _MSC_VER
             #define AVMPLUS_ALIGN16(type) __declspec(align(16)) type
         #else
             #define AVMPLUS_ALIGN16(type) type __attribute__ ((aligned (16)))
         #endif
     #endif
+
+    class Noise
+    {
+        public:
+            virtual ~Noise() {}
+
+            // produce a random number from 0-maxValue for the JIT to use in attack mitigation
+            virtual uint32_t getValue(uint32_t maxValue) = 0;
+    };
 
     // error codes
     enum AssmError
@@ -187,7 +196,7 @@ namespace nanojit
          None = 0
         ,StackFull
         ,UnknownBranch
-        ,ConditionalBranchTooFar
+        ,BranchTooFar
     };
 
     typedef SeqBuilder<NIns*> NInsList;
@@ -196,7 +205,7 @@ namespace nanojit
     typedef HashMap<uint64_t, uint64_t*> ImmDPoolMap;
 #endif
 
-#ifdef VTUNE
+#ifdef VMCFG_VTUNE
     class avmplus::CodegenLIR;
 #endif
 
@@ -271,8 +280,8 @@ namespace nanojit
             #endif // NJ_VERBOSE
 
         public:
-            #ifdef VTUNE
-            avmplus::CodegenLIR *cgen;
+            #ifdef VMCFG_VTUNE
+            void* vtuneHandle;
             #endif
 
             Assembler(CodeAlloc& codeAlloc, Allocator& dataAlloc, Allocator& alloc, AvmCore* core, LogControl* logc, const Config& config);
@@ -284,15 +293,18 @@ namespace nanojit
             void        assemble(Fragment* frag, LirFilter* reader);
             void        beginAssembly(Fragment *frag);
 
+            void        setNoiseGenerator(Noise* noise)  { _noise = noise; } // used for attack mitigation; setting to 0 disables all mitigations
+
             void        releaseRegisters();
             void        patch(GuardRecord *lr);
             void        patch(SideExit *exit);
 #ifdef NANOJIT_IA32
             void        patch(SideExit *exit, SwitchInfo* si);
 #endif
-            AssmError   error()    { return _err; }
+            AssmError   error()               { return _err; }
             void        setError(AssmError e) { _err = e; }
-
+            void        cleanupAfterError();
+            void        clearNInsPtrs();
             void        reset();
 
             debug_only ( void       pageValidate(); )
@@ -300,8 +312,6 @@ namespace nanojit
             // support calling out from a fragment ; used to debug the jit
             debug_only( void        resourceConsistencyCheck(); )
             debug_only( void        registerConsistencyCheck(); )
-
-            CodeList*   codeList;                   // finished blocks of code.
 
         private:
             void        gen(LirFilter* toCompile);
@@ -315,7 +325,11 @@ namespace nanojit
             Register    registerAlloc(LIns* ins, RegisterMask allow, RegisterMask prefer);
             Register    registerAllocTmp(RegisterMask allow);
             void        registerResetAll();
-            void        evictAllActiveRegs();
+            void        evictAllActiveRegs() {
+                // The evicted set will be be intersected with activeSet(),
+                // so use an all-1s mask to avoid an extra load or call.
+                evictSomeActiveRegs(~RegisterMask(0));
+            }
             void        evictSomeActiveRegs(RegisterMask regs);
             void        evictScratchRegsExcept(RegisterMask ignore);
             void        intersectRegisterState(RegAlloc& saved);
@@ -344,8 +358,11 @@ namespace nanojit
             void        evict(LIns* vic);
             RegisterMask hint(LIns* ins);
 
+            void        getBaseIndexScale(LIns* addp, LIns** base, LIns** index, int* scale);
+
             void        codeAlloc(NIns *&start, NIns *&end, NIns *&eip
-                                  verbose_only(, size_t &nBytes));
+                                  verbose_only(, size_t &nBytes)
+                                  , size_t byteLimit=0);
 
             // These instructions don't have to be saved & reloaded to spill,
             // they can just be recalculated cheaply.
@@ -369,6 +386,7 @@ namespace nanojit
             RegAllocMap         _branchStateMap;
             NInsMap             _patches;
             LabelStateMap       _labels;
+            Noise*              _noise;             // object to generate random noise used when hardening enabled.
         #if NJ_USES_IMMD_POOL
             ImmDPoolMap     _immDPool;
         #endif
@@ -382,6 +400,7 @@ namespace nanojit
             // temporarily swap all the code/exit variables below (using
             // swapCodeChunks()).  Afterwards we swap them all back and set
             // _inExit to false again.
+            CodeList*   codeList;               // finished blocks of code.
             bool        _inExit, vpad2[3];
             NIns        *codeStart, *codeEnd;   // current normal code chunk
             NIns        *exitStart, *exitEnd;   // current exit code chunk
@@ -389,6 +408,7 @@ namespace nanojit
             NIns*       _nExitIns;              // current instruction in current exit code chunk
                                                 // note: _nExitIns == NULL until the first side exit is seen.
         #ifdef NJ_VERBOSE
+            NIns*       _nInsAfter;             // next instruction (ascending) in current normal/exit code chunk (for verbose output)
             size_t      codeBytes;              // bytes allocated in normal code chunks
             size_t      exitBytes;              // bytes allocated in exit code chunks
         #endif
@@ -425,8 +445,12 @@ namespace nanojit
             // Otherwise, register allocation decisions will be suboptimal.
             void        asm_restore(LIns*, Register);
 
-            void        asm_maybe_spill(LIns* ins, bool pop);
-            void        asm_spill(Register rr, int d, bool pop, bool quad);
+            bool        asm_maybe_spill(LIns* ins, bool pop);
+#ifdef NANOJIT_IA32
+            void        asm_spill(Register rr, int d, bool pop);
+#else
+            void        asm_spill(Register rr, int d, bool quad);
+#endif
             void        asm_load64(LIns* ins);
             void        asm_ret(LIns* ins);
 #ifdef NANOJIT_64BIT
@@ -453,7 +477,9 @@ namespace nanojit
             void        asm_d2i(LIns* ins);
 #ifdef NANOJIT_64BIT
             void        asm_q2i(LIns* ins);
-            void        asm_promote(LIns *ins);
+            void        asm_ui2uq(LIns *ins);
+            void        asm_dasq(LIns *ins);
+            void        asm_qasd(LIns *ins);
 #endif
             void        asm_nongp_copy(Register r, Register s);
             void        asm_call(LIns*);
@@ -462,6 +488,7 @@ namespace nanojit
             NIns*       asm_branch_ov(LOpcode op, NIns* targ);
             void        asm_switch(LIns* ins, NIns* target);
             void        asm_jtbl(LIns* ins, NIns** table);
+            void        asm_insert_random_nop();
             void        emitJumpTable(SwitchInfo* si, NIns* target);
             void        assignSavedRegs();
             void        reserveSavedRegs();
@@ -473,10 +500,10 @@ namespace nanojit
             void        nBeginAssembly();
             Register    nRegisterAllocFromSet(RegisterMask set);
             void        nRegisterResetAll(RegAlloc& a);
-            static void nPatchBranch(NIns* branch, NIns* location);
+            void        nPatchBranch(NIns* branch, NIns* location);
             void        nFragExit(LIns* guard);
 
-            RegisterMask nHints[LIR_sentinel];
+            static RegisterMask nHints[LIR_sentinel+1];
             RegisterMask nHint(LIns* ins);
 
             // A special entry for hints[];  if an opcode has this value, we call
@@ -494,12 +521,18 @@ namespace nanojit
             debug_only( int32_t _fpuStkDepth; )
             debug_only( int32_t _sv_fpuStkDepth; )
 
-            // since we generate backwards the depth is negative
+            // The FPU stack depth is the number of pushes in excess of the number of pops.
+            // Since we generate backwards, we track the FPU stack depth as a negative number.
+            // We use the top of the x87 stack as the single allocatable FP register, FST0.
+            // Thus, between LIR instructions, the depth of the FPU stack must be either 0 or -1,
+            // depending on whether FST0 is in use.  Within the expansion of a single LIR
+            // instruction, however, deeper levels of the stack may be used as unmanaged
+            // temporaries.  Hence, we allow for all eight levels in the assertions below.
             inline void fpu_push() {
-                debug_only( ++_fpuStkDepth; NanoAssert(_fpuStkDepth<=0); )
+                debug_only( ++_fpuStkDepth; NanoAssert(_fpuStkDepth <= 0); )
             }
             inline void fpu_pop() {
-                debug_only( --_fpuStkDepth; NanoAssert(_fpuStkDepth<=0); )
+                debug_only( --_fpuStkDepth; NanoAssert(_fpuStkDepth >= -7); )
             }
 #endif
             const Config& _config;

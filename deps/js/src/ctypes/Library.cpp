@@ -65,13 +65,13 @@ namespace Library
 static JSClass sLibraryClass = {
   "Library",
   JSCLASS_HAS_RESERVED_SLOTS(LIBRARY_SLOTS) | JSCLASS_MARK_IS_TRACE,
-  JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+  JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
   JS_EnumerateStub,JS_ResolveStub, JS_ConvertStub, Library::Finalize,
   JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
 #define CTYPESFN_FLAGS \
-  (JSFUN_FAST_NATIVE | JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT)
+  (JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT)
 
 static JSFunctionSpec sLibraryFunctions[] = {
   JS_FN("close",   Library::Close,   0, CTYPESFN_FLAGS),
@@ -79,13 +79,45 @@ static JSFunctionSpec sLibraryFunctions[] = {
   JS_FS_END
 };
 
+JSBool
+Library::Name(JSContext* cx, uintN argc, jsval *vp)
+{
+  if (argc != 1) {
+    JS_ReportError(cx, "libraryName takes one argument");
+    return JS_FALSE;
+  }
+
+  jsval arg = JS_ARGV(cx, vp)[0];
+  JSString* str = NULL;
+  if (JSVAL_IS_STRING(arg)) {
+    str = JSVAL_TO_STRING(arg);
+  }
+  else {
+    JS_ReportError(cx, "name argument must be a string");
+      return JS_FALSE;
+  }
+
+  AutoString resultString;
+  AppendString(resultString, DLL_PREFIX);
+  AppendString(resultString, str);
+  AppendString(resultString, DLL_SUFFIX);
+
+  JSString *result = JS_NewUCStringCopyN(cx, resultString.begin(),
+                                         resultString.length());
+  if (!result)
+    return JS_FALSE;
+
+  JS_SET_RVAL(cx, vp, STRING_TO_JSVAL(result));
+  return JS_TRUE;
+}
+
 JSObject*
-Library::Create(JSContext* cx, jsval aPath)
+Library::Create(JSContext* cx, jsval path, JSCTypesCallbacks* callbacks)
 {
   JSObject* libraryObj = JS_NewObject(cx, &sLibraryClass, NULL, NULL);
   if (!libraryObj)
     return NULL;
-  js::AutoValueRooter root(cx, libraryObj);
+  js::AutoObjectRooter root(cx, libraryObj);
 
   // initialize the library
   if (!JS_SetReservedSlot(cx, libraryObj, SLOT_LIBRARY, PRIVATE_TO_JSVAL(NULL)))
@@ -95,35 +127,59 @@ Library::Create(JSContext* cx, jsval aPath)
   if (!JS_DefineFunctions(cx, libraryObj, sLibraryFunctions))
     return NULL;
 
-  if (!JSVAL_IS_STRING(aPath)) {
+  if (!JSVAL_IS_STRING(path)) {
     JS_ReportError(cx, "open takes a string argument");
     return NULL;
   }
 
   PRLibSpec libSpec;
+  JSFlatString* pathStr = JS_FlattenString(cx, JSVAL_TO_STRING(path));
+  if (!pathStr)
+    return NULL;
 #ifdef XP_WIN
   // On Windows, converting to native charset may corrupt path string.
   // So, we have to use Unicode path directly.
-  const PRUnichar* path = reinterpret_cast<const PRUnichar*>(
-    JS_GetStringCharsZ(cx, JSVAL_TO_STRING(aPath)));
-  if (!path)
+  const PRUnichar* pathChars = JS_GetFlatStringChars(pathStr);
+  if (!pathChars)
     return NULL;
 
-  libSpec.value.pathname_u = path;
+  libSpec.value.pathname_u = pathChars;
   libSpec.type = PR_LibSpec_PathnameU;
 #else
-  // Assume the JS string is not UTF-16, but is in the platform's native
-  // charset. (This basically means ASCII.) It would be nice to have a
-  // UTF-16 -> native charset implementation available. :(
-  const char* path = JS_GetStringBytesZ(cx, JSVAL_TO_STRING(aPath));
-  if (!path)
-    return NULL;
+  // Convert to platform native charset if the appropriate callback has been
+  // provided.
+  char* pathBytes;
+  if (callbacks && callbacks->unicodeToNative) {
+    pathBytes = 
+      callbacks->unicodeToNative(cx, pathStr->chars(), pathStr->length());
+    if (!pathBytes)
+      return NULL;
 
-  libSpec.value.pathname = path;
+  } else {
+    // Fallback: assume the platform native charset is UTF-8. This is true
+    // for Mac OS X, Android, and probably Linux.
+    size_t nbytes =
+      js_GetDeflatedUTF8StringLength(cx, pathStr->chars(), pathStr->length());
+    if (nbytes == (size_t) -1)
+      return NULL;
+
+    pathBytes = static_cast<char*>(JS_malloc(cx, nbytes + 1));
+    if (!pathBytes)
+      return NULL;
+
+    ASSERT_OK(js_DeflateStringToUTF8Buffer(cx, pathStr->chars(),
+                pathStr->length(), pathBytes, &nbytes));
+    pathBytes[nbytes] = 0;
+  }
+
+  libSpec.value.pathname = pathBytes;
   libSpec.type = PR_LibSpec_Pathname;
 #endif
 
   PRLibrary* library = PR_LoadLibraryWithFlags(libSpec, 0);
+#ifndef XP_WIN
+  JS_free(cx, pathBytes);
+#endif
   if (!library) {
     JS_ReportError(cx, "couldn't open library");
     return NULL;
@@ -165,12 +221,18 @@ Library::Finalize(JSContext* cx, JSObject* obj)
 JSBool
 Library::Open(JSContext* cx, uintN argc, jsval *vp)
 {
+  JSObject* ctypesObj = JS_THIS_OBJECT(cx, vp);
+  if (!ctypesObj || !IsCTypesGlobal(cx, ctypesObj)) {
+    JS_ReportError(cx, "not a ctypes object");
+    return JS_FALSE;
+  }
+
   if (argc != 1 || JSVAL_IS_VOID(JS_ARGV(cx, vp)[0])) {
     JS_ReportError(cx, "open requires a single argument");
     return JS_FALSE;
   }
 
-  JSObject* library = Create(cx, JS_ARGV(cx, vp)[0]);
+  JSObject* library = Create(cx, JS_ARGV(cx, vp)[0], GetCallbacks(cx, ctypesObj));
   if (!library)
     return JS_FALSE;
 
@@ -182,7 +244,7 @@ JSBool
 Library::Close(JSContext* cx, uintN argc, jsval* vp)
 {
   JSObject* obj = JS_THIS_OBJECT(cx, vp);
-  if (!IsLibrary(cx, obj)) {
+  if (!obj || !IsLibrary(cx, obj)) {
     JS_ReportError(cx, "not a library");
     return JS_FALSE;
   }
@@ -204,7 +266,7 @@ JSBool
 Library::Declare(JSContext* cx, uintN argc, jsval* vp)
 {
   JSObject* obj = JS_THIS_OBJECT(cx, vp);
-  if (!IsLibrary(cx, obj)) {
+  if (!obj || !IsLibrary(cx, obj)) {
     JS_ReportError(cx, "not a library");
     return JS_FALSE;
   }
@@ -223,8 +285,8 @@ Library::Declare(JSContext* cx, uintN argc, jsval* vp)
   //    declares a symbol of 'type', and resolves it. The object that comes
   //    back will be of type 'type', and will point into the symbol data.
   //    This data will be both readable and writable via the usual CData
-  //    accessors. If 'type' is a FunctionType, the result will be a function
-  //    pointer, as with 1). 
+  //    accessors. If 'type' is a PointerType to a FunctionType, the result will
+  //    be a function pointer, as with 1). 
   if (argc < 2) {
     JS_ReportError(cx, "declare requires at least two arguments");
     return JS_FALSE;
@@ -236,24 +298,21 @@ Library::Declare(JSContext* cx, uintN argc, jsval* vp)
     return JS_FALSE;
   }
 
-  const char* name = JS_GetStringBytesZ(cx, JSVAL_TO_STRING(argv[0]));
-  if (!name)
-    return JS_FALSE;
-
+  JSObject* fnObj = NULL;
   JSObject* typeObj;
-  js::AutoValueRooter root(cx);
+  js::AutoObjectRooter root(cx);
   bool isFunction = argc > 2;
   if (isFunction) {
     // Case 1).
     // Create a FunctionType representing the function.
-    typeObj = FunctionType::CreateInternal(cx,
-                argv[1], argv[2], &argv[3], argc - 3);
-    if (!typeObj)
+    fnObj = FunctionType::CreateInternal(cx,
+              argv[1], argv[2], &argv[3], argc - 3);
+    if (!fnObj)
       return JS_FALSE;
-    root.setObject(typeObj);
+    root.setObject(fnObj);
 
     // Make a function pointer type.
-    typeObj = PointerType::CreateInternal(cx, typeObj);
+    typeObj = PointerType::CreateInternal(cx, fnObj);
     if (!typeObj)
       return JS_FALSE;
     root.setObject(typeObj);
@@ -269,16 +328,22 @@ Library::Declare(JSContext* cx, uintN argc, jsval* vp)
 
     typeObj = JSVAL_TO_OBJECT(argv[1]);
     if (CType::GetTypeCode(cx, typeObj) == TYPE_pointer) {
-      JSObject* baseType = PointerType::GetBaseType(cx, typeObj);
-      isFunction = baseType && CType::GetTypeCode(cx, baseType) == TYPE_function;
+      fnObj = PointerType::GetBaseType(cx, typeObj);
+      isFunction = fnObj && CType::GetTypeCode(cx, fnObj) == TYPE_function;
     }
   }
 
   void* data;
   PRFuncPtr fnptr;
+  JSString* nameStr = JSVAL_TO_STRING(argv[0]);
+  AutoCString symbol;
   if (isFunction) {
+    // Build the symbol, with mangling if necessary.
+    FunctionType::BuildSymbolName(cx, nameStr, fnObj, symbol);
+    AppendString(symbol, "\0");
+
     // Look up the function symbol.
-    fnptr = PR_FindFunctionSymbol(library, name);
+    fnptr = PR_FindFunctionSymbol(library, symbol.begin());
     if (!fnptr) {
       JS_ReportError(cx, "couldn't find function symbol in library");
       return JS_FALSE;
@@ -287,7 +352,10 @@ Library::Declare(JSContext* cx, uintN argc, jsval* vp)
 
   } else {
     // 'typeObj' is another data type. Look up the data symbol.
-    data = PR_FindSymbol(library, name);
+    AppendString(symbol, nameStr);
+    AppendString(symbol, "\0");
+
+    data = PR_FindSymbol(library, symbol.begin());
     if (!data) {
       JS_ReportError(cx, "couldn't find symbol in library");
       return JS_FALSE;
@@ -306,7 +374,7 @@ Library::Declare(JSContext* cx, uintN argc, jsval* vp)
   // change the pointer value.
   // XXX This will need to change when bug 541212 is fixed -- CData::ValueSetter
   // could be called on a sealed object.
-  if (isFunction && !JS_SealObject(cx, result, JS_FALSE))
+  if (isFunction && !JS_FreezeObject(cx, result))
     return JS_FALSE;
 
   return JS_TRUE;

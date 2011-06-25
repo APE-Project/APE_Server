@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-452498-196.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 452498;
 var summary = 'TM: upvar2 regression tests';
@@ -56,7 +55,7 @@ function test()
 
 // Assertion failure: localKind == JSLOCAL_VAR || localKind == JSLOCAL_CONST, at ../jsfun.cpp:916
 
-  watch("x", Function);
+  this.watch("x", Function);
   NaN = uneval({ get \u3056 (){ return undefined } });
   x+=NaN;
 
@@ -66,7 +65,7 @@ function test()
 
   (function (){
     var x;
-    eval("const x; (function ()x)");
+    eval("var x; (function ()x)");
   }
     )();
 

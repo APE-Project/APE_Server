@@ -36,7 +36,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-gTestfile = '9.3.1-1.js';
 
 /**
    File Name:          9.3.1-1.js
@@ -127,6 +126,25 @@ new TestCase( SECTION,  "Number( '\\n'  + '999' + '\\n' )",         999,    Numb
 new TestCase( SECTION,  "Number( '\\r'  + '999' + '\\r' )",         999,    Number( '\r' +'999'+'\r' ) );
 new TestCase( SECTION,  "Number( '\\t'  + '999' + '\\t' )",         999,    Number( '\t' +'999'+'\t' ) );
 new TestCase( SECTION,  "Number( '\\f'  + '999' + '\\f' )",         999,    Number( '\f' +'999'+'\f' ) );
+
+var ws = ["",
+          " ",
+          "  ",
+          "   "];
+
+for (var i = 0, sz = ws.length; i < sz; i++)
+{
+  var start = ws[i];
+  for (var j = 0; j < sz; j++)
+  {
+    var end = ws[j];
+    new TestCase( SECTION,  "Number( '" + start + "' +  '0xA' )",       10,    Number( start+'0xA') );
+
+    new TestCase( SECTION,  "Number( '0xA' + '" + end + "' )",        10,    Number( '0xA'+end) );
+
+    new TestCase( SECTION,  "Number( '" + start + "'  + '0xA' + '" + end + "' )",         10,    Number( start +'0xA'+end ) );
+  }
+}
 
 new TestCase( SECTION,  "Number( String.fromCharCode(0x0009) +  '99' )",    99,     Number( String.fromCharCode(0x0009) +  '99' ) );
 new TestCase( SECTION,  "Number( String.fromCharCode(0x0020) +  '99' )",    99,     Number( String.fromCharCode(0x0020) +  '99' ) );

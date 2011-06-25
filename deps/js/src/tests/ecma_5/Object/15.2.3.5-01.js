@@ -3,7 +3,6 @@
  * http://creativecommons.org/licenses/publicdomain/
  */
 
-var gTestfile = '15.2.3.5-01.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 492840;
 var summary = 'ES5 Object.create(O [, Properties])';
@@ -44,6 +43,15 @@ assertEq("bar" in o, false);
 assertEq(Object.getOwnPropertyDescriptor(o, "baz"), undefined);
 assertEq(o.baz, 12);
 assertEq(o.hasOwnProperty("baz"), false);
+
+try {
+  var actual =
+    Object.create(Object.create({},
+                                { boom: { get: function() { return "base"; }}}),
+                  { boom: { get: function() { return "overridden"; }}}).boom
+} catch (e) {
+}
+assertEq(actual, "overridden");
 
 /******************************************************************************/
 

@@ -41,14 +41,14 @@
 #include "jsapi.h"
 #include "jsprvtd.h"
 #include "jsvector.h"
+#include <errno.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 
 class jsvalRoot
 {
-public:
+  public:
     explicit jsvalRoot(JSContext *context, jsval value = JSVAL_NULL)
         : cx(context), v(value)
     {
@@ -70,7 +70,7 @@ public:
     jsval * addr() { return &v; }
     jsval value() const { return v; }
 
-private:
+  private:
     JSContext *cx;
     jsval v;
 };
@@ -78,7 +78,7 @@ private:
 /* Note: Aborts on OOM. */
 class JSAPITestString {
     js::Vector<char, 0, js::SystemAllocPolicy> chars;
-public:
+  public:
     JSAPITestString() {}
     JSAPITestString(const char *s) { *this += s; }
     JSAPITestString(const JSAPITestString &s) { *this += s; }
@@ -105,7 +105,7 @@ inline JSAPITestString operator+(JSAPITestString a, const JSAPITestString &b) { 
 
 class JSAPITest
 {
-public:
+  public:
     static JSAPITest *list;
     JSAPITest *next;
 
@@ -114,8 +114,9 @@ public:
     JSObject *global;
     bool knownFail;
     JSAPITestString msgs;
+    JSCrossCompartmentCall *call;
 
-    JSAPITest() : rt(NULL), cx(NULL), global(NULL), knownFail(false) {
+    JSAPITest() : rt(NULL), cx(NULL), global(NULL), knownFail(false), call(NULL) {
         next = list;
         list = this;
     }
@@ -131,10 +132,17 @@ public:
             return false;
         JS_BeginRequest(cx);
         global = createGlobal();
-        return global != NULL;
+        if (!global)
+            return false;
+        call = JS_EnterCrossCompartmentCall(cx, global);
+        return call != NULL;
     }
 
     virtual void uninit() {
+        if (call) {
+            JS_LeaveCrossCompartmentCall(call);
+            call = NULL;
+        }
         if (cx) {
             JS_EndRequest(cx);
             JS_DestroyContext(cx);
@@ -166,8 +174,11 @@ public:
 
     JSAPITestString toSource(jsval v) {
         JSString *str = JS_ValueToSource(cx, v);
-        if (str)
-            return JSAPITestString(JS_GetStringBytes(str));
+        if (str) {
+            JSAutoByteString bytes(cx, str);
+            if (!!bytes)
+                return JSAPITestString(bytes.ptr());
+        }
         JS_ClearPendingException(cx);
         return JSAPITestString("<<error converting value to string>>");
     }
@@ -181,7 +192,8 @@ public:
     bool checkSame(jsval actual, jsval expected,
                    const char *actualExpr, const char *expectedExpr,
                    const char *filename, int lineno) {
-        return JS_SameValue(cx, actual, expected) ||
+        JSBool same;
+        return (JS_SameValue(cx, actual, expected, &same) && same) ||
                fail(JSAPITestString("CHECK_SAME failed: expected JS_SameValue(cx, ") +
                     actualExpr + ", " + expectedExpr + "), got !JS_SameValue(cx, " +
                     toSource(actual) + ", " + toSource(expected) + ")", filename, lineno);
@@ -199,8 +211,11 @@ public:
             JS_GetPendingException(cx, v.addr());
             JS_ClearPendingException(cx);
             JSString *s = JS_ValueToString(cx, v);
-            if (s)
-                msg += JS_GetStringBytes(s);
+            if (s) {
+                JSAutoByteString bytes(cx, s);
+                if (!!bytes)
+                    msg += bytes.ptr();
+            }
         }
         fprintf(stderr, "%s:%d:%.*s\n", filename, lineno, (int) msg.length(), msg.begin());
         msgs += msg;
@@ -209,7 +224,17 @@ public:
 
     JSAPITestString messages() const { return msgs; }
 
-protected:
+    static JSClass * basicGlobalClass() {
+        static JSClass c = {
+            "global", JSCLASS_GLOBAL_FLAGS,
+            JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
+            JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+            JSCLASS_NO_OPTIONAL_MEMBERS
+        };
+        return &c;
+    }
+
+  protected:
     static JSBool
     print(JSContext *cx, uintN argc, jsval *vp)
     {
@@ -263,19 +288,17 @@ protected:
     }
 
     virtual JSClass * getGlobalClass() {
-        static JSClass basicGlobalClass = {
-            "global", JSCLASS_GLOBAL_FLAGS,
-            JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
-            JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
-            JSCLASS_NO_OPTIONAL_MEMBERS
-        };
-        return &basicGlobalClass;
+        return basicGlobalClass();
     }
 
     virtual JSObject * createGlobal() {
         /* Create the global object. */
-        JSObject *global = JS_NewGlobalObject(cx, getGlobalClass());
+        JSObject *global = JS_NewCompartmentAndGlobalObject(cx, getGlobalClass(), NULL);
         if (!global)
+            return NULL;
+
+        JSAutoEnterCompartment ac;
+        if (!ac.enter(cx, global))
             return NULL;
 
         /* Populate the global object with the standard globals,
@@ -288,7 +311,7 @@ protected:
 
 #define BEGIN_TEST(testname)                                            \
     class cls_##testname : public JSAPITest {                           \
-    public:                                                             \
+      public:                                                           \
         virtual const char * name() { return #testname; }               \
         virtual bool run()
 
@@ -296,4 +319,79 @@ protected:
     };                                                                  \
     static cls_##testname cls_##testname##_instance;
 
+/*
+ * A "fixture" is a subclass of JSAPITest that holds common definitions for a
+ * set of tests. Each test that wants to use the fixture should use
+ * BEGIN_FIXTURE_TEST and END_FIXTURE_TEST, just as one would use BEGIN_TEST and
+ * END_TEST, but include the fixture class as the first argument. The fixture
+ * class's declarations are then in scope for the test bodies.
+ */
 
+#define BEGIN_FIXTURE_TEST(fixture, testname)                           \
+    class cls_##testname : public fixture {                             \
+      public:                                                           \
+        virtual const char * name() { return #testname; }               \
+        virtual bool run()
+
+#define END_FIXTURE_TEST(fixture, testname)                             \
+    };                                                                  \
+    static cls_##testname cls_##testname##_instance;
+
+/*
+ * A class for creating and managing one temporary file.
+ * 
+ * We could use the ISO C temporary file functions here, but those try to
+ * create files in the root directory on Windows, which fails for users
+ * without Administrator privileges.
+ */
+class TempFile {
+    const char *name;
+    FILE *stream;
+
+  public:
+    TempFile() : name(), stream() { }
+    ~TempFile() {
+        if (stream)
+            close();
+        if (name)
+            remove();
+    }
+
+    /*
+     * Return a stream for a temporary file named |fileName|. Infallible.
+     * Use only once per TempFile instance. If the file is not explicitly
+     * closed and deleted via the member functions below, this object's
+     * destructor will clean them up.
+     */
+    FILE *open(const char *fileName)
+    {
+        stream = fopen(fileName, "wb+");
+        if (!stream) {
+            fprintf(stderr, "error opening temporary file '%s': %s\n",
+                    fileName, strerror(errno));
+            exit(1);
+        }            
+        name = fileName;
+        return stream;
+    }
+
+    /* Close the temporary file's stream. */
+    void close() {
+        if (fclose(stream) == EOF) {
+            fprintf(stderr, "error closing temporary file '%s': %s\n",
+                    name, strerror(errno));
+            exit(1);
+        }
+        stream = NULL;
+    }
+
+    /* Delete the temporary file. */
+    void remove() {
+        if (::remove(name) != 0) {
+            fprintf(stderr, "error deleting temporary file '%s': %s\n",
+                    name, strerror(errno));
+            exit(1);
+        }
+        name = NULL;
+    }
+};

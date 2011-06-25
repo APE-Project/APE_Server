@@ -70,7 +70,7 @@ namespace nanojit
         // fills in reasonable default values for all fields.
         Config();
 
-        // ARM architecture to assume when generate instructions for (currently, 5 <= arm_arch <= 7)
+        // ARM architecture to assume when generate instructions for (currently, 4 <= arm_arch <= 7)
         uint8_t arm_arch;
 
         // If true, use CSE.
@@ -94,6 +94,12 @@ namespace nanojit
         // If true, use softfloat for all floating point operations,
         // whether or not an FPU is present. (ARM only for now, but might also includes MIPS in the future)
         uint32_t soft_float:1;
+
+        // If true, compiler will insert a random amount of space in between functions (x86-32 only)
+        uint32_t harden_function_alignment:1;
+
+        // If true, compiler will insert randomly choosen no-op instructions at random locations within a compiled method (x86-32 only)
+        uint32_t harden_nop_insertion:1;
     };
 }
 

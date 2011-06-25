@@ -41,6 +41,7 @@
 #define jstypedarray_h
 
 #include "jsapi.h"
+#include "jsvalue.h"
 
 typedef struct JSProperty JSProperty;
 
@@ -55,17 +56,15 @@ namespace js {
  * TypedArray with a size.
  */
 struct JS_FRIEND_API(ArrayBuffer) {
-    static JSClass jsclass;
+    static Class jsclass;
     static JSPropertySpec jsprops[];
 
-    static JSBool prop_getByteLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp);
+    static JSBool prop_getByteLength(JSContext *cx, JSObject *obj, jsid id, Value *vp);
     static void class_finalize(JSContext *cx, JSObject *obj);
 
-    static JSBool class_constructor(JSContext *cx, JSObject *obj,
-                                    uintN argc, jsval *argv, jsval *rval);
+    static JSBool class_constructor(JSContext *cx, uintN argc, Value *vp);
 
-    static bool create(JSContext *cx, JSObject *obj, uintN argc,
-                       jsval *argv, jsval *rval);
+    static JSObject *create(JSContext *cx, int32 nbytes);
 
     static ArrayBuffer *fromJSObject(JSObject *obj);
 
@@ -116,20 +115,20 @@ struct JS_FRIEND_API(TypedArray) {
     };
 
     // and MUST NOT be used to construct new objects.
-    static JSClass fastClasses[TYPE_MAX];
+    static Class fastClasses[TYPE_MAX];
 
     // These are the slow/original classes, used
     // fo constructing new objects
-    static JSClass slowClasses[TYPE_MAX];
+    static Class slowClasses[TYPE_MAX];
 
     static JSPropertySpec jsprops[];
 
     static TypedArray *fromJSObject(JSObject *obj);
 
-    static JSBool prop_getBuffer(JSContext *cx, JSObject *obj, jsval id, jsval *vp);
-    static JSBool prop_getByteOffset(JSContext *cx, JSObject *obj, jsval id, jsval *vp);
-    static JSBool prop_getByteLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp);
-    static JSBool prop_getLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp);
+    static JSBool prop_getBuffer(JSContext *cx, JSObject *obj, jsid id, Value *vp);
+    static JSBool prop_getByteOffset(JSContext *cx, JSObject *obj, jsid id, Value *vp);
+    static JSBool prop_getByteLength(JSContext *cx, JSObject *obj, jsid id, Value *vp);
+    static JSBool prop_getLength(JSContext *cx, JSObject *obj, jsid id, Value *vp);
 
     static JSBool obj_lookupProperty(JSContext *cx, JSObject *obj, jsid id,
                                      JSObject **objp, JSProperty **propp);
@@ -158,13 +157,32 @@ struct JS_FRIEND_API(TypedArray) {
     uint32 type;
 
     void *data;
+
+    inline int slotWidth() const {
+        switch (type) {
+          case js::TypedArray::TYPE_INT8:
+          case js::TypedArray::TYPE_UINT8:
+          case js::TypedArray::TYPE_UINT8_CLAMPED:
+            return 1;
+          case js::TypedArray::TYPE_INT16:
+          case js::TypedArray::TYPE_UINT16:
+            return 2;
+          case js::TypedArray::TYPE_INT32:
+          case js::TypedArray::TYPE_UINT32:
+          case js::TypedArray::TYPE_FLOAT32:
+            return 4;
+          case js::TypedArray::TYPE_FLOAT64:
+            return 8;
+          default:
+            JS_NOT_REACHED("invalid typed array");
+            return 0;
+        }
+    }
 };
 
 } // namespace js
 
 /* Friend API methods */
-
-JS_BEGIN_EXTERN_C
 
 JS_FRIEND_API(JSObject *)
 js_InitTypedArrayClasses(JSContext *cx, JSObject *obj);
@@ -213,6 +231,7 @@ js_CreateTypedArrayWithBuffer(JSContext *cx, jsint atype, JSObject *bufArg,
 JS_FRIEND_API(JSBool)
 js_ReparentTypedArrayToScope(JSContext *cx, JSObject *obj, JSObject *scope);
 
-JS_END_EXTERN_C
+extern int32 JS_FASTCALL
+js_TypedArray_uint8_clamp_double(const double x);
 
 #endif /* jstypedarray_h */

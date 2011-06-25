@@ -36,7 +36,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-gTestfile = '15.1.2.2-1.js';
 
 /**
    File Name:          15.1.2.2-1.js
@@ -217,6 +216,8 @@ for ( var space = " ", HEX_STRING = "0x0", HEX_VALUE = 0, POWER = 0;
   new TestCase( SECTION, "parseInt("+space+HEX_STRING+space+", void 0)",    HEX_VALUE,  parseInt(space+HEX_STRING+space, void 0) );
   HEX_VALUE += Math.pow(16,POWER)*15;
 }
+
+new TestCase(SECTION, "parseInt(BOM + '123', 10)", 123, parseInt("\uFEFF" + "123", 10));
 
 // a few tests with negative numbers
 for ( HEX_STRING = "-0x0", HEX_VALUE = 0, POWER = 0; POWER < 15; POWER++, HEX_STRING = HEX_STRING +"f" ) {

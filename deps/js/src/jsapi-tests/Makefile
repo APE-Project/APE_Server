@@ -49,30 +49,39 @@ PROGRAM         = jsapi-tests$(BIN_SUFFIX)
 CPPSRCS = \
   tests.cpp \
   selfTest.cpp \
+  testBug604087.cpp \
   testClassGetter.cpp \
+  testCloneScript.cpp \
   testConservativeGC.cpp \
   testContexts.cpp \
   testDebugger.cpp \
+  testDeepFreeze.cpp \
   testDefineGetterSetterNonEnumerable.cpp \
   testDefineProperty.cpp \
   testExtendedEq.cpp \
+  testFuncCallback.cpp \
   testGCChunkAlloc.cpp \
+  testGetPropertyDefault.cpp \
   testIntString.cpp \
-  testIsAboutToBeFinalized.cpp \
   testLookup.cpp \
   testNewObject.cpp \
   testOps.cpp \
   testPropCache.cpp \
-  testTrap.cpp \
   testSameValue.cpp \
-  testSeal.cpp \
+  testScriptObject.cpp \
+  testSetProperty.cpp \
+  testThreadGC.cpp \
+  testThreads.cpp \
+  testTrap.cpp \
+  testUTF8.cpp \
+  testVersion.cpp \
   testXDR.cpp \
-  testSetPropertyWithNativeGetterStubSetter.cpp \
+  testCustomIterator.cpp \
   $(NULL)
 
 DEFINES         += -DEXPORT_JS_API
 
-LIBS      = $(NSPR_LIBS) $(DEPTH)/$(LIB_PREFIX)js_static.$(LIB_SUFFIX)
+LIBS      = $(DEPTH)/$(LIB_PREFIX)js_static.$(LIB_SUFFIX) $(NSPR_LIBS)
 
 LOCAL_INCLUDES += -I$(topsrcdir) -I..
 

@@ -98,7 +98,10 @@ def parse(filename, xul_tester, reldir = ''):
     for line in f:
         sline = comment_re.sub('', line)
         parts = sline.split()
-        if parts[0] == 'include':
+        if len(parts) == 0:
+            # line is empty or just a comment, skip
+            pass
+        elif parts[0] == 'include':
             include_file = parts[1]
             include_reldir = os.path.join(reldir, os.path.dirname(include_file))
             ans += parse(os.path.join(dir, include_file), xul_tester, include_reldir)
@@ -110,6 +113,7 @@ def parse(filename, xul_tester, reldir = ''):
             enable = True
             expect = True
             random = False
+            slow = False
 
             pos = 0
             while pos < len(parts):
@@ -144,11 +148,19 @@ def parse(filename, xul_tester, reldir = ''):
                 elif parts[pos] == 'script':
                     script = parts[pos+1]
                     pos += 2
+                elif parts[pos] == 'slow':
+                    slow = True
+                    pos += 1
+                elif parts[pos] == 'silentfail':
+                    # silentfails use tons of memory, and Darwin doesn't support ulimit.
+                    if xul_tester.test("xulRuntime.OS == 'Darwin'"):
+                        expect = enable = False
+                    pos += 1
                 else:
                     print 'warning: invalid manifest line element "%s"'%parts[pos]
                     pos += 1
 
             assert script is not None
             ans.append(TestCase(os.path.join(reldir, script), 
-                                enable, expect, random))
+                                enable, expect, random, slow))
     return ans

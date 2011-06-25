@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-452498-117.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 452498;
 var summary = 'TM: upvar2 regression tests';
@@ -74,10 +73,6 @@ function test()
 // Assertion failure: regs.sp == StackBase(fp), at ../jsinterp.cpp:2984
 // =====
     function this ({x}) { function x(){} }
-
-// Assertion failure: cg->stackDepth == stackDepth, at ../jsemit.cpp:3664
-// =====
-  for(let x = [ "" for (y in /x/g ) if (x)] in (""));
 
 // Assertion failure: !(pnu->pn_dflags & PND_BOUND), at ../jsemit.cpp:1818
 // =====

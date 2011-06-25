@@ -35,7 +35,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var gTestfile = 'regress-336409-1.js';
 //-----------------------------------------------------------------------------
 var BUGNUMBER = 336409;
 var summary = 'Integer overflow in js_obj_toSource';
@@ -74,7 +73,7 @@ try
 }
 catch(ex)
 {
-  expect = 'InternalError: script stack space quota is exhausted';
+  expect = 'InternalError: allocation size overflow';
   actual = ex + '';
   print(actual);
 }

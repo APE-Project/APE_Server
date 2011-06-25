@@ -52,6 +52,8 @@
 #define count_imt()
 #endif
 
+#include "NativeCommon.h"
+
 namespace nanojit
 {
 #define NJ_MAX_STACK_ENTRY              4096
@@ -61,6 +63,7 @@ namespace nanojit
 #define NJ_EXPANDED_LOADSTORE_SUPPORTED 0
 #define NJ_F2I_SUPPORTED                0
 #define NJ_SOFTFLOAT_SUPPORTED          0
+#define NJ_DIVI_SUPPORTED               0
 
     enum ConditionRegister {
         CR0 = 0,
@@ -87,85 +90,85 @@ namespace nanojit
         BO_false = 4, // branch if false
     };
 
-    enum Register {
+    static const Register
         // general purpose 32bit regs
-        R0  = 0, // scratch or the value 0, excluded from regalloc
-        SP  = 1, // stack pointer, excluded from regalloc
-        R2  = 2, // scratch on MacOSX, rtoc pointer elsewhere
-        R3  = 3, // this, return value, MSW of int64 return
-        R4  = 4, // param, LSW of int64 return
-        R5  = 5, // param
-        R6  = 6, // param
-        R7  = 7, // param
-        R8  = 8, // param
-        R9  = 9, // param
-        R10 = 10, // param
-        R11 = 11, // scratch in leaf funcs, outgoing arg ptr otherwise
-        R12 = 12, // scratch
-        R13 = 13, // ppc32: saved, ppc64: thread-specific storage
-        R14 = 14, // saved
-        R15 = 15,
-        R16 = 16,
-        R17 = 17,
-        R18 = 18,
-        R19 = 19,
-        R20 = 20,
-        R21 = 21,
-        R22 = 22,
-        R23 = 23,
-        R24 = 24,
-        R25 = 25,
-        R26 = 26,
-        R27 = 27,
-        R28 = 28,
-        R29 = 29,
-        R30 = 30,
-        R31 = 31, // excluded from regalloc since we use it as FP
+        R0   = { 0 },   // scratch or the value 0, excluded from regalloc
+        SP   = { 1 },   // stack pointer, excluded from regalloc
+        R2   = { 2 },   // scratch on MacOSX, rtoc pointer elsewhere
+        R3   = { 3 },   // this, return value, MSW of int64 return
+        R4   = { 4 },   // param, LSW of int64 return
+        R5   = { 5 },   // param
+        R6   = { 6 },   // param
+        R7   = { 7 },   // param
+        R8   = { 8 },   // param
+        R9   = { 9 },   // param
+        R10  = { 10 },  // param
+        R11  = { 11 },  // scratch in leaf funcs, outgoing arg ptr otherwise
+        R12  = { 12 },  // scratch
+        R13  = { 13 },  // ppc32: saved, ppc64: thread-specific storage
+        R14  = { 14 },  // saved
+        R15  = { 15 },
+        R16  = { 16 },
+        R17  = { 17 },
+        R18  = { 18 },
+        R19  = { 19 },
+        R20  = { 20 },
+        R21  = { 21 },
+        R22  = { 22 },
+        R23  = { 23 },
+        R24  = { 24 },
+        R25  = { 25 },
+        R26  = { 26 },
+        R27  = { 27 },
+        R28  = { 28 },
+        R29  = { 29 },
+        R30  = { 30 },
+        R31  = { 31 },   // excluded from regalloc since we use it as FP
         FP  = R31,
 
         // FP regs
-        F0  = 32, // scratch, excluded from reg alloc
-        F1  = 33, // param, double return value
-        F2  = 34, // param
-        F3  = 35, // param
-        F4  = 36, // param
-        F5  = 37, // param
-        F6  = 38, // param
-        F7  = 39, // param
-        F8  = 40, // param
-        F9  = 41, // param
-        F10 = 42, // param
-        F11 = 43, // param
-        F12 = 44, // param
-        F13 = 45, // param
-        F14 = 46, // F14-31 saved
-        F15 = 47,
-        F16 = 48,
-        F17 = 49,
-        F18 = 50,
-        F19 = 51,
-        F20 = 52,
-        F21 = 53,
-        F22 = 54,
-        F23 = 55,
-        F24 = 56,
-        F25 = 57,
-        F26 = 58,
-        F27 = 59,
-        F28 = 60,
-        F29 = 61,
-        F30 = 62,
-        F31 = 63,
+        F0  = { 32 },   // scratch, excluded from reg alloc
+        F1  = { 33 },   // param, double return value
+        F2  = { 34 },   // param
+        F3  = { 35 },   // param
+        F4  = { 36 },   // param
+        F5  = { 37 },   // param
+        F6  = { 38 },   // param
+        F7  = { 39 },   // param
+        F8  = { 40 },   // param
+        F9  = { 41 },   // param
+        F10 = { 42 },   // param
+        F11 = { 43 },   // param
+        F12 = { 44 },   // param
+        F13 = { 45 },   // param
+        F14 = { 46 },   // F14-31 saved
+        F15 = { 47 },
+        F16 = { 48 },
+        F17 = { 49 },
+        F18 = { 50 },
+        F19 = { 51 },
+        F20 = { 52 },
+        F21 = { 53 },
+        F22 = { 54 },
+        F23 = { 55 },
+        F24 = { 56 },
+        F25 = { 57 },
+        F26 = { 58 },
+        F27 = { 59 },
+        F28 = { 60 },
+        F29 = { 61 },
+        F30 = { 62 },
+        F31 = { 63 },
 
         // special purpose registers (SPR)
-        Rxer = 1,
-        Rlr  = 8,
-        Rctr = 9,
+        Rxer = { 1 },
+        Rlr  = { 8 },
+        Rctr = { 9 },
 
-        deprecated_UnknownReg = 127,    // XXX: remove eventually, see bug 538924
-        FirstReg = R0,
-        LastReg = F31
-    };
+        deprecated_UnknownReg = { 127 };    // XXX: remove eventually, see bug 538924
+
+    static const uint32_t FirstRegNum = 0; // R0
+    static const uint32_t LastRegNum = 64; // F31
 
     enum PpcOpcode {
         // opcodes
@@ -287,6 +290,7 @@ namespace nanojit
         void underrunProtect(int bytes);                                    \
         void nativePageReset();                                             \
         void nativePageSetup();                                             \
+        bool hardenNopInsertion(const Config& /*c*/) { return false; }      \
         void br(NIns *addr, int link);                                      \
         void br_far(NIns *addr, int link);                                  \
         void asm_regarg(ArgType, LIns*, Register);                          \
@@ -312,8 +316,8 @@ namespace nanojit
         asm_output(fmt, ##__VA_ARGS__);\
         } while (0) /* no semi */
 
-    #define GPR(r) (r)
-    #define FPR(r) ((r)&31)
+    #define GPR(r) REGNUM(r)
+    #define FPR(r) (REGNUM(r) & 31)
 
     #define Bx(li,aa,lk) EMIT1(PPC_b | ((li)&0xffffff)<<2 | (aa)<<1 | (lk),\
         "b%s%s %p", (lk)?"l":"", (aa)?"a":"", _nIns+(li))
@@ -424,7 +428,7 @@ namespace nanojit
 
     #define JMP(addr) br(addr, 0)
 
-    #define SPR(spr) ((R##spr)>>5|(R##spr&31)<<5)
+    #define SPR(spr) (REGNUM(R##spr)>>5|(REGNUM(R##spr)&31)<<5)
     #define MTSPR(spr,rs) EMIT1(PPC_mtspr | GPR(rs)<<21 | SPR(spr)<<11,\
         "mt%s %s", #spr, gpn(rs))
     #define MFSPR(rd,spr) EMIT1(PPC_mfspr | GPR(rd)<<21 | SPR(spr)<<11,\

@@ -33,7 +33,7 @@ BEGIN_TEST(testLookup_bug522590)
 END_TEST(testLookup_bug522590)
 
 JSBool
-document_resolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
+document_resolve(JSContext *cx, JSObject *obj, jsid id, uintN flags, JSObject **objp)
 {
     // If id is "all", and we're not detecting, resolve document.all=true.
     jsvalRoot v(cx);
@@ -41,8 +41,10 @@ document_resolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject *
         return false;
     if (JSVAL_IS_STRING(v.value())) {
         JSString *str = JSVAL_TO_STRING(v.value());
-        const char *p = JS_GetStringBytes(str);
-        if (strcmp(p, "all") == 0 && !(flags & JSRESOLVE_DETECTING)) {
+        JSFlatString *flatStr = JS_FlattenString(cx, str);
+        if (!flatStr)
+            return false;
+        if (JS_FlatStringEqualsAscii(flatStr, "all") && !(flags & JSRESOLVE_DETECTING)) {
             JSBool ok = JS_DefinePropertyById(cx, obj, id, JSVAL_TRUE, NULL, NULL, 0);
             *objp = ok ? obj : NULL;
             return ok;
@@ -54,7 +56,7 @@ document_resolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject *
 
 static JSClass document_class = {
     "document", JSCLASS_NEW_RESOLVE,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
     JS_EnumerateStub, (JSResolveOp) document_resolve, JS_ConvertStub, JS_FinalizeStub,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
