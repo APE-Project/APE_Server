@@ -458,13 +458,17 @@ json_item *json_new_array()
 	return obj;
 }
 
-void json_set_property_objN(json_item *obj, const char *key, int keylen, json_item *value)
+json_item *json_set_property_objN(json_item *obj, const char *key, int keylen, json_item *value)
 {
 	json_item *new_item = value;
 	
 	if (key != NULL) {
 		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
-		memcpy(new_item->key.val, key, keylen + 1);
+		if (*key != '\0') {
+			memcpy(new_item->key.val, key, keylen + 1);
+		} else {
+			memset(new_item->key.val, '\0', sizeof(char) * (keylen + 1));
+		}
 		new_item->key.len = keylen;
 	}
 	
@@ -477,6 +481,8 @@ void json_set_property_objN(json_item *obj, const char *key, int keylen, json_it
 	}
 	
 	obj->jchild.head = new_item;
+	
+	return new_item;
 }
 
 void json_set_property_objZ(json_item *obj, const char *key, json_item *value)
@@ -484,13 +490,17 @@ void json_set_property_objZ(json_item *obj, const char *key, json_item *value)
 	json_set_property_objN(obj, key, strlen(key), value);
 }
 
-void json_set_property_intN(json_item *obj, const char *key, int keylen, JSON_int_t value)
+json_item *json_set_property_intN(json_item *obj, const char *key, int keylen, JSON_int_t value)
 {
 	json_item *new_item = init_json_item();
 	
 	if (key != NULL) {
 		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
-		memcpy(new_item->key.val, key, keylen + 1);
+		if (*key != '\0') {
+			memcpy(new_item->key.val, key, keylen + 1);
+		} else {
+			memset(new_item->key.val, '\0', keylen + 1);
+		}
 		new_item->key.len = keylen;
 	}
 	new_item->father = obj;
@@ -503,7 +513,9 @@ void json_set_property_intN(json_item *obj, const char *key, int keylen, JSON_in
 		obj->jchild.head->next = new_item;
 	}
 	
-	obj->jchild.head = new_item;	
+	obj->jchild.head = new_item;
+	
+	return new_item;
 }
 
 void json_set_property_intZ(json_item *obj, const char *key, JSON_int_t value)
@@ -513,13 +525,18 @@ void json_set_property_intZ(json_item *obj, const char *key, JSON_int_t value)
 	json_set_property_intN(obj, key, len, value);
 }
 
-void json_set_property_floatN(json_item *obj, const char *key, int keylen, long double value)
+json_item *json_set_property_floatN(json_item *obj, const char *key, int keylen, long double value)
 {
 	json_item *new_item = init_json_item();
 
 	if (key != NULL) {
 		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
-		memcpy(new_item->key.val, key, keylen + 1);
+		
+		if (*key != '\0') {
+			memcpy(new_item->key.val, key, keylen + 1);
+		} else {
+			memset(new_item->key.val, '\0', keylen + 1);
+		}
 		new_item->key.len = keylen;
 	}
 	new_item->father = obj;
@@ -532,16 +549,23 @@ void json_set_property_floatN(json_item *obj, const char *key, int keylen, long 
 		obj->jchild.head->next = new_item;
 	}
 	
-	obj->jchild.head = new_item;	
+	obj->jchild.head = new_item;
+	
+	return new_item;
 }
 
-void json_set_property_boolean(json_item *obj, const char *key, int keylen, int value)
+json_item *json_set_property_boolean(json_item *obj, const char *key, int keylen, int value)
 {
 	json_item *new_item = init_json_item();
 
 	if (key != NULL) {
 		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
-		memcpy(new_item->key.val, key, keylen + 1);
+		
+		if (*key != '\0') {
+			memcpy(new_item->key.val, key, keylen + 1);
+		} else {
+			memset(new_item->key.val, '\0', keylen + 1);
+		}
 		new_item->key.len = keylen;
 	}
 	new_item->father = obj;
@@ -556,16 +580,23 @@ void json_set_property_boolean(json_item *obj, const char *key, int keylen, int 
 		obj->jchild.head->next = new_item;
 	}
 	
-	obj->jchild.head = new_item;	
+	obj->jchild.head = new_item;
+	
+	return new_item;
 }
 
-void json_set_property_null(json_item *obj, const char *key, int keylen)
+json_item *json_set_property_null(json_item *obj, const char *key, int keylen)
 {
 	json_item *new_item = init_json_item();
 
 	if (key != NULL) {
 		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
-		memcpy(new_item->key.val, key, keylen + 1);
+		
+		if (*key != '\0') {
+			memcpy(new_item->key.val, key, keylen + 1);
+		} else {
+			memset(new_item->key.val, '\0', sizeof(char) * (keylen + 1));
+		}
 		new_item->key.len = keylen;
 	}
 	new_item->father = obj;
@@ -577,22 +608,34 @@ void json_set_property_null(json_item *obj, const char *key, int keylen)
 		obj->jchild.head->next = new_item;
 	}
 	
-	obj->jchild.head = new_item;	
+	obj->jchild.head = new_item;
+	
+	return new_item;
 }
 
 
-void json_set_property_strN(json_item *obj, const char *key, int keylen, const char *value, int valuelen)
+json_item *json_set_property_strN(json_item *obj, const char *key, int keylen, const char *value, int valuelen)
 {
 	
 	json_item *new_item = init_json_item();
 	
 	if (key != NULL) {
 		new_item->key.val = xmalloc(sizeof(char) * (keylen + 1));
-		memcpy(new_item->key.val, key, keylen + 1);
+		
+		if (*key != '\0') {
+			memcpy(new_item->key.val, key, keylen + 1);
+		} else {
+			memset(new_item->key.val, '\0', sizeof(char) * (keylen + 1));
+		}
 		new_item->key.len = keylen;
 	}
+	
 	new_item->jval.vu.str.value = xmalloc(sizeof(char) * (valuelen + 1));
-	memcpy(new_item->jval.vu.str.value, value, valuelen + 1);
+	if (*value != '\0') {
+		memcpy(new_item->jval.vu.str.value, value, valuelen + 1);
+	} else {
+		memset(new_item->jval.vu.str.value, '\0', valuelen + 1);
+	}
 	new_item->jval.vu.str.length = valuelen;
 	new_item->type = JSON_T_STRING;
 	
@@ -605,6 +648,8 @@ void json_set_property_strN(json_item *obj, const char *key, int keylen, const c
 	}
 	
 	obj->jchild.head = new_item;
+	
+	return new_item;
 }
 
 void json_set_property_strZ(json_item *obj, const char *key, const char *value)
@@ -614,9 +659,9 @@ void json_set_property_strZ(json_item *obj, const char *key, const char *value)
 	json_set_property_strN(obj, key, len, value, strlen(value));
 }
 
-void json_set_element_strN(json_item *obj, const char *value, int valuelen)
+json_item *json_set_element_strN(json_item *obj, const char *value, int valuelen)
 {
-	json_set_property_strN(obj, NULL, 0, value, valuelen);
+	return json_set_property_strN(obj, NULL, 0, value, valuelen);
 }
 
 void json_set_element_strZ(json_item *obj, const char *value)
