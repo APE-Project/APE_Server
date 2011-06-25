@@ -18,7 +18,7 @@ modules: libape-spidermonkey.c
 endif
 ifdef LINUX_BUILD
 
-CFLAGS = -Wall -O2 -shared -fPIC -rdynamic
+CFLAGS = -Wall -g -shared -fPIC -rdynamic
 
 all: modules
 

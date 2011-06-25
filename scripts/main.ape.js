@@ -11,4 +11,3 @@ Ape.addEvent("init", function() {
 	//include("examples/ircserver.js");
 	//include("framework/http_auth.js");
 });
-

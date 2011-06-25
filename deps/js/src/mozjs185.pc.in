@@ -1,0 +1,10 @@
+prefix=%prefix%
+libdir=%libdir%
+includedir=%includedir%
+
+Name: SpiderMonkey 1.8.5
+Description: The Mozilla library for JavaScript 1.8.5
+Version: %MOZILLA_VERSION%
+Requires: nspr >= 4.7
+Libs: -L${libdir} -lmozjs185
+Cflags: -I${includedir}/js
