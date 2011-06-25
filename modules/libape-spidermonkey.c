@@ -403,6 +403,7 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 	unsigned int i, length = 0, isarray = 0;
 	JSIdArray *enumjson = NULL;
 	json_item *ape_json = NULL;
+	jsval propname;
 	
 	/* TODO Fixme : If array has no contigus values, they cannot be retrived, use JS_NewPropertyIterator, JS_NextProperty */
 	
@@ -428,6 +429,8 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 		json_item *val_obj = NULL;
 		
 		if (!isarray) {
+			JS_IdToValue(cx, enumjson->vector[i], &propname);
+			key = JS_ValueToString(cx, propname);
 			JS_GetPropertyById(cx, json_obj, enumjson->vector[i], &vp);
 		} else {
 			JS_GetElement(cx, json_obj, i, &vp);
@@ -470,9 +473,10 @@ static json_item *jsobj_to_ape_json(JSContext *cx, JSObject *json_obj)
 			case JSTYPE_STRING:
 			{
 				json_item *jitem;
-				size_t jvlength = JS_GetStringEncodingLength(cx, value);
+				size_t jvlength;
 				
 				value = JSVAL_TO_STRING(vp);
+				jvlength = JS_GetStringEncodingLength(cx, value);
 				
 				if (!isarray) {
 					size_t jklength = JS_GetStringEncodingLength(cx, key);
@@ -1820,6 +1824,52 @@ APE_JS_NATIVE(ape_sm_include)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(ape_sm_readfile)
+//{
+	JSString *string;
+	char *cstring;
+	char *content;
+	FILE *fp;
+	int size = 2048;
+	int fsize = 0;
+	
+	if (argc != 1) {
+        return JS_TRUE;
+	}
+	
+	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "S", &string)) {
+		return JS_TRUE;
+	}
+	cstring = JS_EncodeString(cx, string);
+	fp = fopen(cstring, "r");
+	if (fp == NULL) {
+	    return JS_TRUE;
+	}
+	
+	content = malloc(sizeof(char) * size);
+	
+	while(!feof(fp)) {
+	    int tmp;
+	    if ((tmp = fread(content+fsize, sizeof(char), 2048, fp)) > 0) {
+	        fsize += tmp;
+	    }
+	    
+	    size += 2048;
+	    
+	    content = realloc(content, sizeof(char) * size);
+	}
+	
+	printf("Size : %d\n", fsize);
+	
+	JS_SET_RVAL(cx, vpn, STRING_TO_JSVAL(JS_NewStringCopyN(cx, content, fsize)));
+	
+	free(content);
+	JS_free(cx, cstring);
+	
+	return JS_TRUE;
+	
+}
+
 APE_JS_NATIVE(ape_sm_b64_encode)
 //{
 	JSString *string;
@@ -2420,7 +2470,7 @@ APE_JS_NATIVE(ape_sm_echo)
 	
 	if (!g_ape->is_daemon) {
 		fwrite(cstring, sizeof(char), JS_GetStringEncodingLength(cx, string), stdout);
-		fwrite("\n", sizeof(char), 1, stdout);
+		//fwrite("\n", sizeof(char), 1, stdout);
 	} else {
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 			"JavaScript : %s", cstring);
@@ -2927,6 +2977,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("addUser", ape_sm_adduser, 1, 0),
 	JS_FS("mkChan", ape_sm_mkchan, 1, 0),
 	JS_FS("rmChan", ape_sm_rmchan, 1, 0),
+	JS_FS("readfile", ape_sm_readfile, 1, 0),
 	JS_FS_END
 };
 
