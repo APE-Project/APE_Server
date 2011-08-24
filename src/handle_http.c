@@ -173,10 +173,11 @@ subuser *checkrecv(ape_socket *co, acetables *g_ape)
 		    if (ws_version != NULL) {
 		        switch(atoi(ws_version)) {
 		            case 6:
-		            default:
 		                version = WS_IETF_06;
 		                break;
 		            case 7:
+		            case 8:
+		            default:
 		                version = WS_IETF_07;
 		                break;
 		        }
