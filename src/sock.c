@@ -196,6 +196,9 @@ void setnonblocking(int fd)
 }
 
 /* Close socket but preserve ape_socket struct */
+/* Needs to handle being called on a socket already closed.
+   At least on MacOS there are multiple events delivered simultaneously
+   that result in multiple calls to close. */
 void close_socket(int fd, acetables *g_ape)
 {
 	ape_socket *co = g_ape->co[fd];
@@ -209,6 +212,7 @@ void close_socket(int fd, acetables *g_ape)
 
 	if (co->buffer_in.data != NULL) {
 		free(co->buffer_in.data);
+		co->buffer_in.data = NULL;
 	}
 
 	if (co->parser.data != NULL) {
