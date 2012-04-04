@@ -226,6 +226,10 @@ static int escape_json_string(char *in, char *out, int len)
 				out[e++] = '\\';
 				out[e] = 'r';
 				break;
+			case '\'':
+				out[e++] = '\\';
+				out[e] = '\'';
+				break;
 			default: 
 				out[e] = in[i];
 				break;
