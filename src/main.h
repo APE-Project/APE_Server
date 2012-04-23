@@ -148,6 +148,7 @@ typedef struct _websocket_state
 	#pragma pack()
 	ws_payload_step step;
 	int data_pos;
+	int data_inkey;
 	int frame_pos;
 } websocket_state;
 

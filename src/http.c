@@ -122,12 +122,13 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                 websocket->key.val[websocket->key.pos] = *pData;
                 if (++websocket->key.pos == 4) {
                     websocket->step = WS_STEP_DATA;
+                    websocket->data_inkey = 0;
                 }
                 break;
             case WS_STEP_START:
                 /* Contain fragmentaiton infos & opcode (+ reserved bits) */
                 websocket->frame_payload.start = *pData;
-
+            
                 websocket->step = WS_STEP_LENGTH;
                 break;
             case WS_STEP_LENGTH:
@@ -172,8 +173,9 @@ static void process_websocket_frame(ape_socket *co, acetables *g_ape)
                     websocket->data_pos = websocket->offset;
                 }
                 
-                *pData ^= websocket->key.val[(websocket->frame_pos - websocket->data_pos) % 4];
-
+                *pData ^= websocket->key.val[websocket->data_inkey % 4];
+                websocket->data_inkey++;
+                
                 if (--websocket->frame_payload.extended_length == 0) {
                     unsigned char saved;
                     
