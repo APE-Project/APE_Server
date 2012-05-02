@@ -1,2 +1,4 @@
-run build.sh
--> sh build.sh
+Run as root :
+
+# cd ./bin/
+# ./aped
