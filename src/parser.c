@@ -47,7 +47,13 @@ static void parser_ready_websocket(ape_parser *websocket_parser, acetables *g_ap
 {
 	ape_socket *co = websocket_parser->socket;
 	
+	subuser *tmp = co->attach;
+	
 	co->attach = checkrecv_websocket(co, g_ape);
+	
+	if (tmp != NULL && co->attach != tmp) {
+	    tmp->state = ADIED;
+	}
 }
 
 ape_parser parser_init_http(ape_socket *co)
