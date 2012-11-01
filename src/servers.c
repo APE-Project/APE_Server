@@ -36,31 +36,36 @@ static void ape_read(ape_socket *co, ape_buffer *buffer, size_t offset, acetable
 
 static void ape_sent(ape_socket *co, acetables *g_ape)
 {
-	if (co->attach != NULL && ((subuser *)(co->attach))->burn_after_writing) {
-		transport_data_completly_sent((subuser *)(co->attach), ((subuser *)(co->attach))->user->transport);
-		((subuser *)(co->attach))->burn_after_writing = 0;
+	subuser *sub = (subuser *)(co->attach);
+	if ((sub != NULL) && (sub->burn_after_writing)) {
+		if (sub->user != NULL) {
+			transport_data_completly_sent(sub, sub->user->transport, g_ape);
+		}
+		sub->burn_after_writing = 0;
 	}
 }
 
 static void ape_disconnect(ape_socket *co, acetables *g_ape)
 {
-	if (co->attach != NULL) {
+	subuser *sub = (subuser *)(co->attach);
+	if (sub != NULL) {
 		
-		if (((subuser *)(co->attach))->wait_for_free == 1) {
-			free(co->attach);
+		if (sub->wait_for_free == 1) {
+			free(sub);
 			co->attach = NULL;
 			return;				
 		}
 		
-		if (co->fd == ((subuser *)(co->attach))->client->fd) {
-
-			((subuser *)(co->attach))->headers.sent = 0;
-			((subuser *)(co->attach))->state = ADIED;
-			http_headers_free(((subuser *)(co->attach))->headers.content);
-			((subuser *)(co->attach))->headers.content = NULL;
-			if (((subuser *)(co->attach))->user->istmp) {
-				deluser(((subuser *)(co->attach))->user, g_ape);
-				co->attach = NULL;
+		if (co->fd == sub->client->fd) {
+			sub->headers.sent = 0;
+			sub->state = ADIED;
+			http_headers_free(sub->headers.content);
+			sub->headers.content = NULL;
+			if (sub->user != NULL) {
+				if (sub->user->istmp) {
+					deluser(sub->user, g_ape);
+					co->attach = NULL;
+				}
 			}
 		}
 		

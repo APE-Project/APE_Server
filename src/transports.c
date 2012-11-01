@@ -51,13 +51,13 @@ struct _transport_open_same_host_p transport_open_same_host(subuser *sub, ape_so
 	return ret;
 }
 
-void transport_data_completly_sent(subuser *sub, transport_t transport)
+void transport_data_completly_sent(subuser *sub, transport_t transport, acetables *g_ape)
 {
 	switch(transport) {
 		case TRANSPORT_LONGPOLLING:
 		case TRANSPORT_JSONP:
 		default:
-			do_died(sub);
+			do_died(sub, g_ape);
 			break;
 		case TRANSPORT_PERSISTANT:
 		case TRANSPORT_XHRSTREAMING:

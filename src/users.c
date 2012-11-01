@@ -223,7 +223,7 @@ void deluser(USERS *user, acetables *g_ape)
 
 }
 
-void do_died(subuser *sub)
+void do_died(subuser *sub, acetables *g_ape)
 {
 	if (sub->state == ALIVE) {
 		sub->state = ADIED;
@@ -231,7 +231,7 @@ void do_died(subuser *sub)
 		http_headers_free(sub->headers.content);
 		sub->headers.content = NULL;
 		
-		shutdown(sub->client->fd, 2);
+		safe_shutdown(sub->client->fd, g_ape);
 	}
 }
 
@@ -259,7 +259,7 @@ void check_timeout(acetables *g_ape, int *last)
 
 					/* Data completetly sent => closed */
 					if (send_raws(*n, g_ape)) {
-						transport_data_completly_sent(*n, (*n)->user->transport); // todo : hook
+						transport_data_completly_sent(*n, (*n)->user->transport, g_ape); // todo : hook
 					} else {
 
 						(*n)->burn_after_writing = 1;
@@ -577,10 +577,13 @@ void delsubuser(subuser **current, acetables *g_ape)
 	
 	clear_properties(&del->properties);
 	
+	del->user = NULL;
+
 	if (del->state == ALIVE) {
 		del->wait_for_free = 1;
-		do_died(del);
+		do_died(del, g_ape);
 	} else {
+		g_ape->co[del->client->fd]->attach = NULL;
 		free(del);
 	}
 	

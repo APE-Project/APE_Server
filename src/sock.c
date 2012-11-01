@@ -40,6 +40,13 @@
 #include "log.h"
 #include "parser.h"
 
+// These error codes may have the same value, but POSIX allows them to be different
+#if  (EAGAIN == EWOULDBLOCK)
+#define BLOCKING(errnum)	(errnum == EWOULDBLOCK)
+#else
+#define BLOCKING(errnum)	((errnum == EWOULDBLOCK) || (errnum == EAGAIN))
+#endif
+
 static int sendqueue(int sock, acetables *g_ape);
 
 
@@ -222,6 +229,9 @@ void close_socket(int fd, acetables *g_ape)
 	events_remove(g_ape->events, fd);
 
 	close(fd);
+
+	co->fd = 0;
+	co->attach = NULL;
 }
 
 /* Create socket struct if not exists */
@@ -389,7 +399,7 @@ unsigned int sockroutine(acetables *g_ape)
 								
 								if (g_ape->co[active_fd]->burn_after_writing) {
 									shutdown(active_fd, 2);
-									g_ape->co[active_fd]->burn_after_writing = 0;
+									//g_ape->co[active_fd]->burn_after_writing = 0;
 								}
 
 							}
@@ -418,7 +428,7 @@ unsigned int sockroutine(acetables *g_ape)
 										g_ape->co[active_fd]->buffer_in.data + g_ape->co[active_fd]->buffer_in.length, 
 										g_ape->co[active_fd]->buffer_in.size - g_ape->co[active_fd]->buffer_in.length);
 						
-							if (readb == -1 && errno == EAGAIN) {
+							if ((readb == -1) && BLOCKING(errno)) {
 
 								if (g_ape->co[active_fd]->stream_type == STREAM_OUT) {
 									
@@ -536,15 +546,20 @@ static int sendqueue(int sock, acetables *g_ape)
 	
 	while(t_bytes < bufout->buflen) {
 		n = write(sock, bufout->buf + t_bytes, r_bytes);
-		if (n == -1) {
-			if (errno == EAGAIN && r_bytes > 0) {
+		if (n < 0) {
+			if (BLOCKING(errno) && (r_bytes > 0)) {
 				/* Still not complete */
-				memmove(bufout->buf, bufout->buf + t_bytes, r_bytes);
-				/* TODO : avoid memmove */
-				bufout->buflen = r_bytes;
-				return 0;
+				if (t_bytes > 0) {
+					memmove(bufout->buf, bufout->buf + t_bytes, r_bytes);
+					/* TODO : avoid memmove */
+					bufout->buflen = r_bytes;
+				}
+			} else {
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape,
+				        "sendqueue() - write(): %s", strerror(errno));
+				printf("Error: Cannot write to socket %i; %s\n", sock, strerror(errno));
 			}
-			break;
+			return 0;
 		}
 		t_bytes += n;
 		r_bytes -= n;		
@@ -573,15 +588,15 @@ int sendbin(int sock, const char *bin, unsigned int len, unsigned int burn_after
 				n = -2;
 			}
 			if (n < 0) {
-				if ((errno == EAGAIN && r_bytes > 0) || (n == -2)) {
+				if ((n == -2) || (BLOCKING(errno) && (r_bytes > 0))) {
 					if (g_ape->bufout[sock].buf == NULL) {
-						g_ape->bufout[sock].allocsize = r_bytes + 128; /* add padding to prevent extra data to be reallocated */
+						g_ape->bufout[sock].allocsize = (r_bytes + 0x07ff) & (~0x07ff); /* round up modulo 2048 */
 						g_ape->bufout[sock].buf = xmalloc(sizeof(char) * g_ape->bufout[sock].allocsize);
 						g_ape->bufout[sock].buflen = r_bytes;
 					} else {
 						g_ape->bufout[sock].buflen += r_bytes;
 						if (g_ape->bufout[sock].buflen > g_ape->bufout[sock].allocsize) {
-							g_ape->bufout[sock].allocsize = g_ape->bufout[sock].buflen + 128;
+							g_ape->bufout[sock].allocsize = (g_ape->bufout[sock].buflen + 0x07ff) & (~0x07ff);
 							g_ape->bufout[sock].buf = xrealloc(g_ape->bufout[sock].buf, sizeof(char) * g_ape->bufout[sock].allocsize);
 						}
 					}
@@ -591,11 +606,13 @@ int sendbin(int sock, const char *bin, unsigned int len, unsigned int burn_after
 					if (burn_after_writing) {
 						g_ape->co[sock]->burn_after_writing = 1;
 					}
-					
-					return 0;
+				} else {
+					ape_log(APE_ERR, __FILE__, __LINE__, g_ape,
+					        "sendbin() - write(): %s", strerror(errno));
+					printf("Error: Cannot write to socket %i; %s\n", sock, strerror(errno));
 				}
 				
-				break;
+				return 0;
 			}
 			t_bytes += n;
 			r_bytes -= n;
@@ -614,6 +631,6 @@ void safe_shutdown(int sock, acetables *g_ape)
 	if (g_ape->bufout[sock].buf == NULL) {
 		shutdown(sock, 2);
 	} else {
-		g_ape->co[sock]->burn_after_writing = 1;
+		g_ape->co[sock]->burn_after_writing = 2;
 	}
 }
