@@ -140,13 +140,12 @@ var Http = new Class({
 						var tmpHeaders = tmp[i].split(": ");
 						this.responseHeaders[tmpHeaders[0]] = tmpHeaders[1];
 					}
-				} else {
-					if ($defined(this.responseHeaders['Content-Length']) && this.getContentSize() >= this.responseHeaders['Content-Length']) {
-						this.socket.close();
-					} 
-					if ($defined(this.responseHeaders['Location'])) {
-						socket.close();
-					}
+				}
+				if ($defined(this.responseHeaders['Content-Length']) && this.getContentSize() >= this.responseHeaders['Content-Length']) {
+					this.socket.close();
+				} 
+				if ($defined(this.responseHeaders['Location'])) {
+					socket.close();
 				}
 			}				
 		}.bind(this);
