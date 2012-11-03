@@ -583,7 +583,6 @@ void delsubuser(subuser **current, acetables *g_ape)
 		del->wait_for_free = 1;
 		do_died(del, g_ape);
 	} else {
-		g_ape->co[del->client->fd]->attach = NULL;
 		free(del);
 	}
 	
