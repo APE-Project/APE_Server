@@ -216,7 +216,7 @@ USERS *seek_user_simple(const char *nick, acetables *g_ape);
 
 void deluser(USERS *user, acetables *g_ape);
 
-void do_died(subuser *user);
+void do_died(subuser *user, acetables *g_ape);
 
 void check_timeout(acetables *g_ape, int *last);
 void grant_aceop(USERS *user);

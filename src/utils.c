@@ -30,7 +30,7 @@ void *xmalloc(size_t size)
 {
 	void *r = malloc(size);
 	if (r == NULL) {
-		printf("[ERR] Not enougth memory\n");
+		printf("[ERR] Not enough memory to xmalloc %lu\n", (unsigned long)size);
 		exit(0);
 	}
 	return r;
@@ -40,7 +40,7 @@ void *xrealloc(void *ptr, size_t size)
 {
 	void *r = realloc(ptr, size);
 	if (r == NULL) {
-		printf("[ERR] Not enougth memory\n");
+		printf("[ERR] Not enough memory to realloc %lu\n", (unsigned long)size);
 		exit(0);
 	}
 	return r;
@@ -183,7 +183,7 @@ char *xstrdup(const char *s)
 {
 	char *x = strdup(s);
 	if (x == NULL) {
-		printf("[ERR] Not enougth memory\n");
+		printf("[ERR] Not enough memory\n");
 		exit(0);	
 	}
 	return x;

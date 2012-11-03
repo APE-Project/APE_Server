@@ -185,16 +185,30 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 					struct _transport_open_same_host_p retval = transport_open_same_host(sub, pc->client, pc->guser->transport);				
 			
 					if (retval.client_close != NULL) {
-						RAW *newraw;
-						json_item *jlist = json_new_object();
+						// Send CLOSE if no response has been sent yet
+						if (!sub->headers.sent) {
+							RAW *newraw;
+							json_item *jlist = json_new_object();
 
-						json_set_property_strZ(jlist, "value", "null");
+							json_set_property_strZ(jlist, "value", "null");
 
-						newraw = forge_raw("CLOSE", jlist);
+							newraw = forge_raw("CLOSE", jlist);
 
-						send_raw_inline((retval.client_close->fd == pc->client->fd ? pc->client : sub->client), pc->transport, newraw, g_ape);
+							send_raw_inline((retval.client_close->fd == pc->client->fd ? pc->client : sub->client), pc->transport, newraw, g_ape);
+						}
 						
-						shutdown(retval.client_close->fd, 2);
+						// It's not safe to leave the subuser pointer in co->attach anymore
+						// since subuser could subsequently be deleted, leaving a pointer into free heap.
+						// So, let this socket finish up on its own and pretend its already finished.
+
+						sub->state = ADIED;
+						sub->headers.sent = 0;
+						http_headers_free(sub->headers.content);
+						sub->headers.content = NULL;
+						sub->burn_after_writing = 0;
+
+						g_ape->co[retval.client_close->fd]->attach = NULL;
+						safe_shutdown(retval.client_close->fd, g_ape);
 					}
 					sub->client = cp.client = retval.client_listener;
 					sub->state = retval.substate;

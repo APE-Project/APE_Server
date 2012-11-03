@@ -232,7 +232,7 @@ void proxy_shutdown(ape_proxy *proxy, acetables *g_ape)
 {
 
 	if (proxy->state == PROXY_CONNECTED) {
-		shutdown(proxy->sock.fd, 2);
+		safe_shutdown(proxy->sock.fd, g_ape);
 		proxy->state = PROXY_TOFREE;
 	}
 	if (proxy->prev != NULL) {

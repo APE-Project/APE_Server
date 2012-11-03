@@ -144,8 +144,8 @@ void ape_log(ape_log_lvl_t lvl, const char *file, unsigned long int line, acetab
 			}
 			write(g_ape->logs.fd, buff, len);
 			write(g_ape->logs.fd, "\n", 1);
-
-			free(buff);
 		}
+
+		free(buff);
 	}
 }
