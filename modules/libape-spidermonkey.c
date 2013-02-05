@@ -2472,7 +2472,7 @@ APE_JS_NATIVE(ape_sm_echo)
 	
 	if (!g_ape->is_daemon) {
 		fwrite(cstring, sizeof(char), JS_GetStringEncodingLength(cx, string), stdout);
-		//fwrite("\n", sizeof(char), 1, stdout);
+		fwrite("\n", sizeof(char), 1, stdout);
 	} else {
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 			"JavaScript : %s", cstring);
