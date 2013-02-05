@@ -2510,6 +2510,8 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	jsval vp;
 	struct _ape_sock_callbacks *cbcopy;
 	struct _ape_sock_js_obj *sock_obj;
+
+    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 	
 	if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vpn), "iS/o", &port, &ip, &options)) {
 		return JS_TRUE;
@@ -2558,6 +2560,8 @@ APE_JS_NATIVE(ape_sm_pipe_constructor)
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
 	transpipe *pipe;
 	//JSObject *link;
+
+    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 
 	/* Add link to a Root ? */
 	pipe = init_pipe(NULL, CUSTOM_PIPE, g_ape);
@@ -2814,7 +2818,9 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	JSString *host, *login, *pass, *db;
 	char *chost, *clogin, *cpass, *cdb;
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
-	
+
+    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
+
 	MYSAC *my;
 	int fd;
 	struct _ape_mysql_data *myhandle;
@@ -2880,6 +2886,8 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	ape_socket *server;
 	jsval vp;
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
+
+    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 
 	if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vpn), "iS/o", &port, &ip, &options)) {
 		return JS_TRUE;
