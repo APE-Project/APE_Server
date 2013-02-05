@@ -2861,11 +2861,6 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	
 	//myhandle->to_call = mysac_connect;
 	myhandle->on_success = mysac_connect_success;
-	
-	JS_free(cx, chost);
-	JS_free(cx, clogin);
-	JS_free(cx, cpass);
-	JS_free(cx, cdb);
 
 	return JS_TRUE;
 }
