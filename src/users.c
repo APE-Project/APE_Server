@@ -177,8 +177,8 @@ USERS *adduser(ape_socket *client, const char *host, const char *ip, USERS *allo
 		
 		g_ape->nConnected++;
 		
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
-			"New user - (ip : %s)", nuser->ip);
+		//ape_log(APE_INFO, __FILE__, __LINE__, g_ape,
+		//	"New user - (ip : %s)", nuser->ip);
 	}
 
 	return nuser;
