@@ -595,7 +595,7 @@ APE_JS_NATIVE(apepipe_sm_get_property)
 		}
 	}
 	
-	JS_free(cx, property);
+	JS_free(cx, cproperty);
 	
 	return JS_TRUE;
 }
