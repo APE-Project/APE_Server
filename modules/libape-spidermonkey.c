@@ -1815,7 +1815,9 @@ APE_JS_NATIVE(ape_sm_include)
 	if (bytecode == NULL) {
 		if (!g_ape->is_daemon) {
 			printf("[JS] Failed loading script %s\n", rpath);
-		}		
+		} else {
+            ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[JS] Failed loading script %s\n", rpath);
+        }
 		return JS_TRUE;
 	}
 
