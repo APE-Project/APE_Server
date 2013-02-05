@@ -2837,7 +2837,7 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	cdb = JS_EncodeString(cx, db);
 
 	my = mysac_new(1024*1024);
-	mysac_setup(my, chost, clogin, cpass, cdb, 0);
+	mysac_setup(my, xstrdup(chost), xstrdup(clogin), xstrdup(cpass), xstrdup(cdb), 0);
 	mysac_connect(my);
 
 	myhandle->my = my;
