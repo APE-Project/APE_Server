@@ -2816,6 +2816,7 @@ static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myha
 APE_JS_NATIVE(ape_sm_mysql_constructor)
 //{
 	JSString *host, *login, *pass, *db;
+	char *chost, *clogin, *cpass, *cdb;
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
 
     JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
@@ -2829,15 +2830,20 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	}
 	
 	myhandle = xmalloc(sizeof(*myhandle));
+	
+	chost = JS_EncodeString(cx, host);
+	clogin = JS_EncodeString(cx, login);
+	cpass = JS_EncodeString(cx, pass);
+	cdb = JS_EncodeString(cx, db);
 
 	my = mysac_new(1024*1024);
-	mysac_setup(my, JS_EncodeString(cx, host), JS_EncodeString(cx, login), JS_EncodeString(cx, pass), JS_EncodeString(cx, db), 0);
+	mysac_setup(my, chost, clogin, cpass, cdb, 0);
 	mysac_connect(my);
 
 	myhandle->my = my;
 	myhandle->jsmysql = obj;
 	myhandle->cx = cx;
-	myhandle->db = xstrdup(JS_EncodeString(cx, db));
+	myhandle->db = xstrdup(cdb);
 	myhandle->data = NULL;
 	myhandle->callback = JSVAL_NULL;
 	myhandle->state = SQL_NEED_QUEUE;
