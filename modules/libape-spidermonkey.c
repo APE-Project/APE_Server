@@ -595,7 +595,7 @@ APE_JS_NATIVE(apepipe_sm_get_property)
 		}
 	}
 	
-	JS_free(cx, property);
+	JS_free(cx, cproperty);
 	
 	return JS_TRUE;
 }
@@ -1815,7 +1815,9 @@ APE_JS_NATIVE(ape_sm_include)
 	if (bytecode == NULL) {
 		if (!g_ape->is_daemon) {
 			printf("[JS] Failed loading script %s\n", rpath);
-		}		
+		} else {
+            ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[JS] Failed loading script %s\n", rpath);
+        }
 		return JS_TRUE;
 	}
 
@@ -2470,7 +2472,7 @@ APE_JS_NATIVE(ape_sm_echo)
 	
 	if (!g_ape->is_daemon) {
 		fwrite(cstring, sizeof(char), JS_GetStringEncodingLength(cx, string), stdout);
-		//fwrite("\n", sizeof(char), 1, stdout);
+		fwrite("\n", sizeof(char), 1, stdout);
 	} else {
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 			"JavaScript : %s", cstring);
@@ -2508,6 +2510,8 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	jsval vp;
 	struct _ape_sock_callbacks *cbcopy;
 	struct _ape_sock_js_obj *sock_obj;
+
+    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 	
 	if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vpn), "iS/o", &port, &ip, &options)) {
 		return JS_TRUE;
@@ -2556,6 +2560,8 @@ APE_JS_NATIVE(ape_sm_pipe_constructor)
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
 	transpipe *pipe;
 	//JSObject *link;
+
+    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 
 	/* Add link to a Root ? */
 	pipe = init_pipe(NULL, CUSTOM_PIPE, g_ape);
@@ -2812,7 +2818,9 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	JSString *host, *login, *pass, *db;
 	char *chost, *clogin, *cpass, *cdb;
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
-	
+
+    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
+
 	MYSAC *my;
 	int fd;
 	struct _ape_mysql_data *myhandle;
@@ -2829,7 +2837,7 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	cdb = JS_EncodeString(cx, db);
 
 	my = mysac_new(1024*1024);
-	mysac_setup(my, chost, clogin, cpass, cdb, 0);
+	mysac_setup(my, xstrdup(chost), xstrdup(clogin), xstrdup(cpass), xstrdup(cdb), 0);
 	mysac_connect(my);
 
 	myhandle->my = my;
@@ -2878,6 +2886,8 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	ape_socket *server;
 	jsval vp;
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
+
+    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 
 	if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vpn), "iS/o", &port, &ip, &options)) {
 		return JS_TRUE;
