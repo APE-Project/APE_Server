@@ -15,6 +15,10 @@ case "$OS_TARGET" in
         HOST_IS=Linux;;
 esac
 
+cd ./deps/udns-0.0.9/
+make clean && ./configure && make
+cd ../../
+
 if [ -e "/usr/include/mysql/mysql.h" ]
 then
     echo "HAS_MYSQL = yes" > ./modules/mysql.mk
@@ -27,9 +31,7 @@ else
 	echo "#undef _USE_MYSQL" >> ./src/configure.h
 fi
 
-cd ./deps/udns-0.0.9/
-make clean && ./configure && make
-cd ../js/src/
+cd ./deps/js/src/
 ./configure && make -j8
 cd ../../../
 make
