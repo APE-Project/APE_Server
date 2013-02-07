@@ -1,6 +1,6 @@
 EXEC=bin/aped
 
-prefix		= /usr/local
+prefix		= /usr/share/APE_Server
 bindir		= $(prefix)/bin
 
 
@@ -12,15 +12,26 @@ CC=gcc -D_GNU_SOURCE
 RM=rm -f
 
 all: aped
-	
+
 aped: $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o $(EXEC) $(LFLAGS) ./deps/udns-0.0.9/libudns.a -I ./deps/udns-0.0.9/
-install: 
-	install -d $(bindir)
+
+install:
+	install -d $(bindir) $(prefix)/modules/conf $(prefix)/modules/lib $(prefix)/scripts/commands $(prefix)/scripts/examples $(prefix)/scripts/framework $(prefix)/scripts/utils $(prefix)/scripts/test
 	install -m 755 $(EXEC) $(bindir)
+	install -m 644 bin/ape.conf $(bindir)
+	install -m 644 AUTHORS COPYING README $(prefix)
+	install -m 644 modules/conf/* $(prefix)/modules/conf/
+	install -m 755 modules/lib/* $(prefix)/modules/lib/
+	install -m 644 scripts/main.ape.js $(prefix)/scripts/
+	install -m 644 scripts/commands/* $(prefix)/scripts/commands/
+	install -m 644 scripts/examples/* $(prefix)/scripts/examples/
+	install -m 644 scripts/framework/* $(prefix)/scripts/framework/
+	install -m 644 scripts/utils/* $(prefix)/scripts/utils/
+	install -m 644 scripts/test/* $(prefix)/scripts/test/
 
 uninstall:
-	$(RM) $(bindir)/aped
+	$(RM) -R $(prefix)
 
 clean:
 	$(RM) $(EXEC)
