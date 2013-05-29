@@ -844,7 +844,7 @@ json_item *init_json_parser(const char *json_string)
 
 	jc = new_JSON_parser(&config);
 
-	for (pRaw = json_string; *pRaw; pRaw++) {
+	for (pRaw = json_string; (unsigned char)*pRaw; pRaw++) {
 		if (!JSON_parser_char(jc, *pRaw)) {
 			free_json_item(jcx.head);
 		    delete_JSON_parser(jc);
