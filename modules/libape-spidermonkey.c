@@ -600,6 +600,29 @@ APE_JS_NATIVE(apepipe_sm_get_property)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apepipe_sm_del_property)
+//{
+
+	char *cproperty;
+	JSString *property;
+	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
+	transpipe *pipe = JS_GetPrivate(cx, obj);
+
+	if (pipe == NULL) {
+		return JS_TRUE;
+	}
+
+	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "s", &property)) {
+		return JS_TRUE;
+	}
+	cproperty = JS_EncodeString(cx, property);
+	if (strcmp(cproperty, "pubid") != 0) {
+		del_property(&pipe->properties, cproperty);
+	}
+	JS_free(cx, cproperty);
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(apepipe_sm_get_parent)
 //{
 	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
@@ -643,8 +666,14 @@ APE_JS_NATIVE(apepipe_sm_set_property)
 	}
 	
 	ckey = JS_EncodeString(cx, key);
-	
-	if (JSVAL_IS_OBJECT(JS_ARGV(cx, vpn)[1])) { /* Convert to APE JSON Object */
+
+	if (JSVAL_IS_NULL(JS_ARGV(cx, vpn)[1]) ){
+		typextend = EXTEND_STR;
+		jsval *val= malloc(sizeof(jsval) * 1);
+		*val= JSVAL_NULL;
+		valuextend = val;
+
+	}else if (JSVAL_IS_OBJECT(JS_ARGV(cx, vpn)[1])) { /* Convert to APE JSON Object */
 		json_item *ji;
 
 		if ((ji = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(JS_ARGV(cx, vpn)[1]))) != NULL) {
@@ -780,7 +809,7 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
 	}
 
 	/* in the case of sendResponse */
-	/* TODO : May be borken if to_pipe->type == CHANNNEL and from == USER */
+	/* TODO : May be broken if to_pipe->type == CHANNNEL and from == USER */
 	if (chl) {
 		json_set_property_intN(jstr, "chl", 3, chl);
 	}
@@ -907,6 +936,28 @@ APE_JS_NATIVE(apechannel_sm_get_property)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apechannel_sm_del_property)
+//{
+	JSString *property;
+	char *cproperty;
+	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
+	CHANNEL *chan = JS_GetPrivate(cx, obj);
+
+	if (chan == NULL) {
+		return JS_TRUE;
+	}
+
+	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "s", &property)) {
+		return JS_TRUE;
+	}
+	cproperty = JS_EncodeString(cx, property);
+	if (strcmp(cproperty, "pubid") != 0 && strcmp(cproperty, "name") != 0) {
+		del_property(&chan->properties, cproperty);
+	}
+	JS_free(cx, cproperty);
+	return JS_TRUE;
+}
+
 APE_JS_NATIVE(apechannel_sm_set_property)
 //{
 	JSString *key;
@@ -924,8 +975,10 @@ APE_JS_NATIVE(apechannel_sm_set_property)
 	}
 	
 	ckey = JS_EncodeString(cx, key);
-	
-	if (JSVAL_IS_OBJECT(JS_ARGV(cx, vpn)[1])) { /* Convert to APE JSON Object */
+	if (JSVAL_IS_NULL(JS_ARGV(cx, vpn)[1]) ){
+		jsval val = JSVAL_NULL;
+		add_property(&chan->properties, ckey, &val, EXTEND_STR, EXTEND_ISPUBLIC);
+	}else if (JSVAL_IS_OBJECT(JS_ARGV(cx, vpn)[1])) { /* Convert to APE JSON Object */
 		json_item *ji;
 		
 		if ((ji = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(JS_ARGV(cx, vpn)[1]))) != NULL) {
@@ -997,6 +1050,27 @@ APE_JS_NATIVE(apeuser_sm_get_property)
 	return JS_TRUE;
 }
 
+APE_JS_NATIVE(apeuser_sm_del_property)
+//{
+	JSString *property;
+	char *cproperty;
+	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
+	USERS *user = JS_GetPrivate(cx, obj);
+
+	if (user == NULL) {
+		return JS_TRUE;
+	}
+
+	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "s", &property)) {
+		return JS_TRUE;
+	}
+	cproperty = JS_EncodeString(cx, property);
+	if (strcmp(cproperty, "sessid") != 0 && strcmp(cproperty, "pubid") != 0 && strcmp(cproperty, "ip") != 0) {
+		del_property(&user->properties, cproperty);
+	}
+	JS_free(cx, cproperty);
+	return JS_TRUE;
+}
 APE_JS_NATIVE(apeuser_sm_quit)
 //{
 	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
@@ -1111,8 +1185,10 @@ APE_JS_NATIVE(apeuser_sm_set_property)
 	}
 	
 	ckey = JS_EncodeString(cx, key);
-	
-	if (JSVAL_IS_OBJECT(JS_ARGV(cx, vpn)[1])) { /* Convert to APE JSON Object */
+	if ( JSVAL_IS_NULL(JS_ARGV(cx, vpn)[1]) ){
+		jsval val = JSVAL_NULL;
+		add_property(&user->properties, ckey, &val, EXTEND_STR, EXTEND_ISPUBLIC);
+	} else if (JSVAL_IS_OBJECT(JS_ARGV(cx, vpn)[1])) { /* Convert to APE JSON Object */
 		json_item *ji;
 		
 		if ((ji = jsobj_to_ape_json(cx, JSVAL_TO_OBJECT(JS_ARGV(cx, vpn)[1]))) != NULL) {
@@ -1235,6 +1311,7 @@ static JSFunctionSpec apesocket_client_funcs[] = {
 
 static JSFunctionSpec apeuser_funcs[] = {
 	JS_FS("getProperty", apeuser_sm_get_property, 1, 0),
+	JS_FS("delProperty", apeuser_sm_del_property, 1, 0),
 	JS_FS("setProperty", apeuser_sm_set_property, 2, 0),
 	JS_FS("join", apeuser_sm_join, 1, 0),
 	JS_FS("left", apeuser_sm_left, 1, 0),
@@ -1244,6 +1321,7 @@ static JSFunctionSpec apeuser_funcs[] = {
 
 static JSFunctionSpec apechannel_funcs[] = {
 	JS_FS("getProperty", apechannel_sm_get_property, 1, 0),
+	JS_FS("delProperty", apechannel_sm_del_property, 1, 0),
 	JS_FS("setProperty", apechannel_sm_set_property, 2, 0),
 	JS_FS("isInteractive", apechannel_sm_isinteractive, 1, 0),
 	JS_FS_END
@@ -1253,6 +1331,7 @@ static JSFunctionSpec apepipe_funcs[] = {
 	JS_FS("sendRaw", apepipe_sm_send_raw, 3, 0),
 	JS_FS("toObject", apepipe_sm_to_object, 0, 0),
 	JS_FS("getProperty", apepipe_sm_get_property, 1, 0),
+	JS_FS("delProperty", apepipe_sm_del_property, 1, 0),
 	JS_FS("setProperty", apepipe_sm_set_property, 2, 0),
 	JS_FS("getParent", apepipe_sm_get_parent, 0, 0),
 	JS_FS("onSend", ape_sm_stub, 0, 0),
@@ -1484,12 +1563,12 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 			if (root == NULL) {
 				root = JS_NewObject(cx, NULL, NULL, NULL);
 			}
-			
+
 			if (head->jval.vu.str.value != NULL) {
 				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
 			} else {
 				jsdouble dp = (head->jval.vu.integer_value ? head->jval.vu.integer_value : head->jval.vu.float_value);
-				JS_NewNumberValue(cx, dp, &jval);				
+				JS_NewNumberValue(cx, dp, &jval);
 			}
 			JS_SetProperty(cx, root, head->key.val, &jval);
 		} else if (head->key.val == NULL && head->jchild.child == NULL) {
@@ -1498,9 +1577,9 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 
 			if (root == NULL) {
 				root = JS_NewArrayObject(cx, 0, NULL);
-			}			
-			
-			if (head->jval.vu.str.value != NULL) {	
+			}
+
+			if (head->jval.vu.str.value != NULL) {
 				jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, head->jval.vu.str.value, head->jval.vu.str.length));
 			} else {
 				jsdouble dp = (head->jval.vu.integer_value ? head->jval.vu.integer_value : head->jval.vu.float_value);
@@ -1509,7 +1588,7 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 
 			if (JS_GetArrayLength(cx, root, &rval)) {
 				JS_SetElement(cx, root, rval, &jval);
-			}			
+			}
 		} else if (head->jchild.child != NULL) {
 			JSObject *cobj = NULL;
 
@@ -1523,7 +1602,7 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 				default:
 					break;
 			}
-			
+
 			ape_json_to_jsobj(cx, head->jchild.child, cobj);
 
 
@@ -1533,7 +1612,7 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 				if (root == NULL) {
 					root = JS_NewObject(cx, NULL, NULL, NULL);
 				}
-				
+
 				jval = OBJECT_TO_JSVAL(cobj);
 				JS_SetProperty(cx, root, head->key.val, &jval);
 			} else {
@@ -1543,15 +1622,15 @@ static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *roo
 				if (root == NULL) {
 					root = JS_NewArrayObject(cx, 0, NULL);
 				}
-				
+
 				jval = OBJECT_TO_JSVAL(cobj);
-				
+
 				if (JS_GetArrayLength(cx, root, &rval)) {
 					JS_SetElement(cx, root, rval, &jval);
-				}								
+				}
 			}
 
-			
+
 		}
 		head = head->next;
 	}
