@@ -1548,10 +1548,11 @@ static void sm_sock_onread(ape_socket *client, ape_buffer *buf, size_t offset, a
 /* Reporting error from JS compilation (parse error, etc...) */
 static void reportError(JSContext *cx, const char *message, JSErrorReport *report)
 {
-	fprintf(stderr, "%s:%u:%s\n",
-			report->filename ? report->filename : "<no filename>",
-			(unsigned int) report->lineno,
-			message);
+	fprintf(stderr, "%s:%u:%s at token: %s\n",
+		report->filename ? report->filename : "<no filename>",
+		(unsigned int) report->lineno,
+		message,
+		report->tokenptr);
 }
 
 static JSObject *ape_json_to_jsobj(JSContext *cx, json_item *head, JSObject *root)
@@ -1887,11 +1888,21 @@ APE_JS_NATIVE(ape_sm_include)
 	
 	if (!g_ape->is_daemon) {
 		printf("[JS] Loading script %s...\n", rpath);
+	}else{
+		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[JS] Loading script %s\n", rpath);
 	}
-
 	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), rpath);
-	
+
 	if (bytecode == NULL) {
+		JSBool pending;
+		jsval exception = JSVAL_VOID;
+		pending = JS_IsExceptionPending(cx);
+		if (pending) {
+			if (JS_GetPendingException(cx, &exception)){
+				JS_ReportPendingException(cx);
+				JS_ClearPendingException(cx);
+			}
+		}
 		if (!g_ape->is_daemon) {
 			printf("[JS] Failed loading script %s\n", rpath);
 		} else {
@@ -1900,8 +1911,8 @@ APE_JS_NATIVE(ape_sm_include)
 		return JS_TRUE;
 	}
 
-	JS_ExecuteScript(cx, JS_GetGlobalObject(cx), bytecode, &frval);	
-	
+	JS_ExecuteScript(cx, JS_GetGlobalObject(cx), bytecode, &frval);
+
 	return JS_TRUE;
 }
 
@@ -2364,6 +2375,7 @@ APE_JS_NATIVE(ape_sm_config)
 	
 	return JS_TRUE;
 }
+
 
 APE_JS_NATIVE(ape_sm_mainconfig)
 //{
