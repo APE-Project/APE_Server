@@ -28,6 +28,11 @@
 #include <jsapi.h>
 #include <stdio.h>
 #include <glob.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "plugins.h"
 #include "global_plugins.h"
 
@@ -2376,6 +2381,37 @@ APE_JS_NATIVE(ape_sm_config)
 	return JS_TRUE;
 }
 
+/**
+ * Get the ip address of a host.
+ *
+ * @param {string} hostname
+ * @returns {string} The ip address af the hostname or NULL
+ * @public
+ * @static
+ * @example
+ * var content = Ape.getHostByName("www.ape-project");
+ * @name Ape.getHostByName
+ * @function
+ */
+APE_JS_NATIVE(ape_sm_gethostbyname)
+//{
+	JSString *name;
+	char *cname;
+	JS_SET_RVAL(cx, vpn, JSVAL_NULL);
+	//from beej getip.c; TODO: refractor; use ape_gethostbyname with a callback
+	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "S", &name)) {
+		return JS_TRUE;
+	}
+	cname = JS_EncodeString(cx, name);
+	struct hostent *h;
+
+	if ((h=gethostbyname(cname)) == NULL) {  // get the host info
+		return JS_TRUE;
+	}
+	JS_SET_RVAL(cx, vpn, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, inet_ntoa(*((struct in_addr *)h->h_addr)))));
+	JS_free(cx, cname);
+	return JS_TRUE;
+}
 
 APE_JS_NATIVE(ape_sm_mainconfig)
 //{
@@ -3069,6 +3105,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("getUserByPubid", ape_sm_get_user_by_pubid, 1, 0),
 	JS_FS("getChannelByPubid", ape_sm_get_channel_by_pubid, 1, 0),
 	JS_FS("config", ape_sm_config, 2, 0),
+	JS_FS("getHostByName", ape_sm_gethostbyname, 1, 0),
 	JS_FS("mainConfig", ape_sm_mainconfig, 2, 0),
 	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0),
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0),
