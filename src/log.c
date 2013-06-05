@@ -88,7 +88,10 @@ void ape_log_init(acetables *g_ape)
 		}
 
 		if (facility_num == -1) {
-			printf("[WARN] Invalid facility '%s' requested, defaulting to LOCAL2\n", facility);
+			if (!g_ape->is_daemon) {
+				printf("[WARN] Invalid facility '%s' requested, defaulting to LOCAL2\n", facility);
+			}
+			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[WARN] Invalid facility '%s' requested, defaulting to LOCAL2", facility);
 			facility_num = LOG_LOCAL2;
 		}
 

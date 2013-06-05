@@ -1749,7 +1749,7 @@ APE_JS_NATIVE(ape_sm_register_bad_cmd)
 	}
 	JS_AddValueRoot(cx, &ascb->func);
 	
-	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
+	/* TODO : Effacer si d��j�� existant (RemoveRoot & co) */
 	ascb->next = NULL;
 	ascb->type = APE_BADCMD;
 	ascb->cx = cx;
@@ -1797,7 +1797,7 @@ APE_JS_NATIVE(ape_sm_register_cmd)
 	
 	ccmd = JS_EncodeString(cx, cmd);
 	
-	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
+	/* TODO : Effacer si d��j�� existant (RemoveRoot & co) */
 	ascb->next = NULL;
 	ascb->type = APE_CMD;
 	ascb->cx = cx;
@@ -1850,7 +1850,7 @@ APE_JS_NATIVE(ape_sm_hook_cmd)
 	}
 	JS_AddValueRoot(cx, &ascb->func);
 	
-	/* TODO : Effacer si déjà existant (RemoveRoot & co) */
+	/* TODO : Effacer si d��j�� existant (RemoveRoot & co) */
 	ascb->next = NULL;
 	ascb->type = APE_HOOK;
 	ascb->cx = cx;
@@ -1893,9 +1893,8 @@ APE_JS_NATIVE(ape_sm_include)
 	
 	if (!g_ape->is_daemon) {
 		printf("[JS] Loading script %s...\n", rpath);
-	}else{
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[JS] Loading script %s\n", rpath);
 	}
+	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[JS] Loading script %s", rpath);
 	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), rpath);
 
 	if (bytecode == NULL) {
@@ -1910,10 +1909,9 @@ APE_JS_NATIVE(ape_sm_include)
 		}
 		if (!g_ape->is_daemon) {
 			printf("[JS] Failed loading script %s\n", rpath);
-		} else {
-            ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[JS] Failed loading script %s\n", rpath);
-        }
-		return JS_TRUE;
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[JS] Failed loading script %s", rpath);
+        return JS_TRUE;
 	}
 
 	JS_ExecuteScript(cx, JS_GetGlobalObject(cx), bytecode, &frval);
@@ -2600,10 +2598,8 @@ APE_JS_NATIVE(ape_sm_echo)
 	if (!g_ape->is_daemon) {
 		fwrite(cstring, sizeof(char), JS_GetStringEncodingLength(cx, string), stdout);
 		fwrite("\n", sizeof(char), 1, stdout);
-	} else {
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
-			"JavaScript : %s", cstring);
 	}
+	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[%s] : %s", MODULE_NAME, cstring);
 	
 	JS_free(cx, cstring);
 	
@@ -3364,7 +3360,10 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	rt = JS_NewRuntime(8L * 1024L * 1024L);
 	
 	if (rt == NULL) {
-		printf("[ERR] Not enougth memory\n");
+		if (!g_ape->is_daemon) {
+			printf("[ERR] Not enough memory\n");
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] Not enough memory");
 		exit(0);
 	}
 	asr = xmalloc(sizeof(*asr));
@@ -3423,8 +3422,10 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	}
 
 	if (asc->bytecode == NULL) {
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
-			"JavaScript : Cannot open main.ape.js");
+		if (!g_ape->is_daemon) {
+			printf("JavaScript : Cannot open main.ape.js\n");
+		}
+		ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "JavaScript : Cannot open main.ape.js");
 		return;
 	} else {
 		asc->next = asr->scripts;

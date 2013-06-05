@@ -58,7 +58,10 @@ void proxy_init_from_conf(acetables *g_ape)
 				
 				iPort = atoi(port);
 				if ((h = gethostbyname(host)) != NULL) {
-					printf("Cache : (%s) : %s\n", host, inet_ntoa(*((struct in_addr *)h->h_addr)));
+					if (!g_ape->is_daemon) {
+						printf("Cache : (%s) : %s\n", host, inet_ntoa(*((struct in_addr *)h->h_addr)));
+					}
+					ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "Cache : (%s) : %s", host, inet_ntoa(*((struct in_addr *)h->h_addr)));
 					proxy_cache_addip(host, inet_ntoa(*((struct in_addr *)h->h_addr)), g_ape);
 					
 					if (strcasecmp(readonly, "true") == 0) {
@@ -67,10 +70,16 @@ void proxy_init_from_conf(acetables *g_ape)
 						;//
 					}
 				} else {
-					printf("[Warn] Unable to resolve : %s\n", host);
+					if (!g_ape->is_daemon) {
+						printf("[Warn] Unable to resolve : %s\n", host);
+					}
+					ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[Warn] Unable to resolve : %s", host);
 				}
 			} else {
-				printf("[Warn] Proxy : Configuration error\n");
+				if (!g_ape->is_daemon) {
+					printf("[Warn] Proxy : Configuration error\n");
+				}
+				ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[Warn] Proxy : Configuration error");
 			}
 			
 		}
@@ -319,7 +328,10 @@ int proxy_connect(ape_proxy *proxy, acetables *g_ape)
 
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
-		printf("ERREUR: socket().. (%s line: %i)\n",__FILE__, __LINE__);
+		if (!g_ape->is_daemon) {
+			printf("[ERR] socket().. (%s line: %i)\n",__FILE__, __LINE__);
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] socket().. (%s line: %i)",__FILE__, __LINE__);
 		return 0;
 	}
 

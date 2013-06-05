@@ -121,13 +121,13 @@ int main(int argc, char **argv)
 	} else if (argc > 1) {
 		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
 		printf("   Unknown parameters - check \"aped --help\"\n\n");
-		return 0;
-	}
-	if (NULL == (srv = ape_config_load(cfgfile))) {
-		printf("\nExited...\n\n");
 		exit(1);
 	}
-	
+	if (NULL == (srv = ape_config_load(cfgfile))) {
+		printf("\nExiting...\n\n");
+		exit(1);
+	}
+	;
 	if (getuid() == 0) {
 		im_r00t = 1;
 	}
@@ -135,27 +135,33 @@ int main(int argc, char **argv)
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);
 	
-	if (VTICKS_RATE < 1) {
-		printf("[ERR] TICKS_RATE cant be less than 1\n");
-		return 0;
-	}
-	
-	random = open("/dev/urandom", O_RDONLY);
-	if (!random) {
-		printf("Cannot open /dev/urandom... exiting\n");
-		return 0;
-	}
-	read(random, &getrandom, 3);
-	srand(getrandom);
-	close(random);
 
 	g_ape = xmalloc(sizeof(*g_ape));
 	g_ape->basemem = 1; // set 1 for testing if growup works
 	g_ape->srv = srv;
 	g_ape->confs_path = confs_path;
-	g_ape->is_daemon = 0;
-	
+	g_ape->is_daemon = (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0 )? 1 :0;
 	ape_log_init(g_ape);
+
+	if (VTICKS_RATE < 1) {
+		if (!g_ape->is_daemon) {
+			printf("[ERR] TICKS_RATE cannot be less than 1... exiting\n");
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] TICKS_RATE cannot be less than 1... exiting");
+		exit(1);
+	}
+
+	random = open("/dev/urandom", O_RDONLY);
+	if (!random) {
+		if (!g_ape->is_daemon) {
+			printf("[ERR] Cannot open /dev/urandom... exiting\n");
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] Cannot open /dev/urandom... exiting");
+		exit(1);
+	}
+	read(random, &getrandom, 3);
+	srand(getrandom);
+	close(random);
 	
 	fdev.handler = EVENT_UNKNOWN;
 
@@ -179,19 +185,24 @@ int main(int argc, char **argv)
 	g_ape->timers.ntimers = 0;
 	g_ape->events = &fdev;
 	if (events_init(g_ape, &g_ape->basemem) == -1) {
-		printf("Fatal error: APE compiled without an event handler... exiting\n");
-		return 0;
+		if (!g_ape->is_daemon) {
+			printf("[ERR] Fatal error: APE compiled without an event handler... exiting\n");
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] Fatal error: APE compiled without an event handler... exiting");
+		exit(1);
 	};
 	
 	serverfd = servers_init(g_ape);
-	
-	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
-		"APE starting up - pid : %i", getpid());
+	printf("APE starting up - pid : %i on %s:%i\n", getpid(), CONFIG_VAL(Server, ip_listen, g_ape->srv), atoi(CONFIG_VAL(Server, port, srv)));
+	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "APE starting up - pid : %i on %s:%i\n", getpid(), CONFIG_VAL(Server, ip_listen, g_ape->srv), atoi(CONFIG_VAL(Server, port, srv)));
 	
 	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0 && (pidfile = CONFIG_VAL(Server, pid_file, srv)) != NULL) {
+		//Clarify: Why only write pid file in daemon mode?
 		if ((pidfd = open(pidfile, O_TRUNC | O_WRONLY | O_CREAT, 0655)) == -1) {
-			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
-				"Cant open pid file : %s", CONFIG_VAL(Server, pid_file, srv));
+			if (!g_ape->is_daemon) {
+				printf("[WARN] Cannot open pid file : %s", CONFIG_VAL(Server, pid_file, srv));
+			}
+			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[WARN] Cannot open pid file : %s", CONFIG_VAL(Server, pid_file, srv));
 		}
 	}
 	
@@ -200,8 +211,10 @@ int main(int argc, char **argv)
 		struct passwd *pwd = NULL;
 		
 		if (inc_rlimit(atoi(CONFIG_VAL(Server, rlimit_nofile, srv))) == -1) {
-			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
-				"Cannot set the max filedescriptos limit (setrlimit) %s", strerror(errno));
+			if (!g_ape->is_daemon) {
+				printf("[WARN] Cannot set the max filedescriptor limit (setrlimit) %s\n", strerror(errno));
+			}
+			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[WARN] Cannot set the max filedescriptor limit (setrlimit) %s", strerror(errno));
 		}
 		
 		/* Set uid when uid section exists */
@@ -209,27 +222,34 @@ int main(int argc, char **argv)
 
 			/* Get the user information (uid section) */
 			if ((pwd = getpwnam(CONFIG_VAL(uid, user, srv))) == NULL) {
-				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-					"Can\'t find username %s", CONFIG_VAL(uid, user, srv));
+				if (!g_ape->is_daemon) {
+					printf("[ERR] Cannot find username %s\n", CONFIG_VAL(uid, user, srv));
+				}
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] Cannot find username %s", CONFIG_VAL(uid, user, srv));
 				return -1;
 			}
 			if (pwd->pw_uid == 0) {
-				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-					"%s uid can\'t be 0", CONFIG_VAL(uid, user, srv));
+				if (!g_ape->is_daemon) {
+					printf("[ERR] %s uid can\'t be 0\n", CONFIG_VAL(uid, user, srv));
+				}
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] %s uid can\'t be 0", CONFIG_VAL(uid, user, srv));
 				return -1;			
 			}
 			
 			/* Get the group information (uid section) */
 			if ((grp = getgrnam(CONFIG_VAL(uid, group, srv))) == NULL) {
-				printf("[ERR] Can\'t find group %s\n", CONFIG_VAL(uid, group, srv));
-				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-					"Can\'t find group %s", CONFIG_VAL(uid, group, srv));
+				if (!g_ape->is_daemon) {
+					printf("[ERR] Cannot find group %s\n", CONFIG_VAL(uid, group, srv));
+				}
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] Cannot find group %s", CONFIG_VAL(uid, group, srv));
 				return -1;
 			}
 			
 			if (grp->gr_gid == 0) {
-				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-				"%s gid can\'t be 0", CONFIG_VAL(uid, group, srv));
+				if (!g_ape->is_daemon) {
+					printf("[ERR] %s gid cannot be 0\n", CONFIG_VAL(uid, group, srv));
+				}
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] %s gid cannot be 0", CONFIG_VAL(uid, group, srv));
 			return -1;
 			}
 		
@@ -240,16 +260,12 @@ int main(int argc, char **argv)
 		
 			setuid(pwd->pw_uid);
 		}
-
 	} else {
-		printf("[WARN] You have to run \'aped\' as root to increase r_limit\n");
-		ape_log(APE_WARN, __FILE__, __LINE__, g_ape, 
-			"You have to run \'aped\' as root to increase r_limit");
+		ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[WARN] You have to run \'aped\' as root to increase r_limit");
 	}
 	
 	if (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0) {
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
-			"Starting daemon");
+		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "Starting daemon.");
 		ape_daemon(pidfd, g_ape);
 
 		events_reload(g_ape->events);
@@ -265,7 +281,10 @@ int main(int argc, char **argv)
 		printf("Bind on port %i\n\n", atoi(CONFIG_VAL(Server, port, srv)));
 		printf("Version : %s\n", _VERSION);
 		printf("Build   : %s %s\n", __DATE__, __TIME__);
-		printf("Author  : Weelya (contact@weelya.com)\n\n");		
+		printf("Author  : Weelya (contact@weelya.com)\n\n");
+		if (!im_r00t) {
+			printf("[WARN] You have to run \'aped\' as root to increase r_limit\n");
+		}
 	}
 	signal(SIGPIPE, SIG_IGN);
 	

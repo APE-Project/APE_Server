@@ -344,7 +344,11 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 		newraw = forge_raw(RAW_ERR, jlist);
 
 		send_raw_inline(pc->client, pc->transport, newraw, g_ape);
-		//printf("Cant find %s\n", rjson->jval.vu.str.value);
+
+		/*if (!g_ape->is_daemon) {
+			printf("Cannot find %s\n", rjson->jval.vu.str.value);
+		}
+		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "Cannot find %s", rjson->jval.vu.str.value);*/
 		return (CONNECT_SHUTDOWN);
 	}
 	

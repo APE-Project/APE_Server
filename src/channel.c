@@ -180,7 +180,7 @@ void join(USERS *user, CHANNEL *chan, acetables *g_ape)
 			json_item *juser = get_json_object_user(ulist->userinfo);
 			
 			if (ulist->userinfo != user) {
-				//make_link(user, ulist->userinfo);
+				//make_link(user, ulist->userinfo, g_ape);
 			}
 			
 			json_set_property_intN(juser, "level", 5, ulist->level);
@@ -224,7 +224,7 @@ void left_all(USERS *user, acetables *g_ape)
 	}
 }
 
-void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainée de l'user
+void left(USERS *user, CHANNEL *chan, acetables *g_ape) // Vider la liste chainï¿½e de l'user
 {
 	userslist *list, *prev;
 

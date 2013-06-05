@@ -72,8 +72,10 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
-		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-			"ape_listen() - socket()");
+		if (!g_ape->is_daemon) {
+			printf("[ERR] ape_listen() - socket() \n");
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "ape_listen() - socket()");
 		return NULL;
 	}
 	
@@ -89,16 +91,20 @@ ape_socket *ape_listen(unsigned int port, char *listen_ip, acetables *g_ape)
 
 	if (bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == -1)
 	{
-		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-			"ape_listen() - bind()");
-		printf("Error: cannot bind to port %i; %s\n", port, strerror(errno));
+		if (!g_ape->is_daemon) {
+			printf("[ERR] ape_listen() - bind() cannot bind to port %i; %s\n", port, strerror(errno));
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] ape_listen() - bind() cannot bind to port %i; %s", port, strerror(errno));
 		return NULL;
 	}
 
 	if (listen(sock, 2048) == -1)
 	{
-		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-			"ape_listen() - listen()");
+		if (!g_ape->is_daemon) {
+			printf("[ERR] ape_listen() - listen() \n");
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "ape_listen() - listen()");
+
 		return NULL;
 	}
 
@@ -121,8 +127,10 @@ ape_socket *ape_connect(char *ip, int port, acetables *g_ape)
 	struct sockaddr_in addr;
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-			"ape_connect() - socket() : %s", strerror(errno));
+		if (!g_ape->is_daemon) {
+			printf("[ERR] ape_connect() - socket() : %s\n", strerror(errno));
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "ape_connect() - socket() : %s", strerror(errno));
 		return NULL;
 	}
 
@@ -254,7 +262,10 @@ static void check_idle(struct _socks_list *sl)
 {
 	int i = 0, x = 0;
 	long int current_time = time(NULL);
-	printf("Tick tac \n");
+	if (!g_ape->is_daemon) {
+		printf("Tick tac\n");
+	}
+	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "Tick tac");
 	for (i = 0; x < *sl->tfd; i++) {
 		if (sl->co[i].buffer.size) {
 			x++;
@@ -290,8 +301,10 @@ unsigned int sockroutine(acetables *g_ape)
 		nfds = events_poll(g_ape->events, timeout_to_hang);
 
 		if (nfds < 0) {
-			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
-				"events_poll() : %s", strerror(errno));
+			if (!g_ape->is_daemon) {
+				printf("[ERR] events_poll() : %s\n", strerror(errno));
+			}
+			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "events_poll() : %s", strerror(errno));
 			continue;
 		}
 		
@@ -555,9 +568,10 @@ static int sendqueue(int sock, acetables *g_ape)
 					bufout->buflen = r_bytes;
 				}
 			} else {
-				ape_log(APE_ERR, __FILE__, __LINE__, g_ape,
-				        "sendqueue() - write(): %s", strerror(errno));
-				printf("Error: Cannot write to socket %i; %s\n", sock, strerror(errno));
+				if (!g_ape->is_daemon) {
+					printf("[ERR] sendqueue() - write() Cannot write to socket %i; %s\n", sock, strerror(errno));
+				}
+				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] sendqueue() - write() Cannot write to socket %i; %s", sock, strerror(errno));
 			}
 			return 0;
 		}
@@ -607,11 +621,11 @@ int sendbin(int sock, const char *bin, unsigned int len, unsigned int burn_after
 						g_ape->co[sock]->burn_after_writing = 1;
 					}
 				} else {
-					ape_log(APE_ERR, __FILE__, __LINE__, g_ape,
-					        "sendbin() - write(): %s", strerror(errno));
-					printf("Error: Cannot write to socket %i; %s\n", sock, strerror(errno));
+					if (!g_ape->is_daemon) {
+						printf("[ERR] sendbin() - write() Cannot write to socket %i; %s\n", sock, strerror(errno));
+					}
+					ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] sendbin() - write() Cannot write to socket %i; %s", sock, strerror(errno));
 				}
-				
 				return 0;
 			}
 			t_bytes += n;
