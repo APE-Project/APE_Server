@@ -25,13 +25,14 @@
 #include "proxy.h"
 #include "handle_http.h"
 #include "sock.h"
-#include "errno.h"
+#include <errno.h>
 #include "http.h"
 #include "config.h"
 #include "base64.h"
 #include "pipe.h"
 #include "raw.h"
 #include "events.h"
+#include "log.h"
 
 #include <netdb.h> 
 #include <sys/types.h>
@@ -284,7 +285,7 @@ void proxy_process_eol(ape_socket *co, acetables *g_ape)
 {
 	char *b64;
 	ape_proxy *proxy = co->attach;
-	char *data = co->buffer_in.data;
+	char *data = co->buffer_in.data; //
 
 	RAW *newraw;
 	json_item *jlist = json_new_object();

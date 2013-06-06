@@ -22,12 +22,9 @@
 #include "plugins.h"
 #include "main.h"
 #include "sock.h"
-
 #include "config.h"
 #include "cmd.h"
-
 #include "channel.h"
-
 #include <signal.h>
 #include <syslog.h>
 #include <sys/resource.h>
