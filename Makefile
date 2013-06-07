@@ -6,20 +6,29 @@ OBJ=$(tmpdir)/base64.o $(tmpdir)/channel.o $(tmpdir)/cmd.o $(tmpdir)/config.o $(
 # $(tmpdir)/proxy.o
 TARGET=aped
 EXEC=bin/$(TARGET)
-
-CFLAGS=-Wall -g -minline-all-stringops -rdynamic -I ./deps/udns-0.0.9/
-LFLAGS=-ldl -lm -lpthread
+UDNS=./deps/udns-0.0.9/libudns.a
+include ./build.mk
+ifdef STAGING_DEBUG
+DEBUGFLAGS=-g -ggdb
+PROFILEFLAGS=-pg -profile
+endif
+CFLAGS=-Wall -O2 -minline-all-stringops -I ./deps/udns-0.0.9/
+LFLAGS=-rdynamic -ldl -lm -lpthread 
 CC=gcc -D_GNU_SOURCE
 RM=rm -f
 
 all: $(EXEC)
 
-$(EXEC): $(OBJ)
-	$(CC) $(OBJ) -o $(EXEC) $(LFLAGS) ./deps/udns-0.0.9/libudns.a
-	@strip $(EXEC)
-	@echo done
+SRC=src/entry.c src/sock.c src/hash.c src/handle_http.c src/cmd.c src/users.c src/channel.c src/config.c src/json.c src/json_parser.c src/plugins.c src/http.c src/extend.c src/utils.c src/ticks.c src/base64.c src/pipe.c src/raw.c src/events.c src/event_kqueue.c src/event_epoll.c src/event_select.c src/transports.c src/servers.c src/dns.c src/sha1.c src/log.c src/parser.c src/md5.c
 
-$(tmpdir)/base64.o:		src/base64.c src/base64.h src/utils.h
+$(EXEC): $(OBJ) $(UDNS) modules
+	$(CC) $(OBJ) -o $(EXEC) $(LFLAGS) $(UDNS)
+ifdef STAGING_RELEASE
+	@strip $(EXEC)
+endif
+	@echo done $(EXEC)
+
+$(tmpdir)/base64.o:			src/base64.c src/base64.h src/utils.h
 $(tmpdir)/channel.o:		src/channel.c src/channel.h src/main.h src/pipe.h src/users.h src/extend.h src/json.h src/hash.h src/utils.h src/raw.h src/plugins.h
 $(tmpdir)/cmd.o:			src/cmd.c src/cmd.h src/users.h src/handle_http.h src/sock.h src/main.h src/transports.h src/json.h src/config.h src/utils.h src/proxy.h src/raw.h
 $(tmpdir)/config.o:			src/config.c src/config.h src/utils.h
@@ -53,8 +62,10 @@ $(tmpdir)/utils.o:			src/utils.c src/utils.h src/log.h
 
 $(tmpdir)/%.o:
 	@echo compiling $@
-	@$(CC) $(CFLAGS) -c $(<D)/$(<F) -o $@
+	@$(CC) $(CFLAGS) $(DEBUGFLAGS) $(PROFILEFLAGS) -c $(<D)/$(<F) -o $@
 
+$(UDNS):
+	cd ./deps/udns-0.0.9/&&make clean&&./configure&&make&&cd ../../
 
 install:
 	install -d $(bindir) $(prefix)/modules/conf $(prefix)/modules/lib $(prefix)/scripts/commands $(prefix)/scripts/examples $(prefix)/scripts/framework $(prefix)/scripts/utils $(prefix)/scripts/test
@@ -70,10 +81,14 @@ install:
 	install -m 644 scripts/utils/* $(prefix)/scripts/utils/
 	install -m 644 scripts/test/* $(prefix)/scripts/test/
 
+modules: $(SRC)
+	cd ./modules&&make&&cd ..
+
+.PHONY: clean modules
+
 uninstall:
 	$(RM) -R $(prefix)
 
-.PHONY: clean
-
 clean:
 	$(RM) $(EXEC) $(tmpdir)/*.o
+	cd ./modules&&make clean&&cd ..

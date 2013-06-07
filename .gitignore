@@ -1,8 +1,11 @@
 bin/aped
+
 src/configure.h
-modules/lib/libmod_spidermonkey.so*
+src/build/*.o
+build.mk
 modules/mysql.mk
-modules/plateform.mk
+modules/platform.mk
+modules/lib/libmod_spidermonkey.so
 modules/deps/mysac/make.deps
 modules/deps/mysac/*.[ao]
 
@@ -43,8 +46,6 @@ deps/udns*/ex-rdns
 deps/udns*/rblcheck
 deps/udns*/config.log
 deps/udns*/libudns.a
-
-src/build/*.o
 
 .cproject
 .project
