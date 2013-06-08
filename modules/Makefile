@@ -19,7 +19,7 @@ MYSQL_DEP_DIR=deps/mysac
 MYSQL_DEP=$(MYSQL_DEP_DIR)/libmysac.a
 MYSQL_FLAGS=-L./$(MYSQL_DEP_DIR)/ -I./$(MYSQL_DEP_DIR)/ -lmysac -lmysqlclient_r
 $(MYSQL_DEP):
-	cd $(MYSQL_DEP_DIR)&&touch make.deps&&make&&cd ../..
+	@cd $(MYSQL_DEP_DIR)&&touch make.deps&&make&&cd ../..
 endif
 
 include ./platform.mk
@@ -36,7 +36,7 @@ endif
 modules: lib/$(SPIDERMONKEYMOD)
 
 lib/$(SPIDERMONKEYMOD): $(SPIDERMONKEYSRC) ../deps/js/src/libjs_static.a $(HEADERS) $(MYSQL_DEP)
-	$(CC) $(CFLAGS) $(CLFLAGS) $(DEBUGFLAGS) $(PROFILEFLAGS) -o lib/$(SPIDERMONKEYMOD) $< $(FLAGS) $(MYSQL_FLAGS)
+	@$(CC) $(CFLAGS) $(CLFLAGS) $(DEBUGFLAGS) $(PROFILEFLAGS) -o lib/$(SPIDERMONKEYMOD) $< $(FLAGS) $(MYSQL_FLAGS)
 	@chmod 755 lib/$(SPIDERMONKEYMOD)
 ifdef STAGING_RELEASE
 	@strip lib/$(SPIDERMONKEYMOD)
@@ -44,9 +44,9 @@ endif
 	@echo done
 
 ../deps/js/src/libjs_static.a:
-	cd ../deps/js/src/&&./configure&&make -j8&&cd ../../../modules
+	@cd ../deps/js/src/&&./configure&&make -j8&&cd ../../../modules
 
 .PHONY: clean
 
 clean:
-	$(RM) lib/$(SPIDERMONKEYMOD)
+	@$(RM) lib/$(SPIDERMONKEYMOD)
