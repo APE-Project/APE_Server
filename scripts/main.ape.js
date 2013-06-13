@@ -12,10 +12,8 @@ Ape.addEvent("init", function() {
 			//include("examples/ircserver.js");
 			//include("framework/http_auth.js");
 			
-			//Those file are used to test feature of APE.
-			//include("test/MySQL.js");
-			//include("test/Socket.js");
-			//include("test/Pipes.js");
+			//This file are used to test feature of APE.
+			include("test/_tests.js");
 	} catch (e) {
 		Ape.log(e.message + '\n\t' + e.fileName + ':' + e.lineNumber);
 	}
