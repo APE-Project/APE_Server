@@ -1892,9 +1892,9 @@ APE_JS_NATIVE(ape_sm_include)
 	JS_free(cx, cfile);
 	
 	if (!g_ape->is_daemon) {
-		printf("[JS] Loading script %s...\n", rpath);
+		printf("[%s] : Loading script %s\n", MODULE_NAME , rpath);
 	}
-	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[JS] Loading script %s", rpath);
+	ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[%s] : Loading script %s", MODULE_NAME , rpath);
 	bytecode = JS_CompileFile(cx, JS_GetGlobalObject(cx), rpath);
 
 	if (bytecode == NULL) {
@@ -1908,10 +1908,10 @@ APE_JS_NATIVE(ape_sm_include)
 			}
 		}
 		if (!g_ape->is_daemon) {
-			printf("[JS] Failed loading script %s\n", rpath);
+			printf("[%s] Failed loading script %s\n", MODULE_NAME, rpath);
 		}
-		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[JS] Failed loading script %s", rpath);
-        return JS_TRUE;
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[%s] Failed loading script %s", MODULE_NAME, rpath);
+		return JS_TRUE;
 	}
 
 	JS_ExecuteScript(cx, JS_GetGlobalObject(cx), bytecode, &frval);
@@ -3473,9 +3473,9 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 	if (asc->bytecode == NULL) {
 		if (!g_ape->is_daemon) {
-			printf("JavaScript : Cannot open main.ape.js\n");
+			printf("[%s] : Cannot open main.ape.js\n", MODULE_NAME);
 		}
-		ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "JavaScript : Cannot open main.ape.js");
+		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[%s] : Cannot open main.ape.js", MODULE_NAME);
 		return;
 	} else {
 		asc->next = asr->scripts;
