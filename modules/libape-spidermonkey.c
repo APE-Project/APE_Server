@@ -3404,6 +3404,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	JSContext *gcx;
 	char rpath[512];
 
+	char *alt_ape_js, *start_ape_js, main_ape_js[255] = "main.ape.js";
 	ape_sm_runtime *asr;
 	jsval rval;
 
@@ -3429,8 +3430,19 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	ape_sm_compiled *asc = xmalloc(sizeof(*asc));
 
 	memset(rpath, '\0', sizeof(rpath));
-	strncpy(rpath, READ_CONF("scripts_path"), 256);
-	strcat(rpath, "/main.ape.js");
+	if (infos_module.conf == NULL) {
+		if (!g_ape->is_daemon) {
+			printf("[ERR] Cannot find %s\n", infos_module.conf_file);
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] Cannot find %s\n", infos_module.conf_file);
+		exit(0);
+	}
+	strncpy(rpath, READ_CONF("scripts_path"), 255);
+	alt_ape_js = xmalloc(sizeof(char) * 255);
+	memset(alt_ape_js, '\0', sizeof(main_ape_js));
+	alt_ape_js = READ_CONF("autoexec");
+	start_ape_js = (alt_ape_js == NULL) ? main_ape_js : alt_ape_js;
+	strcat(rpath, start_ape_js);
 
 	asc->filename = (void *)xstrdup(rpath);
 
@@ -3473,9 +3485,9 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 
 	if (asc->bytecode == NULL) {
 		if (!g_ape->is_daemon) {
-			printf("[%s] : Cannot open main.ape.js\n", MODULE_NAME);
+			printf("[%s] : Cannot open %s\n", MODULE_NAME, start_ape_js);
 		}
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[%s] : Cannot open main.ape.js", MODULE_NAME);
+		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[%s] : Cannot open %s", MODULE_NAME, start_ape_js);
 		return;
 	} else {
 		asc->next = asr->scripts;

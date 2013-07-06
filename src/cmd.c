@@ -323,7 +323,7 @@ int process_cmd(json_item *ijson, struct _cmd_process *pc, subuser **iuser, acet
 			/* If tmpfd is set, we do not have any reasons to change its state */
 			sub->state = ALIVE;
 
-			if (flag & RETURN_HANG || (flag & RETURN_BAD_PARAMS)) {
+			if ((flag & RETURN_HANG) || (flag & RETURN_BAD_PARAMS)) {
 				return (CONNECT_KEEPALIVE);
 			}
 
