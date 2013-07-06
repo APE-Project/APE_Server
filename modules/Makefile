@@ -10,6 +10,7 @@ include ../build.mk
 ifdef STAGING_DEBUG
 DEBUGFLAGS=-g -ggdb
 PROFILEFLAGS=-pg -profile
+# -fdump-rtl-expand
 endif
 all: modules
 

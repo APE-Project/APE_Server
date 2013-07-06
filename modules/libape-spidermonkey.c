@@ -2382,10 +2382,11 @@ APE_JS_NATIVE(ape_sm_config)
 /**
  * Get the ip address of a host.
  *
- * @param {string} hostname
- * @returns {string} The ip address af the hostname or NULL
+ * @param {string} hostname The Hostname
+ * @returns {string} ip		The ip address af the hostname or NULL
  * @public
  * @static
+ * @method
  * @example
  * var content = Ape.getHostByName("www.ape-project");
  * @name Ape.getHostByName
@@ -2605,10 +2606,45 @@ APE_JS_NATIVE(ape_sm_echo)
 
 	return JS_TRUE;
 }
+
+/**
+ * @name: 	Ape.eval
+ * @params: (string) scriptstring The javascript code that should be executed in the Ape context
+ * @method
+ * @static
+ * @return: undefined if the scriptstring was empty or the could not compiled
+ *          else the return value of the scriptstring
+ * @example:var r = Ape.eval("var sum = function(a, b){return a + b;}; return sum(4,4);");
+ * 			Ape.log('returned: ' + r);
+ */
+
+APE_JS_NATIVE(ape_sm_eval)
+//{
+	char *cscript;
+	JSString *script;
+	jsval ret;
+
+	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
+	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "S", &script)) {
+		return JS_TRUE;
+	}
+	cscript = JS_EncodeString(cx, script);
+
+	ret = JSVAL_VOID;
+	if ((JS_EvaluateScript(cx, obj, cscript, strlen (cscript), "eval()", 0, &ret)) != JS_FALSE) {
+		JS_SET_RVAL(cx, vpn, ret);
+	}
+	JS_SET_RVAL(cx, vpn, ret);
+	JS_free(cx, cscript);
+	return JS_TRUE;
+}
+
 /**
  * @name: 	Ape.system
- * @params: (string) the full path to the executable. This must exist and executable
- * @params: (string) parameters
+ * @params: (string) exec The full path to the executable. This must exist and executable
+ * @params: (string) paramstring Parameters
+ * @method
+ * @static
  * @return: null if executed did not take place.
  *          undefined if the execute could not start (-1)
  *          else the return code of the command
@@ -3161,6 +3197,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("mkChan", ape_sm_mkchan, 1, 0),
 	JS_FS("rmChan", ape_sm_rmchan, 1, 0),
 	JS_FS("system", ape_sm_system, 2, 0),
+	JS_FS("eval", ape_sm_eval, 1, 0),
 	JS_FS("readfile", ape_sm_readfile, 1, 0),
 	JS_FS_END
 };

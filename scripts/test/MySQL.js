@@ -9,7 +9,7 @@ sql.onConnect = function() {
 			} else {
 				Ape.log('[MySQL] Fetching ' + res.length);
 				for (var i = 0; i < res.length; i++) {
-						Ape.log(res[i].ID + '  -> ' + res[i].value); //res[i].<column name>
+					Ape.log(res[i].ID + '  -> ' + res[i].value); //res[i].<column name>
 				}
 			}
 	});
