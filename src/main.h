@@ -271,6 +271,9 @@ struct _ape_socket {
 #define HEADER_XHR "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: application/x-ape-event-stream\r\n\r\n                                                                                                                                                                                                                                                                "
 #define HEADER_XHR_LEN 421
 
+#define HEADER_JSONP "HTTP/1.1 200 OK\r\nPragma: no-cache\r\nCache-Control: no-cache, must-revalidate\r\nExpires: Thu, 27 Dec 1986 07:30:00 GMT\r\nContent-Type: application/javascript\r\n\r\n"
+#define HEADER_JSONP_LEN 157
+
 #define CONTENT_NOTFOUND "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"><html><head><title>APE Server</title></head><body><h1>APE Server</h1><p>No command given.</p><hr><address>http://www.ape-project.org/ - Server "_VERSION" (Build "__DATE__" "__TIME__")</address></body></html>"
 
 /* http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-55 : The first three lines in each case are hard-coded (the exact case and order matters); */
