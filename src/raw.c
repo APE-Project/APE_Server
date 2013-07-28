@@ -407,7 +407,7 @@ int send_raws(subuser *user, acetables *g_ape)
 				finish &= http_send_headers(user->headers.content, HEADER_SSE, HEADER_SSE_LEN, user->client, g_ape);
 				break;
 			case TRANSPORT_JSONP:
-				finish &= http_send_headers(user->headers.content, HEADER_JSONP, HEADER_JSONP_LEN, client, g_ape);
+				finish &= http_send_headers(user->headers.content, HEADER_JSONP, HEADER_JSONP_LEN, user->client, g_ape);
 			break;
 			case TRANSPORT_WEBSOCKET:
 			case TRANSPORT_WEBSOCKET_IETF:
