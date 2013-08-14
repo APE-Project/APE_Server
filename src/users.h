@@ -68,15 +68,15 @@ typedef struct USERS
 	struct _transpipe *pipe;
 	struct _extend *properties;
 	struct _subuser *subuser;
-	
+
 	json_item *cmdqueue;
-	
+
 	time_t idle;
 	int transport;
 	int nsub;
 	unsigned int nraw;
 	unsigned int flags;
-	
+
 	unsigned short int type;
 	unsigned short int istmp;
 
@@ -97,26 +97,26 @@ struct _raw_pool_user {
 typedef struct _subuser subuser;
 struct _subuser
 {
-	
+
 	struct {
 		struct _raw_pool_user low;
 		struct _raw_pool_user high;
 		int nraw;
 	} raw_pools;
-		
+
 	struct {
 		struct _http_headers_response *content;
 		int sent;
 	} headers;
-	
+
 	struct _extend *properties;
 	struct _subuser *next;
 	ape_socket *client;
 	USERS *user;
 	time_t idle;
-	
-	int state;		
-	int need_update;	
+
+	int state;
+	int need_update;
 	int wait_for_free;
 	int nraw;
 	int burn_after_writing;
@@ -129,7 +129,7 @@ typedef struct CHANLIST
 {
 	struct CHANNEL *chaninfo;
 	struct CHANLIST *next;
-	
+
 } CHANLIST;
 
 
@@ -137,7 +137,7 @@ struct _users_link
 {
 	USERS *a;
 	USERS *b;
-	
+
 	int link_type;
 };
 
@@ -152,9 +152,9 @@ typedef struct userslist
 {
 	struct USERS *userinfo;
 	struct userslist *next;
-		
+
 	unsigned int level;
-	/* TODO: it can be intersting to extend this */
+	/* TODO: it can be interesting to extend this */
 } userslist;
 
 

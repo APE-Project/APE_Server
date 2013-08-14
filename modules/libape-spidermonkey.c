@@ -2696,6 +2696,30 @@ APE_JS_NATIVE(ape_sm_echo)
 
 	return JS_TRUE;
 }
+/**
+ * @name: 	Ape.status
+ * @method
+ * @static
+ * @return: {object} status Object with status information
+ * @return: {int} status.connected nr of connected users
+ * @return: {bool} status.daemon Running in deamon mode
+ * @example:var status = Ape.status();
+ * 			Ape.log(JSON.stringify(status));
+ */
+
+APE_JS_NATIVE(ape_sm_status)
+//{
+	JSObject *elem = JS_NewObject(cx, NULL, NULL, NULL);
+	JS_AddObjectRoot(cx, &elem);
+	jsval connected = INT_TO_JSVAL(g_ape->nConnected);
+	jsval isDaemon = g_ape->is_daemon == 0 ? JSVAL_TRUE : JSVAL_FALSE;
+	JS_SetProperty(cx, elem, "connected", &connected);
+	JS_SetProperty(cx, elem, "isDaemon", &isDaemon);
+	jsval currentval = OBJECT_TO_JSVAL(elem);
+	JS_SET_RVAL(cx, vpn, currentval);
+	return JS_TRUE;
+}
+
 
 /**
  * @name: 	Ape.eval
@@ -3293,6 +3317,8 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("mkChan", ape_sm_mkchan, 1, 0),
 	JS_FS("rmChan", ape_sm_rmchan, 1, 0),
 	JS_FS("eval", ape_sm_eval, 1, 0),
+	JS_FS("status", ape_sm_status, 1, 0),
+
 	JS_FS_END
 };
 
