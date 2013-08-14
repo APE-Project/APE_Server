@@ -674,7 +674,7 @@ APE_JS_NATIVE(apepipe_sm_set_property)
 
 	if (JSVAL_IS_NULL(JS_ARGV(cx, vpn)[1]) ){
 		typextend = EXTEND_STR;
-		jsval *val= malloc(sizeof(jsval) * 1);
+		jsval *val= xmalloc(sizeof(jsval) * 1);
 		*val= JSVAL_NULL;
 		valuextend = val;
 
@@ -1919,50 +1919,127 @@ APE_JS_NATIVE(ape_sm_include)
 	return JS_TRUE;
 }
 
+/**
+ * Write a string to a file.
+ *
+ * @param {string} filename Filename to write to. If the filename is '', then a temporary file will be created (/tmp/apeXXXXXX)
+ * @param {string} content The content that will be written to the file
+ * @param {bool} append Append to the file: False: create a new file. True: appends if the file exists, else it creates a new one:
+ * @returns {bool} True on success, false on failure, null on incorrect parameters
+ * @public
+ * @static
+ * @example
+ * var content = Ape.readwrite('/tmp/dummy.txt', 'blabla');
+ * @name Ape.writefile
+ * @method
+ * @TODO: testing
+ */
+APE_JS_NATIVE(ape_sm_writefile)
+//{
+	JSString *content;
+	JSString *filename;
+	JSBool append;
+	jsval ret;
+	char *ccontent;
+	char *cfilename;
+	char mode[3] = {'w', 'b', '+'};
+	struct stat sb;
+	FILE *fOut;
+	char tfilename[16] = {'\0'};
+	int rc = 0;
+	int temp = 0 ;
+	JS_SET_RVAL(cx, vpn, JSVAL_NULL);
+	if (argc != 3) {
+		return JS_TRUE;
+	}
+	if (!JS_ConvertArguments(cx, 3, JS_ARGV(cx, vpn), "SSb", &filename, &content, &append)) {
+		return JS_TRUE;
+	}
+	cfilename = JS_EncodeString(cx, filename);
+	ccontent = JS_EncodeString(cx, content);
+	if (strlen(cfilename) == 0 ){
+		temp = 1;
+		strcpy(tfilename, "/tmp/apeXXXXXX");
+		strcpy(tfilename , mktemp(tfilename));
+		fOut = fopen (tfilename, mode);
+	}else{
+		if (append == JS_TRUE && (stat(cfilename, &sb) == 0 && S_ISREG(sb.st_mode))) {
+			mode[0] ='a';
+		}
+		fOut = fopen (cfilename, mode);
+	}
+	if (fOut != NULL) {
+		if (fputs (ccontent, fOut) != EOF) {
+			rc = 1;
+		}
+		if (fclose (fOut) == EOF) {
+			rc = 0;
+		}
+	}
+	if (rc > 0 || (rc == 0 && strlen(ccontent) == 0)) {
+		if (temp == 1) {
+			ret = STRING_TO_JSVAL(JS_NewStringCopyN(cx, tfilename, strlen(tfilename)));
+		} else {
+			ret = JSVAL_TRUE;
+		}
+	} else {
+		ret = JSVAL_FALSE;
+	}
+	JS_SET_RVAL(cx, vpn, ret);
+	JS_free(cx, cfilename);
+	JS_free(cx, ccontent);
+	return JS_TRUE;
+}
+
+/**
+ * Get the content of a file.
+ *
+ * @param {string} filename The filename to read
+ * @returns {string} The content of the file or NULL
+ * @public
+ * @static
+ * @example
+ * var content = Ape.readfile('/etc/hosts');
+ * @name Ape.readfile
+ * @method
+ * @TODO: testing
+ */
 APE_JS_NATIVE(ape_sm_readfile)
 //{
 	JSString *string;
 	char *cstring;
 	char *content;
 	FILE *fp;
-	int size = 2048;
+	const int bufferSize = 2048;
+	int size = bufferSize;
 	int fsize = 0;
-
+	JS_SET_RVAL(cx, vpn, JSVAL_NULL);
 	if (argc != 1) {
-        return JS_TRUE;
+		return JS_TRUE;
 	}
-
 	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "S", &string)) {
 		return JS_TRUE;
 	}
 	cstring = JS_EncodeString(cx, string);
 	fp = fopen(cstring, "r");
 	if (fp == NULL) {
-	    return JS_TRUE;
+		return JS_TRUE;
 	}
-
-	content = malloc(sizeof(char) * size);
-
-	while(!feof(fp)) {
-	    int tmp;
-	    if ((tmp = fread(content+fsize, sizeof(char), 2048, fp)) > 0) {
-	        fsize += tmp;
-	    }
-
-	    size += 2048;
-
-	    content = realloc(content, sizeof(char) * size);
+	content = xmalloc(sizeof(char) * size);
+	while (!feof(fp)) {
+		int tmp;
+		if ((tmp = fread(content + fsize, sizeof(char), bufferSize, fp)) > 0) {
+			fsize += tmp * sizeof(char);
+		}
+		size += bufferSize;
+		content = xrealloc(content, sizeof(char) * size);
 	}
-
-	printf("Size : %d\n", fsize);
-
+	//printf("Size : %d\n", fsize);
 	JS_SET_RVAL(cx, vpn, STRING_TO_JSVAL(JS_NewStringCopyN(cx, content, fsize)));
-
+	fclose(fp);
 	free(content);
 	JS_free(cx, cstring);
-
 	return JS_TRUE;
-
 }
 
 APE_JS_NATIVE(ape_sm_b64_encode)
@@ -2390,7 +2467,6 @@ APE_JS_NATIVE(ape_sm_config)
  * @example
  * var content = Ape.getHostByName("www.ape-project");
  * @name Ape.getHostByName
- * @function
  */
 APE_JS_NATIVE(ape_sm_gethostbyname)
 //{
@@ -2665,18 +2741,25 @@ APE_JS_NATIVE(ape_sm_system)
 	cexec = JS_EncodeString(cx, exec);
 	cparams = JS_EncodeString(cx, params);
 	ret = JSVAL_NULL;
-	if (	(g_ape->is_daemon && getuid() !=0 )     //Should have change user to nor root in ape.conf
+	if (	(g_ape->is_daemon && getuid() !=0 )     //Should have change user to non root in ape.conf
 		||
 			( ! g_ape->is_daemon && getuid() != 0 )  //Do not do this as root
 		) {
 		char *cmd = NULL;
 		struct stat sb;
-		if (stat(cexec, &sb) >= 0 && (sb.st_mode & S_IXUSR)){
-			cmd = xmalloc( sizeof(char) * (3 + strlen (cexec) + strlen (cparams)) );
-			if (cmd){
+		int execl = strlen (cexec);
+		int paramsl = strlen(cparams);
+		int len = 3 + execl + paramsl;
+		if (stat(cexec, &sb) >= 0 && (sb.st_mode & S_IXUSR)) {
+			cmd = xmalloc( sizeof(char) * (len) );
+			memset(cmd, '\0', len);
+			if (cmd) {
 				strcpy (cmd, cexec);
-		 		cmd[strlen (cexec)] = ' ';
+		 		cmd[execl] = ' ';
 				strcat(cmd, cparams);
+				if (!g_ape->is_daemon) {
+					printf("[%s] : executing '%s'\n", MODULE_NAME, cmd);
+				}
 				ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "[%s] : executing '%s'", MODULE_NAME, cmd);
 				int r = system(cmd);
 				ret = (r == -1)? JSVAL_VOID : INT_TO_JSVAL(r);
@@ -3199,6 +3282,7 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("system", ape_sm_system, 2, 0),
 	JS_FS("eval", ape_sm_eval, 1, 0),
 	JS_FS("readfile", ape_sm_readfile, 1, 0),
+	JS_FS("writefile", ape_sm_writefile, 2, 0),
 	JS_FS_END
 };
 
@@ -3543,7 +3627,6 @@ static void free_module(acetables *g_ape) // Called when module is unloaded
 	ape_sm_callback *cb;
 
 	APE_JS_EVENT("stop", 0, NULL);
-
 	while (asc != NULL) {
 		free(asc->filename);
 		for (cb = asc->callbacks.head; cb; cb = cb->next) {
@@ -3554,11 +3637,14 @@ static void free_module(acetables *g_ape) // Called when module is unloaded
 		asc = asc->next;
 		free(prev_asc);
 	}
-
 	//JS_DestroyContext(ASMC);
 	JS_DestroyRuntime(ASMR->runtime);
-
 	free(ASMR);
+	if (!g_ape->is_daemon) {
+			printf("[%s] Unloaded module\n", MODULE_NAME);
+	}
+	JS_ShutDown();
+	ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[%s] Unloaded module", MODULE_NAME);
 }
 
 static USERS *ape_cb_add_user(USERS *allocated, acetables *g_ape)
