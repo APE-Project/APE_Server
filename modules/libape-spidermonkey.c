@@ -197,6 +197,17 @@ static JSClass ape_class = {
 		JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
 		JSCLASS_NO_OPTIONAL_MEMBERS
 };
+/**
+ * @brief Collection of os related functions
+ * @name Os
+ * @class
+ */
+static JSClass os_class = {
+	"Os", JSCLASS_HAS_PRIVATE,
+		JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
+		JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+		JSCLASS_NO_OPTIONAL_MEMBERS
+};
 
 static JSClass b64_class = {
 	"base64", JSCLASS_HAS_PRIVATE,
@@ -1929,8 +1940,8 @@ APE_JS_NATIVE(ape_sm_include)
  * @public
  * @static
  * @example
- * var content = Ape.readwrite('/tmp/dummy.txt', 'blabla');
- * @name Ape.writefile
+ * var content = Os.readwrite('/tmp/dummy.txt', 'blabla');
+ * @name Os.writefile
  * @method
  * @TODO: testing
  */
@@ -1957,7 +1968,7 @@ APE_JS_NATIVE(ape_sm_writefile)
 	}
 	cfilename = JS_EncodeString(cx, filename);
 	ccontent = JS_EncodeString(cx, content);
-	if (strlen(cfilename) == 0 ){
+	if (*cfilename == '\0' ) {
 		temp = 1;
 		strcpy(tfilename, "/tmp/apeXXXXXX");
 		strcpy(tfilename , mktemp(tfilename));
@@ -1976,7 +1987,7 @@ APE_JS_NATIVE(ape_sm_writefile)
 			rc = 0;
 		}
 	}
-	if (rc > 0 || (rc == 0 && strlen(ccontent) == 0)) {
+	if (rc > 0 || (rc == 0 && *ccontent == '\0')) {
 		if (temp == 1) {
 			ret = STRING_TO_JSVAL(JS_NewStringCopyN(cx, tfilename, strlen(tfilename)));
 		} else {
@@ -1999,8 +2010,8 @@ APE_JS_NATIVE(ape_sm_writefile)
  * @public
  * @static
  * @example
- * var content = Ape.readfile('/etc/hosts');
- * @name Ape.readfile
+ * var content = Os.readfile('/etc/hosts');
+ * @name Os.readfile
  * @method
  * @TODO: testing
  */
@@ -2465,8 +2476,8 @@ APE_JS_NATIVE(ape_sm_config)
  * @static
  * @method
  * @example
- * var content = Ape.getHostByName("www.ape-project");
- * @name Ape.getHostByName
+ * var content = Os.getHostByName("www.ape-project");
+ * @name Os.getHostByName
  */
 APE_JS_NATIVE(ape_sm_gethostbyname)
 //{
@@ -2716,7 +2727,7 @@ APE_JS_NATIVE(ape_sm_eval)
 }
 
 /**
- * @name: 	Ape.system
+ * @name: 	Os.system
  * @params: (string) exec The full path to the executable. This must exist and executable
  * @params: (string) paramstring Parameters
  * @method
@@ -2802,7 +2813,7 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
 	struct _ape_sock_callbacks *cbcopy;
 	struct _ape_sock_js_obj *sock_obj;
 
-    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
+	JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 
 	if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vpn), "iS/o", &port, &ip, &options)) {
 		return JS_TRUE;
@@ -2852,7 +2863,7 @@ APE_JS_NATIVE(ape_sm_pipe_constructor)
 	transpipe *pipe;
 	//JSObject *link;
 
-    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
+	JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 
 	/* Add link to a Root ? */
 	pipe = init_pipe(NULL, CUSTOM_PIPE, g_ape);
@@ -3110,7 +3121,7 @@ APE_JS_NATIVE(ape_sm_mysql_constructor)
 	char *chost, *clogin, *cpass, *cdb;
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
 
-    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
+	JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 
 	MYSAC *my;
 	int fd;
@@ -3178,7 +3189,7 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
 	jsval vp;
 	JSObject *obj = JS_NewObjectForConstructor(cx, vpn);
 
-    JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
+	JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(obj));
 
 	if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vpn), "iS/o", &port, &ip, &options)) {
 		return JS_TRUE;
@@ -3269,7 +3280,6 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("getUserByPubid", ape_sm_get_user_by_pubid, 1, 0),
 	JS_FS("getChannelByPubid", ape_sm_get_channel_by_pubid, 1, 0),
 	JS_FS("config", ape_sm_config, 2, 0),
-	JS_FS("getHostByName", ape_sm_gethostbyname, 1, 0),
 	JS_FS("mainConfig", ape_sm_mainconfig, 2, 0),
 	JS_FS("setTimeout", ape_sm_set_timeout, 2, 0),
 	JS_FS("setInterval", ape_sm_set_interval, 2, 0),
@@ -3279,10 +3289,15 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("addUser", ape_sm_adduser, 1, 0),
 	JS_FS("mkChan", ape_sm_mkchan, 1, 0),
 	JS_FS("rmChan", ape_sm_rmchan, 1, 0),
-	JS_FS("system", ape_sm_system, 2, 0),
 	JS_FS("eval", ape_sm_eval, 1, 0),
-	JS_FS("readfile", ape_sm_readfile, 1, 0),
-	JS_FS("writefile", ape_sm_writefile, 2, 0),
+	JS_FS_END
+};
+
+static JSFunctionSpec os_funcs[] = {
+		JS_FS("system", ape_sm_system, 2, 0),
+		JS_FS("getHostByName", ape_sm_gethostbyname, 1, 0),
+		JS_FS("readfile", ape_sm_readfile, 1, 0),
+		JS_FS("writefile", ape_sm_writefile, 2, 0),
 	JS_FS_END
 };
 
@@ -3306,12 +3321,13 @@ static JSFunctionSpec sha1_funcs[] = {
 
 static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g_ape)
 {
-	JSObject *obj, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *subuser;
+	JSObject *obj, *os, *b64, *sha1, *sockclient, *sockserver, *custompipe, *user, *channel, *subuser;
 	#ifdef _USE_MYSQL
 	JSObject *jsmysql;
 	#endif
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
+	os = JS_DefineObject(asc->cx, asc->global, "Os", &os_class, NULL, 0);
 	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
 	sha1 = JS_DefineObject(asc->cx, obj, "sha1", &sha1_class, NULL, 0);
 	user = JS_DefineObject(gcx, obj, "user", &user_class, NULL, 0);
@@ -3326,6 +3342,7 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	add_property(&g_ape->properties, "channel_proto", channel, EXTEND_POINTER, EXTEND_ISPRIVATE);
 
 	JS_DefineFunctions(asc->cx, obj, ape_funcs);
+	JS_DefineFunctions(asc->cx, os, os_funcs);
 	JS_DefineFunctions(asc->cx, asc->global, global_funcs);
 	JS_DefineFunctions(asc->cx, b64, b64_funcs);
 	JS_DefineFunctions(asc->cx, sha1, sha1_funcs);

@@ -22,6 +22,7 @@ Ape.addEvent('init', function() {
 
 		//This file is used to test features of APE. Especially meant for develompment of APE Features
 		//include('test/_tests.js');
+		
 
 	} catch (e) {
 		Ape.log(e.message + '\n\t' + e.fileName + ':' + e.lineNumber);

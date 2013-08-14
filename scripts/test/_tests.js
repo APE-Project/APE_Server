@@ -1,6 +1,7 @@
 Ape.addEvent('init', function() {
 	try {
 		//include('test/Systemcmd.js');
+		//include('test/Hostname.js');
 		//include('test/MySQL.js');
 		//include('test/Socket.js');
 		//include('test/Pipes.js');
