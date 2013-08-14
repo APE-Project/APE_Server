@@ -651,8 +651,10 @@ APE_JS_NATIVE(apepipe_sm_get_parent)
 	switch(pipe->type) {
 		case USER_PIPE:
 			JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(APEUSER_TO_JSOBJ(((USERS*)pipe->pipe))));
+			break;
 		case CHANNEL_PIPE:
 			JS_SET_RVAL(cx, vpn, OBJECT_TO_JSVAL(APECHAN_TO_JSOBJ(((CHANNEL*)pipe->pipe))));
+			break;
 		default:
 			break;
 	}
@@ -712,6 +714,7 @@ APE_JS_NATIVE(apepipe_sm_set_property)
 			break;
 		case CUSTOM_PIPE:
 			add_property(&pipe->properties, ckey, valuextend, typextend, EXTEND_ISPUBLIC);
+			break;
 		default:
 			break;
 	}
