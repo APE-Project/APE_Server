@@ -2,6 +2,7 @@ Ape.addEvent("init", function() {
 	include("framework/mootools.js");
 	include("framework/Http.js");
 	include("framework/userslist.js");
+	include("framework/log.js"); //Enhanced Ape.log() method, comment this line to disable it.
 	include("utils/utils.js");
 	include("commands/proxy.js");
 	include("commands/inlinepush.js");
