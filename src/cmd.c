@@ -44,7 +44,6 @@ void do_register(acetables *g_ape)
 void register_cmd(const char *cmd, unsigned int (*func)(callbackp *), unsigned int need, acetables *g_ape)
 {
 	callback *new_cmd, *old_cmd;
-
 	new_cmd = (callback *) xmalloc(sizeof(*new_cmd));
 
 	new_cmd->func = func;

@@ -1,7 +1,7 @@
 Ape.log(' =====================================>>> \n Start up for test/FileReadWrite.js\n');
 try {
     	var fn = '/tmp/bla.txt';
-    	Os.system('/bin/rm', '-rf ' + fn);
+    	os.system('/bin/rm', '-rf ' + fn);
 	var rot13 =	'Guvf vf n yvggyr fgbel nobhg sbhe crbcyr anzrq Rirelobql, Fbzrobql, Nalobql, naq Abobql.' + '\n'+
             	'Gurer jnf na vzcbegnag wbo gb or qbar naq Rirelobql jnf fher gung Fbzrobql jbhyq qb vg.' + '\n'+
             	'Nalobql pbhyq unir qbar vg, ohg Abobql qvq vg.' + '\n'+
@@ -11,15 +11,15 @@ try {
 	/*
 	 * Append to a normal file
 	 * */
-	var r = Os.writefile(fn, rot13, false);
-	r = Os.writefile(fn, rot13, true);
+	var r = os.writefile(fn, rot13, false);
+	r = os.writefile(fn, rot13, true);
 	if(r === true){
 	    Ape.log('write succesfully: ' + r);
 	}else{
 	    Ape.log('Could not write file correctly: ' + r);
 	}
 	var twice = rot13 + rot13;
-	var content = Os.readfile(fn);
+	var content = os.readfile(fn);
 	if (content === twice) {
 	    Ape.log('read file successfully');
 	} else {
@@ -31,13 +31,13 @@ try {
 	 * and rewrite the temp file
 	 * */
 	
-	fn = Os.writefile('', rot13, true);
+	fn = os.writefile('', rot13, true);
 	if (fn ) {
 	    Ape.log('write succesfully: ' + fn);
 	}else{
 	    Ape.log('Could not write file: ' + fn);
 	}
-	content = Os.readfile(fn);
+	content = Ape.os.readfile(fn);
 	if (content === rot13) {
 	    Ape.log('read file successfully');
 	} else {

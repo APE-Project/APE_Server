@@ -53,10 +53,10 @@ static void signal_handler(int sign)
 static int inc_rlimit(int nofile)
 {
 	struct rlimit rl;
-	
+
 	rl.rlim_cur = nofile;
 	rl.rlim_max = nofile;
-	
+
 	return setrlimit(RLIMIT_NOFILE, &rl);
 }
 
@@ -73,38 +73,38 @@ static void write_pid_file(int pidfile, int pid)
 
 static void ape_daemon(int pidfile, acetables *g_ape)
 {
-	
-	if (0 != fork()) { 
+
+	if (0 != fork()) {
 		exit(0);
 	}
 	if (-1 == setsid()) {
 		exit(0);
 	}
 	signal(SIGHUP, SIG_IGN);
-	
+
 	if (0 != fork()) {
 		exit(0);
 	}
-	
+
 	g_ape->is_daemon = 1;
 	write_pid_file(pidfile, (int) getpid());
 }
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
 	apeconfig *srv;
-	
+
 	int random, im_r00t = 0, pidfd = 0, serverfd;
 	unsigned int getrandom = 0;
 	const char *pidfile = NULL;
 	char *confs_path = NULL;
-	
+
 	struct _fdevent fdev;
-	
+
 	char cfgfile[513] = APE_CONFIG_FILE;
-	
+
 	acetables *g_ape;
-	
+
 	if (argc > 1 && strcmp(argv[1], "--version") == 0) {
 		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
 		return 0;
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 	read(random, &getrandom, 3);
 	srand(getrandom);
 	close(random);
-	
+
 	fdev.handler = EVENT_UNKNOWN;
 	#ifdef USE_EPOLL_HANDLER
 	fdev.handler = EVENT_EPOLL;
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 
 	g_ape->co = xmalloc(sizeof(*g_ape->co) * g_ape->basemem);
 	memset(g_ape->co, 0, sizeof(*g_ape->co) * g_ape->basemem);
-	
+
 	g_ape->bad_cmd_callbacks = NULL;
 	g_ape->bufout = xmalloc(sizeof(struct _socks_bufout) * g_ape->basemem);
 	g_ape->timers.timers = NULL;
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] Fatal error: APE compiled without an event handler... exiting");
 		exit(1);
 	}
-	
+
 	serverfd = servers_init(g_ape);
 	//printf("APE starting up %s:%i\n", CONFIG_VAL(Server, ip_listen, g_ape->srv), atoi(CONFIG_VAL(Server, port, srv)));
 	//ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "APE starting up %s:%i\n", CONFIG_VAL(Server, ip_listen, g_ape->srv), atoi(CONFIG_VAL(Server, port, srv)));
@@ -200,18 +200,18 @@ int main(int argc, char **argv)
 			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[WARN] Cannot open pid file : %s", CONFIG_VAL(Server, pid_file, srv));
 		}
 	}
-	
+
 	if (im_r00t) {
 		struct group *grp = NULL;
 		struct passwd *pwd = NULL;
-		
+
 		if (inc_rlimit(atoi(CONFIG_VAL(Server, rlimit_nofile, srv))) == -1) {
 			if (!g_ape->is_daemon) {
 				printf("[WARN] Cannot set the max filedescriptor limit (setrlimit) %s\n", strerror(errno));
 			}
 			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[WARN] Cannot set the max filedescriptor limit (setrlimit) %s", strerror(errno));
 		}
-		
+
 		/* Set uid when uid section exists */
 		if (ape_config_get_section(srv, "uid")) {
 
@@ -228,9 +228,9 @@ int main(int argc, char **argv)
 					printf("[ERR] %s uid can\'t be 0\n", CONFIG_VAL(uid, user, srv));
 				}
 				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] %s uid can\'t be 0", CONFIG_VAL(uid, user, srv));
-				return -1;			
+				return -1;
 			}
-			
+
 			/* Get the group information (uid section) */
 			if ((grp = getgrnam(CONFIG_VAL(uid, group, srv))) == NULL) {
 				if (!g_ape->is_daemon) {
@@ -239,7 +239,7 @@ int main(int argc, char **argv)
 				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] Cannot find group %s", CONFIG_VAL(uid, group, srv));
 				return -1;
 			}
-			
+
 			if (grp->gr_gid == 0) {
 				if (!g_ape->is_daemon) {
 					printf("[ERR] %s gid cannot be 0\n", CONFIG_VAL(uid, group, srv));
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 				ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] %s gid cannot be 0", CONFIG_VAL(uid, group, srv));
 			return -1;
 			}
-		
+
 			setgid(grp->gr_gid);
 			setgroups(0, NULL);
 			initgroups(CONFIG_VAL(uid, user, srv), grp->gr_gid);
@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 		}
 		ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[WARN] You have to run \'aped\' as root to increase r_limit");
 	}
-	
+
 	if (g_ape->is_daemon) {
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "Starting daemon on %s:%i, pid: %i", CONFIG_VAL(Server, ip_listen, g_ape->srv), atoi(CONFIG_VAL(Server, port, srv)), getpid());
 		ape_daemon(pidfd, g_ape);
@@ -279,48 +279,49 @@ int main(int argc, char **argv)
 		write_pid_file(pidfd, (int) getpid());
 	}
 	signal(SIGPIPE, SIG_IGN);
-	
+
 	ape_dns_init(g_ape);
-	
+
 	g_ape->cmd_hook.head = NULL;
 	g_ape->cmd_hook.foot = NULL;
-	
+
 	g_ape->hLogin = hashtbl_init();
 	g_ape->hSessid = hashtbl_init();
 
 	g_ape->hLusers = hashtbl_init();
 	g_ape->hPubid = hashtbl_init();
-	
+
 	g_ape->proxy.list = NULL;
 	g_ape->proxy.hosts = NULL;
-	
+
 	g_ape->hCallback = hashtbl_init();
 
 	g_ape->uHead = NULL;
-	
+
 	g_ape->nConnected = 0;
 	g_ape->plugins = NULL;
-	
+
 	g_ape->properties = NULL;
 
 	add_ticked(check_timeout, g_ape);
-	
+
 	do_register(g_ape);
-	
-	transport_start(g_ape);	
-	
+
+	transport_start(g_ape);
+
 	findandloadplugin(g_ape);
 
 	server_is_running = 1;
 
 	/* Starting Up */
 	sockroutine(g_ape); /* loop */
-	/* Shutdown */	
-	
+	/* Shutdown */
+
 	if (pidfile != NULL) {
 		unlink(pidfile);
 	}
-	
+	//fixme: unregister commands, register_bad_cmd and register_hook_cmd
+
 	free(confs_path);
 
 	timers_free(g_ape);
@@ -333,9 +334,9 @@ int main(int argc, char **argv)
 	hashtbl_free(g_ape->hSessid);
 	hashtbl_free(g_ape->hLusers);
 	hashtbl_free(g_ape->hPubid);
-	
+
 	hashtbl_free(g_ape->hCallback);
-	
+
 	free(g_ape->bufout);
 
 	ape_config_free(srv);
@@ -351,7 +352,7 @@ int main(int argc, char **argv)
 	free_all_plugins(g_ape);
 
 	free(g_ape);
-	
+
 	return 0;
 }
 

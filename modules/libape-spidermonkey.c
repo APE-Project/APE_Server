@@ -199,11 +199,11 @@ static JSClass ape_class = {
 };
 /**
  * @brief Collection of os related functions
- * @name Os
- * @class
+ * @name Ape.os
+ * @namespace
  */
 static JSClass os_class = {
-	"Os", JSCLASS_HAS_PRIVATE,
+	"os", JSCLASS_HAS_PRIVATE,
 		JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
 		JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
 		JSCLASS_NO_OPTIONAL_MEMBERS
@@ -1936,17 +1936,18 @@ APE_JS_NATIVE(ape_sm_include)
 /**
  * Write a string to a file.
  *
- * @param {string} filename Filename to write to. If the filename is '', then a temporary file will be created (/tmp/apeXXXXXX)
- * @param {string} content The content that will be written to the file
- * @param {bool} append Append to the file: False: create a new file. True: appends if the file exists, else it creates a new one:
- * @returns {bool} True on success, false on failure, null on incorrect parameters
+ * @name Ape.os.writefile
  * @public
  * @static
+ * @function
+ *
+ * @param {string} 	filename 	Filename to write to. If the filename is '', then a temporary file will be created (/tmp/apeXXXXXX)
+ * @param {string} 	content 	The content that will be written to the file
+ * @param {bool} 	append 		Append to the file: False: create a new file. True: appends if the file exists, else it creates a new one:
+ * @returns {bool} 	True on success, false on failure, null on incorrect parameters
+ *
  * @example
- * var content = Os.readwrite('/tmp/dummy.txt', 'blabla');
- * @name Os.writefile
- * @method
- * @TODO: testing
+ * var content = os.readwrite('/tmp/dummy.txt', 'blabla');
  */
 APE_JS_NATIVE(ape_sm_writefile)
 //{
@@ -2008,15 +2009,16 @@ APE_JS_NATIVE(ape_sm_writefile)
 /**
  * Get the content of a file.
  *
- * @param {string} filename The filename to read
- * @returns {string} The content of the file or NULL
+ * @name Ape.os.readfile
+ * @function
  * @public
  * @static
+ *
+ * @param {string} filename The filename to read
+ * @returns {string} The content of the file or NULL
+ *
  * @example
- * var content = Os.readfile('/etc/hosts');
- * @name Os.readfile
- * @method
- * @TODO: testing
+ * var content = os.readfile('/etc/hosts');
  */
 APE_JS_NATIVE(ape_sm_readfile)
 //{
@@ -2473,14 +2475,16 @@ APE_JS_NATIVE(ape_sm_config)
 /**
  * Get the ip address of a host.
  *
- * @param {string} hostname The Hostname
- * @returns {string} ip		The ip address af the hostname or NULL
+ * @name Ape.os.getHostByName
+ * @function
  * @public
  * @static
- * @method
+ *
+ * @param {string} hostname The Hostname
+ * @returns {string} ip		The ip address af the hostname or NULL
+ *
  * @example
- * var content = Os.getHostByName("www.ape-project");
- * @name Os.getHostByName
+ * var content = os.getHostByName("www.ape-project");
  */
 APE_JS_NATIVE(ape_sm_gethostbyname)
 //{
@@ -2698,15 +2702,18 @@ APE_JS_NATIVE(ape_sm_echo)
 }
 /**
  * @name: 	Ape.status
- * @method
+ * @function
+ * @public
  * @static
- * @return: {object} status Object with status information
- * @return: {int} status.connected nr of connected users
- * @return: {bool} status.daemon Running in deamon mode
+ * @ignore
+ *
+ * @returns {object} status Object with status information,
+ * @returns {int} status.connected nr of connected users
+ * @returns {bool} status.daemon Running in deamon mode
+ *
  * @example:var status = Ape.status();
  * 			Ape.log(JSON.stringify(status));
  */
-
 APE_JS_NATIVE(ape_sm_status)
 //{
 	JSObject *elem = JS_NewObject(cx, NULL, NULL, NULL);
@@ -2723,13 +2730,16 @@ APE_JS_NATIVE(ape_sm_status)
 
 /**
  * @name: 	Ape.eval
- * @params: (string) scriptstring The javascript code that should be executed in the Ape context
- * @method
+ * @function
+ * @public
  * @static
- * @return: undefined if the scriptstring was empty or the could not compiled
- *          else the return value of the scriptstring
+ *
+ * @params: (string) scriptstring The javascript code that should be executed in the Ape context
+ * @return: {undefined|integer} if the scriptstring was empty or the could not compiled
+ * 			else the return value of the scriptstring
+ *
  * @example:var r = Ape.eval("var sum = function(a, b){return a + b;}; return sum(4,4);");
- * 			Ape.log('returned: ' + r);
+ * Ape.log('returned: ' + r);
  */
 
 APE_JS_NATIVE(ape_sm_eval)
@@ -2754,16 +2764,19 @@ APE_JS_NATIVE(ape_sm_eval)
 }
 
 /**
- * @name: 	Os.system
+ * @name: 	Ape.os.system
+ * @function
+ * @static
+ * @public
+ *
  * @params: (string) exec The full path to the executable. This must exist and executable
  * @params: (string) paramstring Parameters
- * @method
- * @static
- * @return: null if executed did not take place.
- *          undefined if the execute could not start (-1)
- *          else the return code of the command
- * @example:var r = Ape.system("/usr/bin/wget", "http://www.verpeteren.nl -o /tmp/www.verpeteren.nl.html");
- * 			Ape.log('returned: ' + r);
+ * @return: {null|undefined|integer} null: if the execution did not take place.
+ *          undefined: if the execute could not start (-1)
+ *          or the return code of the command
+ *
+ * @example:var r = os.system("/usr/bin/wget", "http://www.verpeteren.nl -o /tmp/www.verpeteren.nl.html");
+ * Ape.log('returned: ' + r);
  */
 
 APE_JS_NATIVE(ape_sm_system)
@@ -3356,7 +3369,7 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	#endif
 
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
-	os = JS_DefineObject(asc->cx, asc->global, "Os", &os_class, NULL, 0);
+	os = JS_DefineObject(asc->cx, asc->global, "os", &os_class, NULL, 0);
 	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
 	sha1 = JS_DefineObject(asc->cx, obj, "sha1", &sha1_class, NULL, 0);
 	user = JS_DefineObject(gcx, obj, "user", &user_class, NULL, 0);

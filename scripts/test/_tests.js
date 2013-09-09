@@ -9,6 +9,7 @@ Ape.addEvent('init', function() {
 		//include('test/Eval.js');
 		//include('test/Properties.js');
 		//include('test/FileReadWrite.js');
+		//include('test/Status.js');
 	} catch (e) {
 		Ape.log(e.message + '\n\t' + e.fileName + ':' + e.lineNumber);
 	}
