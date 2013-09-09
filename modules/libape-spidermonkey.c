@@ -1943,8 +1943,8 @@ APE_JS_NATIVE(ape_sm_include)
  *
  * @param {string} 	filename 	Filename to write to. If the filename is '', then a temporary file will be created (/tmp/apeXXXXXX)
  * @param {string} 	content 	The content that will be written to the file
- * @param {bool} 	append 		Append to the file: False: create a new file. True: appends if the file exists, else it creates a new one:
- * @returns {bool} 	True on success, false on failure, null on incorrect parameters
+ * @param {boolean} 	append 		Append to the file: False: create a new file. True: appends if the file exists, else it creates a new one:
+ * @returns {boolean} 	True on success, false on failure, null on incorrect parameters
  *
  * @example
  * var content = os.readwrite('/tmp/dummy.txt', 'blabla');
@@ -2708,8 +2708,8 @@ APE_JS_NATIVE(ape_sm_echo)
  * @ignore
  *
  * @returns {object} status Object with status information,
- * @returns {int} status.connected nr of connected users
- * @returns {bool} status.daemon Running in deamon mode
+ * @returns {integer} status.connected nr of connected users
+ * @returns {boolean} status.daemon Running in deamon mode
  *
  * @example:var status = Ape.status();
  * 			Ape.log(JSON.stringify(status));
@@ -2734,8 +2734,8 @@ APE_JS_NATIVE(ape_sm_status)
  * @public
  * @static
  *
- * @params: (string) scriptstring The javascript code that should be executed in the Ape context
- * @return: {undefined|integer} if the scriptstring was empty or the could not compiled
+ * @param {string} scriptstring The javascript code that should be executed in the Ape context
+ * @returns {undefined|integer} if the scriptstring was empty or the could not compiled
  * 			else the return value of the scriptstring
  *
  * @example:var r = Ape.eval("var sum = function(a, b){return a + b;}; return sum(4,4);");
@@ -2769,9 +2769,9 @@ APE_JS_NATIVE(ape_sm_eval)
  * @static
  * @public
  *
- * @params: (string) exec The full path to the executable. This must exist and executable
- * @params: (string) paramstring Parameters
- * @return: {null|undefined|integer} null: if the execution did not take place.
+ * @param {string} exec The full path to the executable. This must exist and executable
+ * @param {string} paramstring Parameters
+ * @returns {null|undefined|integer} null: if the execution did not take place.
  *          undefined: if the execute could not start (-1)
  *          or the return code of the command
  *
