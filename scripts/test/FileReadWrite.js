@@ -37,7 +37,7 @@ try {
 	}else{
 	    Ape.log('Could not write file: ' + fn);
 	}
-	content = Ape.os.readfile(fn);
+	content = os.readfile(fn);
 	if (content === rot13) {
 	    Ape.log('read file successfully');
 	} else {

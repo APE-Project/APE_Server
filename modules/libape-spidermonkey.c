@@ -381,8 +381,8 @@ APE_JS_NATIVE(apesocket_write)
  * @example
  * var socket = new Ape.sockClient('21', 'example.com', {flushlf: true} );
  * socket.onConnect = function() {
- * 	Ape.log("Connected to example.com");
- * 	this.write("Hello\n");
+ * 	Ape.log('Connected to example.com');
+ * 	this.write('Hello\n');
  * });
  *
  * @see Ape.sockClient
@@ -430,8 +430,8 @@ APE_JS_NATIVE(apesocketclient_write)
  * @example
  * var socket = new Ape.sockClient('21', 'example.com', {flushlf: true} );
  * socket.onConnect = function() {
- * 	Ape.log("Connected to example.com");
- * 	this.write("Bye!\n");
+ * 	Ape.log('Connected to example.com');
+ * 	this.write('Bye!\n');
  * 	this.close();
  * });
  *
@@ -494,10 +494,10 @@ APE_JS_NATIVE(apesocket_close)
  * @returns {void}
  *
  * @example
- * var socket = new Ape.sockServer("80", "0.0.0.0", {flushlf: true});
+ * var socket = new Ape.sockServer('80', '0.0.0.0', {flushlf: true});
  * socket.onAccept = function(client) {
- * 	Ape.log("New client !");
- * 	client.write("Bye!\n");
+ * 	Ape.log('New client !');
+ * 	client.write('Bye!\n');
  * 	client.close
  * }
  *
@@ -943,7 +943,7 @@ APE_JS_NATIVE(apepipe_sm_set_property)
  * @returns {object}
  *
  * @example
- * Ape.registerCmd("foocmd", true, function(params, info) {
+ * Ape.registerCmd('foocmd', true, function(params, info) {
  * 	var obj = Ape.getPipe(params.pubid).toObject();
  * });
  *
@@ -1135,19 +1135,19 @@ static JSBool sm_send_raw(JSContext *cx, transpipe *to_pipe, int chl, uintN argc
  *
  * @example
  * //Basic
- * pipe.sendRaw("CUSTOM_RAW", {"foo":"bar"});
- * //This will send this raw: {"time":"1255281320","raw":"CUSTOM_RAW","data":{"foo":"bar"}}
+ * pipe.sendRaw('CUSTOM_RAW', {'foo': 'bar'});
+ * //This will send this raw: {'time': '1255281320', 'raw': 'CUSTOM_RAW', 'data': {'foo': 'bar'}}
  * @example
  * //Send a raw to an user
- * Ape.registerCmd("foocmd", true, function(params, info) {
- * 	Ape.log("The user ip : ("+infos.ip+"), foo : " + params.foo);
- * 	info.user.pipe.sendRaw("CUSTOM_RAW", {"foo":"bar"});
+ * Ape.registerCmd('foocmd', true, function(params, info) {
+ * 	Ape.log('The user ip : (' + infos.ip + '), foo : ' + params.foo);
+ * 	info.user.pipe.sendRaw('CUSTOM_RAW', {'foo': 'bar'});
  * });
  * @example
  * //Send a raw to a pipe
- * Ape.registerCmd("foocmd", true, function(params, info) {
- * 	Ape.log("The user ip : ("+info.ip+"), foo : " + params.foo);
- * 	Ape.getPipe(params.pubid).sendRaw("CUSTOM_RAW", {"foo":"bar"});
+ * Ape.registerCmd('foocmd', true, function(params, info) {
+ * 	Ape.log('The user ip : (' + info.ip + '), foo : ' + params.foo);
+ * 	Ape.getPipe(params.pubid).sendRaw('CUSTOM_RAW', {'foo': 'bar'});
  * });
  *
  * @see Ape.pipe
@@ -1210,7 +1210,7 @@ APE_JS_NATIVE(apepipe_sm_send_raw)
  * @returns {void}
  *
  * @example
- * Ape.registerCmd("foocmd", true, function(params, info) {
+ * Ape.registerCmd('foocmd', true, function(params, info) {
  * 	info.sendResponse('custom_raw', {'foo':'bar'});
  * });
  *
@@ -1593,7 +1593,7 @@ APE_JS_NATIVE(apeuser_sm_quit)
  * 	user.join('*level1');
  * });
  * @example
- * Ape.registerHookCmd("connect", function(params, cmd) {
+ * Ape.registerHookCmd('connect', function(params, cmd) {
  * 	cmd.user.join('testChannel');
  * 	return 1;
  * });
@@ -1813,7 +1813,7 @@ APE_JS_NATIVE(apemysql_sm_errorstring)
  * @returns {integer} Used to get the last insert id with auto-increment.for the connection
  *
  * @example
- * sql.query("INSERT INTO table VALUES('a','b','c')", function(res, errorNo) {
+ * sql.query('INSERT INTO table VALUES("a", "b", "c")', function(res, errorNo) {
  * 	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
  * 	else Ape.log('Inserted: ' + MySQL.getInsertId ());
  * });
@@ -1844,7 +1844,7 @@ APE_JS_NATIVE(apemysql_sm_insert_id)
  * @returns {string} The escaped string
  *
  * @example
- * sql.query("SELECT nick FROM user WHERE login = '" + Ape.MySQL.escape(mylogin) + "'");
+ * sql.query('SELECT nick FROM user WHERE login = \'' + Ape.MySQL.escape(mylogin) + '\'');
  */
 APE_JS_NATIVE(apemysql_escape)
 //{
@@ -1885,7 +1885,7 @@ APE_JS_NATIVE(apemysql_escape)
  * @returns {void}
  *
  * @example
- * sql.query("SELECT * FROM table", function(res, errorNo) {
+ * sql.query('SELECT * FROM table', function(res, errorNo) {
  * 	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
  * 	else {
  * 		Ape.log('Fetching ' + res.length);
@@ -1895,7 +1895,7 @@ APE_JS_NATIVE(apemysql_escape)
  * 	}
  * });
  * @example
- * sql.query("INSERT INTO table VALUES('a','b','c')", function(res, errorNo) {
+ * sql.query('INSERT INTO table VALUES("a", "b", "c")', function(res, errorNo) {
  * 	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
  * 	else Ape.log('Inserted');
  * });
@@ -2058,7 +2058,7 @@ static JSFunctionSpec apepipe_funcs[] = {
  * 	Ape.log('Connection Error : ' + errorNo + ' : ' + this.errorString());
  * }
  * @example
- * var sql = new Ape.MySQL("ip:port", "user", "password", "database");
+ * var sql = new Ape.MySQL('10.0.0.240:3306', 'user', 'password', 'database');
  * sql.onConnect = function() {
  * 	Ape.log('Connected to mysql server');
  * }
@@ -2130,8 +2130,8 @@ static JSObject *sm_ape_socket_to_jsobj(JSContext *cx, ape_socket *client)
  *
  * @example
  * socket.onAccept = function(server) {
- * 	Ape.log("New server !");
- * 	server.write("Hello world\n");
+ * 	Ape.log('New server !');
+ * 	server.write('Hello world\n');
  * }
  *
  * @see Ape.sockClient
@@ -2150,8 +2150,8 @@ static JSObject *sm_ape_socket_to_jsobj(JSContext *cx, ape_socket *client)
  *
  * @example
  * socket.onAccept = function(client) {
- * 	Ape.log("New server !");
- * 	client.write("Hello world\n");
+ * 	Ape.log('New client !');
+ * 	client.write('Hello world\n');
  * }
  *
  * @see Ape.sockClient
@@ -2215,7 +2215,7 @@ static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
  *
  * @example
  * socket.onDisconnect = function() {
- * 	Ape.log("Gone !");
+ * 	Ape.log('Gone !');
  * }
  *
  * @see Ape.sockClient
@@ -2235,7 +2235,7 @@ static void sm_sock_onaccept(ape_socket *client, acetables *g_ape)
  *
  * @example
  * client.onDisconnect = function() {
- * 	Ape.log("Gone !");
+ * 	Ape.log('Gone !');
  * }
  *
  * @see Ape.sockClient
@@ -2288,7 +2288,7 @@ static void sm_sock_ondisconnect(ape_socket *client, acetables *g_ape)
  *
  * @example
  * socket.onDisconnect = function() {
- * 	Ape.log("Gone !");
+ * 	Ape.log('Gone !');
  * }
  *
  * @see Ape.sockClient
@@ -2361,8 +2361,8 @@ static void sm_sock_onread_lf(ape_socket *client, char *data, acetables *g_ape)
  *
  * @example
  * socket.onConnect = function() {
- * 	Ape.log("We are connected !");
- * 	this.write("Hello\n");
+ * 	Ape.log('We are connected !');
+ * 	this.write('Hello\n');
  * }
  *
  * @see Ape.sockClient
@@ -2383,8 +2383,8 @@ static void sm_sock_onread_lf(ape_socket *client, char *data, acetables *g_ape)
  *
  * @example
  * socket.onConnect = function() {
- * 	Ape.log("We are connected !");
- * 	this.write("Hello\n");
+ * 	Ape.log('We are connected !');
+ * 	this.write('Hello\n');
  * }
  *
  * @see Ape.sockClient
@@ -2649,7 +2649,7 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
  * @example
  * //log
  * Ape.registerHookBadCmd(function(params, info, raw){
- * 		Ape.log("Bad RAW received ("+raw+").");
+ * 		Ape.log('Bad RAW received (' + raw + ').');
  * 		//We return nothing so client will receive a BAD_CMD error
  * });
  * @example
@@ -2725,23 +2725,23 @@ APE_JS_NATIVE(ape_sm_register_bad_cmd)
  * @returns {void}
  *
  * @example
- * Ape.registerCmd("foocmd", true, function(params, info) {
- * 	Ape.log("The user ip : ("+info.ip+"), foo : " + params.foo);
+ * Ape.registerCmd('foocmd', true, function(params, info) {
+ * 	Ape.log("The user ip : (' + info.ip + '), foo : ' + params.foo);
  * });
  * @example
  * // You can return error in two ways:
  * // By returning 0 to return a "BAD_PARAMS"
  * // By returning an array [code, error] for custom errors.
- * Ape.registerCmd("foocmd", true, function(params, info) {
+ * Ape.registerCmd('foocmd', true, function(params, info) {
  * 	if (!$defined(params.john)) return 0; // send a "BAD_PARAMS" RAW to the user
- * 	if (params.john != "doe") return ["209", "NOT_A_JOHN_DOE"];
+ * 	if (params.john != 'doe') return ['209', "NOT_A_JOHN_DOE"];
  * 	return 1;
  * });
  * @example
  * //Return an object to send a raw as response.
- * Ape.registerCmd( "gettime", true, function(params, info) ) {
+ * Ape.registerCmd( 'gettime', true, function(params, info) ) {
  * 	return {
- * 		name: "TIME",//The raw's name
+ * 		name: 'TIME',//The raw's name
  * 		data: { time: new Date().getTime() }//The raw's data (must be an object)
  * 	}
  * }
@@ -2830,7 +2830,7 @@ APE_JS_NATIVE(ape_sm_register_cmd)
  * @returns {void}
  *
  * @example
- * Ape.registerHookCmd("foocmd", function(params, info) {
+ * Ape.registerHookCmd('foocmd', function(params, info) {
  * 	if (!$defined(params.john)) return 0;
  * 	return 1;
  * });
@@ -3035,11 +3035,30 @@ APE_JS_NATIVE(ape_sm_writefile)
 /**
  * Get the content of a file.
  *
+ * @name Ape.readfile
+ * @function
+ * @public
+ * @static
+ * @ignore
+ * @deprecated Please use Ape.os.readfile instead
+ * 
+ * @param {string} filename The filename to read
+ * @returns {string} The content of the file or NULL
+ *
+ * @example
+ * var content = Ape.readfile('/etc/hosts');
+ *
+ * @see Ape.os.readfile
+ */
+/**
+ * Get the content of a file.
+ *
  * @name Ape.os.readfile
  * @function
  * @public
  * @static
- *
+ * @ignore
+ * 
  * @param {string} filename The filename to read
  * @returns {string} The content of the file or NULL
  *
@@ -3095,7 +3114,7 @@ APE_JS_NATIVE(ape_sm_readfile)
  * @returns {string} The decoded string.
  *
  * @example
- * var foo = Ape.b64.decode(xxx);
+ * var foo = Ape.b64.decode('aHR0cDovL3d3dy5hcGUtcHJvamVjdC5vcmc=');
  *
  * @see Ape.b64.encode
  */
@@ -3137,7 +3156,7 @@ APE_JS_NATIVE(ape_sm_b64_encode)
  * @returns {string} The decoded string.
  *
  * @example
- * var foo = Ape.b64.dede(xxx);
+ * var foo = Ape.b64.dede('http://www.ape-project.org');
  * @see Ape.b64.decode
  */
 APE_JS_NATIVE(ape_sm_b64_decode)
@@ -3184,7 +3203,7 @@ APE_JS_NATIVE(ape_sm_b64_decode)
  * @returns {string} The sha1 digest string in raw binary format
  *
  * @example
- * var result = Ape.sha1.bin("hello world");
+ * var result = Ape.sha1.bin('hello world');
  *
  * @see Ape.sha.str
  */
@@ -3229,9 +3248,9 @@ APE_JS_NATIVE(ape_sm_sha1_bin)
  * @returns {string} The sha1 digest
  *
  * @example
- * var result = Ape.sha1.str("hello world");
+ * var result = Ape.sha1.str('hello world');
  * //result = 2aae6c35c94fcfb415dbe95f408b9ce91ee846ed
- * var result = Ape.sha1.str("hello world", "mysecretkey");
+ * var result = Ape.sha1.str('hello world', 'mysecretkey');
  * //result = 529a42c50c09857dbe9a5891d6b453d543aaf434
  * @see Ape.sha.bin
  */
@@ -3301,7 +3320,7 @@ APE_JS_NATIVE(ape_sm_sha1_str)
  * @returns {void}
  *
  * @example
- * Ape.addEvent("mkChan", function(channel) {
+ * Ape.addEvent('mkChan', function(channel) {
  * 	if(channel.getProperty('name') == 'room_101'){
  * 		oceania.enemy= eurasia ;
  * 		eastasia.enemy = null;
@@ -3369,7 +3388,7 @@ APE_JS_NATIVE(ape_sm_mkchan)
  * @returns {void}
  *
  * @example
- * Ape.addEvent("rmChan", function(channel) {
+ * Ape.addEvent('rmChan', function(channel) {
  * 	if(channel.getProperty('name') == 'room_101'){
  * 		oceania.enemy= eastasia ;
  * 		eastasia.enemy = oceania;
@@ -3448,7 +3467,7 @@ APE_JS_NATIVE(ape_sm_rmchan)
  * @example
  * //You can set private properties on each user object,
  * // simply set a javascript property of the user.
- * Ape.addEvent("adduser", function(user) {
+ * Ape.addEvent('adduser', function(user) {
  * 	var res = {'foo': bar};
  * 	user.safe = res;							//private
  * 	for (var key in res) {
@@ -3457,7 +3476,7 @@ APE_JS_NATIVE(ape_sm_rmchan)
  * 		}
  * 	}
  * });
- * Ape.registerCmd("helloworld", function(params, info) {
+ * Ape.registerCmd('helloworld', function(params, info) {
  * 	Ape.log(info.user.safe.foo);
  * 	Ape.log(info.user.getProperty('foo');
  * });
@@ -3478,7 +3497,7 @@ APE_JS_NATIVE(ape_sm_rmchan)
  * @field
  *
  * @example
- * user.pipe.sendRaw("RAW": {'foo': 'bar'});
+ * user.pipe.sendRaw('RAW': {'foo': 'bar'});
  * @example
  * var pubid = user.pipe.getProperty('pubid');
  */
@@ -3551,21 +3570,21 @@ APE_JS_NATIVE(ape_sm_adduser)
  * 	Ape.log('Ape is ready !');
  * });
  * @example
- * Ape.addEvent("adduser", function(user) {
- * 	Ape.log("New user :)");
+ * Ape.addEvent('adduser', function(user) {
+ * 	Ape.log('New user :)');
  * });
- * Ape.addEvent("join", function(user, channel) {
- * 	Ape.log("New user has joined the channel ("+channel.getProperty('name')+") :)");
+ * Ape.addEvent('join', function(user, channel) {
+ * 	Ape.log('New user has joined the channel (' + channel.getProperty('name') + ') :)');
  * });
  * @example
  * //Note that all objects passed to Events are persistent.
  * //This means that you can store private data inside user, channel, ...
- * Ape.addEvent("adduser", function(user) {
- * 	Ape.log("New user.");
- * 	user.foo = "bar";
+ * Ape.addEvent('adduser', function(user) {
+ * 	Ape.log('New user.');
+ * 	user.foo = 'bar';
  * });
- * Ape.addEvent("join", function(user, channel) {
- * 	Ape.log(user.foo+" joined the channel ("+channel.getProperty('name')+").");
+ * Ape.addEvent('join', function(user, channel) {
+ * 	Ape.log(user.foo + ' joined the channel (' + channel.getProperty('name') + ').');
  * });
  *
  * @see Ape.init
@@ -3720,9 +3739,9 @@ APE_JS_NATIVE(ape_sm_get_channel_by_pubid)
  * @returns {Ape.pipe}
  *
  * @example
- * Ape.registerCmd("foocmd", true, function(params, info) {
- * 	Ape.log("The user ip : ("+info.ip+"), foo : " + params.foo);
- * 	Ape.getPipe(params.pubid).sendRaw("CUSTOM_RAW", {"foo":"bar"});
+ * Ape.registerCmd('foocmd', true, function(params, info) {
+ * 	Ape.log("The user ip : (' + info.ip + '), foo : " + params.foo);
+ * 	Ape.getPipe(params.pubid).sendRaw('CUSTOM_RAW', {'foo': 'bar'});
  * });
  *
  * @see Ape.pipe
@@ -3851,17 +3870,39 @@ APE_JS_NATIVE(ape_sm_config)
 
 /**
  * Get the ip address of a host.
+ * <p>Using getHostByName is very dangerous. The unix API gethostbyname is blocking. That is, if a resolution takes 5sec, the entire server is going to hang for 5 sec.</p>
  *
- * @name Ape.os.getHostByName
+ * @name Ape.getHostByName
  * @function
  * @public
  * @static
+ * @deprecated Pleas use Ape.os.getHostByName instead
+ * @ignore
  *
  * @param {string} hostname The Hostname
  * @returns {string} ip		The ip address af the hostname or NULL
  *
  * @example
- * var content = os.getHostByName("www.ape-project");
+ * var content = Ape.getHostByName('www.ape-project');
+ *
+ * @see Ape.os.getHostByName
+ */
+
+/**
+ * Get the ip address of a host.
+ * <p>Using getHostByName is very dangerous. The unix API gethostbyname is blocking. That is, if a resolution takes 5sec, the entire server is going to hang for 5 sec.</p>
+ *
+ * @name Ape.os.getHostByName
+ * @function
+ * @public
+ * @static
+ * @ignore
+ *
+ * @param {string} hostname The Hostname
+ * @returns {string} ip		The ip address af the hostname or NULL
+ *
+ * @example
+ * var content = os.getHostByName('www.ape-project');
  */
 APE_JS_NATIVE(ape_sm_gethostbyname)
 //{
@@ -3981,8 +4022,8 @@ static void ape_sm_timer_wrapper(struct _ape_sm_timer *params, int *last)
  *
  * @example
  * var timeoutID = Ape.setTimeout(function(a, b) {
- * 	Ape.log("Foo : " + a + " Bar : " + b);
- * }, 3000, "foo", "bar");
+ * 	Ape.log('Foo : ' + a + ' Bar : ' + b);
+ * }, 3000, 'foo', 'bar');
  * Ape.clearInterval(timeoutID);
  *
  * @see Ape.setInterval
@@ -4049,8 +4090,8 @@ APE_JS_NATIVE(ape_sm_set_timeout)
  *
  * @example
  * var timeoutID = Ape.setInterval(function(a, b) {
- * 	Ape.log("Foo : " + a + " Bar : " + b);
- * }, 3000, "foo", "bar");
+ * 	Ape.log('Foo : ' + a + ' Bar : ' + b);
+ * }, 3000, 'foo', 'bar');
  * Ape.clearInterval(timeoutID);
  *
  * @see Ape.setTimeout
@@ -4113,8 +4154,8 @@ APE_JS_NATIVE(ape_sm_set_interval)
  *
  * @example
  * var timeoutID = Ape.setTimeout(function(a, b) {
- * 	Ape.log("Foo : " + a + " Bar : " + b);
- * }, 3000, "foo", "bar");
+ * 	Ape.log('Foo : ' + a + ' Bar : ' + b);
+ * }, 3000, 'foo', 'bar');
  * Ape.clearTimeout(timeoutID);
  *
  * @see Ape.setTimeout
@@ -4135,8 +4176,8 @@ APE_JS_NATIVE(ape_sm_set_interval)
  *
  * @example
  * var timeoutID = Ape.setInterval(function(a, b) {
- * 	Ape.log("Foo : " + a + " Bar : " + b);
- * }, 3000, "foo", "bar");
+ * 	Ape.log('Foo : ' + a + ' Bar : ' + b);
+ * }, 3000, 'foo', 'bar');
  * Ape.clearInterval(timeoutID);
  *
  * @see Ape.setTimeout
@@ -4239,7 +4280,7 @@ APE_JS_NATIVE(ape_sm_status)
  * @returns {undefined|integer} if the scriptstring was empty or the could not compiled
  * 			else the return value of the scriptstring
  *
- * @example:var r = Ape.eval("var sum = function(a, b){return a + b;}; return sum(4,4);");
+ * @example:var r = Ape.eval('var sum = function(a, b){return a + b;}; return sum(4,4);');
  * Ape.log('returned: ' + r);
  */
 
@@ -4276,7 +4317,7 @@ APE_JS_NATIVE(ape_sm_eval)
  *          undefined: if the execute could not start (-1)
  *          or the return code of the command
  *
- * @example:var r = os.system("/usr/bin/wget", "http://www.verpeteren.nl -o /tmp/www.verpeteren.nl.html");
+ * @example:var r = os.system('/usr/bin/wget', 'http://www.verpeteren.nl -o /tmp/www.verpeteren.nl.html');
  * Ape.log('returned: ' + r);
  */
 
@@ -4378,15 +4419,15 @@ APE_JS_NATIVE(ape_sm_raw_constructor)
  * @example
  * var socket = new Ape.sockClient('21', 'example.com', {flushlf: true});
  * socket.onConnect = function() {
- * 	Ape.log("Connected to example.com");
- * 	this.write("Hello\n");
+ * 	Ape.log('Connected to example.com');
+ * 	this.write('Hello\n');
  * }
- * //"\n" are removed.
+ * //'\n' are removed.
  * socket.onRead = function(data) {
- * 	Ape.log("Data : " + data);
+ * 	Ape.log('Data : ' + data);
  * }
  * socket.onDisconnect = function() {
- * 	Ape.log("Gone !");
+ * 	Ape.log('Gone !');
  * }
  *
  * @see Ape.sockServer
@@ -4496,8 +4537,8 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
  * @example
  * var channel = Ape.mkChan('my_channel');
  * @example
- * Ape.addEvent("join", function(user, channel) {
- * 	Ape.log("New user has joined the channel (" + channel.getProperty('name') + ") :)");
+ * Ape.addEvent('join', function(user, channel) {
+ * 	Ape.log('New user has joined the channel (' + channel.getProperty('name') + ') :)');
  * });
  *
  * @see Ape.mkChan
@@ -4523,7 +4564,7 @@ APE_JS_NATIVE(ape_sm_sockclient_constructor)
  * @example
  * //a little bit off-topic but nevertheless very interesting
  * function sendToMany(users, cmd, data) {
- * 	var chan = Ape.mkChan("*" + +new Date());
+ * 	var chan = Ape.mkChan('*' + new Date());
  * 		for (var i = 0; i < users.length; i++) {
  * 			users[i].join(chan);
  * 		}
@@ -4819,13 +4860,13 @@ static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myha
  *
  * @example
  * //Database connection
- * var sql = new Ape.MySQL("ip:port", "user", "password", "database");
+ * var sql = new Ape.MySQL('10.0.0.240:3306', 'user', 'password', 'database');
  * 	sql.onConnect = function() {
  * 	Ape.log('Connected to mysql server');
  * }
  * @example
  * // Select
- * sql.query("SELECT * FROM table", function(res, errorNo) {
+ * sql.query('SELECT * FROM table', function(res, errorNo) {
  * 	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
  * 	else {
  * 	Ape.log('Fetching ' + res.length);
@@ -4836,7 +4877,7 @@ static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myha
  * });
  * @example
  * //Insert
- * sql.query("INSERT INTO table VALUES('a','b','c')", function(res, errorNo) {
+ * sql.query('INSERT INTO table VALUES("a", "b", "c")', function(res, errorNo) {
  * 	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
  * 	else Ape.log('Inserted: ' + MySQL.getInsertId ());
  * });
@@ -5013,7 +5054,7 @@ APE_JS_NATIVE(ape_sm_sockserver_constructor)
  * @returns {string} The xor-ed string
  *
  * @example
- * var result = Ape.xorize("key1", "key2");
+ * var result = Ape.xorize('key1', 'key2');
  * @example
  * for (i = 0; i < key1_len; i++) {
  * 	returned[i] = key1[i] ^ key2[i];
@@ -5074,6 +5115,8 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("mkChan", ape_sm_mkchan, 1, 0),
 	JS_FS("rmChan", ape_sm_rmchan, 1, 0),
 	JS_FS("eval", ape_sm_eval, 1, 0),
+	JS_FS("getHostByName", ape_sm_gethostbyname, 1, 0), //deprecated: is now also in os_funcs
+	JS_FS("readfile", ape_sm_readfile, 1, 0),           //deprecated: is now also in os_funct
 	JS_FS("status", ape_sm_status, 1, 0),
 
 	JS_FS_END
@@ -5332,7 +5375,7 @@ static void ape_fire_callback(const char *name, uintN argc, jsval *argv, acetabl
  * @returns {void}
  *
  * @example
- * Ape.addEvent("init", function() {
+ * Ape.addEvent('init', function() {
  * 	var eurasia = {};
  * 	var eastasia = {};
  * 	var oceania = {'habitants': 1984} ;
@@ -5452,7 +5495,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
  *
  * @example
  * @public
- * Ape.addEvent("stop", function() {
+ * Ape.addEvent('stop', function() {
  * 	Ape.rmChan(room_101);
  * 	delete(eurasia);
  * 	delete(oceania);
@@ -5502,12 +5545,12 @@ static void free_module(acetables *g_ape) // Called when module is unloaded
  *
  * @example
  * Ape.addEvent('init', function() {});
- * Ape.registerHookCmd("connect", function(params, cmd) {
+ * Ape.registerHookCmd('connect', function(params, cmd) {
  * 	if (!$defined(params) || !$defined(params.name)) return 0;
  * 	cmd.user.setProperty('name', params.name);
  * 	return 1;
  * 	});
- * Ape.addEvent("addUser", function(user) {
+ * Ape.addEvent('addUser', function(user) {
  * 	oceania.habitants++;
  * 	var bigBro = Ape.getUserByPubid('1984');
  * 	if ( bigBro && user.getProperty('name') == 'Smith, Winston') {
@@ -5571,7 +5614,7 @@ static USERS *ape_cb_allocateuser(ape_socket *client, const char *host, const ch
  * @returns {void}
  *
  * @example
- * Ape.addEvent("delUser", function(user) {
+ * Ape.addEvent('delUser', function(user) {
  * 	oceania.habitants--;
  * 	});
  *
@@ -5672,7 +5715,7 @@ static void ape_cb_rmchan(CHANNEL *chan, acetables *g_ape)
  * @returns {void}
  *
  * @example
- * Ape.addEvent("beforeJoin", function(user, channel) {
+ * Ape.addEvent('beforeJoin', function(user, channel) {
  * 	if ( user.safe.role == 'captain' &&  channel.getProperty('name') == 'bridge') {
  * 		user.setProperty('captianOnDeck',true);
  * 	}
@@ -5696,7 +5739,7 @@ static void ape_cb_rmchan(CHANNEL *chan, acetables *g_ape)
  * @returns {void}
  *
  * @example
- * Ape.addEvent("join", function(user, channel) {
+ * Ape.addEvent('join', function(user, channel) {
  * 	user.pipe.sendRaw('WELCOME', {});
  * });
  * @see Ape.addEvent
@@ -5720,7 +5763,7 @@ static void ape_cb_rmchan(CHANNEL *chan, acetables *g_ape)
  * @returns {void}
  *
  * @example
- * Ape.addEvent("afterJoin", function(user, channel) {
+ * Ape.addEvent('afterJoin', function(user, channel) {
  * 	if( user.getProperty('name') == 'Smith, Winston') {
  * 		user.save.inLoveWithJulia = true;
  * 	}
@@ -5758,7 +5801,7 @@ static void ape_cb_join(USERS *user, CHANNEL *chan, acetables *g_ape)
  * @returns {void}
  *
  * @example
- * Ape.addEvent("left", function(user, channel) {
+ * Ape.addEvent('left', function(user, channel) {
  * 	if( channel.getProperty('name')== 'room_101' && user.getProperty('name') == 'Smith, Winston') {
  * 		user.save.inLoveWithJulia = false;
  * 	}
