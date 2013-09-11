@@ -3103,20 +3103,20 @@ APE_JS_NATIVE(ape_sm_readfile)
 }
 
 /**
- * Decode a base64 encoded string.
+ * Encode a string in base64.
  *
  * @name Ape.b64.encode
  * @function
  * @public
  * @static
  *
- * @param {string} text An encoded string.
- * @returns {string} The decoded string.
+ * @param {string} text A string.
+ * @returns {string} The encoded string.
  *
  * @example
- * var foo = Ape.b64.decode('aHR0cDovL3d3dy5hcGUtcHJvamVjdC5vcmc=');
+ * var foo = Ape.b64.encode('http://www.ape-project.org');
  *
- * @see Ape.b64.encode
+ * @see Ape.b64.decode
  */
 APE_JS_NATIVE(ape_sm_b64_encode)
 //{
@@ -3145,19 +3145,19 @@ APE_JS_NATIVE(ape_sm_b64_encode)
 }
 
 /**
- * Encode a string in base64.
+ * Decode a base64 string.
  *
  * @name Ape.b64.decode
  * @function
  * @public
  * @static
  *
- * @param {string} text A string.
+ * @param {string} text A base64 encoded string.
  * @returns {string} The decoded string.
  *
  * @example
- * var foo = Ape.b64.dede('http://www.ape-project.org');
- * @see Ape.b64.decode
+ * var foo = Ape.b64.decode('aHR0cDovL3d3dy5hcGUtcHJvamVjdC5vcmc=');
+ * @see Ape.b64.encode
  */
 APE_JS_NATIVE(ape_sm_b64_decode)
 //{
