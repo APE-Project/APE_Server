@@ -128,6 +128,13 @@ struct _ape_sock_js_obj {
 	JSObject *client_obj;
 };
 
+struct _ape_sm_udns{
+	JSContext *cx;
+	JSObject *global;
+	jsval callback;
+	char *cname;
+};
+
 #ifdef _USE_MYSQL
 struct _ape_mysql_queue {
 	struct _ape_mysql_queue	*next;
@@ -3867,6 +3874,75 @@ APE_JS_NATIVE(ape_sm_config)
 
 	return JS_TRUE;
 }
+/**
+ * Get the ip address of a host asynchronously.
+ *
+ * @name Ape.os.resolveHostByName
+ * @function
+ * @public
+ * @static
+ *
+ * @param {string} hostname The Hostname
+ * @param {function} callback The function to be excecuted on success. The function argument is the  ip-address.
+ *
+ * @example
+ * var sql;
+ * os.getHostByName('www.ape-project', function(ip) {
+ *	if (! ip) {
+ *		Ape.log('Could not resolve host' );
+ *	} else {
+ *		Ape.log('Resolved: ' + ip);
+ *		sql = new Ape.MySQL( ip + ':3306', 'user', 'password', 'database');
+ *		sql.onConnect = function() {
+ *			Ape.log('Connected to mysql server');
+ *		}
+ *	}
+ * });
+ */
+static void ape_udns_resolve_cb(char *cip, void *data, acetables *g_ape)
+{
+	jsval rval;
+	jsval params;
+	JSString *ip;
+
+	struct _ape_sm_udns *udns = data;
+	ip = JS_NewStringCopyZ(udns->cx, cip);
+	params = STRING_TO_JSVAL(ip);
+	JS_CallFunctionValue(udns->cx, udns->global, udns->callback, 1, &params, &rval);
+
+	free(udns);
+}
+
+APE_JS_NATIVE(ape_sm_resolvehostbyname)
+//{
+	JSString *name;
+	char *cname;
+	jsval callback_js;
+	struct _ape_sm_udns *udns;
+
+	JS_SET_RVAL(cx, vpn, JSVAL_NULL);
+	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "S", &name)) {
+		return JS_TRUE;
+	}
+	if (!JS_ConvertValue(cx, JS_ARGV(cx, vpn)[1], JSTYPE_FUNCTION, &callback_js)) {
+		return JS_TRUE;
+	}
+	cname = JS_EncodeString(cx, name);
+	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
+	udns = JS_malloc(cx, sizeof(*udns));
+	if (udns == NULL) {
+		return JS_FALSE;
+	}
+	udns->cx = cx;
+	udns->callback = callback_js;
+	udns->global = obj;
+	udns->cname = xstrdup(cname);
+	ape_gethostbyname(cname, ape_udns_resolve_cb, udns, g_ape);
+
+	JS_free(cx, cname);
+	return JS_TRUE;
+}
+
 
 /**
  * Get the ip address of a host.
@@ -3876,7 +3952,7 @@ APE_JS_NATIVE(ape_sm_config)
  * @function
  * @public
  * @static
- * @deprecated Pleas use Ape.os.getHostByName instead
+ * @deprecated Pleas use Ape.os.resolveHostByName instead
  * @ignore
  *
  * @param {string} hostname The Hostname
@@ -3886,6 +3962,7 @@ APE_JS_NATIVE(ape_sm_config)
  * var content = Ape.getHostByName('www.ape-project');
  *
  * @see Ape.os.getHostByName
+ * @see Ape.os.resolveHostByName
  */
 
 /**
@@ -3896,13 +3973,16 @@ APE_JS_NATIVE(ape_sm_config)
  * @function
  * @public
  * @static
+ * @deprecated Use Ape.os.resolveHostByName instead
  * @ignore
  *
- * @param {string} hostname The Hostname
- * @returns {string} ip		The ip address af the hostname or NULL
+ * @param {string} hostname The hostname
+ * @returns {string} ip		The ip address of the hostname or NULL
  *
  * @example
  * var content = os.getHostByName('www.ape-project');
+ *
+ * @see Ape.os.resolveHostByName
  */
 APE_JS_NATIVE(ape_sm_gethostbyname)
 //{
@@ -5115,18 +5195,18 @@ static JSFunctionSpec ape_funcs[] = {
 	JS_FS("mkChan", ape_sm_mkchan, 1, 0),
 	JS_FS("rmChan", ape_sm_rmchan, 1, 0),
 	JS_FS("eval", ape_sm_eval, 1, 0),
-	JS_FS("getHostByName", ape_sm_gethostbyname, 1, 0), //deprecated: is now also in os_funcs
-	JS_FS("readfile", ape_sm_readfile, 1, 0),           //deprecated: is now also in os_funct
+	JS_FS("getHostByName", ape_sm_gethostbyname, 1, 0), 		//deprecated: is now also in os_funcs
+	JS_FS("readfile", ape_sm_readfile, 1, 0),           		//deprecated: is now also in os_funct
 	JS_FS("status", ape_sm_status, 1, 0),
-
 	JS_FS_END
 };
 
 static JSFunctionSpec os_funcs[] = {
-		JS_FS("system", ape_sm_system, 2, 0),
-		JS_FS("getHostByName", ape_sm_gethostbyname, 1, 0),
-		JS_FS("readfile", ape_sm_readfile, 1, 0),
-		JS_FS("writefile", ape_sm_writefile, 2, 0),
+	JS_FS("system", ape_sm_system, 2, 0),
+	JS_FS("getHostByName", ape_sm_gethostbyname, 1, 0), 	//deprecated: use Ape.os.resolveHostByName  instead
+	JS_FS("resolveHostByName", ape_sm_resolvehostbyname, 2, 0),
+	JS_FS("readfile", ape_sm_readfile, 1, 0),
+	JS_FS("writefile", ape_sm_writefile, 2, 0),
 	JS_FS_END
 };
 
