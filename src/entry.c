@@ -25,11 +25,13 @@
 #include "config.h"
 #include "cmd.h"
 #include "channel.h"
+
 #include <signal.h>
 #include <syslog.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
+
 #include "utils.h"
 #include "ticks.h"
 #include "proxy.h"
@@ -41,7 +43,6 @@
 
 #include <grp.h>
 #include <pwd.h>
-
 #include <errno.h>
 
 static void signal_handler(int sign)
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);
-
+	
 	g_ape = xmalloc(sizeof(*g_ape));
 	g_ape->basemem = 1; // set 1 for testing if growup works
 	g_ape->srv = srv;
@@ -148,7 +149,7 @@ int main(int argc, char **argv)
 		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] TICKS_RATE cannot be less than 1... exiting");
 		exit(1);
 	}
-
+	
 	random = open("/dev/urandom", O_RDONLY);
 	if (!random) {
 		if (!g_ape->is_daemon) {

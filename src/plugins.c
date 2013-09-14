@@ -77,10 +77,7 @@ void findandloadplugin(acetables *g_ape)
 			
 			load = dlsym(pcurrent->hPlug, "ape_module_init");
 			if (load == NULL) {
-				if (!g_ape->is_daemon) {
-					printf("[Module] Failed to load %s [No load entry point]\n", globbuf.gl_pathv[i]);
-				}
-				ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[Module] Failed to load %s [No load entry point]", globbuf.gl_pathv[i]);
+				printf("[Module] Failed to load %s [No load entry point]\n", globbuf.gl_pathv[i]);
 				free(pcurrent);
 				continue;
 			}
@@ -90,20 +87,17 @@ void findandloadplugin(acetables *g_ape)
 			/* Calling entry point load function */
 			load(pcurrent);
 				
-			plugin_read_config(pcurrent, CONFIG_VAL(Config, modules_conf, g_ape->srv), g_ape);
+			plugin_read_config(pcurrent, CONFIG_VAL(Config, modules_conf, g_ape->srv));
 			
 			if (!g_ape->is_daemon) {
 				printf("[Module] [%s] Loading module : %s (%s) - %s\n", pcurrent->modulename, pcurrent->infos->name, pcurrent->infos->version, pcurrent->infos->author);
 			}
-			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[Module] [%s] Loading module : %s (%s) - %s", pcurrent->modulename, pcurrent->infos->name, pcurrent->infos->version, pcurrent->infos->author);
 			pcurrent->next = plist;
 			g_ape->plugins = pcurrent;
 			
 			/* Calling init module */		
 			pcurrent->loader(g_ape);
 
-		}else{
-			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[Module] Failed to load %s [Invalid library]", globbuf.gl_pathv[i]);
 		}
 		
 	}
@@ -155,17 +149,14 @@ plug_config *plugin_parse_conf(const char *file)
 	return new_conf;
 }
 
-void plugin_read_config(ace_plugins *plug, const char *path, acetables *g_ape)
+void plugin_read_config(ace_plugins *plug, const char *path)
 {
 	char conf_file[1024];
 	if (plug->infos->conf_file != NULL) {
 		sprintf(conf_file, "%s%s", path, plug->infos->conf_file);
 		if ((plug->infos->conf = plugin_parse_conf(conf_file)) == NULL) {
-			if (!g_ape->is_daemon) {
-				printf("[Module] [%s] [WARN] Cannot open configuration (%s)\n", plug->modulename, plug->infos->conf_file);
-			}
-			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[Module] [%s] [WARN] Cannot open configuration (%s)", plug->modulename, plug->infos->conf_file);
-			return;
+			printf("[Module] [%s] [WARN] Cannot open configuration (%s)\n", plug->modulename, plug->infos->conf_file);
+			return;			
 		}
 	}
 }

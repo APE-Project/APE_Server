@@ -27,7 +27,6 @@
 #include "plugins.h"
 #include "pipe.h"
 #include "transports.h"
-#include "json.h"
 
 RAW *forge_raw(const char *raw, json_item *jlist)
 {

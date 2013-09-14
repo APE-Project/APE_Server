@@ -176,10 +176,9 @@ USERS *adduser(ape_socket *client, const char *host, const char *ip, USERS *allo
 		nuser->istmp = 0;
 		
 		g_ape->nConnected++;
-		/*if (!g_ape->is_daemon) {
-			printf("New user - (ip : %s)\n", nuser->ip);
-		}
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "New user - (ip : %s)", nuser->ip);*/
+		
+		//ape_log(APE_INFO, __FILE__, __LINE__, g_ape,
+		//	"New user - (ip : %s)", nuser->ip);
 	}
 
 	return nuser;
@@ -520,7 +519,7 @@ void subuser_restor(subuser *sub, acetables *g_ape)
 				json_item *juser = get_json_object_user(ulist->userinfo);
 		
 				if (ulist->userinfo != user) {
-					//make_link(user, ulist->userinfo, g_ape);
+					//make_link(user, ulist->userinfo);
 				}
 				
 				json_set_property_intN(juser, "level", 5, ulist->level);
@@ -639,7 +638,7 @@ struct _users_link *are_linked(USERS *a, USERS *b)
 	
 }
 
-void make_link(USERS *a, USERS *b, acetables *g_ape)
+void make_link(USERS *a, USERS *b)
 {
 	struct _users_link *link;
 	struct _link_list *link_a, *link_b;
@@ -666,15 +665,9 @@ void make_link(USERS *a, USERS *b, acetables *g_ape)
 		(b->links.nlink)++;
 	
 		link->link_type = 0;
-		if (!g_ape->is_daemon) {
-			printf("Link etablished between %s and %s\n", a->pipe->pubid, b->pipe->pubid);
-		}
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "Link etablished between %s and %s", a->pipe->pubid, b->pipe->pubid);
+		printf("Link etablished between %s and %s\n", a->pipe->pubid, b->pipe->pubid);
 	} else {
-		if (!g_ape->is_daemon) {
-			printf("%s and %s are already linked\n", a->pipe->pubid, b->pipe->pubid);
-		}
-		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, "%s and %s are already linked", a->pipe->pubid, b->pipe->pubid);
+		printf("%s and %s are already linked\n", a->pipe->pubid, b->pipe->pubid);
 	}
 }
 

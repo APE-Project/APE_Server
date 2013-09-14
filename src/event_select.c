@@ -23,7 +23,7 @@
  *  @date	Nov 2010
  */
 #include "events.h"
-#include <syslog.h>//TODO: use ape_log for uniformity
+#include <syslog.h>
 #include <sys/time.h>
 #include <time.h>
 #include <sys/socket.h>
@@ -104,7 +104,7 @@ static int event_select_poll(struct _fdevent *ev, int timeout_ms)
   {
     if (FD_ISSET(fd, &efds))
     {
-    	syslog(LOG_NOTICE, "XXX ignoring fd %i with OOB data\n", fd);
+      printf("XXX ignoring fd %i with OOB data\n", fd);
       continue;
     }
 

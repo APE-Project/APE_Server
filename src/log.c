@@ -34,7 +34,7 @@
 void ape_log_init(acetables *g_ape)
 {
 	int debug = atoi(CONFIG_VAL(Log, debug, g_ape->srv));
-
+	
 	g_ape->logs.fd = STDERR_FILENO;
 	g_ape->logs.lvl = (debug ? APE_DEBUG : 0);
 	g_ape->logs.lvl |= APE_ERR | APE_WARN;
@@ -88,10 +88,7 @@ void ape_log_init(acetables *g_ape)
 		}
 
 		if (facility_num == -1) {
-			if (!g_ape->is_daemon) {
-				printf("[WARN] Invalid facility '%s' requested, defaulting to LOCAL2\n", facility);
-			}
-			ape_log(APE_WARN, __FILE__, __LINE__, g_ape, "[WARN] Invalid facility '%s' requested, defaulting to LOCAL2", facility);
+			printf("[WARN] Invalid facility '%s' requested, defaulting to LOCAL2\n", facility);
 			facility_num = LOG_LOCAL2;
 		}
 
@@ -101,13 +98,13 @@ void ape_log_init(acetables *g_ape)
 
 void ape_log(ape_log_lvl_t lvl, const char *file, unsigned long int line, acetables *g_ape, char *buf, ...)
 {
-	if (lvl == APE_DEBUG && ! (g_ape->logs.lvl & APE_DEBUG)) {
+	if (lvl == APE_DEBUG && !g_ape->logs.lvl&APE_DEBUG) {
 		return;
 	} else {
 		char *buff;
 		int len;
 		va_list val;
-
+		
 		va_start(val, buf);
 		len = vasprintf(&buff, buf, val);
 		va_end(val);

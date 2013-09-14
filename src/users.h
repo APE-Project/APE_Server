@@ -40,7 +40,7 @@
 #define MAX_HOST_LENGTH 256
 
 
-// Le 25/12/2006 ï¿½ 02:15:19 Joyeux Noï¿½l
+// Le 25/12/2006 à 02:15:19 Joyeux Noël
 
 
 struct _raw_pool {
@@ -243,7 +243,7 @@ void subuser_restor(subuser *sub, acetables *g_ape);
 void clear_subusers(USERS *user, acetables *g_ape);
 void ping_request(USERS *user, acetables *g_ape);
 
-void make_link(USERS *a, USERS *b, acetables *g_ape);
+void make_link(USERS *a, USERS *b);
 struct _users_link *are_linked(USERS *a, USERS *b);
 void destroy_link(USERS *a, USERS *b);
 
