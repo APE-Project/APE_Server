@@ -105,25 +105,34 @@ int main(int argc, char **argv)
 	char cfgfile[513] = APE_CONFIG_FILE;
 
 	acetables *g_ape;
+	int argi = 0;
+	int overrule_daemon = -1; //nothing fancy, -1: no, just the configuration, 0: yes overrule config, but do no daemon, 1: yes overrule config, but daemonize
+	if (argc > 1 ) {
+		for (argi = 1; argi < argc; argi++ ) {
+			if (strcmp(argv[argi], "--version") == 0) {
+				printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
+				return 0;
+			} else if (strcmp(argv[argi], "--help") == 0) {
+				printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n", _VERSION);
+				printf("\n   usage: aped [options]\n\n");
+				printf("   Options:\n     --help             : Display this help\n     --version          : Show version number\n     --daemon yes|no    : Overrule the daemon settings in Server section of the config file\n     --cfg    FILE      : Load a specific config file (default is %s)\n\n", cfgfile);
+				return 0;
+			} else if (argc > argi + 1 && strcmp(argv[argi], "--cfg") == 0) {
+				memset(cfgfile, 0, 513);
+				strncpy(cfgfile, argv[argi + 1], 512);
+				confs_path = get_path(cfgfile);
+				argi++;
+			} else if (argc > argi + 1 && strcmp(argv[argi], "--daemon") == 0) {
+				overrule_daemon = (strcmp(argv[argi + 1], "yes") == 0 );
+				argi++;
+			} else {
+				printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
+				printf("   Unknown parameters - check \"aped --help\"\n\n");
+				exit(1);
+			}
+		}
+	}
 
-	if (argc > 1 && strcmp(argv[1], "--version") == 0) {
-		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
-		return 0;
-	}
-	if (argc > 1 && strcmp(argv[1], "--help") == 0) {
-		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n", _VERSION);
-		printf("\n   usage: aped [options]\n\n");
-		printf("   Options:\n     --help             : Display this help\n     --version          : Show version number\n     --cfg <config path>: Load a specific config file (default is %s)\n\n", cfgfile);
-		return 0;
-	} else if (argc > 2 && strcmp(argv[1], "--cfg") == 0) {
-		memset(cfgfile, 0, 513);
-		strncpy(cfgfile, argv[2], 512);
-		confs_path = get_path(cfgfile);
-	} else if (argc > 1) {
-		printf("\n   AJAX Push Engine Server %s - (C) Anthony Catel <a.catel@weelya.com>\n   http://www.ape-project.org/\n\n", _VERSION);
-		printf("   Unknown parameters - check \"aped --help\"\n\n");
-		exit(1);
-	}
 	if (NULL == (srv = ape_config_load(cfgfile))) {
 		printf("\nExiting...\n\n");
 		exit(1);
@@ -134,11 +143,16 @@ int main(int argc, char **argv)
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);
-	
+
 	g_ape = xmalloc(sizeof(*g_ape));
 	g_ape->basemem = 1; // set 1 for testing if growup works
 	g_ape->srv = srv;
 	g_ape->confs_path = confs_path;
+	if (overrule_daemon == 0) {
+		ape_config_set_key(ape_config_get_section(g_ape->srv, "Server"), "daemon", "no");
+	} else if (overrule_daemon == 1) {
+		ape_config_set_key(ape_config_get_section(g_ape->srv, "Server"), "daemon", "yes");
+	}
 	g_ape->is_daemon = (strcmp(CONFIG_VAL(Server, daemon, srv), "yes") == 0 )? 1 :0;
 	ape_log_init(g_ape);
 
@@ -149,7 +163,7 @@ int main(int argc, char **argv)
 		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "[ERR] TICKS_RATE cannot be less than 1... exiting");
 		exit(1);
 	}
-	
+
 	random = open("/dev/urandom", O_RDONLY);
 	if (!random) {
 		if (!g_ape->is_daemon) {
