@@ -1,3 +1,7 @@
+/*
+ * Example of HTTP Authentification for APE
+ */
+
 (function(){
 	function http_auth(url, params, callback)
 	{

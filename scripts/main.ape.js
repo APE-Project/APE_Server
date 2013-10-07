@@ -10,8 +10,8 @@ Ape.addEvent('init', function() {
 		include('commands/proxy.js');
 		include("framework/log.js"); //Enhanced Ape.log() method, comment this line to disable it.
 
-		//These 5 files are meant for the demo's
-		//include('framework/http_auth.js');
+		//These 5 files are meant for the demo's or serves as examples
+		//include('examples/http_auth.js');
 		//include('commands/inlinepush.js');
 		//include('examples/nickname.js');
 		//include('examples/move.js');
