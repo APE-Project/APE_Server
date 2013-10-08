@@ -56,7 +56,7 @@ Ape.registerCmd("PROXY_CONNECT", true, function(params, infos) {
 	socket.onDisconnect = function(data) {
 		if ($defined(this.pipe)) {
 			if (!this.pipe.nouser) { /* User is not available anymore */
-				infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "disconnect"}, {from: this.pipe});
+				infos.user.pipe.sendRaw("PROXY_EVENT", {"event": "close"}, {from: this.pipe});
 				infos.user.proxys.erase(this.pipe.getProperty('pubid'));
 			}
 			/* Destroy the pipe */
