@@ -40,6 +40,7 @@
 #include "../src/sha1.h"
 #include "../src/events.h"
 #include "../src/log.h"
+#include "../src/dns.h"
 #include "../src/config.h"
 
 #include <stdarg.h>
