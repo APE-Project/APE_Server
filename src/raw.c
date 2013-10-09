@@ -279,6 +279,9 @@ int send_raw_inline(ape_socket *client, transport_t transport, RAW *raw, acetabl
 		case TRANSPORT_SSE_LONGPOLLING:
 			finish &= http_send_headers(NULL, HEADER_SSE, HEADER_SSE_LEN, client, g_ape);
 			break;
+		case TRANSPORT_JSONP:
+			finish &= http_send_headers(NULL, HEADER_JSONP, HEADER_JSONP_LEN, client, g_ape);
+			break;
 		case TRANSPORT_WEBSOCKET:
 		case TRANSPORT_WEBSOCKET_IETF:
 			break;
@@ -403,6 +406,9 @@ int send_raws(subuser *user, acetables *g_ape)
 			case TRANSPORT_SSE_LONGPOLLING:
 				finish &= http_send_headers(user->headers.content, HEADER_SSE, HEADER_SSE_LEN, user->client, g_ape);
 				break;
+			case TRANSPORT_JSONP:
+				finish &= http_send_headers(user->headers.content, HEADER_JSONP, HEADER_JSONP_LEN, user->client, g_ape);
+			break;
 			case TRANSPORT_WEBSOCKET:
 			case TRANSPORT_WEBSOCKET_IETF:
 				break;
