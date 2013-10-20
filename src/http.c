@@ -545,6 +545,7 @@ void process_http(ape_socket *co, acetables *g_ape)
 					parser->onready(parser, g_ape);
 					parser->ready = -1;
 					buffer->length = 0;
+					http->pos = 0;
 					return;
 				} else if (http->type == HTTP_GET_WS) { /* WebSockets handshake needs to read 8 bytes */
 					//urldecode(http->uri);
