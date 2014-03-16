@@ -19,7 +19,7 @@ Ape.addEvent('init', function() {
 
 
 		//This file is needed for the APE JSF diagnostic tool, once APE is installed you can remove it
-		///include('utils/checkTool.js');
+		include('utils/checkTool.js');
 
 		//This file is used to test features of APE. Especially meant for develompment of APE Features
 		//include('test/_tests.js');
