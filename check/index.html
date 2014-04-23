@@ -1,0 +1,319 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" dir="ltr" lang="en">
+    <head>  
+    	<title>APE Check Tool</title>
+        <script type="text/javaScript" src="mootools-core.js"></script>
+		<style type="text/css">
+			html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,button{margin:0;padding:0;border:0;outline:0;font-weight:normal;font-style:inherit;font-size:100%;font-family:inherit;vertical-align:baseline;}:focus{outline:0;}body{line-height:1;color:black;background:white;}ol,ul{list-style:none;}table{border-collapse:separate;border-spacing:0;}caption,th,td{text-align:left;font-weight:normal;}blockquote:before,blockquote:after,q:before,q:after{content:"";}blockquote,q{quotes:"""";}.clear{clear:both;}.fl{float:left;}.fr{float:right;}
+			body {
+				background : #FFF;
+				font-family : "Trebuchet MS", Trebuchet, "Lucida Grande", "Helvetica", Arial, serif;
+				font-size : 12px;
+				color : #0c0c0c;
+				border-top:3px solid #4E7F8D;
+			}
+
+			a {
+				color : #4E7F8D;
+				text-decoration : none;
+				font-weight : bold;
+			}
+
+			a:hover {
+				text-decoration : underline;
+			}
+
+			h1 {
+				font-size : 20px;
+				border-bottom:1px solid #CECECE;
+				border-top:2px solid #FFFFFF;
+				font-weight:bold;
+				text-align:center;
+				background:#E5EEF5;
+				line-height:30px;
+				color:#3789B3;
+			}
+			h2 {
+				font-size : 15px;
+				font-weight:bold;
+				margin:15px 0px 10px 0px;
+			}
+			#content {
+				width:90%;
+				margin:25px auto;
+			}
+			input {
+				background : #6BB000;
+				-moz-border-radius: 8px;
+				-webkit-border-radius: 8px;	
+				text-align : center;
+				width : 200px;
+				height : 30px;
+				line-height : 15px;
+				font-size : 16px;
+				color : #FFF;
+				text-shadow : 0 1px 1px #2B4200;
+				cursor : pointer;
+				border : none;
+			}
+	
+			#log {
+				border : 1px solid #CECECE;
+				background : #FFF;
+				-moz-border-radius: 8px;
+				-webkit-border-radius: 8px;
+				padding : 10px;
+				overflow:scroll;
+			}
+			.sucess {
+				background-image:url(accept.png)!important;
+			}
+			.error{
+				background-image:url(cross.png)!important;
+			}
+			.output {
+				background:url(application.png) no-repeat left 5px;
+				padding-left:25px; 
+				line-height:20px;
+			}
+			.runningTest {
+				background:url(hourglass.png) no-repeat left 50%;
+				text-indent:25px; 
+				line-height:20px;
+			}
+		</style>
+    </head>
+ 
+    <body>
+		<h1>Test your APE installation</h1>
+		<div id="content">
+			This test will help you to test your APE Client and server is correctly configured. Click on "Launch test" button to check your installation.
+			<br/>
+			<br/>
+			<div style="text-align:center">
+				<input type="button" onClick="javascript:new APETest()" value="Launch test!"/>
+			</div>
+			<h2>Debug output: </h2>
+			<div id="log">
+			</div>
+		</div>
+		<script type="text/javaScript">
+		var APETest = new Class({
+
+			Implements: Events,
+
+			actions: [],
+			client: null,
+
+			initialize: function() {
+				this.log = $('log');
+
+				this.addEvent('testComplete', this.runTest);
+
+				this.initTest();
+
+				this.runTest();
+			},
+
+			initTest: function() {
+				this.addTest('Init', function() {
+					this.fireEvent('testComplete', {'sucess': true});
+				}.bind(this));
+
+				this.addTest('Loading Client "apeClient.min.js"', function() {
+						var req = new Request({
+							'url': '../assets/apejsf/apeClient.min.js',
+							'method': 'get',
+							'evalResponse': true,
+							'onComplete': function(resp) {
+								if (window.APE) this.fireEvent('testComplete', {'sucess': true});
+								else this.fireEvent('testComplete', {'error': "Can't load client, check the file " + window.location.href.replace('/check/', '') + "assets/apejsf/apeClient.min.js is available"});
+							}.bind(this)
+						}).send();
+				}.bind(this));
+
+				this.addTest('Loading config "apeConfig.js"', function() {
+					var req = new Request({
+						'url': '../assets/apejsf/apeConfig.js',
+						'method': 'get',
+						'evalResponse': true,
+						'onComplete': function() {
+							if (APE.Config.baseUrl) {
+								var confVal = '';
+								for (var key in APE.Config) {
+									if (APE.Config.hasOwnProperty(key)) {
+										confVal += key + ' : ' + APE.Config[key] + "\n";
+									}
+								}
+								this.fireEvent('testComplete', {'sucess': 'Config values are : <pre>' + confVal + '</pre>'});
+							}
+							else this.fireEvent('testComplete', {'error': "Can't load client, check the file " + window.location.href.replace('/check/','') + "assets/apejsf/apeConfig.js is readable"});
+							
+						}.bind(this)
+					}).send();
+				}.bind(this));
+
+				this.addTest('Setting document.domain', function() {
+						if (APE.Config.domain == 'ape-project.org') {
+							this.fireEvent('testComplete', {'error': "APE.Config.domain has the default value. Please first edit " + window.location.href.replace('/check/','') + "assets/apejsf/apeConfig.js with the correct values. APE.Config.domain might be " + window.location.hostname + ""});
+						} else {
+							var error = false;
+							try {
+								if (APE.Config.domain == 'auto') document.domain = document.domain;
+								else document.domain = APE.Config.domain;
+								error = false;
+							} catch (e) {
+								error = true;
+							}
+							if (!error) {
+								this.fireEvent('testComplete', {'sucess': true});
+							} else {
+								this.fireEvent('testComplete', {'error': "Can't set document.domain please check APE.Config.domain value it should be " + window.location.hostname});
+							}
+						}
+				}.bind(this));
+
+				this.addTest('Checking APE.Config.baseUrl', function() {
+						var oldAPE = $extend({}, APE);
+						//We load this as JSON, otherwhise the code is executed and mess the rest of the tool.
+						var req = new Request.JSON({ 
+							'method': 'get',
+							'url': APE.Config.baseUrl + '/apeCore.min.js',
+							'onComplete': function(res) {
+								if (req.isSuccess()) {
+								
+									var version = APE.version;
+									APE = oldAPE;
+									this.fireEvent('testComplete', {'sucess': true});
+									//Since it's JSON, we can't access the version number :(
+									//this.fireEvent('testComplete', {'sucess': "APE JSF Version " + version + ""});  
+								} else {
+									this.fireEvent('testComplete', {'error': "Your variable APE.Config.baseUrl is wrong in " + window.location.href.replace('/check/','') + "assets/apejsf/apeConfig.js. Please change it to point to APE JSF directory on your webserver"});
+								}
+							}.bind(this)
+						}).send();
+				}.bind(this));
+
+				this.addTest('Contacting APE Server', function() {
+					//Registering JSONP reader
+					Ape = {
+						transport: {
+							read: function(res) {
+								 var jsonRes = JSON.decode(res)[0];
+								 if (jsonRes.data.domain) {
+									if (jsonRes.data.domain == document.domain) {
+										this.fireEvent('testComplete', {'sucess': "domain = " + jsonRes.data.domain + "</i>"});
+									} else {
+										this.fireEvent('testComplete', {'error': 'document.domain mismatch client is ' + document.domain + ' and server is ' + jsonRes.data.domain + ' value of domain for client and server must be the same. Try with ' + window.location.hostname + " for both"});
+									}
+								} else {
+									this.fireEvent('testComplete', {'error': 'Connection etablished but something went wrong. Server response is <pre>'+ res + '</pre>'});
+								}
+								$clear(timer);
+							}.bind(this)
+						}
+					};
+
+					new Element('script', {'type': 'text/javascript', 'src': 'http://' + APE.Config.server + '/2/?' + encodeURIComponent('[{"cmd":"setup","params":{"domain":"' + document.domain + '"}}]')}).inject(document.body);
+
+					var timer = (function() {
+						this.fireEvent('testComplete', {'error': "Can't contact APE Server. Please check the your APE Server is running and the folowing url is pointing to your APE server : <a href=\"http://" + APE.Config.server + "\" target=\"_blank\">http://" + APE.Config.server + "</a>"});
+					 }).delay(1000, this);
+
+				}.bind(this));
+
+				this.addTest('Contacting APE Server (adding frequency)', function() {
+					//Registering JSONP reader
+					Ape = {
+						transport: {
+							read: function(res) {
+								$clear(timer);
+								 var jsonRes = JSON.decode(res)[0];
+								 if (jsonRes.data.domain) {
+									this.fireEvent('testComplete', {'sucess': true});
+								} else {
+									this.fireEvent('testComplete', {'error': 'Connection etablished but something went wrong. Server response is <pre>'+ res + '</pre>'});
+								}
+							}.bind(this)
+						}
+					};
+
+					new Element('script', {'type': 'text/javascript', 'src': 'http://0.' + APE.Config.server + '/2/?' + encodeURIComponent('[{"cmd":"setup","params":{"domain":"' + document.domain + '"}}]')}).inject(document.body);
+
+					var timer = (function() {
+						this.fireEvent('testComplete', {'error': "Can't contact APE Server. Please check the folowing url is pointing to your APE server : http://0." + APE.Config.server + ""});
+					 }).delay(1000, this);
+
+				}.bind(this));
+
+				this.addTest('Initializing APE Client', function() {
+					this.client = new APE.Client();
+					this.client.load();
+					this.client.addEvent('load', function() {
+						$clear(timer);
+						this.fireEvent('testComplete', {'sucess': true})
+					}.bind(this));
+
+					var timer = (function() {
+						this.fireEvent('testComplete', {'error': "Can't load APE JSF"});
+					 }).delay(4000, this);
+				}.bind(this));
+
+				this.addTest('Connecting to APE Server', function() {
+					this.client.core.start({'name': $time().toString()});
+					this.client.addEvent('ready', function() {
+						this.fireEvent('testComplete', {'sucess': true});
+						$clear(timer);
+					}.bind(this));
+
+					var timer = (function() {
+						this.fireEvent('testComplete', {'error': "Can't login to APE server"});
+					 }).delay(2000, this);
+				}.bind(this));
+
+
+			},
+
+			runTest: function(res) {
+				if (res && !res.sucess && res.error) {
+					this.newLogResult(res.error, 'error');
+					new Element('div', {'html':'Something went wrong. If you can\'t fix it by yourself post a message on the <a href="http://groups.google.com/group/ape-project/">newsgroups</a> with the output below or join our <a href="irc://irc.freenode.net/ape-project">IRC channel</a>'}).inject(this.log);
+				} else { 
+					if (res && res.sucess) this.newLogResult(res.sucess, 'sucess');
+					if (this.actions.length > 0) {
+						var action = this.actions.shift();
+						this.newLog(action.title);
+						action.fn.run();
+					} else {
+						new Element('div', {
+							'styles': {
+								'text-align': 'center', 
+								'font-weight': 'bold', 
+								'font-size': '13px'
+							}, 
+							'text': 'All test done. Now you can play with your APE \\o/'
+						}).inject(this.log);
+					}
+				}
+			},
+
+			addTest: function(title, fn) {
+				this.actions.push({'fn': fn, 'title': title});
+			},
+
+			newLog: function(title) {
+				new Element('div', {'class': 'runningTest', 'text': 'Running test : ' + title}).inject(this.log);
+			},
+
+			newLogResult: function(res, state) {
+				var el = this.log.getLast();
+				if (el.hasClass('runningTest')) {
+					if (state == 'sucess') el.addClass('sucess');
+					else el.addClass('error');
+				}
+				if (res != true) new Element('div', {'class': 'output', 'html': res}).inject(this.log);
+			}
+		});
+		</script>
+</body>
+</html>

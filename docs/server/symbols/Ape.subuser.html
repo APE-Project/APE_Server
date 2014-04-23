@@ -1,0 +1,476 @@
+---
+layout: APE
+title:  Ape.subuser &#58;&#58; Server Documentation &#58;&#58; APE (Ajax Push Engine)
+---
+
+<div id="index">
+	<div class="span3">
+	<div class="well sidebar-nav">
+		<a href="../index.html">Class Index</a> | <a href="../files.html">File Index</a>
+		<h2>Classes</h2>
+		<ul class="nav nav-list classList">
+			
+				<li> 									<i><a href="../symbols/global.html">global</a></i> 								</li> 								<li class="nav-header"> 									<hr/> 								</li>
+			
+				<li><a href="../symbols/Ape.html">Ape</a></li>
+			
+				<li><a href="../symbols/Ape.b64.html">Ape.b64</a></li>
+			
+				<li><a href="../symbols/Ape.channel.html">Ape.channel</a></li>
+			
+				<li><a href="../symbols/Ape.MySQL.html">Ape.MySQL</a></li>
+			
+				<li><a href="../symbols/Ape.pipe.html">Ape.pipe</a></li>
+			
+				<li><a href="../symbols/Ape.sha1.html">Ape.sha1</a></li>
+			
+				<li><a href="../symbols/Ape.sockClient.html">Ape.sockClient</a></li>
+			
+				<li><a href="../symbols/Ape.sockServer.html">Ape.sockServer</a></li>
+			
+				<li><a href="../symbols/Ape.subuser.html">Ape.subuser</a></li>
+			
+				<li><a href="../symbols/Ape.user.html">Ape.user</a></li>
+			
+		</ul>
+	</div><!--/.well -->
+</div><!--/span-->
+
+</div>
+
+<div class="span9">
+	<div class="row-fluid">
+		<!-- ============================== class title ============================ -->
+		<div class="span6">
+			<h1 class="section classTitle">server 
+			Class Ape.subuser</h1>
+		</div>
+		<div class="span3" align="center">
+			<img src="/assets//img/promotejsh.gif" width="150px" height="148px"/>
+		</div>
+	</div>
+	<div class="row-fluid">
+		
+		<ul class="nav nav-tabs nav-tabs-pannel">
+			<li class="" id="summary">
+				<a href="#class_summary" data-toggle="tab">Class summary</a>
+			</li>
+			
+				<li class="" id="constructor">
+					<a href="#contructor_details" data-toggle="tab">Constructor</a>
+				</li>
+			
+			
+			
+				<li class="active" id="methods">
+					<a href="#methods_details" data-toggle="tab">Methods</a>
+				</li>
+			
+			
+		</ul>
+		<div class="tab-content">
+			<!-- ============================== class summary ========================== -->
+			<div class="tab-pane  jsdoc-pane" id="class_summary">
+				<a name="class_summary"><h2><span class="variableName">Summary</span></h2></a>
+				
+				
+				
+				
+					<dl class="detailList">
+						<dt class="labelHeading">File</dt>
+						<div class="dline">
+							<dd>&lt;./src/Ape_Server/modules/libape-spidermonkey.c&gt;</dd>
+						</div>
+					</dl>
+				
+			</div>
+			<!-- ============================== constructor details ==================== -->
+			<div class="tab-pane  jsdoc-pane" id="contructor_details">
+				
+					<div class="details"><a name="constructor"><h2><span class="variableName">subuser</span> Class Detail</h2></a>
+						<div class="storageClass">
+							
+							<b>Ape.subuser</b>
+							
+								()
+							
+						</div>
+						
+							<div class="description">
+								An subuser object (tabbing in browser sessions).
+<p>The subuser object is available on registerCmd's callback.</p>
+<p>Each time a client opens a new tab on the same application (or refreshes the page) a new subuser is created to represent this client's instance.</p>
+<p>You can send a message directly to this subuser, or send a message to all others subuser.</p>
+							</div>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">File:</dt>
+								<div class="dline">
+										<dd>&lt;./src/Ape_Server/modules/libape-spidermonkey.c&gt;</dd>
+									</div>
+								</dl>
+							
+							
+						
+						
+						
+						
+						
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Example</dt>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">Ape.registerCmd('foo', true, function(params, info) {
+	info.subuser.sendRaw('bar', {'ok':'true'});
+});</pre>
+									</dd>
+								
+							</dl>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">See:</dt>
+								<div class="dline">
+									
+										<dd>Ape.subuser.SendRaw
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.html#static_registerCmd">Ape.registerCmd</a>
+											
+										</dd>
+									
+								</div>
+							</dl>
+						
+						<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.subuser.subuser" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+					</div>
+				
+			</div>
+			<!-- ============================== properties ========================================= -->
+			<div class="tab-pane  jsdoc-pane" id="property_details">
+				
+			</div>
+			<!-- ============================== methods ========================================== -->
+			<div class="tab-pane active jsdoc-pane" id="methods_details">
+				
+					
+					<ul class="nav nav-tabs nav-tabs-pannel">
+					<li class="active"  id="methods_summary_li" class="nested">
+						<a href="#methods_summary" data-toggle="tab">Summary</a>
+					</li>
+					
+						
+							<li class="nested" id="static_getParent_li">
+								<a href="../symbols/Ape.subuser.html#static_getParent" data-toggle="tab">getParent</a>
+							</li>
+						
+							<li class="nested" id="static_sendRaw_li">
+								<a href="../symbols/Ape.subuser.html#static_sendRaw" data-toggle="tab">sendRaw</a>
+							</li>
+						
+					
+				</ul>
+				<div class="tab-content">
+					<!-- ============================== method summary ===================== -->
+					<div class="tab-pane active active jsdoc-pane" id="methods_summary">
+						<a name="methods_summary"><h2><span class="variableName">Summary</span></h2></a>
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Own</dt>
+							</dl>
+							<table class="summaryTable">
+								<thead>
+									<tr>
+										<th>Methods Attributes</th>
+										<th>Methods Name</th>
+										<th>Methods Description</th>
+									</tr>
+								</thead>
+								<tbody>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.subuser.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.subuser.html#static_getParent" onClick="handleTabLinks('#static_getParent'); return false;">getParent</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Get the user object of a subuser.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.subuser.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.subuser.html#static_sendRaw" onClick="handleTabLinks('#static_sendRaw'); return false;">sendRaw</a></span>
+													(name, data, options)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Send a custom RAW to a subuser.
+												</span>
+											</td>
+										</tr>
+									
+								</tbody>
+							</table>
+							
+							
+						</div>
+						<!-- ============================== method details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_getParent">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/Ape.user.html">Ape.user</a>}</span>
+										
+										
+											<span class="parameterType">Ape.subuser.</span>
+										
+										<a name="static_getParent">
+												<span class="variableName">getParent</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Get the user object of a subuser.
+										</div>
+									
+									
+									
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/Ape.user.html">Ape.user</a>} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">Ape.registerCmd('foo', true, function(params, info) {
+	var user = info.subuser.getParent();
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_getParent">Ape.pipe.getParent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.subuser.getParent" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_sendRaw">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.subuser.</span>
+										
+										<a name="static_sendRaw">
+												<span class="variableName">sendRaw</span>
+											(name, data, options)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Send a custom RAW to a subuser.
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">name</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The RAW name</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">data</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">An object that will be JSON encoded and send outh with the RAW</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{pipe} </span>
+														<span class="variableName">options.from</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">An user pipe or a custom pipe that will be added in the from field, if an user pipe, the raw will not be sent to this user.</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{user|subuser} </span>
+														<span class="variableName">options.restrict</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">A user (if sending to a channel), or a subuser (if sending to n user) which will not receive the raw.</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">Ape.registerCmd('foo', true, function(params, info) {
+	info.subuser.sendRaw('bar', {'ok':'true'});
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_sendRaw">Ape.pipe.sendRaw</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_sendResponse">Ape.pipe.sendResponse</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.subuser.html">Ape.subuser</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.subuser.sendRaw" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+			<!-- ============================== events summary ======================== -->
+			<div class="tab-pane  jsdoc-pane" id="events_details">
+				
+			</div>
+		</div> <!-- tab content-->
+	</div>
+</div>

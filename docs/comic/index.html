@@ -1,0 +1,86 @@
+---
+layout: APE
+title: APE Documentation &#58;&#58; APE (Ajax Push Engine)
+navbar: comic
+---
+
+<style>
+.carousel-inner>.item>img, .carousel-inner>.item>a>img { margin: auto; }
+</style>
+
+<div class="container">
+	<div class="section">
+		<div class="row-fluid">
+			<div class="span9">
+				<h1>Here is a funny comic book explaining how the APE technology works.</h1>
+			</div>
+			<div class="span3" align="center">
+				<img src="/assets/img/ape_demos.png" />
+			</div>
+		</div>
+	</div>
+	<div class="section">
+	
+		<div id="myCarousel" class="carousel slide">
+		  <ol class="carousel-indicators">
+		    {% for comic in site.data.comics %}
+		    	<li data-target="#myCarousel" data-slide-to="{{comic.page}}"{% if comic.first == true %} class="active"{% endif %}></li>
+		    {% endfor %}
+		  </ol>
+		  <!-- Carousel items -->
+		  <div class="carousel-inner">
+		    {% for comic in site.data.comics %}
+			<div class="item{% if comic.first == true %} active{% endif %}">
+				<img src="/assets/comic/chapter1/{{comic.img}}" alt="">
+				<div class="carousel-caption">
+				  <h4>Page {{comic.page}}</h4>
+				  <p></p>
+				</div>
+			</div>
+		    {% endfor %}
+		  </div>
+		  <!-- Carousel nav -->
+		  <a class="carousel-control left" href="#myCarousel" data-slide="prev">&lsaquo;</a>
+		  <a class="carousel-control right" href="#myCarousel" data-slide="next">&rsaquo;</a>
+		</div>
+	
+	</div>
+	<div class="row-fluid">
+		<div class="section">
+		<a class="btn btn-large" href="/assets/comic/chapter1/APE-Comics_Chapter1.pdf">Download pdf version &raquo;</a>
+		<p>Words by the <a href="http://www.weelya.com/">Weelya</a> team, comics adaptation by John Chavarria. &copy; Weelya 2009<p>
+		<p>This work is licensed under the <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/">Creative Commons Attribution-Noncommercial-Share Alike 3.0 Unported License.</a></p>
+	</div>
+	
+	<div class="section">
+		<h1>Do you want to know more about APE?</h1>
+		<div class="row-fluid">
+			<div class="span3">
+				<h2><small>APE in the wild !</small></h2>
+				<p style="padding-top: 10px;">Watch APE in its natural element. Check out our demos !</p>
+				<a href="/demos/"><div align="center">
+					<img src="/assets/img/ape_demos_home.png" />
+				</div></a>
+			</div>
+			<div class="span3">
+				<h2><small>Learn more about APE !</small></h2>
+				<p>Do you want to know more about the Ajax push technology?</p>
+				<div class="btnblock">
+					<a class="btn btn-large" href="/">Learn more</a>
+				</div>
+			</div>
+			<div class="span3">
+				<h2><small>Get APE !</small></h2>
+				<p>Make something awesome <em><strong>yourself</strong></em>!</p>
+				<div class="btnblock">
+					<a class="btn btn-large btn-success" href="/download/"><i class="icon-download"></i> Download</a>
+				</div>
+			</div>
+			<div class="span3">
+				<h2><small>Open Source</small></h2>
+				<p>APE Server, APE Javascript Framework and the following demos are OpenSource and released under the <a href="https://gnu.org/licenses/old-licenses/gpl-2.0.html">GNU Public Licence version 2</a>.</p>
+			</div>
+		</div>
+	</div>
+	</div>
+</div>

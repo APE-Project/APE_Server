@@ -1,0 +1,75 @@
+&lt;link rel="stylesheet" type="text/css" href="./irc.css" /&gt;
+&lt;script type="text/javaScript" src="../Clients/mootools-core.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="../Clients/MooTools.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="../Clients/config.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="./irc.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="./apeirc.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="./channel.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript"&gt;
+function rand_chars(){
+        var keylist="abcdefghijklmnopqrstuvwxyz"
+                var temp=''
+                var plength=8;
+        for (i=0;i&lt;plength;i++){
+                temp+=keylist.charAt(Math.floor(Math.random()*keylist.length))
+        }
+        return temp;
+   }
+   function setNick(){
+       var nick = $('nick_input').value.replace(' ', '');
+       if(nick.length == 0){
+           alert('Veuillez entrer un login');
+       }else{
+           if( irc_client.setNick(nick.substr(0, 15)) ){
+                var login = $('login');
+                login.set('tween', {duration: 'short'});
+                login.tween('opacity', 0);
+                                setNick = function(){};
+                        }
+       }
+   }
+ 
+   var irc_client = new APE.IrcClient();
+   window.addEvent('domready', function(){
+       $('nick_input').focus();
+       irc_client.load({
+           'domain': APE.Config.domain,
+           'server': APE.Config.server,
+           'identifier':'ircdemo',
+           'scripts': APE.Config.scripts,
+           'complete': function(ape){
+               irc_client.complete();
+           }
+       });
+   });
+&lt;/script&gt;
+&lt;div id="ircchat"&gt;
+	&lt;div id="login"&gt;
+	  &lt;div class="popup"&gt;
+	      &lt;p&gt;Choose a nickname to sign in to IRC on freenode&lt;/p&gt;
+	      Your nickname : &lt;input maxlength="15" id="nick_input" onkeypress="if (event.keyCode == 13) setNick();"  type="text" /&gt; &lt;button onclick="setNick();"&gt;Ok&lt;/button&gt;
+	  &lt;/div&gt;
+	&lt;/div&gt;
+	&lt;div class="header"&gt;
+		&lt;div class="server"&gt;IRC @ freenode&lt;/div&gt;
+		&lt;div id="tabs"&gt;&lt;/div&gt;
+	&lt;/div&gt;
+	&lt;div class="chat"&gt;
+		&lt;div class="texte-zone"&gt;
+			&lt;div id="line"&gt;&nbsp;&lt;/div&gt;
+			&lt;div class="texte" id="history"&gt;&lt;/div&gt;
+		&lt;/div&gt;
+		&lt;div class="list"&gt;
+			&lt;div class="header"&gt;&lt;span id="usr_cnt"&gt;0&lt;/span&gt; users&lt;/span&gt;&lt;/div&gt;
+			&lt;div class="user-list"&gt;
+		    	&lt;div id="user-list"&gt;&lt;/div&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;
+	    &lt;div class="input-zone"&gt;
+	    	&lt;button id="chatButton" onclick="irc_client.sendClick()"&gt;Ok&lt;/button&gt;
+	        &lt;input type="text" id="chat-input" /&gt;
+	        &lt;div class="show-nick"&gt;jchavarria_work&lt;/div&gt;
+	    &lt;/div&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="ape_master_container"&gt;&lt;/div&gt;

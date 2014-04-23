@@ -1,0 +1,12 @@
+var client = new APE.Client();
+
+client.load(); 
+
+client.core.join('testChannel');
+
+client.request.send('foo', {ping: 'ho hey'});
+ 
+client.onRaw('bar', function(raw, pipe) {
+    console.log('echo : ' + raw.data.echo);
+    console.log('Receiving : ' + raw.data.hello);
+});

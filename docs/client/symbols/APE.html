@@ -1,0 +1,4791 @@
+---
+layout: APE
+title: Ape &#58;&#58; Client Documentation &#58;&#58; APE (Ajax Push Engine)
+---
+
+<div id="index">
+	<div class="span3">
+	<div class="well sidebar-nav">
+		<a href="../index.html">Class Index</a> | <a href="../files.html">File Index</a>
+		<h2>Classes</h2>
+		<ul class="nav nav-list classList">
+			
+				<li> 									<i><a href="../symbols/global.html">global</a></i> 								</li> 								<li class="nav-header"> 									<hr/> 								</li>
+			
+				<li><a href="../symbols/APE.html">APE</a></li>
+			
+				<li><a href="../symbols/APE.Client.html">APE.Client</a></li>
+			
+				<li><a href="../symbols/APE.Core.html">APE.Core</a></li>
+			
+				<li><a href="../symbols/APE.Pipe.html">APE.Pipe</a></li>
+			
+				<li><a href="../symbols/APE.PipeMulti.html">APE.PipeMulti</a></li>
+			
+				<li><a href="../symbols/APE.PipeProxy.html">APE.PipeProxy</a></li>
+			
+				<li><a href="../symbols/APE.PipeSingle.html">APE.PipeSingle</a></li>
+			
+				<li><a href="../symbols/APE.Request.html">APE.Request</a></li>
+			
+				<li><a href="../symbols/APE.Request.cycledStack.html">APE.Request.cycledStack</a></li>
+			
+				<li><a href="../symbols/APE.Request.stack.html">APE.Request.stack</a></li>
+			
+				<li><a href="../symbols/APE.Transport.html">APE.Transport</a></li>
+			
+				<li><a href="../symbols/B64.html">B64</a></li>
+			
+				<li><a href="../symbols/Cookie.html">Cookie</a></li>
+			
+				<li><a href="../symbols/String.html">String</a></li>
+			
+		</ul>
+	</div><!--/.well -->
+</div><!--/span-->
+
+</div>
+
+<div class="span9">
+	<div class="row-fluid">
+		<!-- ============================== class title ============================ -->
+		<div class="span6">
+			<h1 class="section classTitle">client 
+			Class APE</h1>
+		</div>
+		<div class="span3" align="center">
+			<img src="/assets/img/promotejsh.gif" width="150px" height="148px"/>
+		</div>
+	</div>
+	<div class="row-fluid">
+		
+		<ul class="nav nav-tabs nav-tabs-pannel">
+			<li class="" id="summary">
+				<a href="#class_summary" data-toggle="tab">Class summary</a>
+			</li>
+			
+				<li class="" id="constructor">
+					<a href="#contructor_details" data-toggle="tab">Constructor</a>
+				</li>
+			
+			
+				<li class="" id="properties">
+					<a href="#property_details" data-toggle="tab">Properties</a>
+				</li>
+			
+			
+				<li class="active" id="methods">
+					<a href="#methods_details" data-toggle="tab">Methods</a>
+				</li>
+			
+			
+				<li class="" id="events">
+					<a href="#events_details" data-toggle="tab">Events</a>
+				</li>
+			
+		</ul>
+		<div class="tab-content">
+			<!-- ============================== class summary ========================== -->
+			<div class="tab-pane  jsdoc-pane" id="class_summary">
+				<a name="class_summary"><h2><span class="variableName">Summary</span></h2></a>
+				
+				
+				
+				
+					<dl class="detailList">
+						<dt class="labelHeading">File</dt>
+						<div class="dline">
+							<dd>&lt;./src/Ape_Jsf/Source/Core/APE.js&gt;</dd>
+						</div>
+					</dl>
+				
+			</div>
+			<!-- ============================== constructor details ==================== -->
+			<div class="tab-pane  jsdoc-pane" id="contructor_details">
+				
+					<div class="details"><a name="constructor"><h2><span class="variableName">APE</span> Class Detail</h2></a>
+						<div class="storageClass">
+							
+							<b>APE</b>
+							
+								(options)
+							
+						</div>
+						
+							<div class="description">
+								Create a new APE instance.
+<p>The constuctor only create a APE instance, to connect to the APE server you need to use the start(); method</p>
+<p>If you want to use APE, do NOT start APE in this way, use APE.load() method instead.</p>
+							</div>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">File:</dt>
+								<div class="dline">
+										<dd>&lt;./src/Ape_Jsf/Source/Core/APE.js&gt;</dd>
+									</div>
+								</dl>
+							
+							
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Parameters:</dt>
+								<div class="dline">
+									
+										<dt>
+											<span class="parameterType">{object} </span>
+											<span class="variableName">options</span>
+											<span class="parameterInfo">
+												
+													<i>Optional</i>
+												
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">An object with ape default options</span></dd>
+									
+										<dt>
+											<span class="parameterType">{string} </span>
+											<span class="variableName">options.server</span>
+											<span class="parameterInfo">
+												
+													<i>Optional</i>
+												
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">APE server URL</span></dd>
+									
+										<dt>
+											<span class="parameterType">{integer} </span>
+											<span class="variableName">options.pollTime</span>
+											<span class="parameterInfo">
+												
+													<i>Optional</i>
+												
+												
+													<i>Default: 25000</i>
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">Max time for a request in ms</span></dd>
+									
+										<dt>
+											<span class="parameterType">{string} </span>
+											<span class="variableName">options.identifier</span>
+											<span class="parameterInfo">
+												
+													<i>Optional</i>
+												
+												
+													<i>Default: 'ape'</i>
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">Identifier used to differentiate two APE instance when you are using more than one application on your website and using Session.js</span></dd>
+									
+										<dt>
+											<span class="parameterType">{integer} </span>
+											<span class="variableName">options.transport</span>
+											<span class="parameterInfo">
+												
+													<i>Optional</i>
+												
+												
+													<i>Default: 1</i>
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">Transport method used by APE,<p>
+  1 : Long polling<br/>
+  2 : XHR streaming<br/>
+  3 : forever iframe<br/>
+  4 : JSONP<br/>
+  6 : Websocket<br/></p></span></dd>
+									
+										<dt>
+											<span class="parameterType">{integer} </span>
+											<span class="variableName">options.frequency</span>
+											<span class="parameterInfo">
+												
+													<i>Optional</i>
+												
+												
+													<i>Default: 0</i>
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">The frequency identifier</span></dd>
+									
+								</div>
+							</dl>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Returns:</dt>
+								<div class="dline">
+									
+										<dd><span class="parameterType">&nbsp</span>
+											<span class="descriptionSummary">APE An Ape instance</span>
+										</dd>
+									
+								</div>
+							</dl>
+						
+						
+						
+						
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Examples</dt>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">var ape = new APE.Core({
+	'server': 'ape.yourdomain.com'
+});</pre>
+									</dd>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">var ape = new APE.Core({
+	'server': 'ape.yourdomain.com',
+	'pollTime': 35000, //if you set pollTime to 35sec you need to set it on the server side to 55sec
+	'identifier': 'myApplicationIdentifier',
+	'transport': 2,
+	'frequency': 3
+});
+ape.start();
+client.addEvent('load', function() {
+	console.log(ape.user.pubid); //Show pubid of current user
+	console.log(ape.user.properties); //Show properties of current user
+}</pre>
+									</dd>
+								
+							</dl>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">See:</dt>
+								<div class="dline">
+									
+										<dd>APE.client
+											
+										</dd>
+									
+										<dd>APE.load
+											
+										</dd>
+									
+										<dd><a href="../symbols/APE.html#static_start">APE.start</a>
+											
+										</dd>
+									
+										<dd>APE.onError
+											
+										</dd>
+									
+										<dd>APE.onRaw
+											
+										</dd>
+									
+								</div>
+							</dl>
+						
+						<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.APE" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+					</div>
+				
+			</div>
+			<!-- ============================== properties ========================================= -->
+			<div class="tab-pane  jsdoc-pane" id="property_details">
+				
+					
+					<ul class="nav nav-tabs nav-tabs-pannel">
+						<li class="active" id="properties_summary_li">
+							<a href="#property_summary" data-toggle="tab" class="nested">Summary</a>
+						</li>
+						
+							
+								<li class="nested" id="client_li">
+									<a href="../symbols/APE.html#client" data-toggle="tab">client</a>
+								</li>
+							
+								<li class="nested" id="core_li">
+									<a href="../symbols/APE.html#core" data-toggle="tab">core</a>
+								</li>
+							
+								<li class="nested" id="request_li">
+									<a href="../symbols/APE.html#request" data-toggle="tab">request</a>
+								</li>
+							
+								<li class="nested" id="transport_li">
+									<a href="../symbols/APE.html#transport" data-toggle="tab">transport</a>
+								</li>
+							
+								<li class="nested" id="version_li">
+									<a href="../symbols/APE.html#version" data-toggle="tab">version</a>
+								</li>
+							
+						
+					</ul>
+					<div class="tab-content">
+						<!-- ============================== properties summary ===================== -->
+						<div class="tab-pane active jsdoc-pane" id="property_summary">
+							<a name="property_summary"><h2><span class="variableName">Summary</span></h2></a>
+							
+								<dl class="detailList">
+									<dt class="labelHeading">Own</dt>
+								</dl>
+								<table class="summaryTable">
+									<thead>
+										<tr>
+											<th>Attributes</th>
+											<th>Type</th>
+											<th>Name</th>
+											<th>Description</th>
+										</tr>
+									</thead>
+									<tbody>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&nbsp;
+													</span>
+												</td>
+												<td>
+													
+														<span class="parameterType">{<a href="../symbols/APE.Client.html">APE.Client</a>}</span>
+													
+													
+												</td>
+												<td>
+													<span class="variableName"><a href="../symbols/APE.html#client" onClick="handleTabLinks('#client'); return false;">client</a></span>
+												</td>
+												<td>
+													<span class="descriptionSummary">
+														Client object
+													</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&nbsp;
+													</span>
+												</td>
+												<td>
+													
+														<span class="parameterType">{<a href="../symbols/APE.Core.html">APE.Core</a>}</span>
+													
+													
+												</td>
+												<td>
+													<span class="variableName"><a href="../symbols/APE.html#core" onClick="handleTabLinks('#core'); return false;">core</a></span>
+												</td>
+												<td>
+													<span class="descriptionSummary">
+														Core object
+													</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&nbsp;
+													</span>
+												</td>
+												<td>
+													
+														<span class="parameterType">{<a href="../symbols/APE.Request.html">APE.Request</a>}</span>
+													
+													
+												</td>
+												<td>
+													<span class="variableName"><a href="../symbols/APE.html#request" onClick="handleTabLinks('#request'); return false;">request</a></span>
+												</td>
+												<td>
+													<span class="descriptionSummary">
+														Request object
+													</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&nbsp;
+													</span>
+												</td>
+												<td>
+													
+														<span class="parameterType">{<a href="../symbols/APE.Transport.html">APE.Transport</a>}</span>
+													
+													
+												</td>
+												<td>
+													<span class="variableName"><a href="../symbols/APE.html#transport" onClick="handleTabLinks('#transport'); return false;">transport</a></span>
+												</td>
+												<td>
+													<span class="descriptionSummary">
+														Transport variant
+													</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&nbsp;
+													</span>
+												</td>
+												<td>
+													
+														<span class="parameterType">{string}</span>
+													
+													
+												</td>
+												<td>
+													<span class="variableName"><a href="../symbols/APE.html#version" onClick="handleTabLinks('#version'); return false;">version</a></span>
+												</td>
+												<td>
+													<span class="descriptionSummary">
+														Version (e.g.
+													</span>
+												</td>
+											</tr>
+										
+									</tbody>
+								</table>
+							
+							
+						</div>
+						<!-- ============================== properties details ===================== -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="client">
+									<h2>
+										<span class="storageClass">
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.Client.html">APE.Client</a>}</span>
+										
+										
+										<a name="client">
+											<span class="variableName">client</span>
+										</a>
+									</h2>
+									
+										<div class="description">
+											Client object
+										</div>
+									
+									
+									
+									
+									
+									
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.client" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								
+									<hr />
+								
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="core">
+									<h2>
+										<span class="storageClass">
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.Core.html">APE.Core</a>}</span>
+										
+										
+										<a name="core">
+											<span class="variableName">core</span>
+										</a>
+									</h2>
+									
+										<div class="description">
+											Core object
+										</div>
+									
+									
+									
+									
+									
+									
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.core" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								
+									<hr />
+								
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="request">
+									<h2>
+										<span class="storageClass">
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.Request.html">APE.Request</a>}</span>
+										
+										
+										<a name="request">
+											<span class="variableName">request</span>
+										</a>
+									</h2>
+									
+										<div class="description">
+											Request object
+										</div>
+									
+									
+									
+									
+									
+									
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.request" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								
+									<hr />
+								
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="transport">
+									<h2>
+										<span class="storageClass">
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.Transport.html">APE.Transport</a>}</span>
+										
+										
+										<a name="transport">
+											<span class="variableName">transport</span>
+										</a>
+									</h2>
+									
+										<div class="description">
+											Transport variant
+										</div>
+									
+									
+									
+									
+									
+									
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.transport" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								
+									<hr />
+								
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="version">
+									<h2>
+										<span class="storageClass">
+										</span>
+										
+											<span class="parameterType">{string}</span>
+										
+										
+										<a name="version">
+											<span class="variableName">version</span>
+										</a>
+									</h2>
+									
+										<div class="description">
+											Version (e.g. 1.1)
+										</div>
+									
+									
+									
+									
+									
+									
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.version" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								
+								</div>
+							
+						
+					</div>
+				
+			</div>
+			<!-- ============================== methods ========================================== -->
+			<div class="tab-pane active jsdoc-pane" id="methods_details">
+				
+					
+					<ul class="nav nav-tabs nav-tabs-pannel">
+					<li class="active"  id="methods_summary_li" class="nested">
+						<a href="#methods_summary" data-toggle="tab">Summary</a>
+					</li>
+					
+						
+							<li class="nested" id="static_addEvent_li">
+								<a href="../symbols/APE.html#static_addEvent" data-toggle="tab">addEvent</a>
+							</li>
+						
+							<li class="nested" id="static_check_li">
+								<a href="../symbols/APE.html#static_check" data-toggle="tab">check</a>
+							</li>
+						
+							<li class="nested" id="static_clearSession_li">
+								<a href="../symbols/APE.html#static_clearSession" data-toggle="tab">clearSession</a>
+							</li>
+						
+							<li class="nested" id="static_fireEvent_li">
+								<a href="../symbols/APE.html#static_fireEvent" data-toggle="tab">fireEvent</a>
+							</li>
+						
+							<li class="nested" id="static_getPipe_li">
+								<a href="../symbols/APE.html#static_getPipe" data-toggle="tab">getPipe</a>
+							</li>
+						
+							<li class="nested" id="static_getSession_li">
+								<a href="../symbols/APE.html#static_getSession" data-toggle="tab">getSession</a>
+							</li>
+						
+							<li class="nested" id="static_init_li">
+								<a href="../symbols/APE.html#static_init" data-toggle="tab">init</a>
+							</li>
+						
+							<li class="nested" id="static_join_li">
+								<a href="../symbols/APE.html#static_join" data-toggle="tab">join</a>
+							</li>
+						
+							<li class="nested" id="static_left_li">
+								<a href="../symbols/APE.html#static_left" data-toggle="tab">left</a>
+							</li>
+						
+							<li class="nested" id="static_quit_li">
+								<a href="../symbols/APE.html#static_quit" data-toggle="tab">quit</a>
+							</li>
+						
+							<li class="nested" id="static_removeEvent_li">
+								<a href="../symbols/APE.html#static_removeEvent" data-toggle="tab">removeEvent</a>
+							</li>
+						
+							<li class="nested" id="static_setSession_li">
+								<a href="../symbols/APE.html#static_setSession" data-toggle="tab">setSession</a>
+							</li>
+						
+							<li class="nested" id="static_start_li">
+								<a href="../symbols/APE.html#static_start" data-toggle="tab">start</a>
+							</li>
+						
+					
+				</ul>
+				<div class="tab-content">
+					<!-- ============================== method summary ===================== -->
+					<div class="tab-pane active active jsdoc-pane" id="methods_summary">
+						<a name="methods_summary"><h2><span class="variableName">Summary</span></h2></a>
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Own</dt>
+							</dl>
+							<table class="summaryTable">
+								<thead>
+									<tr>
+										<th>Methods Attributes</th>
+										<th>Methods Name</th>
+										<th>Methods Description</th>
+									</tr>
+								</thead>
+								<tbody>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_addEvent" onClick="handleTabLinks('#static_addEvent'); return false;">addEvent</a></span>
+													(eventName, fn, internal)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Intercept an event.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_check" onClick="handleTabLinks('#static_check'); return false;">check</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Send a CHECK cmd to the server.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_clearSession" onClick="handleTabLinks('#static_clearSession'); return false;">clearSession</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Clear the sessions, clean timer, remove cookies, remove events, stop all running requests, reset sissd and pubid
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_fireEvent" onClick="handleTabLinks('#static_fireEvent'); return false;">fireEvent</a></span>
+													(eventName, args, delay)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Fire a event manually.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_getPipe" onClick="handleTabLinks('#static_getPipe'); return false;">getPipe</a></span>
+													(pubid)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Get a pipe object
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_getSession" onClick="handleTabLinks('#static_getSession'); return false;">getSession</a></span>
+													(key, fn)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Retrieves a value from the session on the APE server.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_init" onClick="handleTabLinks('#static_init'); return false;">init</a></span>
+													(config)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Ape initialiser
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_join" onClick="handleTabLinks('#static_join'); return false;">join</a></span>
+													(channel)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Join one or many channels.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_left" onClick="handleTabLinks('#static_left'); return false;">left</a></span>
+													(pubid)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Leave (unsubscribe) a channel and fire the pipeDelete
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_quit" onClick="handleTabLinks('#static_quit'); return false;">quit</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Exit APE
+<p>Sends a QUIT CMD and clears the sessions</p>
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_removeEvent" onClick="handleTabLinks('#static_removeEvent'); return false;">removeEvent</a></span>
+													(eventName, fn)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Stop watching a event
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_setSession" onClick="handleTabLinks('#static_setSession'); return false;">setSession</a></span>
+													(key, value)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Save a sesion variable on the APE server.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.html#static_start" onClick="handleTabLinks('#static_start'); return false;">start</a></span>
+													(args, options)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Initiate a connection to a APE server.
+												</span>
+											</td>
+										</tr>
+									
+								</tbody>
+							</table>
+							
+							
+						</div>
+						<!-- ============================== method details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_addEvent">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.html">APE</a>}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_addEvent">
+												<span class="variableName">addEvent</span>
+											(eventName, fn, internal)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Intercept an event.
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Clients/MooTools.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">eventName</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">Event to listen to.</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{function} </span>
+														<span class="variableName">fn</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The function that will be executed upon this named event</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{boolean} </span>
+														<span class="variableName">internal</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Flag to hide the function</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.html">APE</a>} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//Initialize client
+client = new APE.Client();
+client.load({
+	'domain': 'yourdomain.com',
+	'server': 'ape.yourdomain.com',
+	'baseUrl': 'yourdomain.com/APEJavaScript'
+});
+//Load event is fired when the client is loaded
+client.addEvent('load', function() {
+	console.log('APE is loaded');
+	//Ok my client is loaded, now i can send data to my APE server
+	//Connect to the APE server
+	client.core.start();
+});
+//Init event is fired when the client is connected to APE server
+client.addEvent('init', function() {
+	console.log('APE is connected');
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_addEvent">APE.addEvent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_fireEvent">APE.fireEvent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.Pipe.html#static_addEvent">APE.Pipe.addEvent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_removeEvent">APE.removeEvent</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.addEvent" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_check">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_check">
+												<span class="variableName">check</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Send a CHECK cmd to the server.
+<p>Note: this is automatically done and can be configured by the pollTime option parameter.
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">var ape = new APE.Core({
+'pollTime': 35000, //if you set pollTime to 35sec you need to set it on the server side to 55sec
+'identifier': 'myApplicationIdentifier',
+});
+ape.start();
+// obsessive check
+setInterval(function(){
+	ape.check();
+}, 1000);</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html">APE</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.check" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_clearSession">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_clearSession">
+												<span class="variableName">clearSession</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Clear the sessions, clean timer, remove cookies, remove events, stop all running requests, reset sissd and pubid
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Error 004 is fired when you sent a bad sessid (this can happen if the client experience some connection issue longer than 45sec)
+ape.onError('004', function() {
+	ape.clearSession();
+	ape.initialize(ape.options); //Reinitialize APE class
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_quit">APE.quit</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_getSession">APE.getSession</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_setSession">APE.setSession</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.clearSession" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_fireEvent">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.html">APE</a>}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_fireEvent">
+												<span class="variableName">fireEvent</span>
+											(eventName, args, delay)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Fire a event manually.
+<p>Executes all events of the specified type present on the APE core and Pipes.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Clients/MooTools.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">eventName</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">Event to launch (eg 'load').</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{Array|object} </span>
+														<span class="variableName">args</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The arguments for the appropiate event callbacks</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{integer} </span>
+														<span class="variableName">delay</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Delay in ms before the event should be fired</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.html">APE</a>} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//fire the event "myEvent" with arguments "argument1" and "argument2" and delay it of 1sec
+ape.fireEvent('myEvent', ['argument1', 'argument2'], 1000);</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_fireEvent">APE.fireEvent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_addEvent">APE.addEvent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.Pipe.html#static_addEvent">APE.Pipe.addEvent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.Pipe.html#static_fireGlobalEvent">APE.Pipe.fireGlobalEvent</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.fireEvent" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_getPipe">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{object}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_getPipe">
+												<span class="variableName">getPipe</span>
+											(pubid)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Get a pipe object
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">pubid</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The pubid of the pipe</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="descriptionSummary">A. pipe object or null</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Get a pipe
+var myPipe = ape.getPipe('a852c20b3e5c9889c16fe4ac88abe98f');
+//Send a message on the pipe
+myPipe.send('Hello world');</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//getPipe on Multi Pipe
+//ape var is a reference to APE instance
+ape.join('testChannel');
+//This sample is just here to show you how to intercept pipe pubid in pipeCreate event
+ape.addEvent('multiPipeCreate', function(type, pipe, options) {
+	//Get the pipe object
+	var myPubid = ape.getPipe(pipe.getPubid());
+	//Send a message on the pipe
+	 myPipe.send('Hello world');
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//ape var is a reference to APE instance
+ape.join('testChannel');
+ape.addEvent('userJoin', function(user, pipe) {
+	//For performance purpose, user are not pipe in APE JSF. If you want to have a pipe from an user, use getPipe.
+	//Transform all user into a pipe object
+	var pipe = ape.getPipe(user.pubid);
+	//Send 'Hello world' to the user
+	pipe.send('Hello world');
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.Pipe.html">APE.Pipe</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.getPipe" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_getSession">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_getSession">
+												<span class="variableName">getSession</span>
+											(key, fn)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Retrieves a value from the session on the APE server.
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string|Array} </span>
+														<span class="variableName">key</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The key(s) to retrieve</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{function} </span>
+														<span class="variableName">fn</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">Callback function to execute when the sessions is received. One arguments is passed to the callback function with the response of the server.</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+	ape.setSession({'myKey1':'myValue','myKey2':'myValue2'});
+	ape.getSession('myKey', function(resp) {
+		console.log(resp.datas.sessions.myKey);
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.setSession({'myKey':'["A Json array", "Value 2"]'});
+ape.getSession('myKey', function(resp) {
+	//decode the received data, and use eval to dedode the data
+	console.log(eval(decodeURIComponent(resp.datas.sessions.myKey)));
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_setSession">APE.setSession</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_clearSession">APE.clearSession</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.getSession" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_init">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_init">
+												<span class="variableName">init</span>
+											(config)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Ape initialiser
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">config</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">Configuration object</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.Core.html">APE.Core</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.Client.html">APE.Client</a>
+														
+													</dd>
+												
+													<dd>APE.load
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_start">APE.start</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.init" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_join">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_join">
+												<span class="variableName">join</span>
+											(channel)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Join one or many channels.
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string|Array} </span>
+														<span class="variableName">channel</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The channel(s) to join</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.join('testchannel'); //Join channel "testchannel"
+//ape var is a reference to APE instance
+ape.join(['channel1', 'channel2']); //Join channels "channel1" and "channel2"</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_left">APE.left</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.join" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_left">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_left">
+												<span class="variableName">left</span>
+											(pubid)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Leave (unsubscribe) a channel and fire the pipeDelete
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">pubid</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The pubid of the channel</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Join testchannel
+ape.join('testchannel');
+//Intercept pipeCreate event (this event is fired when you join a channel)
+ape.addEvent('multiPipeCreate', function(pipe, options) {
+if (pipe.properties.name=='teschannel') {
+	//If pipe is testchannel, left it :p
+	ape.left(pipe.getPubid());
+	}
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_join">APE.join</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.left" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_quit">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_quit">
+												<span class="variableName">quit</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Exit APE
+<p>Sends a QUIT CMD and clears the sessions</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.quit();</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_clearSession">APE.clearSession</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.quit" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_removeEvent">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.html">APE</a>}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_removeEvent">
+												<span class="variableName">removeEvent</span>
+											(eventName, fn)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Stop watching a event
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Clients/MooTools.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">eventName</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The name of the event (e.g. 'login', 'data');</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{function} </span>
+														<span class="variableName">fn</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">For internal functions?</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.html">APE</a>} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Intercept login raw.
+ape.onRaw('level10', function(param) {
+	ape.removeEvent('level9');
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_addEvent">APE.addEvent</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.removeEvent" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_setSession">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_setSession">
+												<span class="variableName">setSession</span>
+											(key, value)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Save a sesion variable on the APE server.
+<p>Adds a key-value pair to the session on the APE server or replaces a previous value associated with the specified key.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">key</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The key</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">value</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The value that will be associated with that key</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.setSession({'myKey1':'myValue','myKey2':'myValue2'});
+ape.getSession('myKey', function() {
+	console.log(resp.datas.sessions.myKey1);
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.setSession({'myKey':'["A Json array", "Value 2"]'});
+ape.getSession('myKey', function(response) {
+//decode the received data, and use eval to dedode the data
+console.log(eval(decodeURIComponent(response.datas.sessions.myKey)));
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_getSession">APE.getSession</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_clearSession">APE.clearSession</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.setSession" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_start">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_start">
+												<span class="variableName">start</span>
+											(args, options)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Initiate a connection to a APE server.
+<p>If there is an instance of APE present (created via APE.Core()), it can be connected to the server with the start method. The prefered way is to make the connection with APE.load() method.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Core.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">args</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">Connection arguments</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">Connection options (e.g.  'channel')</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ ape.start(); //Send CONNECT command to APE.</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//If you use APE with libape-chat you need to send your nickname in the CONNECT request
+ape.start('myNickname'); //Send CONNECT command with a nickname to APE and tries to join the optional channel</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.load
+														
+													</dd>
+												
+													<dd>APE.restoreStart
+														
+													</dd>
+												
+													<dd>APE.restoreEnd
+														
+													</dd>
+												
+													<dd>APE.apeDisconnect
+														
+													</dd>
+												
+													<dd>APE.apeReconnect
+														
+													</dd>
+												
+													<dd>APE.ready
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.start" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+			<!-- ============================== events summary ======================== -->
+			<div class="tab-pane  jsdoc-pane" id="events_details">
+				
+					
+					
+						<ul class="nav nav-tabs nav-tabs-pannel">
+							<li class="active" id="events_summary_li" class="nested">
+								<a href="#events_summary" data-toggle="tab">Event summary</a>
+							</li>
+							
+								<li class="nested" id="static_event_apeDisconnect_li">
+									<a href="../symbols/APE.html#static_event_apeDisconnect" data-toggle="tab">apeDisconnect</a>
+								</li>
+							
+								<li class="nested" id="static_event_apeReconnect_li">
+									<a href="../symbols/APE.html#static_event_apeReconnect" data-toggle="tab">apeReconnect</a>
+								</li>
+							
+								<li class="nested" id="static_event_clearSession_li">
+									<a href="../symbols/APE.html#static_event_clearSession" data-toggle="tab">clearSession</a>
+								</li>
+							
+								<li class="nested" id="static_event_load_li">
+									<a href="../symbols/APE.html#static_event_load" data-toggle="tab">load</a>
+								</li>
+							
+								<li class="nested" id="static_event_multiPipeCreate_li">
+									<a href="../symbols/APE.html#static_event_multiPipeCreate" data-toggle="tab">multiPipeCreate</a>
+								</li>
+							
+								<li class="nested" id="static_event_multiPipeDelete_li">
+									<a href="../symbols/APE.html#static_event_multiPipeDelete" data-toggle="tab">multiPipeDelete</a>
+								</li>
+							
+								<li class="nested" id="static_event_onCmd_li">
+									<a href="../symbols/APE.html#static_event_onCmd" data-toggle="tab">onCmd</a>
+								</li>
+							
+								<li class="nested" id="static_event_onError_li">
+									<a href="../symbols/APE.html#static_event_onError" data-toggle="tab">onError</a>
+								</li>
+							
+								<li class="nested" id="static_event_onRaw_li">
+									<a href="../symbols/APE.html#static_event_onRaw" data-toggle="tab">onRaw</a>
+								</li>
+							
+								<li class="nested" id="static_event_PipeDelete_li">
+									<a href="../symbols/APE.html#static_event_PipeDelete" data-toggle="tab">PipeDelete</a>
+								</li>
+							
+								<li class="nested" id="static_event_progress_li">
+									<a href="../symbols/APE.html#static_event_progress" data-toggle="tab">progress</a>
+								</li>
+							
+								<li class="nested" id="static_event_proxyClose_li">
+									<a href="../symbols/APE.html#static_event_proxyClose" data-toggle="tab">proxyClose</a>
+								</li>
+							
+								<li class="nested" id="static_event_proxyConnect_li">
+									<a href="../symbols/APE.html#static_event_proxyConnect" data-toggle="tab">proxyConnect</a>
+								</li>
+							
+								<li class="nested" id="static_event_proxyPipeCreate_li">
+									<a href="../symbols/APE.html#static_event_proxyPipeCreate" data-toggle="tab">proxyPipeCreate</a>
+								</li>
+							
+								<li class="nested" id="static_event_proxyRead_li">
+									<a href="../symbols/APE.html#static_event_proxyRead" data-toggle="tab">proxyRead</a>
+								</li>
+							
+								<li class="nested" id="static_event_ready_li">
+									<a href="../symbols/APE.html#static_event_ready" data-toggle="tab">ready</a>
+								</li>
+							
+								<li class="nested" id="static_event_restoreEnd_li">
+									<a href="../symbols/APE.html#static_event_restoreEnd" data-toggle="tab">restoreEnd</a>
+								</li>
+							
+								<li class="nested" id="static_event_restoreStart_li">
+									<a href="../symbols/APE.html#static_event_restoreStart" data-toggle="tab">restoreStart</a>
+								</li>
+							
+								<li class="nested" id="static_event_uniPipeCreate_li">
+									<a href="../symbols/APE.html#static_event_uniPipeCreate" data-toggle="tab">uniPipeCreate</a>
+								</li>
+							
+								<li class="nested" id="static_event_userJoin_li">
+									<a href="../symbols/APE.html#static_event_userJoin" data-toggle="tab">userJoin</a>
+								</li>
+							
+								<li class="nested" id="static_event_userLeft_li">
+									<a href="../symbols/APE.html#static_event_userLeft" data-toggle="tab">userLeft</a>
+								</li>
+							
+						</ul>
+					
+					<div class="tab-content">
+						<!-- ============================== events summary ======================== -->
+						<div class="tab-pane active active jsdoc-pane" id="events_summary">
+							<a name="events_summary"><h2><span class="variableName">Summary</span></h2></a>
+							
+								<dl class="detailList">
+									<dt class="labelHeading">Own</dt>
+								</dl>
+								<table class="summaryTable">
+									<thead>
+										<tr>
+											<th>Attributes</th>
+											<th>Name</th>
+											<th>Description</th>
+										</tr>
+									</thead>
+									<tbody>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_apeDisconnect" onClick="handleTabLinks('#static_event_apeDisconnect'); return false;">apeDisconnect</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Events sent when client apeDisconnect.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_apeReconnect" onClick="handleTabLinks('#static_event_apeReconnect'); return false;">apeReconnect</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Events sent when client apeDisconnect.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_clearSession" onClick="handleTabLinks('#static_event_clearSession'); return false;">clearSession</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Events sent when the session is cleared.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_load" onClick="handleTabLinks('#static_event_load'); return false;">load</a></span>
+													(options)
+												</td>
+												<td>
+													<span class="descriptionSummary">Load the APE client.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_multiPipeCreate" onClick="handleTabLinks('#static_event_multiPipeCreate'); return false;">multiPipeCreate</a></span>
+													(pipe, options)
+												</td>
+												<td>
+													<span class="descriptionSummary">Event fired when a new Multi Pipe is created.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_multiPipeDelete" onClick="handleTabLinks('#static_event_multiPipeDelete'); return false;">multiPipeDelete</a></span>
+													(pipe)
+												</td>
+												<td>
+													<span class="descriptionSummary">Event fired when a Multi Pipe is deleted.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_onCmd" onClick="handleTabLinks('#static_event_onCmd'); return false;">onCmd</a></span>
+													(commandName, fn, internal)
+												</td>
+												<td>
+													<span class="descriptionSummary">Intercept an server command (CMD).</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_onError" onClick="handleTabLinks('#static_event_onError'); return false;">onError</a></span>
+													(errorCode, fn, internal)
+												</td>
+												<td>
+													<span class="descriptionSummary">Intercept an error event.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_onRaw" onClick="handleTabLinks('#static_event_onRaw'); return false;">onRaw</a></span>
+													(rawName, fn, internal)
+												</td>
+												<td>
+													<span class="descriptionSummary">Intercept an server raw (RAW).</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_PipeDelete" onClick="handleTabLinks('#static_event_PipeDelete'); return false;">PipeDelete</a></span>
+													(pipeType)
+												</td>
+												<td>
+													<span class="descriptionSummary">Event sent when a pipe is deleted</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_progress" onClick="handleTabLinks('#static_event_progress'); return false;">progress</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Progress on a XHRStreaming request</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_proxyClose" onClick="handleTabLinks('#static_event_proxyClose'); return false;">proxyClose</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Event sent when the proxy close the connection.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_proxyConnect" onClick="handleTabLinks('#static_event_proxyConnect'); return false;">proxyConnect</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Event sent when the client is connected to the proxy.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_proxyPipeCreate" onClick="handleTabLinks('#static_event_proxyPipeCreate'); return false;">proxyPipeCreate</a></span>
+													(pipe, options)
+												</td>
+												<td>
+													<span class="descriptionSummary">Event fired when a new Proxy Pipe is created.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_proxyRead" onClick="handleTabLinks('#static_event_proxyRead'); return false;">proxyRead</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Event sent when the client received data from the proxy.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_ready" onClick="handleTabLinks('#static_event_ready'); return false;">ready</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Event sent when the client is connected to the APE server.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_restoreEnd" onClick="handleTabLinks('#static_event_restoreEnd'); return false;">restoreEnd</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Event sent when the session restore begin.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_restoreStart" onClick="handleTabLinks('#static_event_restoreStart'); return false;">restoreStart</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Event sent when the session restore begin.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_uniPipeCreate" onClick="handleTabLinks('#static_event_uniPipeCreate'); return false;">uniPipeCreate</a></span>
+													(pipe, options)
+												</td>
+												<td>
+													<span class="descriptionSummary">Event fired when a new Uni Pipe is created.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_userJoin" onClick="handleTabLinks('#static_event_userJoin'); return false;">userJoin</a></span>
+													(user, pipe)
+												</td>
+												<td>
+													<span class="descriptionSummary">Event fired when a user joins a channel
+<p>This event is fired both on core and pipe the user joined</p></span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															APE.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/APE.html#static_event_userLeft" onClick="handleTabLinks('#static_event_userLeft'); return false;">userLeft</a></span>
+													(user, pipe)
+												</td>
+												<td>
+													<span class="descriptionSummary">Event fired when a user left a channel
+<p>This event is fired both on core and pipe the user joined</p></span>
+												</td>
+											</tr>
+										
+									</tbody>
+								</table>
+							
+							
+						</div>
+						<!-- ============================== event details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_apeDisconnect">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_apeDisconnect">
+											<span class="variableName">apeDisconnect</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Events sent when client apeDisconnect.
+<p>This events is sent when the client is apeDisconnect from the server in the case of connection timeout or request failure.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.load
+														
+													</dd>
+												
+													<dd>APE.restoreStart
+														
+													</dd>
+												
+													<dd>APE.restoreEnd
+														
+													</dd>
+												
+													<dd>APE.apeDisconnect
+														
+													</dd>
+												
+													<dd>APE.apeReconnect
+														
+													</dd>
+												
+													<dd>APE.ready
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.apeDisconnect" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_apeReconnect">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_apeReconnect">
+											<span class="variableName">apeReconnect</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Events sent when client apeDisconnect.
+<p>This events is sent when the client is apeDisconnect from the server in the case of connection timeout or request fail</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.load
+														
+													</dd>
+												
+													<dd>APE.restoreStart
+														
+													</dd>
+												
+													<dd>APE.restoreEnd
+														
+													</dd>
+												
+													<dd>APE.apeDisconnect
+														
+													</dd>
+												
+													<dd>APE.apeReconnect
+														
+													</dd>
+												
+													<dd>APE.ready
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.apeReconnect" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_clearSession">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_clearSession">
+											<span class="variableName">clearSession</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Events sent when the session is cleared.
+<p>This events is sent when the clearSession(); method is called.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Requires:</dt>
+											<div class="dline">
+												
+													<dd>Source/Core/Session.js</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.clearSession" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_load">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_load">
+											<span class="variableName">load</span>
+											(options)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Load the APE client.
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">An object with ape default options</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">options.server</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">APE server URL</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">options.domain</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Your domain, eg : yourdomain.com</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">options.identifier</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">defaults to : ape identifier is used to differentiate two APE instance when you are using more than one application on your website and using Session.js</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{Array} </span>
+														<span class="variableName">options.scripts</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Javascript files to load</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">options.channel</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Initial channel to connect to upon loading</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options.connectOptions</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">An object with connect arguments to send to APE server on connect. If given, as soon as APE Core is loaded, it connect to APE server with arguments given in connectOptions.</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//Initialize client
+client = new APE.Client();
+client.load();
+client.addEvent('load', function() {
+	console.log('Your APE client is loaded');
+	client.core.start({'name': 'apeUser'});
+});
+client.addEvent('start', function() {
+	console.log('You are connected to APE server. Now you can takeover the world');
+};</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//Initialize client
+client = new APE.Client();
+//Load APE Core and connect to server
+client.load({
+	'domain': 'yourdomain.com',
+	'server': 'ape.yourdomain.com',
+	'scripts': ['yourdomain.com/APE_JSF/Build/uncompressed/apeCore.js'],
+	'connectOptions': {'name': 'anotherApeUser'}
+});
+client.addEvent('start', function() {
+	console.log('You are connected to APE server. Now you can takeover the world');
+};</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.Core.html">APE.Core</a>
+														
+													</dd>
+												
+													<dd>APE.Core.start
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.load" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_multiPipeCreate">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_multiPipeCreate">
+											<span class="variableName">multiPipeCreate</span>
+											(pipe, options)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event fired when a new Multi Pipe is created.
+<p>A new Multi Pipe is created when you successfully joined a channel.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{APE.pipe} </span>
+														<span class="variableName">pipe</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The pipe object.</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The options that were passed to the constructor of the pipe.</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.join('testChannel');
+//Intercept multiPipeCreate event
+ape.addEvent('multiPipeCreate', function(pipe, options) {
+	console.log('A new Multi pipe is created. Pipe object : ', pipe);
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.uniPipeCreate
+														
+													</dd>
+												
+													<dd>APE.proxyPipeCreate
+														
+													</dd>
+												
+													<dd>APE.pipeDelete
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.PipeMulti.html#static_getUser">APE.PipeMulti.getUser</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.PipeMulti.html#static_left">APE.PipeMulti.left</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.PipeMulti.html#static_users">APE.PipeMulti.users</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.multiPipeCreate" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_multiPipeDelete">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_multiPipeDelete">
+											<span class="variableName">multiPipeDelete</span>
+											(pipe)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event fired when a Multi Pipe is deleted. A pipe is deleted when you leave it.
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.Pipe.html">APE.Pipe</a>} </span>
+														<span class="variableName">pipe</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The pipe object</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Join testchannel
+ape.join('testchannel');
+//Intercept pipeCreate event (this event is fired when you join a channel)
+ape.addEvent('multiPipeCreate', function(pipe, options) {
+	if (pipe.properties.name=='teschannel') {
+		//If pipe is testchannel, left it :p
+		pipe.left(pipe.getPubid());//This will fire the event multiPipeDelete
+	}
+});
+ape.addEvent('multiPipeDelete', function(pipe) {
+	console.log('pipe ' + pipe.properties.name + ' have been deleted')
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_left">APE.left</a>
+														
+													</dd>
+												
+													<dd>APE.PipeDelete
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.multiPipeDelete" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_onCmd">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.html">APE</a>}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_onCmd">
+											<span class="variableName">onCmd</span>
+											(commandName, fn, internal)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Intercept an server command (CMD).
+<p>Execute a function when a command is sent and pass to the function the arguments sent to APE server.</p>
+<p>If the sent raw is related to a pipe (e.g : you sent data to a channel) the first arguments will be a pipe object.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">commandName</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The name of the command (e.g. 'connect', 'send');</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{function} </span>
+														<span class="variableName">fn</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The function to execute upon sending such a command to the server</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">fn.args</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">An object containing all data that was send to the server</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">fn.pipe</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">If the request is made on a pipe (e.g : you sent data to a channel) the second argument will be a pipe object.</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{boolean} </span>
+														<span class="variableName">internal</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Flag to hide the function</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.html">APE</a>} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">///client var is a reference to APE.Client instance
+//start(); method is used to connect to APE.
+client.core.start();
+//Intercept connect command (connect command is used to initiate connection to APE server)
+client.onCmd('connect', function() {
+	console.log('Connect command sent');
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//client var is a reference to APE.Client instance
+//Intercept send command (send command is used to send data to a pipe)
+client.onCmd('send', function(pipe, data) {
+	console.log('You sent ' + data.msg + ' to pipe with pubid' + pipe.getPubid());
+});
+//Intercept pipeCreate event (when a new pipe is created)
+client.addEvent('pipeCreate', function(type, pipe, options) {
+	//send a message on the pipe ("complex" way)
+	pipe.request.send('SEND', 'Hello');
+	//Sending a message could also be done more easily with this code
+	pipe.send('Hello again!');
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.Pipe.onCmd
+														
+													</dd>
+												
+													<dd>APE.onRaw
+														
+													</dd>
+												
+													<dd>APE.Pipe.onRaw
+														
+													</dd>
+												
+													<dd>APE.onError
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.onCmd" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_onError">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.html">APE</a>}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_onError">
+											<span class="variableName">onError</span>
+											(errorCode, fn, internal)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Intercept an error event.
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{integer} </span>
+														<span class="variableName">errorCode</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The errorCode that was received (e.g. 004);</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{function} </span>
+														<span class="variableName">fn</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The function to execute upon receiving such an errorcode</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{boolean} </span>
+														<span class="variableName">internal</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Flag to hide the function</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.html">APE</a>} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//Instantiate APE Client.
+var client = new APE.Client();
+//Error 004 is when the user send a bad sessid
+client.onError('004', function() {
+	alert('Bad sessid');
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.onError" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_onRaw">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/APE.html">APE</a>}</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_onRaw">
+											<span class="variableName">onRaw</span>
+											(rawName, fn, internal)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Intercept an server raw (RAW).
+<p>Execute a function when a raw is received and pass to the function the data received from the server.</p>
+<p>If the received raw is related to a pipe (e.g : you receive data from a channel) the second arguments will be a pipe object.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">rawName</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The name of the raw (e.g. 'login', 'data');</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{function} </span>
+														<span class="variableName">fn</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The function to execute upon sending such a command to the server</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">fn.args</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">An object containing all data that was send to the server</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">fn.pipe</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">If the request is made on a pipe (e.g : you sent data to a channel) the second argument will be a pipe object.</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{boolean} </span>
+														<span class="variableName">internal</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Flag to hide the function</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.html">APE</a>} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Intercept data raw (when you receive data from a channel)
+ape.onRaw('data', function(param, pipe) {
+	alert('You received : ' + param.data.msg + ' on pipe ' + pipe.properties.name);
+	//Send some data to the channel
+	pipe.send('Hey i just received ' + param.data.msg + '!');
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.Pipe.onRaw
+														
+													</dd>
+												
+													<dd>APE.onCmd
+														
+													</dd>
+												
+													<dd>APE.Pipe.onCmd
+														
+													</dd>
+												
+													<dd>APE.onError
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.onRaw" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_PipeDelete">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_PipeDelete">
+											<span class="variableName">PipeDelete</span>
+											(pipeType)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event sent when a pipe is deleted
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{integer} </span>
+														<span class="variableName">pipeType</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The type of the pipe (can be uni / multi / proxy)</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Join testchannel
+ape.join('testchannel');
+//Intercept pipeCreate event (this event is fired when you join a channel)
+ape.addEvent('pipeCreate', function(type, pipe, options) {
+	if (pipe.properties.name=='teschannel') {
+		//If pipe is testchannel, left it :p
+		pipe.left(pipe.getPubid());
+	}
+});
+//Intercept the pipeDelete event
+ape.addEvent('pipeDelete', function(type, pipe) {
+	console.log('you just left the pipe ', pipe);
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.html#static_left">APE.left</a>
+														
+													</dd>
+												
+													<dd>APE.multiPipeDelete
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.PipeDelete" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_progress">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_progress">
+											<span class="variableName">progress</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Progress on a XHRStreaming request
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Transport/Transport.XHRStreaming.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.progress" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_proxyClose">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_proxyClose">
+											<span class="variableName">proxyClose</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event sent when the proxy close the connection.
+<p>This is a global event.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.proxyClose" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_proxyConnect">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_proxyConnect">
+											<span class="variableName">proxyConnect</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event sent when the client is connected to the proxy.
+<p>This is a global event.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.proxyConnect" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_proxyPipeCreate">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_proxyPipeCreate">
+											<span class="variableName">proxyPipeCreate</span>
+											(pipe, options)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event fired when a new Proxy Pipe is created.
+<p>A new Proxy Pïpe is created in two cases :</p>
+<ul>
+<li>If you use TCP socket interface, the Proxy Pipe is created when the socket is initialized.</li>
+<li>When you explicitly create a new Proxy Pipe with new APE.ProxyPipe();</li></ul></p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{APE.pipe} </span>
+														<span class="variableName">pipe</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The pipe object.</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The options that were passed to the constructor of the pipe.</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.uniPipeCreate
+														
+													</dd>
+												
+													<dd>APE.proxyPipeCreate
+														
+													</dd>
+												
+													<dd>APE.proxyClose
+														
+													</dd>
+												
+													<dd>APE.proxyConnect
+														
+													</dd>
+												
+													<dd>APE.pipeDelete
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.proxyPipeCreate" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_proxyRead">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_proxyRead">
+											<span class="variableName">proxyRead</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event sent when the client received data from the proxy.
+<p>This is a global event.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.proxyRead" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_ready">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_ready">
+											<span class="variableName">ready</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event sent when the client is connected to the APE server.
+<p>This event is sent when the client is connected to the APE server, just after the login (start(); method);</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.load
+														
+													</dd>
+												
+													<dd>APE.restoreStart
+														
+													</dd>
+												
+													<dd>APE.restoreEnd
+														
+													</dd>
+												
+													<dd>APE.apeDisconnect
+														
+													</dd>
+												
+													<dd>APE.apeReconnect
+														
+													</dd>
+												
+													<dd>APE.ready
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.ready" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_restoreEnd">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_restoreEnd">
+											<span class="variableName">restoreEnd</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event sent when the session restore begin.
+<p>This event sent when the session restore has finished.</p>
+<p>The session restore is automatically handled by the JSF if you include Session.js in your APE JSF.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Requires:</dt>
+											<div class="dline">
+												
+													<dd>Source/Core/Session.js</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.restoreEnd" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_restoreStart">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_restoreStart">
+											<span class="variableName">restoreStart</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event sent when the session restore begin.
+<p>This event sent when the session restore begin.</p>
+<p>The session restore is automatically handled by the JSF if you include Session.js in your APE JSF.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Requires:</dt>
+											<div class="dline">
+												
+													<dd>Source/Core/Session.js</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.restoreStart" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_uniPipeCreate">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_uniPipeCreate">
+											<span class="variableName">uniPipeCreate</span>
+											(pipe, options)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event fired when a new Uni Pipe is created.
+<p>This event is fired when a new Uni Pipe is created. A new Uni Pipe is created when you call getPipe with the pubid of an user.</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{APE.pipe} </span>
+														<span class="variableName">pipe</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The pipe object.</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The options that were passed to the constructor of the pipe.</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.join('testChannel');
+ape.addEvent('userJoin', function(user, pipe) {
+	//For performance purpose, user are not pipe in APE JSF. If you want to have a pipe from an user, use getPipe.
+	//Transform all user into a pipe object
+	var pipe = ape.getPipe(user.pubid);
+});
+ape.addEvent('uniPipeCreate', function(pipe, options) {
+//Send 'Hello world' to the user
+	pipe.send('Hello world');
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.multiPipeCreate
+														
+													</dd>
+												
+													<dd>APE.proxyPipeCreate
+														
+													</dd>
+												
+													<dd>APE.pipeDelete
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.uniPipeCreate" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_userJoin">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_userJoin">
+											<span class="variableName">userJoin</span>
+											(user, pipe)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event fired when a user joins a channel
+<p>This event is fired both on core and pipe the user joined</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">user</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The user that joined</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.Pipe.html">APE.Pipe</a>} </span>
+														<span class="variableName">pipe</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The pipe that is involved</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.addEvent('userJoin', function (user, pipe) {
+	//An user join the channel
+	console.log('the user ' + user.properties.name + ' join the channel ' + pipe.properties.name);
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Join two channel
+ape.join(['channel1', 'channel2']);
+ape.addEvent('pipeCreate', function(type, pipe, options) {
+//Attach userJoin event only to pipe "channel1"
+	if (type == 'multi' && pipe.properties.name =='channel1') {
+	pipe.addEvent('userJoin', function(user, pipe) {
+		console.log('New user on channel1');
+		});
+	}
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.userLeft
+														
+													</dd>
+												
+													<dd>APE.MultiPipe.left
+														
+													</dd>
+												
+													<dd>APE.Pipe.join
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.userJoin" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_userLeft">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.</span>
+										
+										<a name="static_event_userLeft">
+											<span class="variableName">userLeft</span>
+											(user, pipe)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Event fired when a user left a channel
+<p>This event is fired both on core and pipe the user joined</p>
+										</div>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">File:</dt>
+											<div class="dline">
+												<dd>&lt;./src/Ape_Jsf/Source/Core/Events.js&gt;</dd>
+											</div>
+										</dl>
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">user</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The user that joined</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/APE.Pipe.html">APE.Pipe</a>} </span>
+														<span class="variableName">pipe</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The pipe that is involved</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+ape.addEvent('userJoin', function (user, pipe) {
+	//An user join the channel
+	console.log('the user ' + user.properties.name + ' join the channel ' + pipe.properties.name);
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Join two channel
+ape.join(['channel1', 'channel2']);
+ape.addEvent('pipeCreate', function(type, pipe, options) {
+//Attach userJoin event only to pipe "channel1"
+	if (type == 'multi' && pipe.properties.name =='channel1') {
+	pipe.addEvent('userJoin', function(user, pipe) {
+		console.log('New user on channel1');
+		});
+	}
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>APE.userJoin
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.html#static_join">APE.join</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.userLeft" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+		</div> <!-- tab content-->
+	</div>
+</div>

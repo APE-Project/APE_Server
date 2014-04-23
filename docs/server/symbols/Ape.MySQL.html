@@ -1,0 +1,983 @@
+---
+layout: APE
+title:  Ape.MySQL &#58;&#58; Server Documentation &#58;&#58; APE (Ajax Push Engine)
+---
+<div id="index">
+	<div class="span3">
+	<div class="well sidebar-nav">
+		<a href="../index.html">Class Index</a> | <a href="../files.html">File Index</a>
+		<h2>Classes</h2>
+		<ul class="nav nav-list classList">
+			
+				<li> 									<i><a href="../symbols/global.html">global</a></i> 								</li> 								<li class="nav-header"> 									<hr/> 								</li>
+			
+				<li><a href="../symbols/Ape.html">Ape</a></li>
+			
+				<li><a href="../symbols/Ape.b64.html">Ape.b64</a></li>
+			
+				<li><a href="../symbols/Ape.channel.html">Ape.channel</a></li>
+			
+				<li><a href="../symbols/Ape.MySQL.html">Ape.MySQL</a></li>
+			
+				<li><a href="../symbols/Ape.pipe.html">Ape.pipe</a></li>
+			
+				<li><a href="../symbols/Ape.sha1.html">Ape.sha1</a></li>
+			
+				<li><a href="../symbols/Ape.sockClient.html">Ape.sockClient</a></li>
+			
+				<li><a href="../symbols/Ape.sockServer.html">Ape.sockServer</a></li>
+			
+				<li><a href="../symbols/Ape.subuser.html">Ape.subuser</a></li>
+			
+				<li><a href="../symbols/Ape.user.html">Ape.user</a></li>
+			
+		</ul>
+	</div><!--/.well -->
+</div><!--/span-->
+
+</div>
+
+<div class="span9">
+	<div class="row-fluid">
+		<!-- ============================== class title ============================ -->
+		<div class="span6">
+			<h1 class="section classTitle">server 
+			Class Ape.MySQL</h1>
+		</div>
+		<div class="span3" align="center">
+			<img src="/assets//img/promotejsh.gif" width="150px" height="148px"/>
+		</div>
+	</div>
+	<div class="row-fluid">
+		
+		<ul class="nav nav-tabs nav-tabs-pannel">
+			<li class="" id="summary">
+				<a href="#class_summary" data-toggle="tab">Class summary</a>
+			</li>
+			
+				<li class="" id="constructor">
+					<a href="#contructor_details" data-toggle="tab">Constructor</a>
+				</li>
+			
+			
+			
+				<li class="active" id="methods">
+					<a href="#methods_details" data-toggle="tab">Methods</a>
+				</li>
+			
+			
+				<li class="" id="events">
+					<a href="#events_details" data-toggle="tab">Events</a>
+				</li>
+			
+		</ul>
+		<div class="tab-content">
+			<!-- ============================== class summary ========================== -->
+			<div class="tab-pane  jsdoc-pane" id="class_summary">
+				<a name="class_summary"><h2><span class="variableName">Summary</span></h2></a>
+				
+				
+				
+					<div class="description">
+						MySql Object (Database connection)
+					</div>
+				
+				
+					<dl class="detailList">
+						<dt class="labelHeading">File</dt>
+						<div class="dline">
+							<dd>&lt;./src/Ape_Server/modules/libape-spidermonkey.c&gt;</dd>
+						</div>
+					</dl>
+				
+			</div>
+			<!-- ============================== constructor details ==================== -->
+			<div class="tab-pane  jsdoc-pane" id="contructor_details">
+				
+					<div class="details"><a name="constructor"><h2><span class="variableName">MySQL</span> Class Detail</h2></a>
+						<div class="storageClass">
+							
+							<b>Ape.MySQL</b>
+							
+								(host, username, password, database)
+							
+						</div>
+						
+							<div class="description">
+								Ape.MySQL is a class constructor. You can connect and use a MySQL database.
+							</div>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">File:</dt>
+								<div class="dline">
+										<dd>&lt;./src/Ape_Server/modules/libape-spidermonkey.c&gt;</dd>
+									</div>
+								</dl>
+							
+							
+								<dl class="detailList">
+									<dt class="labelHeading">Author:</dt>
+									<div class="dline">
+										<dd>Special thanks to  Louis Charette for repairing this!</dd>
+									</div>
+								</dl>
+							
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Parameters:</dt>
+								<div class="dline">
+									
+										<dt>
+											<span class="parameterType">{string} </span>
+											<span class="variableName">host</span>
+											<span class="parameterInfo">
+												
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">IP-address:port or unix socket</span></dd>
+									
+										<dt>
+											<span class="parameterType">{string} </span>
+											<span class="variableName">username</span>
+											<span class="parameterInfo">
+												
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">MySql username</span></dd>
+									
+										<dt>
+											<span class="parameterType">{string} </span>
+											<span class="variableName">password</span>
+											<span class="parameterInfo">
+												
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">MySql username</span></dd>
+									
+										<dt>
+											<span class="parameterType">{string} </span>
+											<span class="variableName">database</span>
+											<span class="parameterInfo">
+												
+												
+											</span>
+										</dt>
+										<dd><span class="descriptionSummary">MySql database</span></dd>
+									
+								</div>
+							</dl>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Returns:</dt>
+								<div class="dline">
+									
+										<dd><span class="parameterType">{<a href="../symbols/Ape.MySQL.html">Ape.MySQL</a>} </span>
+											<span class="descriptionSummary"></span>
+										</dd>
+									
+								</div>
+							</dl>
+						
+						
+						
+						
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Examples</dt>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">//Database connection
+var sql = new Ape.MySQL("ip:port", "user", "password", "database");
+	sql.onConnect = function() {
+	Ape.log('Connected to mysql server');
+}</pre>
+									</dd>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">// Select
+sql.query("SELECT * FROM table", function(res, errorNo) {
+	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
+	else {
+	Ape.log('Fetching ' + res.length);
+		res.each(function(data) {
+			Ape.log(data.content);//data.<column name>
+		});
+	}
+});</pre>
+									</dd>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">//Insert
+sql.query("INSERT INTO table VALUES('a','b','c')", function(res, errorNo) {
+	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
+	else Ape.log('Inserted: ' + MySQL.getInsertId ());
+});</pre>
+									</dd>
+								
+							</dl>
+						
+						
+						<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.MySQL.MySQL" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+					</div>
+				
+			</div>
+			<!-- ============================== properties ========================================= -->
+			<div class="tab-pane  jsdoc-pane" id="property_details">
+				
+			</div>
+			<!-- ============================== methods ========================================== -->
+			<div class="tab-pane active jsdoc-pane" id="methods_details">
+				
+					
+					<ul class="nav nav-tabs nav-tabs-pannel">
+					<li class="active"  id="methods_summary_li" class="nested">
+						<a href="#methods_summary" data-toggle="tab">Summary</a>
+					</li>
+					
+						
+							<li class="nested" id="static_errorString_li">
+								<a href="../symbols/Ape.MySQL.html#static_errorString" data-toggle="tab">errorString</a>
+							</li>
+						
+							<li class="nested" id="static_escape_li">
+								<a href="../symbols/Ape.MySQL.html#static_escape" data-toggle="tab">escape</a>
+							</li>
+						
+							<li class="nested" id="static_getInsertId_li">
+								<a href="../symbols/Ape.MySQL.html#static_getInsertId" data-toggle="tab">getInsertId</a>
+							</li>
+						
+							<li class="nested" id="static_query_li">
+								<a href="../symbols/Ape.MySQL.html#static_query" data-toggle="tab">query</a>
+							</li>
+						
+					
+				</ul>
+				<div class="tab-content">
+					<!-- ============================== method summary ===================== -->
+					<div class="tab-pane active active jsdoc-pane" id="methods_summary">
+						<a name="methods_summary"><h2><span class="variableName">Summary</span></h2></a>
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Own</dt>
+							</dl>
+							<table class="summaryTable">
+								<thead>
+									<tr>
+										<th>Methods Attributes</th>
+										<th>Methods Name</th>
+										<th>Methods Description</th>
+									</tr>
+								</thead>
+								<tbody>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.MySQL.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.MySQL.html#static_errorString" onClick="handleTabLinks('#static_errorString'); return false;">errorString</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Get the last mysql error message.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.MySQL.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.MySQL.html#static_escape" onClick="handleTabLinks('#static_escape'); return false;">escape</a></span>
+													(text)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Escape a string for mysql.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.MySQL.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.MySQL.html#static_getInsertId" onClick="handleTabLinks('#static_getInsertId'); return false;">getInsertId</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Get the last id insert with auto-increment.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.MySQL.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.MySQL.html#static_query" onClick="handleTabLinks('#static_query'); return false;">query</a></span>
+													(sql, fn)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Execute a mysql query.
+												</span>
+											</td>
+										</tr>
+									
+								</tbody>
+							</table>
+							
+							
+						</div>
+						<!-- ============================== method details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_errorString">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{string}</span>
+										
+										
+											<span class="parameterType">Ape.MySQL.</span>
+										
+										<a name="static_errorString">
+												<span class="variableName">errorString</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Get the last mysql error message.
+<p> This returns the errorstring from the Database.</p>
+										</div>
+									
+									
+									
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="descriptionSummary">the last mysql error message for the connection</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">sql.onError = function(errorNo) {
+	Ape.log('Connection Error : ' + errorNo + ' : ' + this.errorString());
+}</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>Ape.MySQL.onError
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.MySQL.errorString" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_escape">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{string}</span>
+										
+										
+											<span class="parameterType">Ape.MySQL.</span>
+										
+										<a name="static_escape">
+												<span class="variableName">escape</span>
+											(text)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Escape a string for mysql.
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">text</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The string to be escaped with mysql_escape_string to prepare it for a query</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="descriptionSummary">The escaped string</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">sql.query("SELECT nick FROM user WHERE login = '" + Ape.MySQL.escape(mylogin) + "'");</pre>
+												</dd>
+											
+										</dl>
+									
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.MySQL.escape" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_getInsertId">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{integer}</span>
+										
+										
+											<span class="parameterType">Ape.MySQL.</span>
+										
+										<a name="static_getInsertId">
+												<span class="variableName">getInsertId</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Get the last id insert with auto-increment.
+<p>Beware: This is the last id insert for the current connection (object instance).</p>
+										</div>
+									
+									
+									
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{integer} </span>
+														<span class="descriptionSummary">Used to get the last insert id with auto-increment.for the connection</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">sql.query("INSERT INTO table VALUES('a','b','c')", function(res, errorNo) {
+	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
+	else Ape.log('Inserted: ' + MySQL.getInsertId ());
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.MySQL.getInsertId" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_query">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.MySQL.</span>
+										
+										<a name="static_query">
+												<span class="variableName">query</span>
+											(sql, fn)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Execute a mysql query.
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">sql</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The SQL statement</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{function} </span>
+														<span class="variableName">fn</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">callback function</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{Array} </span>
+														<span class="variableName">fn.res</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">An array of objects if the query was a 'SELECT'</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{integer} </span>
+														<span class="variableName">fn.errorNo</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">if an error occured the errorNo != 0</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">sql.query("SELECT * FROM table", function(res, errorNo) {
+	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
+	else {
+		Ape.log('Fetching ' + res.length);
+		for(var i = 0; i < res.length; i++) {
+			Ape.log(res[i].title);//res[i].<column name>
+		});
+	}
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">sql.query("INSERT INTO table VALUES('a','b','c')", function(res, errorNo) {
+	if (errorNo) Ape.log('Request error : ' + errorNo + ' : ' + this.errorString());
+	else Ape.log('Inserted');
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.MySQL.query" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+			<!-- ============================== events summary ======================== -->
+			<div class="tab-pane  jsdoc-pane" id="events_details">
+				
+					
+					
+						<ul class="nav nav-tabs nav-tabs-pannel">
+							<li class="active" id="events_summary_li" class="nested">
+								<a href="#events_summary" data-toggle="tab">Event summary</a>
+							</li>
+							
+								<li class="nested" id="static_event_onConnect_li">
+									<a href="../symbols/Ape.MySQL.html#static_event_onConnect" data-toggle="tab">onConnect</a>
+								</li>
+							
+								<li class="nested" id="static_event_onError_li">
+									<a href="../symbols/Ape.MySQL.html#static_event_onError" data-toggle="tab">onError</a>
+								</li>
+							
+						</ul>
+					
+					<div class="tab-content">
+						<!-- ============================== events summary ======================== -->
+						<div class="tab-pane active active jsdoc-pane" id="events_summary">
+							<a name="events_summary"><h2><span class="variableName">Summary</span></h2></a>
+							
+								<dl class="detailList">
+									<dt class="labelHeading">Own</dt>
+								</dl>
+								<table class="summaryTable">
+									<thead>
+										<tr>
+											<th>Attributes</th>
+											<th>Name</th>
+											<th>Description</th>
+										</tr>
+									</thead>
+									<tbody>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															Ape.MySQL.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/Ape.MySQL.html#static_event_onConnect" onClick="handleTabLinks('#static_event_onConnect'); return false;">onConnect</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Mysql connection established callback.</span>
+												</td>
+											</tr>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															Ape.MySQL.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/Ape.MySQL.html#static_event_onError" onClick="handleTabLinks('#static_event_onError'); return false;">onError</a></span>
+													(errorNo)
+												</td>
+												<td>
+													<span class="descriptionSummary">Mysql error occurance callback.</span>
+												</td>
+											</tr>
+										
+									</tbody>
+								</table>
+							
+							
+						</div>
+						<!-- ============================== event details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_onConnect">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">Ape.MySQL.</span>
+										
+										<a name="static_event_onConnect">
+											<span class="variableName">onConnect</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Mysql connection established callback.
+<p>This callback is called when mysql connection (and database selection) has been established.</p>
+										</div>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">sql.onConnect = function() {
+	Ape.log('Connected to mysql server');
+}</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">var sql = new Ape.MySQL('ip:port', 'user', 'password', 'database');
+sql.onConnect = function() {
+	Ape.log('Connected to mysql server');
+}
+sql.onError = function(errorNo) {
+	Ape.log('Connection Error : ' + errorNo + ' : ' + this.errorString());
+}</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.MySQL.html">Ape.MySQL</a>
+														
+													</dd>
+												
+													<dd>Ape.MySQL.onError
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									<hr />
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.MySQL.onConnect" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_onError">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">Ape.MySQL.</span>
+										
+										<a name="static_event_onError">
+											<span class="variableName">onError</span>
+											(errorNo)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Mysql error occurance callback.
+<p>This callback is called when a mysql error occurs.</p>
+<p>The error codes from MySac.</p>
+<ol start="0">
+<li>MYSAC_START</li>
+<li>MYSAC_CONN_CHECK</li>
+<li>MYSAC_READ_GREATINGS</li>
+<li>MYSAC_SEND_AUTH_1</li>
+<li>MYSAC_RECV_AUTH_1</li>
+<li>MYSAC_SEND_AUTH_2</li>
+<li>MYSAC_SEND_QUERY</li>
+<li>MYSAC_RECV_QUERY_COLNUM</li>
+<li>MYSAC_RECV_QUERY_COLDESC1</li>
+<li>MYSAC_RECV_QUERY_COLDESC2</li>
+<li>YSAC_RECV_QUERY_EOF1</li>
+<li>MYSAC_RECV_QUERY_EOF2</li>
+<li>MYSAC_RECV_QUERY_DATA</li>
+<li>MYSAC_SEND_INIT_DB</li>
+<li>MYSAC_RECV_INIT_DB</li>
+<li>MYSAC_SEND_STMT_QUERY</li>
+<li>MYSAC_RECV_STMT_QUERY</li>
+<li>MYSAC_SEND_STMT_EXECUTE</li>
+<li>MYSAC_RECV_STMT_EXECUTE</li>
+<li>MYSAC_READ_NUM</li>
+<li>MYSAC_READ_HEADER</li>
+<li>MYSAC_READ_LINE</li>
+</ol>
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{integer} </span>
+														<span class="variableName">errorNo</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">MySql MySac errorcode</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">sql.onError = function(errorNo) {
+	Ape.log('Connection Error : ' + errorNo + ' : ' + this.errorString());
+}</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">var sql = new Ape.MySQL("ip:port", "user", "password", "database");
+sql.onConnect = function() {
+	Ape.log('Connected to mysql server');
+}
+sql.onError = function(errorNo) {
+	Ape.log('Connection Error : ' + errorNo + ' : ' + this.errorString());
+}</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.MySQL.html">Ape.MySQL</a>
+														
+													</dd>
+												
+													<dd>Ape.MySQL.onConnect
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.MySQL.html#static_errorString">Ape.MySQL.errorString</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.MySQL.onError" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+		</div> <!-- tab content-->
+	</div>
+</div>

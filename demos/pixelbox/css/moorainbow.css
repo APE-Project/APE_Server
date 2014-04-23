@@ -1,0 +1,109 @@
+/***
+ *  - mooRainbow: adblogs version+
+ * author: w00fz <w00fzIT@gmail.com>
+ * modified by: fy, korri
+ */
+
+#mooRainbow { font-size: 11px; color: #000; }
+
+.moor-box {
+	background-color:#F9F9F9;
+	border:1px solid #636163;
+	height:150px;
+	width:240px;
+	z-index: 20;
+}
+.moor-overlayBox {
+	width: 110px; /* Width and Height of the overlay must be setted here: default 256x256 */
+	height: 110px;
+	margin-top: 5px;
+	margin-left: 5px;
+	border: 1px solid #000;
+}
+.moor-slider {
+	border:1px solid #000000;
+	height:110px;
+	margin-left:135px;
+	margin-top:5px;
+	width:18px;
+}
+.moor-colorBox {
+		display: none;
+}
+.moor-currentColor { /* Bottom Box Color, the backup one */
+	margin-top: 55px;
+	margin-left: 316px;
+	width: 59px;
+	height: 34px;
+	display: none;
+}
+.moor-okButton {
+	-moz-background-clip:border;
+	-moz-background-inline-policy:continuous;
+	-moz-background-origin:padding;
+	background:#E6E6E6 none repeat scroll 0 0;
+	border:1px solid #000000;
+	font-family:Arial;
+	font-size:11px;
+	font-weight:bold;
+	height:23px;
+	margin-left:5px;
+	margin-top:122px;
+}
+#mooRainbow label {
+	font-size: 0px;
+}
+/* Following are just <label> */
+.moor-rLabel {
+	 display: none;
+}
+.moor-gLabel {
+	 display: none;
+}
+.moor-bLabel {
+	 display: none;
+}
+.moor-HueLabel {
+	 display: none;
+}
+span.moor-ballino { /* Style hue � (degree) !! */
+	 display: none;
+}
+.moor-SatuLabel {
+	 display: none;
+}
+.moor-BrighLabel {
+	 display: none;
+}
+.moor-hexLabel {
+	font-size: 0px;
+	margin-left:174px;
+	margin-top:126px;
+}
+
+/* <input> */
+.moor-rInput, .moor-gInput, .moor-bInput, .moor-HueInput, .moor-SatuInput, .moor-BrighInput {
+	width: 30px;
+}
+.moor-hexInput {
+	width: 55px;
+}
+.moor-cursor {
+	background-image: url(../moorainbow_images/moor_cursor.gif);
+	width: 12px;
+	height: 12px;
+}
+.moor-arrows {
+	background-image: url(../moorainbow_images/moor_arrows.gif);
+	top: 9px;
+	left: 125px;
+	width: 41px;
+	height: 9px;
+}
+.moor-chooseColor { /* Top Box Color, the choosen one */
+	border:1px solid #000000;
+	height:110px;
+	margin-left:174px;
+	margin-top:5px;
+	width:59px;
+}

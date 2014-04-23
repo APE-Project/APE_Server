@@ -1,0 +1,82 @@
+#####################################################
+# REMEBER YOU ONLY NEED TO STARD MOD REWRITE ONCE
+#####################################################
+RewriteEngine On
+
+#####################################################
+# REWRITE BASE
+#####################################################
+RewriteBase /
+
+#####################################################
+# ERROR DOCUMENT
+#####################################################
+ErrorDocument 401 /401.html
+ErrorDocument 403 /403.html
+ErrorDocument 404 /404.html 
+ErrorDocument 500 /500.html
+
+#####################################################
+# FORCE REMOVE www
+#####################################################
+RewriteCond %{HTTP_HOST} ^www.ape-project.org$ [NC]
+RewriteRule ^(.*)$ http://ape-project.org/$1 [R=301,L]
+
+
+#####################################################
+# CUSTOM REDIRECT FOR OLD LINKS
+#####################################################
+
+# Index
+RewriteRule ^ajax-push.html?$ / [QSA,L,R=301]
+RewriteRule ^about.html?$ / [QSA,L,R=301]
+RewriteRule ^ape.html?$ / [QSA,L,R=301]
+RewriteRule ^gpl.html?$ / [QSA,L,R=301]
+RewriteRule ^home.html?$ / [QSA,L,R=301]
+RewriteRule ^staytuned.html?$ / [QSA,L,R=301]
+
+# Demos
+RewriteRule ^demos.html?$ demos/ [QSA,L,R=301]
+RewriteRule ^demo/(.*)?$ demos/$1 [QSA,L,R=301]
+
+# Demos - Move
+RewriteRule ^demos/2/move-demo.html?$ demos/move/ [QSA,L,R=301]
+
+# Demos - Chat
+RewriteRule ^demos/1/ape-real-time-chat.html?$ demos/chat/ [QSA,L,R=301]
+
+# Demos - MMORPG
+RewriteRule ^demos/7/mmorpg.html?$ demos/mmorpg/ [QSA,L,R=301]
+
+# Demos - Pixelbox
+RewriteRule ^demos/8/pixelbox.html?$ demos/pixelbox/ [QSA,L,R=301]
+
+# Demos - Tweets
+RewriteRule ^demos/5/live-tweets.html?$ demos/ [QSA,L,R=301]
+
+# Demos - IRC
+RewriteRule ^demos/6/tcpsocket-demo-irc.html?$ demos/irc/ [QSA,L,R=301]
+
+# Demos - APE Walk
+RewriteRule ^demos/5/live-tweets.html?$ demos/walk/ [QSA,L,R=301]
+
+# Comunity
+RewriteRule ^community.html?$ community/ [QSA,L,R=301]
+RewriteRule ^contact.html?$ community/ [QSA,L,R=301]
+
+# Downloads
+RewriteRule ^downloads/(.*)?$ download/$1 [QSA,L,NC]
+RewriteRule ^download.html?$ download/ [QSA,L,R=301]
+RewriteRule ^download/APE_Complete_Package.html?$ download/ [QSA,L,R=301]
+
+# Old download where there
+RewriteRule ^stable/(.*)?$ downloads/stable/$1 [QSA,L,NC]
+
+# Doc - Redirect old links
+# RewriteRule ^docs/(.*)?$ docs/ [QSA,L,R=301]
+RewriteRule ^static/jsdocs/(.*)?$ docs/$1 [QSA,L,R=301]
+RewriteRule ^docs/server/symbols/?$ docs/server/$1 [QSA,L,R=301]
+RewriteRule ^docs/client/symbols/?$ docs/client/$1 [QSA,L,R=301]
+
+# Wiki. Redirect to GitHub
+RewriteRule ^wiki(.*)?$ https://github.com/APE-Project/APE_Server/wiki [QSA,L,R=301]

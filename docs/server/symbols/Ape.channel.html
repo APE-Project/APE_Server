@@ -1,0 +1,875 @@
+---
+layout: APE
+title:  Ape.channel &#58;&#58; Server Documentation &#58;&#58; APE (Ajax Push Engine)
+---
+<div id="index">
+	<div class="span3">
+	<div class="well sidebar-nav">
+		<a href="../index.html">Class Index</a> | <a href="../files.html">File Index</a>
+		<h2>Classes</h2>
+		<ul class="nav nav-list classList">
+			
+				<li> 									<i><a href="../symbols/global.html">global</a></i> 								</li> 								<li class="nav-header"> 									<hr/> 								</li>
+			
+				<li><a href="../symbols/Ape.html">Ape</a></li>
+			
+				<li><a href="../symbols/Ape.b64.html">Ape.b64</a></li>
+			
+				<li><a href="../symbols/Ape.channel.html">Ape.channel</a></li>
+			
+				<li><a href="../symbols/Ape.MySQL.html">Ape.MySQL</a></li>
+			
+				<li><a href="../symbols/Ape.pipe.html">Ape.pipe</a></li>
+			
+				<li><a href="../symbols/Ape.sha1.html">Ape.sha1</a></li>
+			
+				<li><a href="../symbols/Ape.sockClient.html">Ape.sockClient</a></li>
+			
+				<li><a href="../symbols/Ape.sockServer.html">Ape.sockServer</a></li>
+			
+				<li><a href="../symbols/Ape.subuser.html">Ape.subuser</a></li>
+			
+				<li><a href="../symbols/Ape.user.html">Ape.user</a></li>
+			
+		</ul>
+	</div><!--/.well -->
+</div><!--/span-->
+
+</div>
+
+<div class="span9">
+	<div class="row-fluid">
+		<!-- ============================== class title ============================ -->
+		<div class="span6">
+			<h1 class="section classTitle">server 
+			Class Ape.channel</h1>
+		</div>
+		<div class="span3" align="center">
+			<img src="/assets//img/promotejsh.gif" width="150px" height="148px"/>
+		</div>
+	</div>
+	<div class="row-fluid">
+		
+		<ul class="nav nav-tabs nav-tabs-pannel">
+			<li class="" id="summary">
+				<a href="#class_summary" data-toggle="tab">Class summary</a>
+			</li>
+			
+				<li class="" id="constructor">
+					<a href="#contructor_details" data-toggle="tab">Constructor</a>
+				</li>
+			
+			
+				<li class="" id="properties">
+					<a href="#property_details" data-toggle="tab">Properties</a>
+				</li>
+			
+			
+				<li class="active" id="methods">
+					<a href="#methods_details" data-toggle="tab">Methods</a>
+				</li>
+			
+			
+		</ul>
+		<div class="tab-content">
+			<!-- ============================== class summary ========================== -->
+			<div class="tab-pane  jsdoc-pane" id="class_summary">
+				<a name="class_summary"><h2><span class="variableName">Summary</span></h2></a>
+				
+				
+				
+					<div class="description">
+						Channel object (For many-to-many communcation)
+					</div>
+				
+				
+					<dl class="detailList">
+						<dt class="labelHeading">File</dt>
+						<div class="dline">
+							<dd>&lt;./src/Ape_Server/modules/libape-spidermonkey.c&gt;</dd>
+						</div>
+					</dl>
+				
+			</div>
+			<!-- ============================== constructor details ==================== -->
+			<div class="tab-pane  jsdoc-pane" id="contructor_details">
+				
+					<div class="details"><a name="constructor"><h2><span class="variableName">channel</span> Class Detail</h2></a>
+						<div class="storageClass">
+							
+							<b>Ape.channel</b>
+							
+								()
+							
+						</div>
+						
+							<div class="description">
+								The channel object is created when an user connects to an nonexistent channel or if it is created on the server with Ape.mkChan.
+							</div>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">File:</dt>
+								<div class="dline">
+										<dd>&lt;./src/Ape_Server/modules/libape-spidermonkey.c&gt;</dd>
+									</div>
+								</dl>
+							
+							
+						
+						
+						
+						
+						
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Examples</dt>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">var channel = Ape.mkChan('my_channel');</pre>
+									</dd>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">Ape.addEvent("join", function(user, channel) {
+	Ape.log("New user has joined the channel (" + channel.getProperty('name') + ") :)");
+});</pre>
+									</dd>
+								
+							</dl>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">See:</dt>
+								<div class="dline">
+									
+										<dd>Ape.mkChan
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.html#static_rmChan">Ape.rmChan</a>
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.html#static_getChannelByName">Ape.getChannelByName</a>
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.html#static_getChannelByPubid">Ape.getChannelByPubid</a>
+											
+										</dd>
+									
+								</div>
+							</dl>
+						
+						<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.channel.channel" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+					</div>
+				
+			</div>
+			<!-- ============================== properties ========================================= -->
+			<div class="tab-pane  jsdoc-pane" id="property_details">
+				
+					
+					<ul class="nav nav-tabs nav-tabs-pannel">
+						<li class="active" id="properties_summary_li">
+							<a href="#property_summary" data-toggle="tab" class="nested">Summary</a>
+						</li>
+						
+							
+								<li class="nested" id="static_userslist_li">
+									<a href="../symbols/Ape.channel.html#static_userslist" data-toggle="tab">userslist</a>
+								</li>
+							
+						
+					</ul>
+					<div class="tab-content">
+						<!-- ============================== properties summary ===================== -->
+						<div class="tab-pane active jsdoc-pane" id="property_summary">
+							<a name="property_summary"><h2><span class="variableName">Summary</span></h2></a>
+							
+								<dl class="detailList">
+									<dt class="labelHeading">Own</dt>
+								</dl>
+								<table class="summaryTable">
+									<thead>
+										<tr>
+											<th>Attributes</th>
+											<th>Type</th>
+											<th>Name</th>
+											<th>Description</th>
+										</tr>
+									</thead>
+									<tbody>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													
+													
+														<span class="parameterType">Ape.channel</span>
+													
+												</td>
+												<td>
+													<span class="variableName"><a href="../symbols/Ape.channel.html#static_userslist" onClick="handleTabLinks('#static_userslist'); return false;">userslist</a></span>
+												</td>
+												<td>
+													<span class="descriptionSummary">
+														<p>
+<p>This variable is mootools Hash that contain all the user on the channel.
+													</span>
+												</td>
+											</tr>
+										
+									</tbody>
+								</table>
+							
+							
+						</div>
+						<!-- ============================== properties details ===================== -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_userslist">
+									<h2>
+										<span class="storageClass">&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">Ape.channel</span>
+										
+										<a name="static_userslist">
+											<span class="variableName">userslist</span>
+										</a>
+									</h2>
+									
+										<div class="description">
+											<p>
+<p>This variable is mootools Hash that contain all the user on the channel.</p>
+<p>This is provided by the script framework/userslist.js</p>
+										</div>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">var chan = Ape.getChannelByName('test');
+chan.userslist.each(function(user) {
+	Ape.log(user.getProperty('pubid'));
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//a little bit off-topic but nevertheless very interesting
+function sendToMany(users, cmd, data) {
+	var chan = Ape.mkChan("*" + +new Date());
+		for (var i = 0; i < users.length; i++) {
+			users[i].join(chan);
+		}
+		chan.pipe.sendRaw(cmd, data);
+		Ape.delChan(chan);
+}</pre>
+												</dd>
+											
+										</dl>
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.channel.userslist" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								
+								</div>
+							
+						
+					</div>
+				
+			</div>
+			<!-- ============================== methods ========================================== -->
+			<div class="tab-pane active jsdoc-pane" id="methods_details">
+				
+					
+					<ul class="nav nav-tabs nav-tabs-pannel">
+					<li class="active"  id="methods_summary_li" class="nested">
+						<a href="#methods_summary" data-toggle="tab">Summary</a>
+					</li>
+					
+						
+							<li class="nested" id="static_delProperty_li">
+								<a href="../symbols/Ape.channel.html#static_delProperty" data-toggle="tab">delProperty</a>
+							</li>
+						
+							<li class="nested" id="static_getProperty_li">
+								<a href="../symbols/Ape.channel.html#static_getProperty" data-toggle="tab">getProperty</a>
+							</li>
+						
+							<li class="nested" id="static_isInteractive_li">
+								<a href="../symbols/Ape.channel.html#static_isInteractive" data-toggle="tab">isInteractive</a>
+							</li>
+						
+							<li class="nested" id="static_setProperty_li">
+								<a href="../symbols/Ape.channel.html#static_setProperty" data-toggle="tab">setProperty</a>
+							</li>
+						
+					
+				</ul>
+				<div class="tab-content">
+					<!-- ============================== method summary ===================== -->
+					<div class="tab-pane active active jsdoc-pane" id="methods_summary">
+						<a name="methods_summary"><h2><span class="variableName">Summary</span></h2></a>
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Own</dt>
+							</dl>
+							<table class="summaryTable">
+								<thead>
+									<tr>
+										<th>Methods Attributes</th>
+										<th>Methods Name</th>
+										<th>Methods Description</th>
+									</tr>
+								</thead>
+								<tbody>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.channel.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.channel.html#static_delProperty" onClick="handleTabLinks('#static_delProperty'); return false;">delProperty</a></span>
+													(name)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Delete a public property from a channel.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.channel.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.channel.html#static_getProperty" onClick="handleTabLinks('#static_getProperty'); return false;">getProperty</a></span>
+													(name)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Get a public property of a channel.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.channel.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.channel.html#static_isInteractive" onClick="handleTabLinks('#static_isInteractive'); return false;">isInteractive</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Check if a channel is interactive.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.channel.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.channel.html#static_setProperty" onClick="handleTabLinks('#static_setProperty'); return false;">setProperty</a></span>
+													(key, value)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Set a public property from a channel.
+												</span>
+											</td>
+										</tr>
+									
+								</tbody>
+							</table>
+							
+							
+						</div>
+						<!-- ============================== method details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_delProperty">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.channel.</span>
+										
+										<a name="static_delProperty">
+												<span class="variableName">delProperty</span>
+											(name)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Delete a public property from a channel.
+<p>The property 'pubid' and 'name' cannot be removed.</p>
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">name</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The name of the property to unset</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">channel.delProperty('foo');</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.channel.html#static_setProperty">Ape.channel.setProperty</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.channel.html#static_getProperty">Ape.channel.getProperty</a>
+														
+													</dd>
+												
+													<dd>Ape.mkChan
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_rmChan">Ape.rmChan</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getChannelByName">Ape.getChannelByName</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getChannelByPubid">Ape.getChannelByPubid</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.channel.html">Ape.channel</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.channel.delProperty" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_getProperty">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{mixed}</span>
+										
+										
+											<span class="parameterType">Ape.channel.</span>
+										
+										<a name="static_getProperty">
+												<span class="variableName">getProperty</span>
+											(name)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Get a public property of a channel.
+<p>By default each channel has a name and pubid property.</p>
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">name</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The name of the property to get</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{mixed} </span>
+														<span class="descriptionSummary">the property value or undefined</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">var pub = channel.getProperty('pubid');</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.channel.html#static_setProperty">Ape.channel.setProperty</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.channel.html#static_delProperty">Ape.channel.delProperty</a>
+														
+													</dd>
+												
+													<dd>Ape.mkChan
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_rmChan">Ape.rmChan</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getChannelByName">Ape.getChannelByName</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getChannelByPubid">Ape.getChannelByPubid</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.channel.html">Ape.channel</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.channel.getProperty" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_isInteractive">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{boolean}</span>
+										
+										
+											<span class="parameterType">Ape.channel.</span>
+										
+										<a name="static_isInteractive">
+												<span class="variableName">isInteractive</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Check if a channel is interactive.
+<p>A channel can be set to readonly if the channelname starts with a '*'</p>
+										</div>
+									
+									
+									
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{boolean} </span>
+														<span class="descriptionSummary">interactive</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">var channel = Ape.mkChan('*foo');
+Ape.log('is interactive: ' + channel.isInteractve());</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd>Ape.mkChan
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_rmChan">Ape.rmChan</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getChannelByName">Ape.getChannelByName</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getChannelByPubid">Ape.getChannelByPubid</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.channel.html">Ape.channel</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.channel.isInteractive" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_setProperty">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.channel.</span>
+										
+										<a name="static_setProperty">
+												<span class="variableName">setProperty</span>
+											(key, value)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Set a public property from a channel.
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">key</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The name of the property to set</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{mixed} </span>
+														<span class="variableName">value</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The value to set</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">channel.setProperty('foo', 'bar');</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">channel.setProperty('foo', {'bar':' 1});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.channel.html#static_delProperty">Ape.channel.delProperty</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.channel.html#static_getProperty">Ape.channel.getProperty</a>
+														
+													</dd>
+												
+													<dd>Ape.mkChan
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_rmChan">Ape.rmChan</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getChannelByName">Ape.getChannelByName</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getChannelByPubid">Ape.getChannelByPubid</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.channel.html">Ape.channel</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.channel.setProperty" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+			<!-- ============================== events summary ======================== -->
+			<div class="tab-pane  jsdoc-pane" id="events_details">
+				
+			</div>
+		</div> <!-- tab content-->
+	</div>
+</div>

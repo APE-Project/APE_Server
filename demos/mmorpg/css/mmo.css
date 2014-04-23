@@ -1,0 +1,108 @@
+#plop{
+	height: 400px;
+}
+#apemmo{
+	width: 800px;
+	height: 400px;
+	position: relative;
+	overflow: hidden;
+	margin: 0 auto;
+}
+#apemmo #prompt {
+	position: absolute;
+	width: 800px;
+	height: 120px;
+	padding: 140px 0;
+	background-color: white;
+	z-index: 1000;
+}
+#apemmo .info{
+	position: absolute;
+	z-index: 10000;
+	right: 0;
+	bottom: 0;
+	padding: 5px;
+}
+#apemmo .info .error{
+	color: #800;
+}
+#apemmo .info .fight{
+	font-style: italic;
+}
+#apemmo .bar{
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+#apemmo .bar .spell{
+	display: inline-block;
+	width: 40px;
+	height: 40px;
+	background: top left no-repeat transparent;
+	margin: 4px;
+}
+#apemmo .chat{
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	z-index: 10000;
+}
+#apemmo .chat input{
+	border: 1px solid black;
+	background: transparent;
+	background-color: rgba(0,0,0,0.3);
+	margin: 5px;
+	color: white;
+	width: 300px;
+}
+#apemmo .chat .messages{
+	background-color: rgba(0,0,0,0.1);
+	color: white;
+	margin: 5px;
+	width: 300px
+}
+#apemmo .ground{
+	width: 1000px;
+	height: 1000px;
+	background:url('./img/map.png');
+	position: absolute;
+	top: 0;
+	left: 0;
+	overflow: visible;
+}
+#my-perso{
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-left: -16px;
+	margin-top: -24px;
+}
+.unit{
+	position: absolute;
+}
+.ape_name_prompt{
+	-moz-border-radius:5px;
+	-webkit-border-radius : 5px;
+	background-color : #d4e1eb;
+	padding : 10px;
+	color : #000;
+	width:700px;
+	margin:auto;
+	text-align : center;
+	font-size : 14px;
+}
+.ape_name_prompt button.submit{
+	border:1px solid #DDDDDD;
+	margin-left:15px;
+}
+.ape_name_prompt input.text{
+	-moz-border-radius:5px;
+	-webkit-border-radius : 5px;
+	border:1px solid #DDDDDD;
+	font-size:12px;
+	margin:0;
+	padding:2px;
+	font-weight:bold;
+	text-align:center;
+	width:180px;
+}

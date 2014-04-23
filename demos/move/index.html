@@ -1,0 +1,73 @@
+---
+layout: APE
+title: APE Move Demo &#58;&#58; APE Demos &#58;&#58; APE (Ajax Push Engine)
+navbar: demo
+---
+
+<div class="container">
+	<div class="section">
+		<a class="btn pull-right" href="/demos/move/APE_Move_Demo.zip" style="margin-top: 8px;">Get source code</a>
+		<h1>APE demo : Move demo</h1>
+		<center>
+			<iframe src='/demos/move/demo.html' style='width: 867px; height: 500px; border:none'></iframe>
+		</center>
+	</div>
+
+	<div class="section">
+		<h2>About this demo</h2>
+		<p>This demo shows how APE can handles <strong>massive multi-user</strong> moving on a web page in <strong>real-time</strong>. This demo <strong>does not use APE as a middleware</strong>. A <em>libape-setcord</em> <strong>server-side module</strong> has been created to handle the coordinates of the users.</p>
+
+		<h2 class="fit"><small>Which features are used?</small></h2>
+		<ul>
+			<li>nickname.js</li>
+			<li>move.js</li>
+			<li>Sessions</li>
+			<li>ServerSide JavaScript</li>
+		</ul>
+	</div>
+
+	<div class="section">
+		<h2>Study the source code</h2>
+		<p>Check out the Client JavaScript, HTML and ServerSide JavaScript source code of this demo by reading the following :</p>
+		<ul class="nav nav-tabs nav-tabs-pannel">
+			<li class="active"><a href="#html" data-toggle="tab">HTML Source</a></li>
+			<li><a href="#js" data-toggle="tab">Client Source</a></li>
+			<li><a href="#ssjs" data-toggle="tab">ServerSide Source</a></li>
+			<li><a href="#css" data-toggle="tab">CSS Source</a></li>
+		</ul>
+		<div class="tab-content">
+			<div class="tab-pane active ape-demo-pane" id="html"><pre class="prettyprint linenums lang-html">{% include demos/move/source.html %}</pre></div>
+			<div class="tab-pane ape-demo-pane" id="js">
+				<h5>move.js</h5>
+				<pre class="prettyprint linenums lang-javascript">{% include demos/move/move.js %}</pre>
+			</div>
+			<div class="tab-pane ape-demo-pane" id="ssjs">
+				<h5>ssjs/move.js</h5>
+				<pre class="prettyprint linenums lang-javascript">{% include demos/move/move-ssjs.js %}</pre>
+			</div>
+			<div class="tab-pane ape-demo-pane" id="css">
+				<h5>demo.css</h5>
+				<pre class="prettyprint linenums lang-javascript">{% include demos/move/demo.css %}</pre>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<h2>Embed and share this demo</h2>
+		<div class="well row-fluid">
+			<div class="span8 embed_demo_link">
+				Embed this demo on your website: 
+				<input class="input-xxlarge embed_demo_link" onclick="this.select()" type="text" readonly="readonly" name="iframe" value="<iframe src='http://ape-project.org/demos/move/demo.html' style='width: 867px; height: 500px; border:none'></iframe>" />
+			</div>
+			<div class="span4" align="right">
+				<a href="http://twitter.com/?status=Come%20and%20try%20%22Move%20demo%22%20with%20me%20%21%20%20http%3A%2F%2Fape-project.org/demos/move/%20%23ape" title="Tweet this"><i class="icon-twitter-sign icon-2x"></i></a>&nbsp;
+				<a href="http://www.facebook.com/sharer.php?u=http://ape-project.org/demos/move/&t=Come%20and%20try%20%22Move%20demo%22%20with%20me%20%21" title="Share on facebook"><i class="icon-facebook-sign icon-2x"></i></a>
+			</div>
+		</div>
+	</div>
+		
+	<div class="section">
+		<h2>Other demos like this</h2>
+		{% include demos_list.html %}
+	</div>
+</div>

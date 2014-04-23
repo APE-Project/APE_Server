@@ -1,0 +1,120 @@
+.pixelbox{
+	height: 490px;
+	width: 915px;
+	position: relative;
+	border: 1px solid #bbbdbe;
+}
+.pixelbox canvas{
+	float: left;
+	border: 5px #888 ridge;
+}
+.pixelbox .users{
+	float: left;
+	width: 165px;
+	height: 485px;
+	background:url(../img/users_bg.png) repeat-x right #656f7c;
+	padding-top: 5px;
+	overflow: auto;
+}
+.pixelbox .users .user{
+	overflow: hidden;
+	width:133px;
+	line-height:25px;
+	background:url(../img/userback_users.png) no-repeat;
+	height:25px;
+	padding-left:15px;
+	font-weight:700;
+	font-size:13px;
+	margin-bottom:5px;
+	margin-left:10px;
+}
+.pixelbox .users .user .color{
+	width: 8px;
+	height: 8px;
+	display:inline-block;
+	margin-right: 2px;
+}
+.pixelbox .tools{
+	width: 100px;
+	height: 490px;
+	float: left;
+}
+.pixelbox .tools .tool {
+	margin: 1px;
+	cursor: pointer;
+}
+.pixelbox .tools .gallery{
+	width: 100px;
+	overflow-y: scroll;
+	height: 405px;
+}
+.pixelbox .tools .colors{
+	width: 50px;
+	height: 50px;
+	margin-left: 25px;
+	position: relative;
+	display: inline-block;
+}
+.pixelbox .tools .colors .bcolor, .pixelbox .tools .colors .fcolor{
+	position: absolute;
+	width: 20px;
+	height: 20px;
+	border: 2px ridge;
+}
+.pixelbox .tools .colors .switch{
+	position: absolute;
+	top: 0;
+	right: 0;
+	cursor: pointer;
+}
+.pixelbox .tools .colors .fcolor{
+	z-index: 10;
+	top: 8px;
+	left: 8px;
+}
+.pixelbox .tools .colors .bcolor{
+	z-index: 5;
+	bottom: 8px;
+	right: 8px;
+}
+.pixelbox .overlay {
+	background-color: white;
+	width: 915px;
+	height: 490px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1000;
+}
+.pixelbox .popup {
+	height: 100px;
+	margin: 150px 0px;
+	text-align: center;
+	padding: 50px 0;
+}
+.ape_name_prompt{
+	-moz-border-radius:5px;
+	-webkit-border-radius : 5px;
+	background-color : #d4e1eb;
+	padding : 10px;
+	color : #000;
+	width:700px;
+	margin:auto;
+	text-align : center;
+	font-size : 14px;
+}
+.ape_name_prompt button.submit{
+	border:1px solid #DDDDDD;
+	margin-left:15px;
+}
+.ape_name_prompt input.text{
+	-moz-border-radius:5px;
+	-webkit-border-radius : 5px;
+	border:1px solid #DDDDDD;
+	font-size:12px;
+	margin:0;
+	padding:2px;
+	font-weight:bold;
+	text-align:center;
+	width:180px;
+}

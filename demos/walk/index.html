@@ -1,0 +1,61 @@
+---
+layout: APE
+title: Walking Ape Demo &#58;&#58; APE Demos &#58;&#58; APE (Ajax Push Engine)
+navbar: demo
+---
+
+<div class="container">
+	<div class="section">
+		<a class="btn pull-right" href="/demos/move/APE_Move_Demo.zip" style="margin-top: 8px;">Get source code</a>
+		<h1>Walking Ape Demo</h1>
+		<center>
+			<iframe src='/demos/walk/demo.html' style='width: 920px; height: 160px; border:none'></iframe>
+		</center>
+	</div>
+
+	<div class="section">
+		<h2>About this demo</h2>
+		<p>This is a simple demo, showing the <strong>real-time reactivity</strong> of APE.</p>
+	</div>
+
+	<div class="section">
+		<h2>Study the source code</h2>
+		<p>Check out the Client JavaScript, HTML and ServerSide JavaScript source code of this demo by reading the following :</p>
+		<ul class="nav nav-tabs nav-tabs-pannel">
+			<li class="active"><a href="#html" data-toggle="tab">HTML Source</a></li>
+			<li><a href="#js" data-toggle="tab">Client Source</a></li>
+			<li><a href="#css" data-toggle="tab">CSS Source</a></li>
+		</ul>
+		<div class="tab-content">
+			<div class="tab-pane active ape-demo-pane" id="html"><pre class="prettyprint linenums lang-html">{% include demos/walk/source.html %}</pre></div>
+			<div class="tab-pane ape-demo-pane" id="js">
+				<h5>home.js</h5>
+				<pre class="prettyprint linenums lang-javascript">{% include demos/walk/home.js %}</pre>
+			</div>
+			<div class="tab-pane ape-demo-pane" id="css">
+				<h5>style.css</h5>
+				<pre class="prettyprint linenums lang-javascript">{% include demos/walk/style.css %}</pre>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<h2>Embed and share this demo</h2>
+		<div class="well row-fluid">
+			<div class="span8 embed_demo_link">
+				Embed this demo on your website: 
+				<input class="input-xxlarge embed_demo_link" onclick="this.select()" type="text" readonly="readonly" name="iframe" value="<iframe src='http://ape-project.org/demos/walk/demo.html' style='width: 920px; height: 150px; border:none'></iframe>" />
+			</div>
+			<div class="span4" align="right">Share: 
+				<a href="http://twitter.com/?status=Come%20and%20try%20%22APE%20walk%20demo%22%20with%20me%20%21%20%20http%3A%2F%2Fape-project.org/demos/walk/%20%23ape" title="Tweet this"><i class="icon-twitter-sign icon-2x"></i></a>&nbsp;
+				<a href="http://www.facebook.com/sharer.php?u=http://ape-project.org/demos/walk/&t=Come%20and%20try%20%APE%20walk%20demo%20with%20me%20%21" title="Share on facebook"><i class="icon-facebook-sign icon-2x"></i></a>
+			</div>
+		</div>
+	</div>
+		
+	<div class="section">
+		<h2>Other demos like this</h2>
+		{% include demos_list.html %}
+	</div>
+
+</div>

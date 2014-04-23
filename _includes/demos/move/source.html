@@ -1,0 +1,23 @@
+&lt;div id="ape_master_container"&gt;&lt;/div&gt;
+
+&lt;script type="text/javaScript"&gt;
+	//Create random string used as user nickname
+	function rand_chars(plength) {
+		var keylist = "abcdefghijklmnopqrstuvwxyz";
+		var temp = '';
+		for (i = 0; i &lt; plength; i++) {
+			temp += keylist.charAt(Math.floor(Math.random() * keylist.length));
+		}
+		return temp;
+	}
+	window.addEvent('domready', function() {
+		var client = new APE.Move({
+			'container': document.getElementById('ape_master_container'),
+		});
+		client.load({
+			'identifier': 'movedemo',
+			'channel': 'move',
+			'connectOptions': {'name': rand_chars(5)}
+		});
+	});
+&lt;/script&gt;

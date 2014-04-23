@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="description" content="APE is a complete packaged solution for Ajax push. With a very scalable Comet C Server and a JavaScript Framework." />
+		<meta name="keywords" content="ape, ape-project, ajax push engine, http streaming, ajax push, comet push, long-polling, comet, xhr, javascript push" />
+		<meta name="Robots" content="index, follow, all" />
+		<meta name="revisit-after" content="7 day" />
+		<meta http-equiv="Content-Language" content="en" />
+		<link rel="shortcut icon" href="/assets/img/favicon.png">
+		
+		<title>{{ page.title }}</title>
+				
+		<!-- Bootstrap core CSS -->
+		<link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+		<link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+		<link href="/assets/css/prettify.css" rel="stylesheet">
+		<link href="/assets/css/docstrape.css" rel="stylesheet">
+		
+		<!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+	    <!--[if lt IE 9]>
+	      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	    <![endif]-->
+
+		<!-- Custom styles for this template -->
+		<link href="/assets/css/APE.css" rel="stylesheet">
+		
+		<!-- This one is placed here because it can't be placed at bottom -->
+		<script src="/assets/js/jquery.min.js"></script>
+	</head>
+	<body onload="prettyPrint();">
+		<div class="page-header">
+			<div class="container">
+				<a class="brand-main" href="/"><img src="/assets/img/logo.png" />APE Project</a>
+				<div class="navbar navbar-inverse navbar-static-top">
+					<div class="navbar-inner">
+						<a class="brand" href="/">APE Project</a>
+						
+						<!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+						<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+							<span class="icon-bar"></span>
+							<span class="icon-bar"></span>
+							<span class="icon-bar"></span>
+						</a>
+						
+						<div class="nav-collapse collapse">
+							<ul class="nav navbar-nav">
+								<li id="index"{% if page.navbar == "index" %} class="active"{% endif %}><a href="/">Home</a></li>
+								<li id="ape_community"{% if page.navbar == "community" %} class="active"{% endif %}><a href="/community/">Community</a></li>
+								<li id="ape_demo"{% if page.navbar == "demo" %} class="active"{% endif %}><a href="/demos/">Demos</a></li>
+								<li id="ape_doc_antiugly" class="dropdown">
+									<a href="#" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
+									<ul class="dropdown-menu">
+										<li class="nav-header">Official docs</li>
+										<li><a href="/docs/comic/">Comic</a></li>
+										<li><a href="/docs/server">APE Server</a></li>
+										<li><a href="/docs/client">Javascript Framework</a></li>
+										<li class="divider"></li>
+										<li class="nav-header">Contributed docs</li>
+										<li><a href="https://github.com/APE-Project/APE_Server/wiki">Wiki</a></li>
+										<li><a href="/docs/youtube/">Youtube</a></li>
+									</ul>
+								</li>
+								<li id="ape_download"{% if page.navbar == "download" %} class="active"{% endif %}><a href="/download/">Download</a></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="wrap">
+         	{{ content }}
+		</div>
+		
+		<!-- JavaScript files
+			 Placed at the end of the document so the pages load faster
+		=============================================================== -->
+		<script src="/assets/js/bootstrap.min.js"></script>
+		<script src="/assets/js/prettify.js"></script>
+		<script src="/assets/js/holder.js"></script>
+		<script src="/assets/js/custom.js"></script>
+		<script src="/assets/js/docstrape.js"></script>
+	</body>
+</html>

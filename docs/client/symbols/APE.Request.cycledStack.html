@@ -1,0 +1,572 @@
+---
+layout: APE
+title: Ape.Request.cycledStack &#58;&#58; Client Documentation &#58;&#58; APE (Ajax Push Engine)
+---
+
+<div id="index">
+	<div class="span3">
+	<div class="well sidebar-nav">
+		<a href="../index.html">Class Index</a> | <a href="../files.html">File Index</a>
+		<h2>Classes</h2>
+		<ul class="nav nav-list classList">
+			
+				<li> 									<i><a href="../symbols/global.html">global</a></i> 								</li> 								<li class="nav-header"> 									<hr/> 								</li>
+			
+				<li><a href="../symbols/APE.html">APE</a></li>
+			
+				<li><a href="../symbols/APE.Client.html">APE.Client</a></li>
+			
+				<li><a href="../symbols/APE.Core.html">APE.Core</a></li>
+			
+				<li><a href="../symbols/APE.Pipe.html">APE.Pipe</a></li>
+			
+				<li><a href="../symbols/APE.PipeMulti.html">APE.PipeMulti</a></li>
+			
+				<li><a href="../symbols/APE.PipeProxy.html">APE.PipeProxy</a></li>
+			
+				<li><a href="../symbols/APE.PipeSingle.html">APE.PipeSingle</a></li>
+			
+				<li><a href="../symbols/APE.Request.html">APE.Request</a></li>
+			
+				<li><a href="../symbols/APE.Request.cycledStack.html">APE.Request.cycledStack</a></li>
+			
+				<li><a href="../symbols/APE.Request.stack.html">APE.Request.stack</a></li>
+			
+				<li><a href="../symbols/APE.Transport.html">APE.Transport</a></li>
+			
+				<li><a href="../symbols/B64.html">B64</a></li>
+			
+				<li><a href="../symbols/Cookie.html">Cookie</a></li>
+			
+				<li><a href="../symbols/String.html">String</a></li>
+			
+		</ul>
+	</div><!--/.well -->
+</div><!--/span-->
+
+</div>
+
+<div class="span9">
+	<div class="row-fluid">
+		<!-- ============================== class title ============================ -->
+		<div class="span6">
+			<h1 class="section classTitle">client 
+			Function Namespace APE.Request.cycledStack</h1>
+		</div>
+		<div class="span3" align="center">
+			<img src="/assets/img/promotejsh.gif" width="150px" height="148px"/>
+		</div>
+	</div>
+	<div class="row-fluid">
+		
+		<ul class="nav nav-tabs nav-tabs-pannel">
+			<li class="" id="summary">
+				<a href="#class_summary" data-toggle="tab">Class summary</a>
+			</li>
+			
+				<li class="" id="constructor">
+					<a href="#contructor_details" data-toggle="tab">Constructor</a>
+				</li>
+			
+			
+			
+				<li class="active" id="methods">
+					<a href="#methods_details" data-toggle="tab">Methods</a>
+				</li>
+			
+			
+		</ul>
+		<div class="tab-content">
+			<!-- ============================== class summary ========================== -->
+			<div class="tab-pane  jsdoc-pane" id="class_summary">
+				<a name="class_summary"><h2><span class="variableName">Summary</span></h2></a>
+				
+				
+				
+				
+					<dl class="detailList">
+						<dt class="labelHeading">File</dt>
+						<div class="dline">
+							<dd>&lt;./src/Ape_Jsf/Source/Request/Request.CycledStack.js&gt;</dd>
+						</div>
+					</dl>
+				
+			</div>
+			<!-- ============================== constructor details ==================== -->
+			<div class="tab-pane  jsdoc-pane" id="contructor_details">
+				
+					<div class="details"><a name="constructor"><h2><span class="variableName">cycledStack</span> Function Namespace Detail</h2></a>
+						<div class="storageClass">
+							
+							<b>APE.Request.cycledStack</b>
+							
+								()
+							
+						</div>
+						
+							<div class="description">
+								Request.cycledStack object
+APE JSF allows you to create "cycled stacks" of request.
+These methods are very useful for example if your application must send different commands to APE server from several functions (or not) and you want to send them all at once.
+With request.cycledStack you don't have to care when the command are sent. They are automatically sent (by default each 350ms). This is verry useful for peridical stuff. Or to reduce/optimze bandwith.
+							</div>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">File:</dt>
+								<div class="dline">
+										<dd>&lt;./src/Ape_Jsf/Source/Request/Request.CycledStack.js&gt;</dd>
+									</div>
+								</dl>
+							
+							
+						
+						
+						
+						
+						
+						
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">See:</dt>
+								<div class="dline">
+									
+										<dd><a href="../symbols/APE.Request.stack.html">APE.Request.stack</a>
+											
+										</dd>
+									
+										<dd>APE.request.stack
+											
+										</dd>
+									
+										<dd>pipe.stack
+											
+										</dd>
+									
+								</div>
+							</dl>
+						
+						<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.Request.cycledStack.cycledStack" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+					</div>
+				
+			</div>
+			<!-- ============================== properties ========================================= -->
+			<div class="tab-pane  jsdoc-pane" id="property_details">
+				
+			</div>
+			<!-- ============================== methods ========================================== -->
+			<div class="tab-pane active jsdoc-pane" id="methods_details">
+				
+					
+					<ul class="nav nav-tabs nav-tabs-pannel">
+					<li class="active"  id="methods_summary_li" class="nested">
+						<a href="#methods_summary" data-toggle="tab">Summary</a>
+					</li>
+					
+						
+							<li class="nested" id="static_add_li">
+								<a href="../symbols/APE.Request.cycledStack.html#static_add" data-toggle="tab">add</a>
+							</li>
+						
+							<li class="nested" id="static_send_li">
+								<a href="../symbols/APE.Request.cycledStack.html#static_send" data-toggle="tab">send</a>
+							</li>
+						
+							<li class="nested" id="static_setTime_li">
+								<a href="../symbols/APE.Request.cycledStack.html#static_setTime" data-toggle="tab">setTime</a>
+							</li>
+						
+					
+				</ul>
+				<div class="tab-content">
+					<!-- ============================== method summary ===================== -->
+					<div class="tab-pane active active jsdoc-pane" id="methods_summary">
+						<a name="methods_summary"><h2><span class="variableName">Summary</span></h2></a>
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Own</dt>
+							</dl>
+							<table class="summaryTable">
+								<thead>
+									<tr>
+										<th>Methods Attributes</th>
+										<th>Methods Name</th>
+										<th>Methods Description</th>
+									</tr>
+								</thead>
+								<tbody>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.Request.cycledStack.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.Request.cycledStack.html#static_add" onClick="handleTabLinks('#static_add'); return false;">add</a></span>
+													(cmd, params, options)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Add a command to cycled request stack
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.Request.cycledStack.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.Request.cycledStack.html#static_send" onClick="handleTabLinks('#static_send'); return false;">send</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Force the sending of the request stack
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														APE.Request.cycledStack.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/APE.Request.cycledStack.html#static_setTime" onClick="handleTabLinks('#static_setTime'); return false;">setTime</a></span>
+													(time, now)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Change cycled stack time.
+												</span>
+											</td>
+										</tr>
+									
+								</tbody>
+							</table>
+							
+							
+						</div>
+						<!-- ============================== method details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_add">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">APE.Request.cycledStack.</span>
+										
+										<a name="static_add">
+												<span class="variableName">add</span>
+											(cmd, params, options)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Add a command to cycled request stack
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{Array|string} </span>
+														<span class="variableName">cmd</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">If the argument is a string, it should be a CMD (e.g. 'CONNECT'). If the argument is an array: the array should contain objects with cmd, params and sessid)</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">params</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">The parameters that must be send with the command</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">Object with request options</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{boolean} </span>
+														<span class="variableName">options.sessid</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+																<i>Default: true</i>
+															
+														</span>
+														<span class="descriptionSummary">Add the sessid property to the request</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary">The request object</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Note : this example use the server module mouseMotion available on APE Store
+// capture mousemove event
+document.onmousemove=getMouseCoordinates;
+//Add to the cycled Stack the position of the mouse, and the time
+function getMouseCoordinates(event) {
+	ev = event || window.event;
+	ape.request.cycledStack.add('mouseMotion', {"x":ev.x, "y":ev.y});
+	captureMouse = false;
+}
+//Intercept mouseMotion raw, and display where the mouse was
+ape.onRaw('mouseMotion', function(data) {
+	console.log('Mouse position, x : ' + data.x + ' / y : ' + data .y);
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.Request.html#static_send">APE.Request.send</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.Request.stack.html#static_send">APE.Request.stack.send</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.Request.cycledStack.html#static_send">APE.Request.cycledStack.send</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.Request.cycledStack.add" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_send">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.Request.cycledStack.</span>
+										
+										<a name="static_send">
+												<span class="variableName">send</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Force the sending of the request stack
+										</div>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Add two request to the stack
+ape.request.cycledStack.add('testCommand', {"param1":"value"});
+ape.request.cycledSstack.add('anotherCommand', {"param1":"value"});
+//Imediately send the stack to APE server
+ape.request.cycledStack.send();</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/APE.Request.html#static_send">APE.Request.send</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.Request.cycledStack.html#static_add">APE.Request.cycledStack.add</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/APE.Request.stack.html#static_add">APE.Request.stack.add</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.Request.cycledStack.send" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_setTime">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">APE.Request.cycledStack.</span>
+										
+										<a name="static_setTime">
+												<span class="variableName">setTime</span>
+											(time, now)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Change cycled stack time. By default request added through request.cycledStack.add are sent each 350ms. This function allow you to ajust this time.
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{integer} </span>
+														<span class="variableName">time</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">New cycle interval in ms</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{boolean} </span>
+														<span class="variableName">now</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+																<i>Default: false</i>
+															
+														</span>
+														<span class="descriptionSummary">Send immediately</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//ape var is a reference to APE instance
+//Set cycle stack time to 100 ms
+ape.request.cycledStack.setTime(100);</pre>
+												</dd>
+											
+										</dl>
+									
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_client:APE.Request.cycledStack.setTime" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+			<!-- ============================== events summary ======================== -->
+			<div class="tab-pane  jsdoc-pane" id="events_details">
+				
+			</div>
+		</div> <!-- tab content-->
+	</div>
+</div>

@@ -1,0 +1,47 @@
+<!-- Load demo stuff here -->
+<link rel="stylesheet" type="text/css" href="/demos/walk/css/style.css" media="screen"/>
+<script type="text/javaScript" src="/assets/apejsf/mootools-core.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/src/apeClient.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/apeConfig.js"></script>
+<script type="text/javaScript" src="/assets/js/mootools-more-1.2.5.1.js"></script>
+<script type="text/javaScript" src="/demos/walk/js/home.js"></script>
+
+<script type="text/javaScript">
+	window.addEvent('domready', function() {
+			var home = new APE.Home();
+				home.load({
+					'identifier': 'demohome',
+					'channel': ['demohome']
+				});
+	});
+	var msg_next = " -->"
+			var txt_input = "Type here to chat in real time!"
+			//var msn_talk = "Post a message on twitter with the hashtag #APE and see it appear in live!" //Twitter API changed. This doesn't work anymore :(
+			//var msn_msg = "I'am interactive, move your mouse here for more info!" //Twitter API changed. This doesn't work anymore :(
+			var ape_talk = new Array(),
+				ape_talk_alone = new Array();
+								ape_talk.push("Hey there ! I\'m your live demo!");	
+									ape_talk.push("Click to move me around here!");	
+									ape_talk.push("BTW! The other apes are real folks around the world!");	
+									ape_talk.push("Also, drop some words below to chat in real time!");	
+									ape_talk.push("Hope you\'ll enjoy!");	
+									ape_talk_alone.push("Hey there ! I\'m your live demo!");	
+									ape_talk_alone.push("Click to move me around here!");	
+									ape_talk_alone.push("BTW! The other apes are real folks around the world!");	
+									ape_talk_alone.push("Also, drop some words below to chat in real time!");	
+									ape_talk_alone.push("Hope you\'ll enjoy!");	
+</script>
+
+<div id="content">
+	<div class="content_box">
+		<div id="frontdemo">
+			<div id="first_tree">
+				<img src="/demos/walk/img/tree.gif" alt="" />
+			</div>
+			<div id="second_tree">
+				<img src="/demos/walk/img/tree2.gif" alt="" />
+			</div>
+		</div>
+	</div>
+</div>
+<div id="master_container"></div>

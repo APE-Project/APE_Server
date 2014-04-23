@@ -1,0 +1,10 @@
+Ape.registerCmd('foo', true, function(params, cmd) {
+    cmd.user.sendRaw('bar', {
+        hello: 'world',
+        echo: params.ping
+    });
+   
+    sql.query('INSERT INTO table(log) VALUES("' + Ape.MySQL.escape(params.ping) + '")', function(res, errorNo) {
+        Ape.log('Inserted ' + this.getInsertId());
+    });
+});

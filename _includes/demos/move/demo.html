@@ -1,0 +1,29 @@
+<!-- Load demo stuff here -->
+<link rel="stylesheet" type="text/css" href="/demos/move/css/demo.css" media="screen"/>
+<script type="text/javaScript" src="/assets/apejsf/mootools-core.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/src/apeClient.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/apeConfig.js"></script>
+<script type="text/javaScript" src="/demos/move/js/move.js"></script>
+
+<div id="ape_master_container"></div>
+
+<script type="text/javaScript">
+	var client = new APE.Move({
+		'container': document.getElementById('ape_master_container'),
+	});
+	client.load({
+		'identifier': 'movedemo',
+		'channel': 'move',
+		'connectOptions': {'name': rand_chars(5)}
+	});
+	
+	//Create random string used as user nickname
+	function rand_chars(plength) {
+		var keylist = "abcdefghijklmnopqrstuvwxyz";
+		var temp = '';
+		for (i = 0; i < plength; i++) {
+			temp += keylist.charAt(Math.floor(Math.random() * keylist.length));
+		}
+		return temp;
+	}
+</script>

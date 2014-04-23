@@ -1,0 +1,26 @@
+&lt;!-- DEMO CODE START HERE --&gt;
+&lt;link rel="stylesheet" type="text/css" href="demos/pixelbox/css/pixelbox.css" /&gt;
+&lt;link rel="stylesheet" type="text/css" href="demos/pixelbox/css/moorainbow.css" /&gt;
+&lt;link rel="stylesheet" type="text/css" href="demos/pixelbox/ReMooz/ReMooz.css" /&gt;
+
+&lt;script type="text/javaScript" src="Clients/mootools-core.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="/APE_JSF2/js/apeClient.min.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="/APE_JSF2/js/apeConfig.js"&gt;&lt;/script&gt;
+
+&lt;!--[if IE]&gt;&lt;script type="text/javascript" src="demos/pixelbox/js/excanvas.js"&gt;&lt;/script&gt;&lt;![endif]--&gt;
+&lt;script type="text/javaScript" src="demos/pixelbox/js/mootools.drag.color.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="demos/pixelbox/js/moorainbow.modified.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="demos/pixelbox/ReMooz/ReMooz.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="demos/pixelbox/js/pixelbox.js"&gt;&lt;/script&gt;
+
+&lt;script type="text/javascript"&gt;
+//&lt;!--
+	var list = ["Image 1.png", "Image 2.png"]; 
+	APE.Config.transport = 0;
+	var client = new APE.Pixelbox('pixelbox','draw', list);
+//--&gt;
+&lt;/script&gt;
+&lt;div id="pixelbox"&gt;
+	&lt;canvas id="draw" width="640" height="480"&gt;&lt;/canvas&gt;
+&lt;/div&gt;
+&lt;!-- DEMO CODE END HERE --&gt;

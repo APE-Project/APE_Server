@@ -1,0 +1,44 @@
+&lt;link rel="stylesheet" type="text/css" href="demos/walk/css/style.css" media="screen" title="Normal" /&gt;
+&lt;script type="text/javaScript" src="Clients/mootools-core.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="Clients/MooTools.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="Clients/config.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="static/third/mootools-more-1.2.5.1.js"&gt;&lt;/script&gt;
+&lt;script type="text/javaScript" src="demos/walk/js/home.js"&gt;&lt;/script&gt;
+&lt;div id="content"&gt;
+	&lt;div class="content_box"&gt;
+		&lt;div id="frontdemo"&gt;
+			&lt;div id="first_tree"&gt;
+				&lt;img src="demos/walk/img/tree.gif" alt="" /&gt;
+			&lt;/div&gt;
+			&lt;div id="second_tree"&gt;
+				&lt;img src="demos/walk/img/tree2.gif" alt="" /&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="master_container"&gt;&lt;/div&gt;
+&lt;script type="text/javaScript"&gt;
+	window.addEvent('domready', function() {
+		var home = new APE.Home();
+				home.load({
+					'identifier': 'demohome',
+					'channel': ['*twitter', 'demohome']
+				});
+	});
+	var msg_next = " --&raquo;"
+			var txt_input = "Type here to chat in real time!"
+			var msn_talk = "Post a message on twitter with the hashtag #APE and see it appear in live!"
+			var msn_msg = "I'am interactive, move your mouse here for more info!"
+			var ape_talk = new Array(),
+				ape_talk_alone = new Array();
+								ape_talk.push("Hey there ! I\'m your live demo!");	
+									ape_talk.push("Click to move me around here!");	
+									ape_talk.push("BTW! The other apes are real folks around the world!");	
+									ape_talk.push("Also, drop some words below to chat in real time!");	
+									ape_talk.push("Hope you\'ll enjoy!");	
+									ape_talk_alone.push("Hey there ! I\'m your live demo!");	
+									ape_talk_alone.push("Click to move me around here!");	
+									ape_talk_alone.push("BTW! The other apes are real folks around the world!");	
+									ape_talk_alone.push("Also, drop some words below to chat in real time!");	
+									ape_talk_alone.push("Hope you\'ll enjoy!");	
+&lt;/script&gt;

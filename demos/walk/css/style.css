@@ -1,0 +1,225 @@
+#content {
+	background-color:#e5eef5;
+	font-family:'Verdana',"Lucida Grande",'Arial','sans-serif';
+	font-size:11px;
+	color:#444749;
+}
+
+.content_box {
+	width:903px;
+	margin:0 auto;
+}
+
+#frontdemo {
+	margin-top:-10px;
+	width:902px;
+	height:119px;
+	cursor:pointer;
+	position:relative;
+}
+
+#first_tree,#second_tree {
+	margin-top:12px;
+	position:absolute;
+}
+
+#second_tree {
+	margin-left:835px;
+}
+
+.ape_container {
+	width:65px;
+	height:55px;
+	position:absolute;
+	margin-top:64px;
+	z-index:3;
+}
+
+.ape_container .ape {
+	width:65px;
+	height:55px;
+	background-image:url(/demos/walk/img/pix_ape.gif);
+	z-index:2;
+	position:absolute;
+}
+
+.ape_container.go_right .ape_tie {
+	height:25px;
+	margin-left:34px;
+}
+
+.ape_container.go_left .ape_tie {
+	height:26px;
+	margin-left:21px;
+}
+
+.ape_tie {
+	z-index:1;
+	position:absolute;
+	width:10px;
+	height:29px;
+	margin-left:28px;
+	margin-top:25px;
+}
+
+.ape_message_container {
+	margin-left:35px;
+	margin-top:-25px;
+	position:absolute;
+	white-space:nowrap;
+	width:auto;
+}
+
+.msg_twitter,.msg_msn {
+	top:30px;
+	left:14px;
+}
+
+.msg_msn .msg_left,.msg_msn .msg_right,.msg_msn .msg,.msg_twitter .msg_left,.msg_twitter .msg_right,.msg_twitter .msg {
+	height:18px;
+	line-height:15px;
+}
+
+.msg_twitter .msg_left {
+	background-image:url(/demos/walk/img/bubble_rightrb.png);
+	background-image:none;
+	width:7px;
+}
+
+.msg_twitter .msg_right {
+	background-image:url(/demos/walk/img/bubble_leftrb.png);
+}
+
+.msg_twitter .msg {
+	background:url(/demos/walk/img/bubble_midb.png);
+	margin-left:7px;
+}
+
+.msg_msn .msg_left {
+	background-image:url(/demos/walk/img/bubble_leftb.png);
+}
+
+.msg_msn .msg_right {
+	background-image:url(/demos/walk/img/bubble_rightb.png);
+}
+
+.msg_msn .msg {
+	background:url(/demos/walk/img/bubble_midb.png);
+	margin-left:14px;
+}
+
+.msg_right,.msg_left,.msg {
+	height:35px;
+	float:left;
+}
+
+.msg_right a {
+	cursor:pointer;
+}
+
+.msg_right {
+	background:url(/demos/walk/img/bubble_right.png) no-repeat top right;
+	padding-right:8px;
+	float:right;
+	margin-right:-7px;
+}
+
+.msg {
+	background:url(/demos/walk/img/bubble_mid.png);
+	line-height:24px;
+	margin-left:8px;
+}
+
+.msg_left {
+	background:url(/demos/walk/img/bubble_left.png);
+	width:19px;
+}
+
+.msn_talk {
+	position:absolute;
+	margin-left:75px;
+	background:#FFF;
+	border:1px solid #dbdbdb;
+	width:220px;
+	padding:10px;
+	margin-top:-105px;
+	z-index:10;
+	-moz-border-radius-bottomleft:5px;
+	-moz-border-radius-bottomright:5px;
+	-moz-border-radius-topleft:5px;
+	-moz-border-radius-topright:5px;
+	-webkit-border-bottom-left-radius:5px;
+	-webkit-border-bottom-right-radius:5px;
+	-webkit-border-top-left-radius:5px;
+	-webkit-border-top-right-radius:5px;
+}
+
+.chat_box_home {
+	width:500px;
+	margin:auto;
+	border-left:1px solid #cecece;
+	border-right:1px solid #cecece;
+	border-bottom:1px solid #cecece;
+	color:#777;
+	padding-bottom:3px;
+	text-align:center;
+	padding-top:5px;
+	padding-bottom:6px;
+	-moz-border-radius-bottomleft:10px;
+	-moz-border-radius-bottomright:10px;
+	-webkit-border-bottom-left-radius:10px;
+	-webkit-border-bottom-right-radius:10px;
+	background-color:#fafafa;
+	height:0;
+	overflow:hidden;
+}
+
+.chat_box_home .submit {
+	border:none;
+	width:34px;
+	height:14px;
+	background:url(/demos/walk/img/send_text.png);
+	float:left;
+	cursor:pointer;
+}
+
+.chat_box_home .text {
+	background-color:#fafafa;
+	width:440px;
+	padding-left:10px;
+	color:#777;
+	border:none;
+	float:left;
+	margin-left:1px;
+}
+
+#home_loading {
+	font-weight:700;
+	margin-bottom:auto;
+	margin-left:auto;
+	margin-right:auto;
+	margin-top:auto;
+	padding-top:55px;
+	position:absolute;
+	left:380px;
+	width:150px;
+}
+
+.msn_talk {
+	position:absolute;
+	margin-left:75px;
+	background:#FFF;
+	border:1px solid #dbdbdb;
+	width:220px;
+	padding:10px;
+	margin-top:-105px;
+	z-index:10;
+	-moz-border-radius-bottomleft:5px;
+	-moz-border-radius-bottomright:5px;
+	-moz-border-radius-topleft:5px;
+	-moz-border-radius-topright:5px;
+	-webkit-border-bottom-left-radius:5px;
+	-webkit-border-bottom-right-radius:5px;
+	-webkit-border-top-left-radius:5px;
+	-webkit-border-top-right-radius:5px;
+}

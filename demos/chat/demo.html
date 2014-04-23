@@ -1,0 +1,26 @@
+---
+layout: APEDemo
+title: APE real time chat &#58;&#58; APE Demos &#58;&#58; APE (Ajax Push Engine)
+---
+
+<link rel="stylesheet" type="text/css" href="/demos/chat/demo.css" media="screen" title="Normal" />
+<script type="text/javaScript" src="/assets/apejsf/mootools-core.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/apeClient.min.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/apeConfig.js"></script>
+<script type="text/javaScript" src="/demos/chat/demo.js"></script>
+
+<div id="ape_master_container"></div>
+<script type="text/javaScript">
+	
+	// Add Session.js to APE JSF to handle multitab and page refresh
+	APE.Config.scripts.push(APE.Config.baseUrl+'/Source/Core/Session.js');
+
+	// Initialize APE_Client
+	var chat = new APE.Chat({'container':$('ape_master_container')});
+
+	// Connect to the APE Server
+	chat.load({
+		identifier: 'chatdemo', // Identifier of the application 
+		channel: 'chatdemo' // Channel to join at startup
+	});
+</script>

@@ -1,0 +1,45 @@
+<link rel="stylesheet" type="text/css" href="/demos/pixelbox/css/pixelbox.css" media="screen" title="Normal" />
+<link rel="stylesheet" type="text/css" href="/demos/pixelbox/css/moorainbow.css" media="screen" title="Normal" />
+<link rel="stylesheet" type="text/css" href="/demos/pixelbox/ReMooz/ReMooz.css" media="screen" title="Normal" />
+<script type="text/javaScript" src="/assets/apejsf/mootools-core.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/apeClient.min.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/apeConfig.js"></script>
+<script type="text/javaScript" src="/demos/pixelbox/js/mootools.drag.color.js"></script>
+<script type="text/javaScript" src="/demos/pixelbox/js/moorainbow.modified.js"></script>
+<script type="text/javaScript" src="/demos/pixelbox/js/pixelbox.js"></script>
+<script type="text/javaScript" src="/demos/pixelbox/ReMooz/ReMooz.js"></script>
+
+<script type="text/javascript">
+//<!--
+        var list = [/*
+<?php
+
+	$dir = opendir(dirname(__FILE__).'/saves/small/');
+
+	$res = array();
+	while($file = readdir($dir)) {
+		if(substr($file, 0, 1) != '.') {
+			$res[] = $file;
+		}
+	}
+	rsort($res);
+
+	$cnt = count($res);
+
+	for($i=0;$i<20;$i++) {
+		if($i >= $cnt) break;
+		if($i) echo ',';
+		echo "'".addslashes($res[$i])."'";
+	}
+
+?>
+*/];
+ 
+ 
+   APE.Config.transport = 0;
+   var client = new APE.Pixelbox('pixelbox','draw', list);
+//-->
+</script>
+<div id="pixelbox">
+	<canvas id="draw" width="640" height="480"></canvas>
+</div>

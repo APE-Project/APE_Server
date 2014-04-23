@@ -1,0 +1,391 @@
+/* Sticky footer styles
+      -------------------------------------------------- */
+html,
+body {
+	height: 100%; /* The html and body elements cannot have any padding or margin. */
+}
+
+/* Wrapper for page content to push down footer */
+#wrap {
+	min-height: 100%;
+	height: auto !important;
+	height: 100%;
+	/* Negative indent footer by it's height */
+	margin: 0 auto -60px;
+}
+
+/* Set the fixed height of the footer here */
+#push,
+#footer {
+	height: 60px;
+}
+
+/*Set the size of some icons*/
+.img_icon{
+	width:32px;
+	height: 32px;
+}
+
+p {
+	text-align: justify;
+}
+
+/* 
+ * PAGE FOOTER  
+ *************/
+#footer {
+	background-color: #f5f5f5;
+}
+
+.credit {
+	margin: 20px 0;
+}
+
+/* 
+ * PAGE HEADER  
+ **************/
+.page-header {
+	background: #2D3538;
+	padding-bottom: 15px;
+	margin: 0px;
+	margin-bottom: 25px;
+	border-bottom: none;
+}
+
+.brand-main {
+	float: left;
+	margin-right: 15px;
+	display: none;
+}
+
+.brand-main,
+.brand-main:hover {
+	font-size: 35px;
+	line-height: 35px;
+	letter-spacing: -2px;
+	color: #76858A;
+	text-decoration: none;
+	font-family: Courier;
+	padding-top: 10px;
+}
+
+.brand-main img {
+	padding-right: 5px;
+}
+
+/* 
+ * NAVABAR  
+ ***********/
+
+@media (min-width: 978px) {
+
+	.page-header {
+		padding-top: 10px;
+	}
+
+	.navbar {
+		margin-left: 260px;
+	}
+	 
+	/* Boostrap overwrite */
+	.navbar-inner {
+		background-color: #2D3538 !important;
+		background-image: none !important;
+		border: none !important;
+		filter: none !important;
+		-webkit-border-radius: 0px !important;
+		-moz-border-radius: 0px !important;
+		border-radius: 0px !important;
+		-webkit-box-shadow: none !important;
+		-moz-box-shadow: none !important;
+		box-shadow: none !important;
+		padding-right: 0px !important;
+	}
+	
+	.navbar .nav {
+		margin-top: 20px;
+		margin-right: 0px;
+		float: right;
+	}
+	
+	.navbar .nav > li.active a {
+		background: #455357;
+		color: #fff;
+		box-shadow: none;
+		-webkit-box-shadow: none;
+		-mox-box-shadow: none;
+		-webkit-border-radius: 5px;
+		-moz-border-radius: 5px;
+		border-radius: 5px;		
+		margin-left: 3px;
+		margin-right: 3px;
+	}
+	
+	.navbar .nav > li > a {
+		text-shadow: none;
+		font-weight: bold;
+		color: whitesmoke;
+		margin-left: 3px;
+		margin-right: 3px;
+	}
+	
+	.navbar .nav>.active>a, 
+	.navbar .nav>.active>a:hover, 
+	.navbar .nav>.active>a:focus {
+		background-color: #455357;
+		color: #C6D0D3;
+		-webkit-box-shadow: none;
+		-moz-box-shadow: none;
+		box-shadow: none;
+	}
+	
+	.navbar .nav>li>a:focus {
+		background-color: #2D3538;
+		color: whitesmoke;
+	}
+	
+	.navbar .nav>li>a:hover {
+		background: #455357;
+		color: #C6D0D3;
+		-webkit-border-radius: 5px;
+		-moz-border-radius: 5px;
+		border-radius: 5px;
+	}
+	
+	.navbar .nav li.dropdown.open>.dropdown-toggle, 
+	.navbar .nav li.dropdown.active>.dropdown-toggle, 
+	.navbar .nav li.dropdown.open.active>.dropdown-toggle {
+		background: #455357;
+		color: #C6D0D3;
+	}
+	
+	.navbar .nav li.dropdown>.dropdown-toggle .caret {
+		border-top-color: whitesmoke;
+		border-bottom-color: whitesmoke;
+	}
+	
+	.navbar .nav li.dropdown>a:hover .caret, 
+	.navbar .nav li.dropdown>a:focus .caret {
+		border-top-color: #C6D0D3;
+		border-bottom-color: #C6D0D3;
+	}
+	
+	.navbar .nav li.dropdown.open>.dropdown-toggle .caret, 
+	.navbar .nav li.dropdown.active>.dropdown-toggle .caret, 
+	.navbar .nav li.dropdown.open.active>.dropdown-toggle .caret {
+		border-top-color: #C6D0D3;
+		border-bottom-color: #C6D0D3;
+	}
+	
+	.page-header .container, .jumbotron {
+		margin-left: auto !important;
+		margin-right: auto !important;
+	}
+}
+
+.page-header .container, .jumbotron {
+	margin-left: 0px;
+	margin-right: 0px;
+}
+
+/*
+ * JUMBOTRON
+ ************/
+ 
+.jumbotron {
+	background: #2D3538;
+	padding-bottom: 15px;
+	margin-top: -25px; /* Push back up to undo the page-header margin */
+	margin-bottom: 25px;
+	border-bottom: none;
+}
+
+.jumbotron h1 {
+	color: white;
+}
+
+.jumbotron p {
+	font-size: 16px;
+	font-weight: 200;
+	line-height: 30px;
+	color: whitesmoke;
+	text-align: justify;
+}
+
+.jumbotron .btnblock {
+	margin-top: 25px;	
+	text-align: center;
+}
+
+.jumbotron .btnblock > .btn {
+	min-width: 150px;
+	padding: 15px;
+	font-size: 20px !important;
+	font-weight: bold;
+	margin-left: 7px;
+	margin-right: 7px;
+}
+
+.jumbotron-img-index,
+.jumbotron-img {
+	position: absolute;
+	bottom: -15px;
+	left: 0px;
+	margin-left: 0px;
+	margin-right: 50px;
+}
+
+.jumbotron-img-index {
+	margin-left: 100px;
+	margin-right: 100px;
+}
+
+.jumbotron .textblock {
+	margin-left: 200px;
+}
+
+.jumbotron .textblock-index {
+	margin-left: 440px;
+}
+
+/* 
+ * CONTENT 
+ ***********/
+.container div.section {
+	margin-bottom: 35px;
+	*zoom:1;
+}
+/* Apply Clearfix to sections */
+.container div.section:before,
+.container div.section:after {
+	display:table;content:"";line-height:0;
+}
+.container div.section:after {
+	clear:both;
+}
+
+div.section h1,
+h1.section,
+h2.section,
+h3.section {
+	padding-bottom: 5px;
+	border-bottom: 1px solid #eeeeee;
+}
+
+.btnblock {
+	margin-top: 25px;	
+	text-align: center;
+}
+
+.btnblock > .btn {
+	min-width: 150px;
+	padding: 15px;
+	font-size: 20px !important;
+	font-weight: bold;
+	margin-left: 7px;
+	margin-right: 7px;
+}
+
+ul.download-list li {
+	margin-bottom: 5px;
+	margin-left: 5px;
+}
+
+h1.fit,
+h2.fit,
+h3.fit,
+h4.fit,
+h5.fit {
+	margin: 0px;
+}
+
+.nav-tabs-pannel {
+	margin-bottom: 0px;
+	border-bottom: none;
+}
+
+.demo-well p {
+	color: black;
+}
+
+.demo-well img {
+	padding-right: 8px;
+}
+
+a.demo-well:hover, 
+a.demo-well:visited, 
+a.demo-well:active, 
+a.demo-well:focus { text-decoration: none; }
+
+div.ape-demo-pane {
+	max-height: 500px;
+	overflow-y: auto;
+}
+
+.tab-content {
+	border: 1px solid #ddd;
+	padding: 10px;
+}
+
+div.embed_demo_link {
+	line-height: 40px;
+}
+input.embed_demo_link {
+	background-color: white !important;
+	cursor: default !important;
+	margin-bottom: 0px !important;
+}
+
+/* 
+ * MISC 
+ ***********/
+ 
+ /* FIx responsiveness in small page width */
+@media (max-width: 979px) {
+	
+	.container, .navbar-static-top .container,
+	.navbar-fixed-top .container,
+	.navbar-fixed-bottom .container {
+		width: auto;
+		margin-left: 15px;
+		margin-right: 15px;
+	}
+	
+	/* Fix the header part now */
+	.jumbotron-img-index,
+	jumbotron-img {
+		margin-left: 15px;
+	}
+	
+	.jumbotron .textblock-index {
+		margin-left: 270px;
+		margin-right: 15px;
+	}
+}
+
+@media (max-width: 767px) {
+	body {
+		padding-left: 0px;
+		padding-right: 0px;
+	}
+}
+
+/* "Brand" logo setup */
+@media (min-width: 978px) {
+	.brand-main {
+		display: block;
+	}
+	.brand {
+		display: none !important;
+	}
+}
+
+/* Fix Carroussel */
+.carousel-caption {
+	color: white;
+	position: relative;
+}
+
+li.usesApe {
+	margin-bottom: 10px;
+}

@@ -1,0 +1,1315 @@
+---
+layout: APE
+title:  Ape.pipe &#58;&#58; Server Documentation &#58;&#58; APE (Ajax Push Engine)
+---
+<div id="index">
+	<div class="span3">
+	<div class="well sidebar-nav">
+		<a href="../index.html">Class Index</a> | <a href="../files.html">File Index</a>
+		<h2>Classes</h2>
+		<ul class="nav nav-list classList">
+			
+				<li> 									<i><a href="../symbols/global.html">global</a></i> 								</li> 								<li class="nav-header"> 									<hr/> 								</li>
+			
+				<li><a href="../symbols/Ape.html">Ape</a></li>
+			
+				<li><a href="../symbols/Ape.b64.html">Ape.b64</a></li>
+			
+				<li><a href="../symbols/Ape.channel.html">Ape.channel</a></li>
+			
+				<li><a href="../symbols/Ape.MySQL.html">Ape.MySQL</a></li>
+			
+				<li><a href="../symbols/Ape.pipe.html">Ape.pipe</a></li>
+			
+				<li><a href="../symbols/Ape.sha1.html">Ape.sha1</a></li>
+			
+				<li><a href="../symbols/Ape.sockClient.html">Ape.sockClient</a></li>
+			
+				<li><a href="../symbols/Ape.sockServer.html">Ape.sockServer</a></li>
+			
+				<li><a href="../symbols/Ape.subuser.html">Ape.subuser</a></li>
+			
+				<li><a href="../symbols/Ape.user.html">Ape.user</a></li>
+			
+		</ul>
+	</div><!--/.well -->
+</div><!--/span-->
+
+</div>
+
+<div class="span9">
+	<div class="row-fluid">
+		<!-- ============================== class title ============================ -->
+		<div class="span6">
+			<h1 class="section classTitle">server 
+			Class Ape.pipe</h1>
+		</div>
+		<div class="span3" align="center">
+			<img src="/assets//img/promotejsh.gif" width="150px" height="148px"/>
+		</div>
+	</div>
+	<div class="row-fluid">
+		
+		<ul class="nav nav-tabs nav-tabs-pannel">
+			<li class="" id="summary">
+				<a href="#class_summary" data-toggle="tab">Class summary</a>
+			</li>
+			
+				<li class="" id="constructor">
+					<a href="#contructor_details" data-toggle="tab">Constructor</a>
+				</li>
+			
+			
+			
+				<li class="active" id="methods">
+					<a href="#methods_details" data-toggle="tab">Methods</a>
+				</li>
+			
+			
+				<li class="" id="events">
+					<a href="#events_details" data-toggle="tab">Events</a>
+				</li>
+			
+		</ul>
+		<div class="tab-content">
+			<!-- ============================== class summary ========================== -->
+			<div class="tab-pane  jsdoc-pane" id="class_summary">
+				<a name="class_summary"><h2><span class="variableName">Summary</span></h2></a>
+				
+				
+				
+					<div class="description">
+						pipe object (Communication line)
+					</div>
+				
+				
+					<dl class="detailList">
+						<dt class="labelHeading">File</dt>
+						<div class="dline">
+							<dd>&lt;./src/Ape_Server/modules/libape-spidermonkey.c&gt;</dd>
+						</div>
+					</dl>
+				
+			</div>
+			<!-- ============================== constructor details ==================== -->
+			<div class="tab-pane  jsdoc-pane" id="contructor_details">
+				
+					<div class="details"><a name="constructor"><h2><span class="variableName">pipe</span> Class Detail</h2></a>
+						<div class="storageClass">
+							
+							<b>Ape.pipe</b>
+							
+								()
+							
+						</div>
+						
+							<div class="description">
+								Pipe constructor.
+<p>A pipe is an object that is kind of a connector through wich RAWs are sent.</p>
+<p>Each user an channel has got an associated pipe.
+<p>Pipes created manually (custom pipes) are a little different from user and channel pipes. A manually created pipe is just usefull to receive "SEND" commands from clients (Proxy pipes are working this way). See example for more details.</p>
+							</div>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">File:</dt>
+								<div class="dline">
+										<dd>&lt;./src/Ape_Server/modules/libape-spidermonkey.c&gt;</dd>
+									</div>
+								</dl>
+							
+							
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Returns:</dt>
+								<div class="dline">
+									
+										<dd><span class="parameterType">{<a href="../symbols/Ape.pipe.html">Ape.pipe</a>} </span>
+											<span class="descriptionSummary"></span>
+										</dd>
+									
+								</div>
+							</dl>
+						
+						
+						
+						
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Examples</dt>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">var mypipe = new Ape.pipe();</pre>
+									</dd>
+								
+									<dd>
+										<pre class="code prettyprint linenums lang-javascript">//Custom pipe
+//We create a new custom pipe
+var pipe = new Ape.pipe();
+//Custom pipe is created with an unique pubid
+Ape.log('Custom pipe pubid: ' + pipe.getProperty('pubid'));
+//We listen "SEND" commands received on this pipe
+pipe.onSend = function(user, params) {
+Ape.log('Received data from pipe: ' + params.msg);
+	if(params.destroy) {
+		pipe.destroy();
+	}
+}</pre>
+									</dd>
+								
+							</dl>
+						
+						
+							<dl class="detailList">
+								<dt class="labelHeading">See:</dt>
+								<div class="dline">
+									
+										<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.pipe.html#static_destroy">Ape.pipe.destroy</a>
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.pipe.html#static_toObject">Ape.pipe.toObject</a>
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.pipe.html#static_getParent">Ape.pipe.getParent</a>
+											
+										</dd>
+									
+										<dd>Ape.pipe.onSend
+											
+										</dd>
+									
+										<dd><a href="../symbols/Ape.pipe.html#static_sendRaw">Ape.pipe.sendRaw</a>
+											
+										</dd>
+									
+								</div>
+							</dl>
+						
+						<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.pipe" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+					</div>
+				
+			</div>
+			<!-- ============================== properties ========================================= -->
+			<div class="tab-pane  jsdoc-pane" id="property_details">
+				
+			</div>
+			<!-- ============================== methods ========================================== -->
+			<div class="tab-pane active jsdoc-pane" id="methods_details">
+				
+					
+					<ul class="nav nav-tabs nav-tabs-pannel">
+					<li class="active"  id="methods_summary_li" class="nested">
+						<a href="#methods_summary" data-toggle="tab">Summary</a>
+					</li>
+					
+						
+							<li class="nested" id="static_delProperty_li">
+								<a href="../symbols/Ape.pipe.html#static_delProperty" data-toggle="tab">delProperty</a>
+							</li>
+						
+							<li class="nested" id="static_destroy_li">
+								<a href="../symbols/Ape.pipe.html#static_destroy" data-toggle="tab">destroy</a>
+							</li>
+						
+							<li class="nested" id="static_getParent_li">
+								<a href="../symbols/Ape.pipe.html#static_getParent" data-toggle="tab">getParent</a>
+							</li>
+						
+							<li class="nested" id="static_sendRaw_li">
+								<a href="../symbols/Ape.pipe.html#static_sendRaw" data-toggle="tab">sendRaw</a>
+							</li>
+						
+							<li class="nested" id="static_sendResponse_li">
+								<a href="../symbols/Ape.pipe.html#static_sendResponse" data-toggle="tab">sendResponse</a>
+							</li>
+						
+							<li class="nested" id="static_setProperty_li">
+								<a href="../symbols/Ape.pipe.html#static_setProperty" data-toggle="tab">setProperty</a>
+							</li>
+						
+							<li class="nested" id="static_toObject_li">
+								<a href="../symbols/Ape.pipe.html#static_toObject" data-toggle="tab">toObject</a>
+							</li>
+						
+					
+				</ul>
+				<div class="tab-content">
+					<!-- ============================== method summary ===================== -->
+					<div class="tab-pane active active jsdoc-pane" id="methods_summary">
+						<a name="methods_summary"><h2><span class="variableName">Summary</span></h2></a>
+						
+							<dl class="detailList">
+								<dt class="labelHeading">Own</dt>
+							</dl>
+							<table class="summaryTable">
+								<thead>
+									<tr>
+										<th>Methods Attributes</th>
+										<th>Methods Name</th>
+										<th>Methods Description</th>
+									</tr>
+								</thead>
+								<tbody>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.pipe.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.pipe.html#static_delProperty" onClick="handleTabLinks('#static_delProperty'); return false;">delProperty</a></span>
+													(name)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Delete a public property from a pipe.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.pipe.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.pipe.html#static_destroy" onClick="handleTabLinks('#static_destroy'); return false;">destroy</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Destroy a custom pipe.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.pipe.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.pipe.html#static_getParent" onClick="handleTabLinks('#static_getParent'); return false;">getParent</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Get the channel object of a pipe.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.pipe.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.pipe.html#static_sendRaw" onClick="handleTabLinks('#static_sendRaw'); return false;">sendRaw</a></span>
+													(name, data, options)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Send a custom RAW on a pipe.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.pipe.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.pipe.html#static_sendResponse" onClick="handleTabLinks('#static_sendResponse'); return false;">sendResponse</a></span>
+													(name, data)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Send a response to a command.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.pipe.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.pipe.html#static_setProperty" onClick="handleTabLinks('#static_setProperty'); return false;">setProperty</a></span>
+													(key, value)
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Set a public property on a pipe.
+												</span>
+											</td>
+										</tr>
+									
+										<tr>
+											<td class="attributes">
+												<span class="storageClass">
+													&lt;static&gt; &nbsp;
+												</span>
+											</td>
+											<td>
+												<span class="storageClass">
+													
+														Ape.pipe.
+													
+												</span>
+												<span class="variableName"><a href="../symbols/Ape.pipe.html#static_toObject" onClick="handleTabLinks('#static_toObject'); return false;">toObject</a></span>
+													()
+											</td>
+											<td>
+												<span class="descriptionSummary">
+													Get a pipe object.
+												</span>
+											</td>
+										</tr>
+									
+								</tbody>
+							</table>
+							
+							
+						</div>
+						<!-- ============================== method details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_delProperty">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.pipe.</span>
+										
+										<a name="static_delProperty">
+												<span class="variableName">delProperty</span>
+											(name)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Delete a public property from a pipe.
+<p>The property 'pubid' cannot be removed.</p>
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">name</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The name of the property to unset</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">pipe.delProperty('user_id');</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_destroy">Ape.pipe.destroy</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_setProperty">Ape.pipe.setProperty</a>
+														
+													</dd>
+												
+													<dd>Ape.pipe.getProperty
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_toObject">Ape.pipe.toObject</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_getParent">Ape.pipe.getParent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.delProperty" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_destroy">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.pipe.</span>
+										
+										<a name="static_destroy">
+												<span class="variableName">destroy</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Destroy a custom pipe.
+										</div>
+									
+									
+									
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">pipe.destroy();</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.destroy" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_getParent">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{<a href="../symbols/Ape.channel.html">Ape.channel</a>}</span>
+										
+										
+											<span class="parameterType">Ape.pipe.</span>
+										
+										<a name="static_getParent">
+												<span class="variableName">getParent</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Get the channel object of a pipe.
+										</div>
+									
+									
+									
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{<a href="../symbols/Ape.channel.html">Ape.channel</a>} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">var channel = Ape.getChannelByPubid(pubid);
+var pipe = channel.getParent();</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_toObject">Ape.pipe.toObject</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.subuser.html#static_getParent">Ape.subuser.getParent</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.getParent" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_sendRaw">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.pipe.</span>
+										
+										<a name="static_sendRaw">
+												<span class="variableName">sendRaw</span>
+											(name, data, options)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Send a custom RAW on a pipe.
+
+<p>The Ape server has some pre-registered CMD where automatically RAWs are returned upon. See Ape.registerCmd for details.</p>
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">name</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The RAW name</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">data</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">An object that will be JSON encoded and send outh with the RAW</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">options</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{pipe} </span>
+														<span class="variableName">options.from</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">An user pipe or a custom pipe that will be added in the from field, if an user pipe, the raw will not be sent to this user.</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{user|subuser} </span>
+														<span class="variableName">options.restrict</span>
+														<span class="parameterInfo">
+															
+																<i>Optional</i>
+															
+															
+														</span>
+														<span class="descriptionSummary">A user (if sending to a channel), or a subuser (if sending to n user) which will not receive the raw.</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//Basic
+pipe.sendRaw("CUSTOM_RAW", {"foo":"bar"});
+//This will send this raw: {"time":"1255281320","raw":"CUSTOM_RAW","data":{"foo":"bar"}}</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//Send a raw to an user
+Ape.registerCmd("foocmd", true, function(params, info) {
+	Ape.log("The user ip : ("+infos.ip+"), foo : " + params.foo);
+	info.user.pipe.sendRaw("CUSTOM_RAW", {"foo":"bar"});
+});</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">//Send a raw to a pipe
+Ape.registerCmd("foocmd", true, function(params, info) {
+	Ape.log("The user ip : ("+info.ip+"), foo : " + params.foo);
+	Ape.getPipe(params.pubid).sendRaw("CUSTOM_RAW", {"foo":"bar"});
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_sendRaw">Ape.pipe.sendRaw</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_registerCmd">Ape.registerCmd</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_sendResponse">Ape.pipe.sendResponse</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.subuser.html#static_sendRaw">Ape.subuser.sendRaw</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.subuser.html">Ape.subuser</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.sendRaw" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_sendResponse">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.pipe.</span>
+										
+										<a name="static_sendResponse">
+												<span class="variableName">sendResponse</span>
+											(name, data)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Send a response to a command.
+<p>You can send a response in registerHookCmd and registerCmd. This is useful if you want to assign a callback to a command in client-side.</p>
+<p>When calling sendResponse method, the RAW sent to the user has the challenge 'chl' set to the value that came in the request to facilitate a callback. Other methods of sending a response includes pipe.sendRaw however server doesn't set the 'chl' automatically for them.</p>
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">name</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The RAW name</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="variableName">data</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">An object that will be JSON encoded and send out with the RAW</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">Ape.registerCmd("foocmd", true, function(params, info) {
+	info.sendResponse('custom_raw', {'foo':'bar'});
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_sendRaw">Ape.pipe.sendRaw</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.subuser.html#static_sendRaw">Ape.subuser.sendRaw</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_registerCmd">Ape.registerCmd</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_registerHookCmd">Ape.registerHookCmd</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_registerHookBadCmd">Ape.registerHookBadCmd</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.sendResponse" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_setProperty">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{void}</span>
+										
+										
+											<span class="parameterType">Ape.pipe.</span>
+										
+										<a name="static_setProperty">
+												<span class="variableName">setProperty</span>
+											(key, value)
+										</a>
+									</h2>
+									
+										<div class="description">
+											Set a public property on a pipe.
+										</div>
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Parameters:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{string} </span>
+														<span class="variableName">key</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The name of the property to set</span>
+													</dd>
+												
+													<dd>
+														<span class="parameterType">{mixed} </span>
+														<span class="variableName">value</span>
+														<span class="parameterInfo">
+															
+															
+														</span>
+														<span class="descriptionSummary">The value to set</span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{void} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Examples</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">var userObj = {'name': 'john', 'age': 30};
+pipe.setProperty('user', userObj);</pre>
+												</dd>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">pipe.setProperty('foo', 'bar');</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+										<hr />
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.setProperty" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+								<div class="tab-pane jsdoc-pane" id="static_toObject">
+									<h2>
+										<span class="storageClass">
+													&lt;static&gt; 
+										</span>
+										
+											<span class="parameterType">{object}</span>
+										
+										
+											<span class="parameterType">Ape.pipe.</span>
+										
+										<a name="static_toObject">
+												<span class="variableName">toObject</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Get a pipe object.
+										</div>
+									
+									
+									
+									
+									
+										<dl class="detailList">
+										<dt class="labelHeading">Returns:</dt>
+											<div class="dline">
+												
+													<dd>
+														<span class="parameterType">{object} </span>
+														<span class="descriptionSummary"></span>
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">Example</dt>
+											
+												<dd>
+													<pre class="code prettyprint linenums lang-javascript">Ape.registerCmd("foocmd", true, function(params, info) {
+	var obj = Ape.getPipe(params.pubid).toObject();
+});</pre>
+												</dd>
+											
+										</dl>
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.toObject" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+			<!-- ============================== events summary ======================== -->
+			<div class="tab-pane  jsdoc-pane" id="events_details">
+				
+					
+					
+						<ul class="nav nav-tabs nav-tabs-pannel">
+							<li class="active" id="events_summary_li" class="nested">
+								<a href="#events_summary" data-toggle="tab">Event summary</a>
+							</li>
+							
+								<li class="nested" id="static_event_onSend_li">
+									<a href="../symbols/Ape.pipe.html#static_event_onSend" data-toggle="tab">onSend</a>
+								</li>
+							
+						</ul>
+					
+					<div class="tab-content">
+						<!-- ============================== events summary ======================== -->
+						<div class="tab-pane active active jsdoc-pane" id="events_summary">
+							<a name="events_summary"><h2><span class="variableName">Summary</span></h2></a>
+							
+								<dl class="detailList">
+									<dt class="labelHeading">Own</dt>
+								</dl>
+								<table class="summaryTable">
+									<thead>
+										<tr>
+											<th>Attributes</th>
+											<th>Name</th>
+											<th>Description</th>
+										</tr>
+									</thead>
+									<tbody>
+										
+											<tr>
+												<td class="attributes">
+													<span class="storageClass">&lt;static&gt; &nbsp;
+													</span>
+												</td>
+												<td>
+													<span class="storageClass">
+														
+															Ape.pipe.
+														
+													</span>
+													<span class="variableName"><a href="../symbols/Ape.pipe.html#static_event_onSend" onClick="handleTabLinks('#static_event_onSend'); return false;">onSend</a></span>
+													()
+												</td>
+												<td>
+													<span class="descriptionSummary">Trigger a event if something is send on a pipe.</span>
+												</td>
+											</tr>
+										
+									</tbody>
+								</table>
+							
+							
+						</div>
+						<!-- ============================== event details ========================= -->
+						
+							
+								<div class="tab-pane jsdoc-pane" id="static_event_onSend">
+									<h2>
+										<span class="storageClass">
+											&lt;static&gt; 
+										</span>
+										
+										
+											<span class="parameterType">Ape.pipe.</span>
+										
+										<a name="static_event_onSend">
+											<span class="variableName">onSend</span>
+											()
+										</a>
+									</h2>
+									
+										<div class="description">
+											Trigger a event if something is send on a pipe.
+										</div>
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+									
+										<dl class="detailList">
+											<dt class="labelHeading">See:</dt>
+											<div class="dline">
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html#static_sendRaw">Ape.pipe.sendRaw</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.pipe.html">Ape.pipe</a>
+														
+													</dd>
+												
+													<dd><a href="../symbols/Ape.html#static_getPipe">Ape.getPipe</a>
+														
+													</dd>
+												
+											</div>
+										</dl>
+									
+									
+									<div class="wikilink"><a href="http://www.ape-project.org/wiki/index.php?page_server:Ape.pipe.onSend" target="_blank"><img src="/assets/img/wikiape.png"/>Go to the wiki for this item</a></div>
+								</div>
+							
+						
+					</div>
+				
+			</div>
+		</div> <!-- tab content-->
+	</div>
+</div>

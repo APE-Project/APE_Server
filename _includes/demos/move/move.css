@@ -1,0 +1,36 @@
+#move_box {
+	width:500px;
+	height:500px;
+	background:silver;
+	border:1Px solid #000;
+	margin:400px auto 0;
+}
+
+.demo_box_container .user {
+	width:20px;
+	height:20px;
+}
+
+.demo_box_container span {
+	margin-top:-40px;
+	position:absolute;
+}
+
+.demo_box_container {
+	position:absolute;
+}
+
+.ape_chatting {
+	width:500px;
+	height:50px;
+	margin:auto;
+}
+
+.demo_box_container .ape_buble_message {
+	margin-left:25px;
+	line-height:15px;
+	padding:0 5px;
+	width:auto;
+	background:#FFF;
+	border:1px solid #000;
+}

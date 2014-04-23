@@ -1,0 +1,15 @@
+&lt;div id="ape_master_container"&gt;&lt;/div&gt;
+
+&lt;script type="text/javaScript"&gt;
+// Add Session.js to APE JSF to handle multitab and page refresh
+APE.Config.scripts.push(APE.Config.baseUrl+'/Source/Core/Session.js');
+
+// Initialize APE_Client
+var chat = new APE.Chat({'container':$('ape_master_container')});
+
+// Connect to the APE Server
+chat.load({
+	identifier: 'chatdemo', // Identifier of the application 
+	channel: 'chatdemo' // Channel to join at startup
+});
+&lt;/script&gt;

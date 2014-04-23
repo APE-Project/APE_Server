@@ -1,0 +1,174 @@
+---
+layout: APE
+title: APE (Ajax Push Engine) &#58;&#58; Comet server &#58;&#58; Real time data streaming
+navbar: index
+---
+
+<div class="jumbotron">
+	<div class="container" style="position: relative">
+		<img src="/assets/img/header.png" class="jumbotron-img-index" />
+		<div class="textblock-index">
+			<h1>APE (Ajax Push Engine)</h1>
+			<p><strong>APE</strong> is a full-featured OpenSource solution designed for <a href="ape_push.php">Ajax Push</a>. It includes a comet server and a Javascript Framework. APE allows to implement any kind of <strong>real-time data streaming</strong> to a web browser, without having to install anything on the client-side.</p>
+			<div class="btnblock">
+				<a class="btn btn-large" href="demos/">Demos</a>
+				<a class="btn btn-large" href="docs/">Documentation</a>
+				<a class="btn btn-large btn-success" href="download/">Get APE &raquo;</a>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="container">
+
+	<div class="section">
+		<h1>Ajax Push for realtime web</h1>
+		<p>The development of the APE Project started in early 2006 as webserver converted into a fast chat server, dedicated to give the best Ajax performance.
+		Over time it grew into an awesome piece of software based on principles and philosophies we care about (Open Source, Usability, Standards and the Future of the Internet). As for that, we think we have created something insanely great.</p>
+		<div class="row-fluid">
+			<div class="span3">
+				<h2><small><i class="icon-github"></i> OpenSource</small></h2>
+				<p>The APE Project is 100 % Open Source and FREE for commercial and non-commercial use, released under the GNU Public Licence version 2. We want to contribute to a better web by sharing our technologies.</p>
+			</div>
+			<div class="span3">
+				<h2><small><i class="icon-star"></i> Usability</small></h2>
+				<p>APE works with all of the Internet browsers, it is cross-platform and cross-subdomain. It works on mobile devices, smartphones, video game platforms, as long as they include a web browser.</p>
+			</div>
+			<div class="span3">
+				<h2><small><i class="icon-globe"></i> Only web standards</small></h2>
+				<p>APE only uses web standards (with the use of Asynchronous JavaScript and XML (AJAX)). You do not need any plugins to be installed on your web browser, just enjoy!</p>
+			</div>
+			<div class="span3">
+				<h2><small><i class="icon-refresh"></i> Push, don't pull</small></h2>
+				<p>APE is a Server for pushing real-time data to Rich Internet Applications, no pull! Data is sent, live, to thousands of clients, in a JavaScript socket fashion. It allows you to write real-time web applications without using any client plugins (Java, Flash...).</p>
+			</div>
+		</div><!-- /.row -->
+	</div>
+
+	<div class="section">
+		<h1>APE Project</h1>
+		<p>The Ajax Push Engine Project is divided into two distinct parts communicating via a very efficient protocol. The most central part is our epoll-driven HTTP streaming server, the APE Server. Through the APE Protocol, the APE JavaScript Framework sends and receives the actions on the client side.</p>
+		<div class="row-fluid">
+			<div class="span6">
+				<img src="/assets/img/about_server.png" />
+			</div>
+			<div class="span6">
+				<img src="/assets/img/about_jsf.png"/>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<h2 class="section">APE Server (Comet)</h2>
+		<p>APE Server is an Comet server implementing the POST and GET methods of the HTTP protocol. It does not replace a regular Web Server (such as Apache, Lighttpd or Nginx), however, the APE Server is only used for AJAX Push.</p>
+
+		<div class="row-fluid">
+			<div class="span3">
+				<h2><small>Highlights</small></h2>
+				<ul>
+					<li>Fully written in C</li>
+					<li>Publisher/Subscriber based</li>
+					<li>Scalable</li>
+					<li>Linux, BSD &amp; Mac OS X Support</li>
+					<li>Epoll-Driven (KQueue for BSD)</li>
+					<li>Fully Asynchronous</li>
+					<li>Server-Side JavaScript (SSJS)</li>
+					<li>Built-in Message Queue system</li>
+					<li>Sockets</li>
+					<li>Extendable</li>
+				</ul>
+			</div>
+			<div class="span9">
+				<h2><small>Code example</small></h2>
+				<pre class="prettyprint linenums lang-javascript">{% include code_example/apeserver_basic.html %}</pre>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<h2 class="section">APE Framework (JSF)</h2>
+		<p>The APE JavaScript Framework receives information sent by the server (RAWs), handles the data, and sends back the users commands (CMDs). With a very small footprint (~10KB), the APE Framework loads really fast on your web browser, thus it's fully adapted for slow connections such as EDGE or 3G.</p>
+
+		<div class="row-fluid">
+			<div class="span3">
+				<h2><small>Highlights</small></h2>
+				<ul>
+					<li>Based on Mootools, but also supports any other Framework for plugins (JQuery, dojo, ..)</li>
+					<li>Bring Socket API to the client (TCP Sockets)</li>
+					<li>Cross-Browser</li>
+					<li>Several Transport Methods (Long-polling, XHRStreaming, JSONP, Server Sent Events)</li>
+					<li>Sessions &amp; Multi tabbing/windowing management</li>
+				</ul>
+			</div>
+			<div class="span9">
+				<h2><small>Code example</small></h2>
+				<pre class="prettyprint linenums lang-javascript">{% include code_example/apeJSF_basic.html %}</pre>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="row-fluid">
+			<div class="span6">
+				<h2 class="section">APE Protocol</h2>
+				<p>To enable the communication between the Server and the APE JavaScript Framework (or whatever client you want), APE has it's own Protocol. It has a really small footprint, and it's really fast to interpret.</p>
+
+				<h2><small>Highlights</small></h2>
+				<ul>
+					<li>Async communication</li>
+					<li>Fully JSON powered</li>
+					<li>APE Specific</li>
+					<li>Send &amp; receive multiple info into one packet</li>
+					<li>Specificaly designed for Comet Push</li>
+					<li>Small bandwith usage</li>
+				</ul>
+			</div>
+			<div class="span6">
+				<h2 class="section">Requirements</h2>
+				<p>To run APE Server you will need any one of the following supported Operating Systems:</p>
+				<ul>
+					<li>Linux (with a kernel 2.6.16+)</li>
+					<li>MacOS X 10.3 computer</li>
+					<li>Windows computer with a virtual machine running Linux.</li>
+					<li>FreeBSD</li>
+				</ul>
+			</div>
+		</div>
+
+
+	</div>
+
+	<div class="section">
+		<h1>Do you want to know more about APE?</h1>
+		<div class="row-fluid">
+			<div class="span3">
+				<h2><small>APE in the wild !</small></h2>
+				<p style="padding-top: 10px;">Watch APE in its natural element. Check out our demos !</p>
+				<a href="demos/"><div align="center">
+					<img src="/assets/img/ape_demos_home.png" />
+				</div></a>
+			</div>
+			<div class="span3">
+				<h2><small>Get to know APE !</small></h2>
+				<p>Check out the documentation and wiki.</p>
+				<ul>
+					<li><a href="/docs/server/symbols/Ape.html">Serverside Javascript</a></li>
+					<li><a href="/docs/client/symbols/Ape.html">Javascript Framework</a></li>
+					<li><a href="/wiki/">Wiki</a></li>
+					<li><a href="docs/youtube">Youtube</a></li>
+				</ul>
+			</div>
+			<div class="span3">
+				<h2><small>Get APE !</small></h2>
+				<p>Make something awesome <em><strong>yourself</strong></em>!</p>
+				<div class="btnblock">
+					<a class="btn btn-large btn-success" href="download/"><i class="icon-download"></i> Download</a>
+				</div>
+			</div>
+			<div class="span3">
+				<h2><small>Open Source</small></h2>
+				<p>APE Server, APE Javascript Framework and the following demos are OpenSource and released under the <a href="https://gnu.org/licenses/old-licenses/gpl-2.0.html">GNU Public Licence version 2</a>.</p>
+			</div>
+		</div>
+	</div>
+</div>

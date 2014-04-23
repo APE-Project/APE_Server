@@ -1,0 +1,76 @@
+<link rel="stylesheet" type="text/css" href="/demos/irc/irc.css" media="screen" title="Normal" />
+<script type="text/javaScript" src="/assets/apejsf/mootools-core.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/apeClient.min.js"></script>
+<script type="text/javaScript" src="/assets/apejsf/apeConfig.js"></script>
+<script type="text/javaScript" src="/demos/irc/irc.js"></script>
+<script type="text/javaScript" src="/demos/irc/apeirc.js"></script>
+<script type="text/javaScript" src="/demos/irc/channel.js"></script>
+
+<script type="text/javascript">
+function rand_chars(){
+        var keylist="abcdefghijklmnopqrstuvwxyz"
+                var temp=''
+                var plength=8;
+        for (i=0;i<plength;i++){
+                temp+=keylist.charAt(Math.floor(Math.random()*keylist.length))
+        }
+        return temp;
+   }
+   function setNick(){
+       var nick = $('nick_input').value.replace(' ', '');
+       if(nick.length == 0){
+           alert('Veuillez entrer un login');
+       }else{
+           if( irc_client.setNick(nick.substr(0, 15)) ){
+                var login = $('login');
+                login.set('tween', {duration: 'short'});
+                login.tween('opacity', 0);
+                                setNick = function(){};
+                        }
+       }
+   }
+ 
+   var irc_client = new APE.IrcClient();
+   window.addEvent('domready', function(){
+       $('nick_input').focus();
+       irc_client.load({
+           'domain': APE.Config.domain,
+           'server': APE.Config.server,
+           'identifier':'ircdemo',
+           'scripts': APE.Config.scripts,
+           'complete': function(ape){
+               irc_client.complete();
+           }
+       });
+   });
+</script>
+<div id="ircchat">
+	<div id="login">
+	  <div class="popup">
+	      <p>Choose a nickname to sign in to IRC on freenode</p>
+	      Your nickname : <input maxlength="15" id="nick_input" onkeypress="if (event.keyCode == 13) setNick();"  type="text" /> <button onclick="setNick();">Ok</button>
+	  </div>
+	</div>
+	<div class="header">
+		<div class="server">IRC @ freenode</div>
+		<div id="tabs"></div>
+	</div>
+	<div class="chat">
+		<div class="texte-zone">
+			<div id="line">&nbsp;</div>
+			<div class="texte" id="history"></div>
+		</div>
+		<div class="list">
+			<div class="header"><span id="usr_cnt">0</span> users</span></div>
+			<div class="user-list">
+		    	<div id="user-list"></div>
+			</div>
+		</div>
+	    <div class="input-zone">
+	    	<button id="chatButton" onclick="irc_client.sendClick()">Ok</button>
+	        <input type="text" id="chat-input" />
+	        <div class="show-nick">jchavarria_work</div>
+	    </div>
+	</div>
+</div>
+<div id="ape_master_container"></div>
