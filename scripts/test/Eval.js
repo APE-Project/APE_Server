@@ -1,6 +1,8 @@
-Ape.log(' =====================================>>> \n Start up for test/Eval.js\n');
+Ape.log(' =====================================');
+Ape.log('       Start up for test/Eval.js     ');
+Ape.log(' =====================================\n');
 
-Ape.log(' 1 =====================================>>> \n\n');
+Ape.log(' >>> Test #1:');
 var code = '4 + 4;';
 var ret = Ape.eval(code);
 if (ret == 8) {
@@ -9,7 +11,7 @@ if (ret == 8) {
 	Ape.log('Failed\n');
 }
 
-Ape.log(' 2 =====================================>>> \n\n');
+Ape.log(' >>> Test #2:');
 var code = 'sum = function(a, b){return a + b;}; sum(4,4);';
 var ret = Ape.eval(code);
 if (ret == 8) {
@@ -17,14 +19,16 @@ if (ret == 8) {
 } else {
 	Ape.log('Failed: ' + ret + '\n');
 }
-Ape.log(' 3 =====================================>>> \n\n');
-var code = 'Ape.log(\'This is weird.\'); null';
+
+Ape.log(' >>> Test #3:');
+var code = 'Ape.log(\'Ape is nice !\'); null';
 var ret = Ape.eval(code);
 if (ret === null) {
 	Ape.log('OK\n');
 } else {
 	Ape.log('Failed: ' + ret + '\n');
 }
-Ape.log(' 4 =====================================>>> \n\n');
+Ape.log(' >>> Test #4:');
 eval("Ape.log('OK');");
-Ape.log('<<< =====================================\n');
+
+Ape.log("\n\n");

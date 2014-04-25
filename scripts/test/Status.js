@@ -1,5 +1,8 @@
-Ape.log(' =====================================>>> \n Start up for test/Status.js\n');
+Ape.log(' =====================================');
+Ape.log('      Start up for test/Status.js     ');
+Ape.log(' =====================================\n');
 
 var ret = Ape.status();
 Ape.log(JSON.stringify(ret));
-Ape.log('<<< =====================================\n');
+
+Ape.log("\n\n");

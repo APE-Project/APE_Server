@@ -1,6 +1,8 @@
-Ape.log(' =====================================>>> \n Start up for test/Properties.js\n');
+Ape.log(' =====================================');
+Ape.log('    Start up for test/Properties.js   ');
+Ape.log(' =====================================\n');
 
-Ape.log(' 1 =====================================>>> \n\n');
+Ape.log(' >>> Testing null properties');
 Ape.registerCmd('testNullProperty', true, function(params, info) {
 	myChan = Ape.mkChan('testChan');
 	myChannel.setProperty('testKeyChan', null);
@@ -9,4 +11,4 @@ Ape.registerCmd('testNullProperty', true, function(params, info) {
 	return 0;
 });
 
-Ape.log('<<< =====================================\n');
+Ape.log("\n\n");

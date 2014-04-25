@@ -1,6 +1,14 @@
-//Create Socket
-var socket = new Ape.sockClient('21', 'example.com', {flushlf: true});
+Ape.log(' =====================================');
+Ape.log('      Start up for test/Socket.js     ');
+Ape.log(' =====================================\n');
 
+//Create Socket
+var server = 'example.com';
+var port = 21;
+var socket = new Ape.sockClient(port, server, {flushlf: true});
+Ape.log("[Socket] Connecting to server " + server + " on port " + port);
+
+Ape.log('\n >>> Test for Socket Support. You should see "----[object sockClient]----" next line:');
 Ape.log(socket); //Spidermonkey 1.8.5 check
 
 socket.onConnect = function() {
@@ -15,3 +23,5 @@ socket.onRead = function(data) {
 socket.onDisconnect = function() {
     Ape.log("[Socket] Gone !");
 }
+
+Ape.log("\n\n");

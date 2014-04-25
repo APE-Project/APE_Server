@@ -1,6 +1,13 @@
-Ape.log(' =====================================>>> \n Start up for test/MySQL.js\n' );
-var sql = new Ape.MySQL("1.1.1.1:3306", "ape", "ape", "ape_test");
+Ape.log(' =====================================');
+Ape.log('      Start up for test/MySQL.js      ');
+Ape.log(' =====================================\n');
 
+
+var server = "1.1.1.1:3306";
+var sql = new Ape.MySQL(server, "ape", "ape", "ape_test");
+Ape.log('[MySQL] Connecting to MySQL server : ' + server);
+
+Ape.log('\n >>> Test for MySQL Support. You should see "----[object MySQL]----" next line:');
 Ape.log(sql); //Spidermonkey 1.8.5 check
 
 sql.onConnect = function() {
@@ -22,4 +29,4 @@ sql.onError = function(errorNo) {
   Ape.log('[MySQL] Connection Error : ' + errorNo + ' : '+ this.errorString());
 }
 
-Ape.log("<<< =====================================\n");
+Ape.log("\n\n");
