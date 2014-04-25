@@ -93,6 +93,7 @@ static void dnscb(struct dns_ctx *ctx, void *result, void *data) {
   const unsigned char *pkt, *cur, *end;
 
   if (!result) {
+    q->callback(NULL, q->data, q->g_ape);
     return;
   }
 
