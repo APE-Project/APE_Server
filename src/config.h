@@ -41,6 +41,7 @@ typedef struct apeconfig {
 
 apeconfig *ape_config_load(const char *filename);
 char *ape_config_get_key(apeconfig *conf, const char *key);
+void ape_config_set_key(apeconfig *conf, const char *key, char * value);
 apeconfig *ape_config_get_section(apeconfig *conf, const char *section);
 void ape_config_free(apeconfig *conf);
 
