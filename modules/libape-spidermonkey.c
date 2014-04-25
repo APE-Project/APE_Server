@@ -35,6 +35,7 @@
 #include <arpa/inet.h>
 #include "plugins.h"
 #include "global_plugins.h"
+#include <sys/stat.h>
 
 #define MODULE_NAME "spidermonkey"
 
