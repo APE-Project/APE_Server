@@ -1,29 +1,131 @@
-<!-- Load demo stuff here -->
-<link rel="stylesheet" type="text/css" href="/demos/move/css/demo.css" media="screen"/>
-<script type="text/javaScript" src="/assets/apejsf/mootools-core.js"></script>
-<script type="text/javaScript" src="/assets/apejsf/src/apeClient.js"></script>
-<script type="text/javaScript" src="/assets/apejsf/apeConfig.js"></script>
-<script type="text/javaScript" src="/demos/move/js/move.js"></script>
 
-<div id="ape_master_container"></div>
-
-<script type="text/javaScript">
-	var client = new APE.Move({
-		'container': document.getElementById('ape_master_container'),
-	});
-	client.load({
-		'identifier': 'movedemo',
-		'channel': 'move',
-		'connectOptions': {'name': rand_chars(5)}
-	});
-	
-	//Create random string used as user nickname
-	function rand_chars(plength) {
-		var keylist = "abcdefghijklmnopqrstuvwxyz";
-		var temp = '';
-		for (i = 0; i < plength; i++) {
-			temp += keylist.charAt(Math.floor(Math.random() * keylist.length));
-		}
-		return temp;
-	}
-</script>
+		<!-- BEGIN DEMO CODE -->
+		<link rel="stylesheet" href="/demos/move/css/move.css">
+		<script type="text/javaScript" src="/assets/apejsf/src/apeClient.js"></script>
+		<script type="text/javaScript" src="/assets/apejsf/apeConfig.js"></script>
+		<script type="text/javaScript" src="/demos/move/js/move.js"></script>
+		
+		<div id="APE_MoveContainer">
+			<div id="APE_User" class="APE_User">
+				<div class="circle"></div>
+				<div class="name">You</div>
+			</div>
+		</div>
+		
+		<script type="text/javascript">
+		
+			/**
+			 * This handle the even when the master Container is clicked.
+			 * This will get the new coordinates and send them to APE Server
+			 */
+			$('#APE_MoveContainer').click(function(e) {
+					        
+			    //Calculate the position. Do the math to make sure the object doesn't get out of the frame
+				var posX = Math.max(0, Math.min(e.pageX - $(this).offset().left - $('#APE_User').width() / 2, $('#APE_MoveContainer').width() - $('#APE_User').width()));
+				var posY = Math.max(0, Math.min(e.pageY - $(this).offset().top - ( $('#APE_User').find('.circle').height() / 2 ),  $('#APE_MoveContainer').height() - $('#APE_User').height()));				
+				
+				//Send the new coordinate to APE Server using the custom 'SETPOS' command
+				movePipeId.request.send('SETPOS', {'x': posX, 'y': posY});
+			});
+			
+			//Instantiate APE Client
+			var client = new APE.Client();
+			
+			//Some vars to keep track of things
+			var movePipeId;
+			var MyPubId;
+			
+			//Load APE Core and connect to the 'move' channel
+			client.load({
+			    'identifier': 'movedemo',
+				'channel': 'move',
+			});
+			
+			//Intercept 'load' event. This event is fired when the Core is loaded and ready to connect to APE Server
+			client.addEvent('load', function() {
+			    
+			    //Call core start function to connect to APE Server using a random name
+			    client.core.start({"name":rand_chars(5)});
+			});
+			
+			//Listen to the ready event to know when your client is connected
+			client.addEvent('ready', function() {
+			                    
+			    //1) Intercept multiPipeCreate event
+			    client.addEvent('multiPipeCreate', function(pipe, options) {
+			    	
+			    	//We are now connected to a Channel
+			    	movePipeId = pipe;				//Store the channel pipe so we can send command to it later
+			    	MyPubId = pipe.ape.user.pubid;	//Store our user pubid
+			    	
+			    });
+			
+			    //2) Intercept the reception of new message.
+			    client.onRaw('positions', function(raw, pipe) {
+			        
+			        //Move the sender to the specified coordinates
+			        $("#"+raw.data.from.pubid).animate({
+						left: raw.data.x,
+						top: raw.data.y
+					}, 'fast');
+					
+			    });
+			    
+			    //3) Intercept the creation of a new user.
+			    //   N.B.: Our user will be created here with the others
+			    client.addEvent('userJoin', function(user, pipe) {
+			        
+			        //Add the new user to the DOM using the helper function	        
+			        createUser(user.pubid, user.properties.name, user.properties.x, user.properties.y);
+			    });
+			    
+			    //4) Intercept when a user has left the channel.
+			    client.addEvent('userLeft', function(user, pipe) {
+		
+					//We delete the user from the DOM
+			        $("#APE_MoveContainer").find("#"+user.pubid).remove();
+			    });
+			
+			});
+			
+			/**
+			 * createUser function.
+			 * 
+			 * @access public
+			 * @param mixed userPubId
+			 * @param mixed username
+			 * @param mixed posX
+			 * @param mixed posY
+			 * @return void
+			 */
+			function createUser(userPubId, username, posX, posY) {
+				
+				//Duplicate the user div template and set the id tag
+				var temp = $("#APE_User").clone().attr("id", userPubId);
+				
+				//Set the duplicate color
+				$(temp).find('.circle').css('background-color', userColor(username));
+				
+				//Set the duplicate name. We show "YOU" is it is the user div
+				if (userPubId == MyPubId) {
+					$(temp).find('.name').text('YOU');
+				} else {
+					$(temp).find('.name').text(username);
+				}
+				
+				//The div is hidden by default. We show it.
+				$(temp).show();
+				
+				//Append the duplicate to the master div
+				$('#APE_MoveContainer').append(temp);
+				
+				//Set the duplicate position
+				$("#"+userPubId).animate({
+					left: posX,
+					top: posY
+				}, 'fast');
+			}
+		</script>
+		
+		<!-- END DEMO CODE -->
+		
