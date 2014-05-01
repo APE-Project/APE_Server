@@ -1,36 +1,56 @@
-#move_box {
-	width:500px;
-	height:500px;
-	background:silver;
-	border:1Px solid #000;
-	margin:400px auto 0;
+/* Frame in which the ball can move */
+#APE_MoveContainer {
+	
+	/* Set the frame design */
+	border: 1px solid black;
+	background-color: lightgrey;
+	width: 650px;
+	height: 350px;
+	cursor: pointer;
+	
+	/* Set this so the ball move inside the frame */
+	position: relative;
 }
 
-.demo_box_container .user {
-	width:20px;
-	height:20px;
+/* Overall ball */
+.APE_User {
+	/* Set this so the ball move inside the frame */
+	position: absolute;
+	
+	/* So the circle doesn't get ou of the frame */
+	min-width: 30px;
+	
+	/* User is hidden until APE is ready */
+	display: none;
 }
 
-.demo_box_container span {
-	margin-top:-40px;
-	position:absolute;
+
+.APE_User .circle {
+	
+	/* Create the circle */
+	width: 30px;
+	height: 30px;
+	border-radius: 15px;
+	
+	/* Set the style */
+	box-shadow: rgba(0, 0, 0, 0.3) 0 1px 3px;
+	
+	/* Set the default color */
+	background-color: yellow;
+	
+	/* Set the position inside the ball frame */
+	position: absolute;
+	left: 50%;
+	margin-left: -15px;
 }
 
-.demo_box_container {
-	position:absolute;
-}
+.APE_User .name {
 
-.ape_chatting {
-	width:500px;
-	height:50px;
-	margin:auto;
-}
-
-.demo_box_container .ape_buble_message {
-	margin-left:25px;
-	line-height:15px;
-	padding:0 5px;
-	width:auto;
-	background:#FFF;
-	border:1px solid #000;
+	/* Center the text */
+	font-size: 12px;
+	width: 100%;
+	text-align: center;
+	
+	/* So the circle doesn't overlap */
+	margin-top: 35px
 }

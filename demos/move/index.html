@@ -8,21 +8,24 @@ navbar: demo
 	<div class="section">
 		<a class="btn pull-right" href="/demos/move/APE_Move_Demo.zip" style="margin-top: 8px;">Get source code</a>
 		<h1>APE demo : Move demo</h1>
-		<center>
-			<iframe src='/demos/move/demo.html' style='width: 867px; height: 500px; border:none'></iframe>
-		</center>
+		<center>{% include demos/move/demo.html %}</center>
 	</div>
 
 	<div class="section">
 		<h2>About this demo</h2>
-		<p>This demo shows how APE can handles <strong>massive multi-user</strong> moving on a web page in <strong>real-time</strong>. This demo <strong>does not use APE as a middleware</strong>. A <em>libape-setcord</em> <strong>server-side module</strong> has been created to handle the coordinates of the users.</p>
+		<p>Click in the grey area to move your ball. Open a new browser window to see your ball move in <strong>real-time</strong>!</p>
+		<p>This demo shows how APE can handles <strong>massive multi-user</strong> moving on a web page in <strong>real-time</strong>. This demo <strong>does not use APE as a middleware</strong>. A custom <strong>server-side module</strong> has been created to record the coordinates of the users as a public user properties. This allow APE to place to know where existing users are currently placed when initializing.</p>
+		<p>To go further with this demo, you could try enabling <strong>sessions</strong>. With sessions enable, if you have two browser windows open, both will share the same ball and it will move in real-time in both windows when the grey area is clicked.</p>
 
 		<h2 class="fit"><small>Which features are used?</small></h2>
 		<ul>
-			<li>nickname.js</li>
-			<li>move.js</li>
-			<li>Sessions</li>
-			<li>ServerSide JavaScript</li>
+			<li>ServerSide JavaScript : 
+				<ul>
+					<li>nickname.js</li>
+					<li>move.js</li>
+				</ul>
+			</li>
+			<li><em>JQuery</em></li>
 		</ul>
 	</div>
 
@@ -47,7 +50,7 @@ navbar: demo
 			</div>
 			<div class="tab-pane ape-demo-pane" id="css">
 				<h5>demo.css</h5>
-				<pre class="prettyprint linenums lang-javascript">{% include demos/move/demo.css %}</pre>
+				<pre class="prettyprint linenums lang-javascript">{% include demos/move/move.css %}</pre>
 			</div>
 		</div>
 	</div>
