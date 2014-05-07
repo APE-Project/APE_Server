@@ -1377,6 +1377,7 @@ static void sm_sock_ondisconnect(ape_socket *client, acetables *g_ape)
 			
 			free(cb->private);
 			free(cb);
+			client->attach = NULL;
 			
 		//JS_EndRequest(cb->asc->cx);
 		//JS_ClearContextThread(cb->asc->cx);			
@@ -2470,7 +2471,7 @@ APE_JS_NATIVE(ape_sm_echo)
 	
 	if (!g_ape->is_daemon) {
 		fwrite(cstring, sizeof(char), JS_GetStringEncodingLength(cx, string), stdout);
-		//fwrite("\n", sizeof(char), 1, stdout);
+		fwrite("\n", sizeof(char), 1, stdout);
 	} else {
 		ape_log(APE_INFO, __FILE__, __LINE__, g_ape, 
 			"JavaScript : %s", cstring);
@@ -2635,6 +2636,7 @@ static void mysac_setdb_success(struct _ape_mysql_data *myhandle, int code)
 		/* TODO : Supress queue */
 		
 		free(myhandle->db);		
+		myhandle->db = NULL;
 	}
 }
 
@@ -2663,6 +2665,7 @@ static void mysac_connect_success(struct _ape_mysql_data *myhandle, int code)
 		myhandle->on_success = NULL;
 		
 		free(myhandle->db);
+		myhandle->db = NULL;
 	}
 }
 
@@ -2723,6 +2726,7 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 	JS_free(myhandle->cx, queue->query);
 	free(queue->res);
 	free(queue);
+	myhandle->data = NULL;
 		
 	apemysql_shift_queue(myhandle);
 }
@@ -3226,7 +3230,7 @@ static void init_module(acetables *g_ape) // Called when module is loaded
 	rt = JS_NewRuntime(8L * 1024L * 1024L);
 	
 	if (rt == NULL) {
-		printf("[ERR] Not enougth memory\n");
+		printf("[ERR] Not enough memory\n");
 		exit(0);
 	}
 	asr = xmalloc(sizeof(*asr));
