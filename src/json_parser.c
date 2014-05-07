@@ -77,6 +77,7 @@ SOFTWARE.
 #include <locale.h>
 
 #include "json_parser.h"
+#include "utils.h"
 
 #ifdef _MSC_VER
 #   if _MSC_VER >= 1400 /* Visual Studio 2005 and up */
@@ -624,8 +625,9 @@ static int parse_parse_buffer(JSON_parser jc)
                     break;
                 case JSON_T_STRING:
                     arg = &value;
+		    urldecode(jc->parse_buffer);
                     value.vu.str.value = jc->parse_buffer;
-                    value.vu.str.length = jc->parse_buffer_count;
+                    value.vu.str.length = strlen(jc->parse_buffer);
                     break;
             }
             
@@ -1037,8 +1039,9 @@ JSON_parser_char(JSON_parser jc, int next_char)
                 
                 if (jc->callback) {
                     JSON_value value;
+		    urldecode(jc->parse_buffer);
                     value.vu.str.value = jc->parse_buffer;
-                    value.vu.str.length = jc->parse_buffer_count;
+                    value.vu.str.length = strlen(jc->parse_buffer);
                     if (!(*jc->callback)(jc->ctx, JSON_T_KEY, &value)) {
                         return false;
                     }
