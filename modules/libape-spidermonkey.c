@@ -2597,15 +2597,21 @@ static unsigned int ape_sm_cmd_wrapper(callbackp *callbacki)
 			jval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, hlines->value.val, hlines->value.len));
 			JS_SetProperty(cx, hl, hlines->key.val, &jval);
 		}
-		
+
 		jval = OBJECT_TO_JSVAL(sm_ape_socket_to_jsobj(cx, callbacki->client));
 		JS_SetProperty(cx, cb, "client", &jval);
 		
 		jval = INT_TO_JSVAL(callbacki->chl);
 		/* infos.chl */
 		JS_SetProperty(cx, cb, "chl", &jval);
-		
-		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->ip));
+
+        /* Attempts to get an IP from proxy request first */
+        JS_GetProperty(cx, hl, "x-forwarded-for", &jval);
+		if ( !JSVAL_TO_BOOLEAN(jval) ) {
+		    /* Get the IP from the socket */
+    		jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, callbacki->ip));
+        }
+
 		JS_SetProperty(cx, cb, "ip", &jval);
 		
 		if (callbacki->call_user != NULL) {
