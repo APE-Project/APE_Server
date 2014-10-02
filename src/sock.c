@@ -212,27 +212,6 @@ void close_socket(int fd, acetables *g_ape)
 	ape_socket *co = g_ape->co[fd];
 
 	if (g_ape->bufout[fd].buf != NULL) {
-subuser *sub = (subuser *)(co->attach);
-if (co->stream_type == STREAM_IN) {
- if (sub != NULL) {
-  if (sub->user != NULL) {
-   if (sub->user->pipe != NULL) {
-    printf("FYI: Buffered data (%i bytes) discarded due to close of socket %i for user pubid %s\n",
-           g_ape->bufout[fd].buflen, fd, sub->user->pipe->pubid);
-   } else {
-    sub = NULL;
-   }
-  } else {
-   sub = NULL;
-  }
- }
-} else {
- sub = NULL;
-}
-if (sub == NULL) {
- printf("FYI: Buffered data (%i bytes) discarded due to close of socket %i\n",
-        g_ape->bufout[fd].buflen, fd);
-}
 		free(g_ape->bufout[fd].buf);
 		g_ape->bufout[fd].buflen = 0;
 		g_ape->bufout[fd].buf = NULL;
