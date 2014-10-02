@@ -161,20 +161,21 @@ static void ape_connect_name_cb(char *ip, void *data, acetables *g_ape)
 	struct _ape_sock_connect_async *asca = data;
 	ape_socket *sock;
 
-	if ((sock = ape_connect(ip, asca->port, g_ape)) != NULL) {
+	if (ip != NULL) {
+		if ((sock = ape_connect(ip, asca->port, g_ape)) != NULL) {
 
-		sock->attach = asca->sock->attach;
+			sock->attach = asca->sock->attach;
 
-		sock->callbacks.on_accept = asca->sock->callbacks.on_accept;
-		sock->callbacks.on_connect = asca->sock->callbacks.on_connect;
-		sock->callbacks.on_disconnect = asca->sock->callbacks.on_disconnect;
-		sock->callbacks.on_read = asca->sock->callbacks.on_read;
-		sock->callbacks.on_read_lf = asca->sock->callbacks.on_read_lf;
-		sock->callbacks.on_data_completly_sent = asca->sock->callbacks.on_data_completly_sent;
-		sock->callbacks.on_write = asca->sock->callbacks.on_write;
+			sock->callbacks.on_accept = asca->sock->callbacks.on_accept;
+			sock->callbacks.on_connect = asca->sock->callbacks.on_connect;
+			sock->callbacks.on_disconnect = asca->sock->callbacks.on_disconnect;
+			sock->callbacks.on_read = asca->sock->callbacks.on_read;
+			sock->callbacks.on_read_lf = asca->sock->callbacks.on_read_lf;
+			sock->callbacks.on_data_completly_sent = asca->sock->callbacks.on_data_completly_sent;
+			sock->callbacks.on_write = asca->sock->callbacks.on_write;
+		}
+		free(ip);
 	}
-
-	free(ip);
 	free(asca->sock);
 	free(asca);
 
@@ -211,6 +212,27 @@ void close_socket(int fd, acetables *g_ape)
 	ape_socket *co = g_ape->co[fd];
 
 	if (g_ape->bufout[fd].buf != NULL) {
+subuser *sub = (subuser *)(co->attach);
+if (co->stream_type == STREAM_IN) {
+ if (sub != NULL) {
+  if (sub->user != NULL) {
+   if (sub->user->pipe != NULL) {
+    printf("FYI: Buffered data (%i bytes) discarded due to close of socket %i for user pubid %s\n",
+           g_ape->bufout[fd].buflen, fd, sub->user->pipe->pubid);
+   } else {
+    sub = NULL;
+   }
+  } else {
+   sub = NULL;
+  }
+ }
+} else {
+ sub = NULL;
+}
+if (sub == NULL) {
+ printf("FYI: Buffered data (%i bytes) discarded due to close of socket %i\n",
+        g_ape->bufout[fd].buflen, fd);
+}
 		free(g_ape->bufout[fd].buf);
 		g_ape->bufout[fd].buflen = 0;
 		g_ape->bufout[fd].buf = NULL;
