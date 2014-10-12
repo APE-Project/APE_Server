@@ -161,20 +161,22 @@ static void ape_connect_name_cb(char *ip, void *data, acetables *g_ape)
 	struct _ape_sock_connect_async *asca = data;
 	ape_socket *sock;
 
-	if ((sock = ape_connect(ip, asca->port, g_ape)) != NULL) {
-
-		sock->attach = asca->sock->attach;
-
-		sock->callbacks.on_accept = asca->sock->callbacks.on_accept;
-		sock->callbacks.on_connect = asca->sock->callbacks.on_connect;
-		sock->callbacks.on_disconnect = asca->sock->callbacks.on_disconnect;
-		sock->callbacks.on_read = asca->sock->callbacks.on_read;
-		sock->callbacks.on_read_lf = asca->sock->callbacks.on_read_lf;
-		sock->callbacks.on_data_completly_sent = asca->sock->callbacks.on_data_completly_sent;
-		sock->callbacks.on_write = asca->sock->callbacks.on_write;
+	if (ip != NULL) {
+		if ((sock = ape_connect(ip, asca->port, g_ape)) != NULL) {
+		
+			sock->attach = asca->sock->attach;
+		
+			sock->callbacks.on_accept = asca->sock->callbacks.on_accept;         	
+			sock->callbacks.on_connect = asca->sock->callbacks.on_connect;
+			sock->callbacks.on_disconnect = asca->sock->callbacks.on_disconnect;
+			sock->callbacks.on_read = asca->sock->callbacks.on_read;
+			sock->callbacks.on_read_lf = asca->sock->callbacks.on_read_lf;
+			sock->callbacks.on_data_completly_sent = asca->sock->callbacks.on_data_completly_sent;
+			sock->callbacks.on_write = asca->sock->callbacks.on_write;
+		}
+	
+		free(ip);
 	}
-
-	free(ip);
 	free(asca->sock);
 	free(asca);
 
