@@ -176,6 +176,12 @@ static void ape_connect_name_cb(char *ip, void *data, acetables *g_ape)
 		}
 	
 		free(ip);
+	} else {
+		
+		if (!g_ape->is_daemon) {
+			printf("sockClient : No IP found / Invalid Hostname\n");
+		}
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, "sockClient : No IP found / Invalid Hostname");
 	}
 	free(asca->sock);
 	free(asca);
