@@ -2276,6 +2276,7 @@ static void sm_sock_ondisconnect(ape_socket *client, acetables *g_ape)
 			
 			free(cb->private);
 			free(cb);
+			client->attach = NULL;
 			
 		//JS_EndRequest(cb->asc->cx);
 		//JS_ClearContextThread(cb->asc->cx);
@@ -4743,7 +4744,8 @@ static void mysac_setdb_success(struct _ape_mysql_data *myhandle, int code)
 		
 		/* TODO : Supress queue */
 		
-		free(myhandle->db);
+		free(myhandle->db);		
+		myhandle->db = NULL;
 	}
 }
 
@@ -4772,6 +4774,7 @@ static void mysac_connect_success(struct _ape_mysql_data *myhandle, int code)
 		myhandle->on_success = NULL;
 		
 		free(myhandle->db);
+		myhandle->db = NULL;
 	}
 }
 
@@ -4832,6 +4835,7 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code)
 	JS_free(myhandle->cx, queue->query);
 	free(queue->res);
 	free(queue);
+	myhandle->data = NULL;
 		
 	apemysql_shift_queue(myhandle);
 }

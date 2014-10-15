@@ -281,7 +281,7 @@ unsigned int sockroutine(acetables *g_ape)
 
 	int new_fd, nfds, sin_size = sizeof(struct sockaddr_in), i, tfd = 0;
 
-	struct timeval t_start, t_end;
+	struct timespec t_start, t_end;
 	long int ticks = 0, uticks = 0, lticks = 0;
 	struct sockaddr_in their_addr;
 
@@ -291,7 +291,13 @@ unsigned int sockroutine(acetables *g_ape)
 	#if 0
 	add_periodical(5, 0, check_idle, &sl, g_ape);
 	#endif
-	gettimeofday(&t_start, NULL);
+	if (clock_gettime(CLOCK_MONOTONIC, &t_start) < 0)
+	{
+		ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+			"clock_gettime(CLOCK_MONOTONIC) : %s", strerror(errno));
+		return 1;
+	}
+
 	while (server_is_running) {
 		/* Linux 2.6.25 provides a fd-driven timer system. It could be usefull to implement */
 		int timeout_to_hang = get_first_timer_ms(g_ape);
@@ -502,13 +508,25 @@ unsigned int sockroutine(acetables *g_ape)
 				}
 			}
 		}
-
-		gettimeofday(&t_end, NULL);
-
+		
+		if (clock_gettime(CLOCK_MONOTONIC, &t_end) < 0)
+		{
+			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+				"clock_gettime(CLOCK_MONOTONIC) : %s", strerror(errno));
+			return 1;
+		}
+		
 		ticks = 0;
-
-		uticks = 1000000L * (t_end.tv_sec - t_start.tv_sec);
-		uticks += (t_end.tv_usec - t_start.tv_usec);
+		
+		if (t_end.tv_sec >= t_start.tv_sec)
+		{
+			uticks = 1000000L * (t_end.tv_sec - t_start.tv_sec);
+			uticks += ((t_end.tv_nsec - t_start.tv_nsec) / 1000);
+		} else {
+			ape_log(APE_ERR, __FILE__, __LINE__, g_ape, 
+				"end time less than start time (start:%ld, end:%ld)", t_start.tv_sec, t_end.tv_sec);
+			uticks = 1000;  // a total hack, but probably better than 0
+		}
 		t_start = t_end;
 		lticks += uticks;
 		/* Tic tac, tic tac */
