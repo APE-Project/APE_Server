@@ -2,7 +2,7 @@
 
 /*
 Exemple 1:
-	// URL to call
+	// URL to call test edit
 	var request = new Http('http://www.google.fr/');
 	request.getContent(function(result) {
 		Ape.log(result);
